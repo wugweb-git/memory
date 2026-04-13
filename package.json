@@ -1,0 +1,17 @@
+{
+  "name": "memory-system-phase1",
+  "version": "1.0.0",
+  "description": "Memory System Phase 1 serverless ingestion engine",
+  "type": "module",
+  "main": "api/items.js",
+  "scripts": {
+    "start": "echo 'Serverless project: deploy on Vercel or run vercel dev'",
+    "dev": "echo 'Use: vercel dev'"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mongoose": "^8.6.1",
+    "multer": "^2.1.1"
+  }
+}
