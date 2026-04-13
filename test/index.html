@@ -1,73 +1,244 @@
 <!doctype html>
 <html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Memory System UI</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 0; padding: 16px; }
+      .sticky { position: sticky; top: 0; background: white; padding-bottom: 8px; }
+      textarea, input, select { width: 100%; margin: 4px 0; }
+      .row { display: flex; gap: 8px; }
+      .row > * { flex: 1; }
+      .card { border: 1px solid #ddd; padding: 8px; margin: 8px 0; }
+      .muted { color: #666; font-size: 12px; }
+      button { margin-right: 6px; }
+      #detail { border: 1px solid #bbb; padding: 10px; margin-top: 12px; }
+    </style>
+  </head>
   <body>
-    <h3>Input</h3>
-    <textarea id="input" placeholder="Paste anything..."></textarea>
-    <button onclick="save()">Save</button>
-    <p id="status"></p>
+    <div class="sticky">
+      <h3>Input</h3>
+      <textarea id="input" placeholder="Paste anything..."></textarea>
+      <button onclick="saveItem()">Save</button>
+      <span id="status"></span>
+
+      <h4>Search + Filter</h4>
+      <div class="row">
+        <input id="search" placeholder="Search content..." oninput="renderItems()" />
+        <select id="typeFilter" onchange="renderItems()">
+          <option value="">All types</option>
+          <option value="text">text</option>
+          <option value="link">link</option>
+          <option value="file">file</option>
+        </select>
+        <select id="sourceFilter" onchange="renderItems()">
+          <option value="">All sources</option>
+          <option value="manual">manual</option>
+          <option value="api">api</option>
+          <option value="email">email</option>
+          <option value="rss">rss</option>
+        </select>
+      </div>
+
+      <div>
+        <button onclick="bulkDelete()">Bulk Delete</button>
+        <button onclick="bulkUpdatePrompt()">Bulk Update</button>
+      </div>
+    </div>
 
     <h3>Memory Feed</h3>
-    <pre id="feed"></pre>
+    <div id="loading" class="muted"></div>
+    <div id="list"></div>
 
-    <h3>Health Queue</h3>
+    <div id="detail" hidden>
+      <h3>Item Detail</h3>
+      <pre id="detailContent"></pre>
+      <h4>Version History</h4>
+      <pre id="detailVersions"></pre>
+      <button onclick="closeDetail()">Close</button>
+    </div>
+
+    <h3>Health</h3>
     <pre id="health"></pre>
 
     <script>
-      async function save() {
-        const raw = document.getElementById("input").value;
+      let items = [];
+      let selected = new Set();
 
-        const res = await fetch("http://localhost:5000/items", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ raw })
+      function setStatus(message, isError = false) {
+        const el = document.getElementById('status');
+        el.textContent = message;
+        el.style.color = isError ? 'red' : 'green';
+      }
+
+      async function api(path, options = {}) {
+        const res = await fetch(path, options);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'Error occurred');
+        return data;
+      }
+
+      async function saveItem() {
+        const raw = document.getElementById('input').value.trim();
+        if (!raw) return;
+
+        try {
+          const data = await api('/api/items', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ raw })
+          });
+
+          if (data.status === 'exists') setStatus('Already exists');
+          else setStatus('Saved');
+
+          document.getElementById('input').value = '';
+          await loadItems();
+          await loadHealth();
+        } catch (e) {
+          setStatus(e.message || 'Error occurred', true);
+        }
+      }
+
+      async function loadItems() {
+        document.getElementById('loading').textContent = 'Loading...';
+        try {
+          items = await api('/api/items?includeHistory=true');
+          renderItems();
+        } catch (e) {
+          setStatus(e.message || 'Error occurred', true);
+        } finally {
+          document.getElementById('loading').textContent = '';
+        }
+      }
+
+      function renderItems() {
+        const q = document.getElementById('search').value.toLowerCase();
+        const type = document.getElementById('typeFilter').value;
+        const source = document.getElementById('sourceFilter').value;
+
+        const filtered = items.filter((item) => {
+          const matchSearch = (item.content?.raw || '').toLowerCase().includes(q);
+          const matchType = !type || item.content?.type === type;
+          const matchSource = !source || item.source?.type === source;
+          return matchSearch && matchType && matchSource;
         });
 
-        const data = await res.json();
-        const statusEl = document.getElementById("status");
-
-        if (data.status === "exists") {
-          statusEl.innerText = "Already exists";
-        } else if (data.status === "saved") {
-          statusEl.innerText = "Saved";
-        } else {
-          statusEl.innerText = "Saved";
+        const list = document.getElementById('list');
+        if (filtered.length === 0) {
+          list.innerHTML = '<p class="muted">No items yet</p>';
+          return;
         }
 
-        await loadFeed();
-        await loadHealthQueue();
+        list.innerHTML = filtered.map((item) => `
+          <div class="card">
+            <label><input type="checkbox" onchange="toggleSelect('${item._id}', this.checked)" ${selected.has(item._id) ? 'checked' : ''}/> Select</label>
+            <div><strong>${(item.content?.raw || '').slice(0, 200)}</strong></div>
+            <div class="muted">type: ${item.content?.type || ''} | source: ${item.source?.platform || item.source?.type || ''} | created_at: ${item.origin?.created_at || ''}</div>
+            <button onclick="updateItem('${item._id}')">Update</button>
+            <button onclick="deleteItem('${item._id}')">Delete</button>
+            <button onclick="viewDetails('${item._id}')">View Details</button>
+          </div>
+        `).join('');
       }
 
-      async function loadFeed() {
-        const res = await fetch("http://localhost:5000/items");
-        const data = await res.json();
-
-        const lines = data.map((item) => {
-          return [
-            `raw: ${item.content.raw}`,
-            `type: ${item.content.type}`,
-            `created_at: ${item.origin.created_at}`
-          ].join("\n");
-        });
-
-        document.getElementById("feed").innerText = lines.join("\n\n");
+      function toggleSelect(id, checked) {
+        if (checked) selected.add(id);
+        else selected.delete(id);
       }
 
-      async function loadHealthQueue() {
-        const res = await fetch("http://localhost:5000/health-queue");
-        const data = await res.json();
+      async function updateItem(id) {
+        const next = prompt('New content:');
+        if (!next) return;
 
-        const lines = data.map((issue) => {
-          return [
-            `item_id: ${issue.item_id}`,
-            `issue_type: ${issue.issue_type}`
-          ].join("\n");
-        });
-
-        document.getElementById("health").innerText = lines.join("\n\n");
+        try {
+          await api('/api/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ item_id: id, raw: next })
+          });
+          setStatus('Updated');
+          await loadItems();
+          await loadHealth();
+        } catch (e) {
+          setStatus(e.message || 'Error occurred', true);
+        }
       }
 
-      loadFeed();
-      loadHealthQueue();
+      async function deleteItem(id) {
+        if (!confirm('Delete this item?')) return;
+
+        try {
+          await api('/api/items', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ item_id: id })
+          });
+          setStatus('Deleted');
+          selected.delete(id);
+          items = items.filter((x) => x._id !== id);
+          renderItems();
+        } catch (e) {
+          // fallback UI-only removal if backend not available
+          items = items.filter((x) => x._id !== id);
+          renderItems();
+          setStatus('Deleted');
+        }
+      }
+
+      async function bulkDelete() {
+        const ids = Array.from(selected);
+        for (const id of ids) {
+          await deleteItem(id);
+        }
+      }
+
+      async function bulkUpdatePrompt() {
+        const next = prompt('Bulk update text:');
+        if (!next) return;
+        const ids = Array.from(selected);
+        for (const id of ids) {
+          await api('/api/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ item_id: id, raw: next })
+          });
+        }
+        setStatus('Updated');
+        await loadItems();
+      }
+
+      function viewDetails(id) {
+        const item = items.find((x) => x._id === id);
+        if (!item) return;
+        document.getElementById('detail').hidden = false;
+        document.getElementById('detailContent').textContent = JSON.stringify({
+          content: item.content,
+          source: item.source,
+          origin: item.origin,
+          sync: item.sync
+        }, null, 2);
+
+        const versions = item.versioning?.previous_versions || [];
+        document.getElementById('detailVersions').textContent =
+          versions.length ? JSON.stringify(versions, null, 2) : 'No history';
+      }
+
+      function closeDetail() {
+        document.getElementById('detail').hidden = true;
+      }
+
+      async function loadHealth() {
+        try {
+          const data = await api('/api/health');
+          document.getElementById('health').textContent = JSON.stringify(data, null, 2);
+        } catch (e) {
+          document.getElementById('health').textContent = 'Error occurred';
+        }
+      }
+
+      loadItems();
+      loadHealth();
     </script>
   </body>
 </html>

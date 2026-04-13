@@ -1,30 +1,22 @@
-require('dotenv').config();
 const express = require('express');
-const mongoose = require('mongoose');
-const itemRoutes = require('./routes/items');
+const itemsHandler = require('../api/items');
+const syncHandler = require('../api/sync');
+const emailHandler = require('../api/email');
+const healthHandler = require('../api/health');
 
 const app = express();
-const port = process.env.PORT || 5000;
 
-app.use(express.json({ limit: '1mb' }));
-app.use(itemRoutes);
+app.use(express.json());
 
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
+app.get('/api/test', (req, res) => {
+  res.json({ status: 'working' });
 });
 
-async function start() {
-  if (!process.env.MONGO_URI) {
-    throw new Error('MONGO_URI is required');
-  }
+app.get('/api/items', (req, res) => itemsHandler(req, res));
+app.post('/api/items', (req, res) => itemsHandler(req, res));
+app.delete('/api/items', (req, res) => itemsHandler(req, res));
+app.post('/api/sync', (req, res) => syncHandler(req, res));
+app.post('/api/email', (req, res) => emailHandler(req, res));
+app.get('/api/health', (req, res) => healthHandler(req, res));
 
-  await mongoose.connect(process.env.MONGO_URI);
-  app.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
-  });
-}
-
-start().catch((error) => {
-  console.error('Startup failed', error);
-  process.exit(1);
-});
+module.exports = app;
