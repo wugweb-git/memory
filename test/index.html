@@ -1,0 +1,26 @@
+<textarea id="input"></textarea>
+<button onclick="save()">Save</button>
+<button onclick="load()">Load</button>
+
+<pre id="out"></pre>
+
+<script>
+async function save() {
+  const raw = document.getElementById("input").value;
+
+  const res = await fetch("http://localhost:5000/items", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ raw })
+  });
+
+  document.getElementById("out").innerText =
+    JSON.stringify(await res.json(), null, 2);
+}
+
+async function load() {
+  const res = await fetch("http://localhost:5000/items");
+  document.getElementById("out").innerText =
+    JSON.stringify(await res.json(), null, 2);
+}
+</script>
