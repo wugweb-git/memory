@@ -222,7 +222,7 @@
           log.textContent = `REQ ${path}\n${JSON.stringify(options.body ? JSON.parse(options.body) : {}, null, 2)}\n\nRES\n${JSON.stringify(data, null, 2)}\n\n` + log.textContent;
         }
 
-        if (!res.ok) throw new Error(data.error || 'Request failed');
+        if (!res.ok) throw new Error(data.message || data.error || 'Request failed');
         return data;
       }
 
@@ -238,11 +238,11 @@
         const email = document.getElementById('authEmail').value.trim();
         const password = document.getElementById('authPassword').value;
         const data = await request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
-        state.token = data.access_token;
-        state.refreshToken = data.refresh_token;
+        state.token = data.access_token || data.accessToken || '';
+        state.refreshToken = data.refresh_token || data.refreshToken || '';
         state.user = data.user;
-        localStorage.setItem('access_token', data.access_token);
-        localStorage.setItem('refresh_token', data.refresh_token || '');
+        localStorage.setItem('access_token', state.token);
+        localStorage.setItem('refresh_token', state.refreshToken || '');
         localStorage.setItem('user', JSON.stringify(data.user));
         mountAuth();
         setStatus('Logged in');
@@ -253,18 +253,19 @@
         const email = document.getElementById('authEmail').value.trim();
         const password = document.getElementById('authPassword').value;
         const data = await request('/auth/signup', { method: 'POST', body: JSON.stringify({ email, password }) });
-        state.token = data.access_token;
-        state.refreshToken = data.refresh_token;
+        state.token = data.access_token || data.accessToken || '';
+        state.refreshToken = data.refresh_token || data.refreshToken || '';
         state.user = data.user;
-        localStorage.setItem('access_token', data.access_token);
-        localStorage.setItem('refresh_token', data.refresh_token || '');
+        localStorage.setItem('access_token', state.token);
+        localStorage.setItem('refresh_token', state.refreshToken || '');
         localStorage.setItem('user', JSON.stringify(data.user));
         mountAuth();
         setStatus('Signed up');
         loadItems(true);
       }
 
-      function logout() {
+      async function logout() {
+        try { await request('/auth/logout', { method: 'POST' }); } catch {}
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user');
@@ -280,6 +281,21 @@
         document.querySelectorAll('.tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
         document.querySelectorAll('.tab-panel').forEach((p) => p.classList.add('hidden'));
         document.getElementById(`tab-${tab}`).classList.remove('hidden');
+      }
+
+      async function resumeSession() {
+        if (!state.token) return false;
+        try {
+          const meData = await request('/auth/me');
+          state.user = meData;
+          localStorage.setItem('user', JSON.stringify(meData));
+          mountAuth();
+          setStatus('Session restored');
+          return true;
+        } catch {
+          await logout();
+          return false;
+        }
       }
 
       function getSavePayload() {
@@ -311,29 +327,17 @@
         const file = document.getElementById('filePicker').files[0];
         if (!file) return null;
 
-        return new Promise((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          xhr.open('POST', `${API}/upload`);
-          if (state.token) xhr.setRequestHeader('Authorization', `Bearer ${state.token}`);
-          xhr.upload.onprogress = (e) => {
-            if (!e.lengthComputable) return;
-            const pct = Math.round((e.loaded / e.total) * 100);
-            document.getElementById('uploadProgress').value = pct;
-          };
-          xhr.onload = () => {
-            try {
-              const data = JSON.parse(xhr.responseText || '{}');
-              if (xhr.status >= 200 && xhr.status < 300) {
-                document.getElementById('filePreview').textContent = data.file?.public_url || 'Uploaded';
-                resolve(data);
-              } else reject(new Error(data.message || data.error || 'upload failed'));
-            } catch (err) { reject(err); }
-          };
-          xhr.onerror = () => reject(new Error('upload failed'));
-          const fd = new FormData();
-          fd.append('file', file);
-          xhr.send(fd);
+        document.getElementById('uploadProgress').value = 30;
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result || ''));
+          reader.onerror = () => reject(new Error('failed to read file'));
+          reader.readAsDataURL(file);
         });
+
+        document.getElementById('uploadProgress').value = 100;
+        document.getElementById('filePreview').textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
+        return { file, dataUrl };
       }
 
       async function saveItem() {
@@ -347,8 +351,9 @@
         else if (payload.mode === 'sync') data = await request('/sync', { method: 'POST', body: bodyStr });
         else if (payload.mode === 'file') {
           const uploaded = await uploadSelectedFile();
-          if (uploaded) data = { status: 'saved' };
-          else data = await request('/items', { method: 'POST', body: bodyStr });
+          const raw = uploaded ? `${uploaded.file.name}
+${uploaded.dataUrl}` : payload.body.raw;
+          data = await request('/items', { method: 'POST', body: JSON.stringify({ raw, platform: payload.body.platform, external_id: payload.body.external_id, visibility: payload.body.visibility }) });
         } else data = await request('/items', { method: 'POST', body: bodyStr });
 
         setStatus(data.status === 'exists' ? 'Duplicate detected' : 'Saved');
@@ -418,7 +423,6 @@
                 <button onclick="copyJson('${item._id}')">Copy JSON</button>
                 <button ${isOwner ? '' : 'disabled'} onclick="updateItem('${item._id}')">Update</button>
                 <button ${isOwner ? '' : 'disabled'} onclick="deleteItem('${item._id}')">Delete</button>
-                <button ${isOwner ? '' : 'disabled'} onclick="toggleVisibility('${item._id}', '${item.visibility}')">Toggle Visibility</button>
                 <button onclick="retryHealth('${item._id}', '${encodeURIComponent(item.content?.raw || '')}')">Retry Check</button>
               </div>
             </div>
@@ -449,16 +453,6 @@
       }
       window.deleteItem = deleteItem;
 
-      async function toggleVisibility(id, current) {
-        const item = state.items.find((x) => x._id === id);
-        if (!item) return;
-        const next = current === 'public' ? 'private' : 'public';
-        await request('/sync', { method: 'POST', body: JSON.stringify({ item_id: id, raw: item.content.raw }) });
-        await request('/items', { method: 'POST', body: JSON.stringify({ raw: item.content.raw, visibility: next, platform: item.source.platform, external_id: item.source.external_id }) });
-        setStatus('Visibility update requested');
-        loadItems(true);
-      }
-      window.toggleVisibility = toggleVisibility;
 
       async function copyJson(id) {
         const item = state.items.find((x) => x._id === id);
@@ -529,10 +523,11 @@
         loadItems(true);
       }
 
+
       document.querySelectorAll('.tabs button').forEach((btn) => btn.addEventListener('click', () => setTab(btn.dataset.tab)));
       document.getElementById('loginBtn').addEventListener('click', () => login().catch((e) => setStatus(e.message, true)));
       document.getElementById('signupBtn').addEventListener('click', () => signup().catch((e) => setStatus(e.message, true)));
-      document.getElementById('logoutBtn').addEventListener('click', logout);
+      document.getElementById('logoutBtn').addEventListener('click', () => logout().catch(() => {}));
       document.getElementById('saveBtn').addEventListener('click', () => saveItem().catch((e) => setStatus(e.message, true)));
       document.getElementById('clearBtn').addEventListener('click', clearForm);
       document.getElementById('healthBtn').addEventListener('click', () => loadHealth().catch((e) => setStatus(e.message, true)));
@@ -561,10 +556,12 @@
       }, 15000);
 
       mountAuth();
-      if (state.token) {
-        loadItems(true).catch((e) => setStatus(e.message, true));
-        loadHealth().catch(() => {});
-      }
+      resumeSession().then((ok) => {
+        if (ok) {
+          loadItems(true).catch((e) => setStatus(e.message, true));
+          loadHealth().catch(() => {});
+        }
+      });
     </script>
   </body>
 </html>

@@ -1,10 +1,11 @@
 import { config } from '../config/config.js';
 import { connectDB } from '../lib/db.js';
-import { createItem, getItems } from '../lib/items.js';
 import { syncItem } from '../lib/sync.js';
 import { handleEmail } from '../lib/email.js';
 import { checkHealth } from '../lib/health.js';
 import { signup, login, me, logout } from '../lib/authRoutes.js';
+import { deleteItem, createItem, getItems } from '../lib/items.js';
+import { createSource, getLogs, listSources, runSync } from '../lib/systemRoutes.js';
 import { sendError, fail } from '../lib/errors.js';
 import { applyCors, enforcePayloadLimit, rateLimit } from '../middleware/requestGuards.js';
 import { writeLog } from '../lib/log.js';
@@ -39,7 +40,7 @@ export default async function handler(req, res) {
       return res.status(200).json({
         ok: true,
         version: config.appVersion,
-        endpoints: ['/api/test', '/api/auth/signup', '/api/auth/login', '/api/auth/me', '/api/auth/logout', '/api/items', '/api/sync', '/api/email', '/api/health']
+        endpoints: ['/api/test', '/api/auth/signup', '/api/auth/login', '/api/auth/me', '/api/auth/logout', '/api/items', '/api/sync', '/api/email', '/api/health', '/api/logs', '/api/sources', '/api/sync/run']
       });
     }
 
@@ -92,6 +93,14 @@ export default async function handler(req, res) {
       return res.status(result.code).json(result.body);
     }
 
+    if (path === '/api/items' && req.method === 'DELETE') {
+      await connectDB();
+      rateLimit(req, { key: 'items', limit: 180 });
+      enforcePayloadLimit(req);
+      const result = await deleteItem(req);
+      return res.status(result.code).json(result.body);
+    }
+
     if (path === '/api/sync' && req.method === 'POST') {
       await connectDB();
       rateLimit(req, { key: 'sync', limit: 180 });
@@ -105,6 +114,36 @@ export default async function handler(req, res) {
       rateLimit(req, { key: 'email', limit: 120 });
       enforcePayloadLimit(req);
       const result = await handleEmail(req);
+      return res.status(result.code).json(result.body);
+    }
+
+
+    if (path === '/api/logs' && req.method === 'GET') {
+      await connectDB();
+      rateLimit(req, { key: 'logs', limit: 120 });
+      const result = await getLogs(req);
+      return res.status(result.code).json(result.body);
+    }
+
+    if (path === '/api/sources' && req.method === 'GET') {
+      await connectDB();
+      rateLimit(req, { key: 'sources', limit: 120 });
+      const result = await listSources(req);
+      return res.status(result.code).json(result.body);
+    }
+
+    if (path === '/api/sources' && req.method === 'POST') {
+      await connectDB();
+      rateLimit(req, { key: 'sources', limit: 120 });
+      enforcePayloadLimit(req);
+      const result = await createSource(req);
+      return res.status(result.code).json(result.body);
+    }
+
+    if (path === '/api/sync/run' && req.method === 'POST') {
+      await connectDB();
+      rateLimit(req, { key: 'sync-run', limit: 60 });
+      const result = await runSync(req);
       return res.status(result.code).json(result.body);
     }
 
