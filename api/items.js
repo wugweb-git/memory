@@ -40,11 +40,11 @@ module.exports = async function handler(req, res) {
   await connectDB();
 
   if (req.method === 'GET') {
-    const items = await Item.find()
-      .select('-versioning.previous_versions')
-      .sort({ 'origin.created_at': -1 })
-      .limit(50);
+    const includeHistory = req.query && req.query.includeHistory === 'true';
+    const query = Item.find().sort({ 'origin.created_at': -1 }).limit(50);
+    if (!includeHistory) query.select('-versioning.previous_versions');
 
+    const items = await query;
     return res.status(200).json(items);
   }
 
@@ -76,6 +76,14 @@ module.exports = async function handler(req, res) {
     }
 
     return res.status(201).json({ status: 'saved', item: stripHistory(item) });
+  }
+
+  if (req.method === 'DELETE') {
+    const { item_id } = asJson(req.body);
+    if (!item_id) return res.status(400).json({ error: 'item_id is required' });
+
+    await Item.deleteOne({ _id: item_id });
+    return res.status(200).json({ status: 'deleted', item_id });
   }
 
   return res.status(405).json({ error: 'Method not allowed' });

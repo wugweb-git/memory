@@ -37,7 +37,7 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { raw, url, external_id, platform } = asJson(req.body);
+  const { item_id, raw, url, external_id, platform } = asJson(req.body);
   if (!raw) return res.status(400).json({ error: 'raw is required' });
 
   const rawIsUrl = isUrl(raw);
@@ -46,9 +46,10 @@ module.exports = async function handler(req, res) {
   const nextHash = hashRaw(raw);
 
   const find = [];
+  if (item_id) find.push({ _id: item_id });
   if (external_id) find.push({ 'source.external_id': external_id });
   if (resolvedUrl) find.push({ 'source.url': resolvedUrl });
-  if (find.length === 0) return res.status(400).json({ error: 'url or external_id is required' });
+  if (find.length === 0) return res.status(400).json({ error: 'item_id or url or external_id is required' });
 
   let item = await Item.findOne({ $or: find });
   const link_status = await linkStatusFor(resolvedUrl, contentType);
