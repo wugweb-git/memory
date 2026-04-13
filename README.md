@@ -1,46 +1,35 @@
-# Memory System — Phase 1 (Ingestion Engine)
+# Memory System — Production-ready Phase 1
 
-Serverless Node.js + MongoDB ingestion API for raw memory capture on Vercel.
+## What is included
 
-## Endpoints
+- Serverless API on Vercel
+- Auth (`/api/auth/*`) with hashed passwords (bcrypt)
+- Multi-user ownership + visibility controls
+- Ingestion (`/api/items`, `/api/sync`, `/api/email`)
+- File upload (`/api/upload`) + file metadata + delete endpoint (`/api/files/delete`)
+- Automation sources (`/api/sources`) + manual sync run (`/api/sync/run`)
+- Health endpoints (`/api/health`, `/api/health/system`)
+- Logs + admin stats (`/api/logs`, `/api/admin/stats`)
+- Backup endpoint (`/api/admin/backup`) + scripts (`scripts/backup.js`, `scripts/restore.js`)
+- Background job layer (`lib/jobs.js`)
 
-- `GET /api`
-- `GET /api/test`
-- `GET /api/items`
-- `POST /api/items`
-- `POST /api/sync`
-- `POST /api/email`
-- `GET /api/health`
+## Environment variables
 
-## Root URL
-
-- `/` serves `index.html` to avoid Vercel root `404: NOT_FOUND`.
-- `/test/index.html` serves the simple UI.
-
-## Env
-
+Required:
 - `MONGO_URI`
+- `AUTH_SECRET`
 
-## Vercel deployment settings (recommended)
+Optional:
+- `NODE_ENV`
+- `ALLOWED_ORIGINS`
+- `REQUEST_LIMIT_BYTES`
+- `UPLOAD_DIR`
+- `JOB_SECRET`
+- `APP_VERSION`
 
-Set these in the Vercel project dashboard:
+See `.env.example`.
 
-- **Framework Preset:** `Other`
-- **Root Directory:** repository root (the folder containing `api/`, `vercel.json`, `package.json`)
-- **Build Command:** *(empty)*
-- **Output Directory:** *(empty)*
-- **Install Command:** `npm install`
-- **Node.js Version:** `20.x`
-- **Production Branch:** `main`
+## API compatibility
 
-Also set Environment Variables:
-
-- `MONGO_URI=<your mongo atlas uri>`
-
-After deploy, verify in this exact order:
-
-1. `/`
-2. `/api`
-3. `/api/test`
-4. `/api/items`
-5. `/test/index.html`
+- Routes are available under `/api/*`.
+- Also available with `/api/v1/*` alias via `vercel.json` route mapping.

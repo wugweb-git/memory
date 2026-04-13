@@ -2,31 +2,28 @@ import { connectDB } from '../lib/db.js';
 import { getAuthUser } from '../lib/auth.js';
 import { writeLog } from '../lib/log.js';
 import { hashRaw } from '../lib/hash.js';
+import { applyCors, enforcePayloadLimit, rateLimit, sanitizeString } from '../middleware/requestGuards.js';
+import { fail, sendError } from '../lib/errors.js';
 import Item from '../models/Item.js';
 
-function asJson(body) {
-  if (!body) return {};
-  if (typeof body === 'string') {
-    try {
-      return JSON.parse(body);
-    } catch {
-      return {};
-    }
-  }
-  return body;
-}
-
 export default async function handler(req, res) {
-  await connectDB();
-  const user = await getAuthUser(req);
-  if (!user) return res.status(401).json({ error: 'unauthorized' });
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  applyCors(req, res);
+  if (req.method === 'OPTIONS') return res.status(204).end();
 
   try {
-    const { subject = '', body = '', from = '', platform = 'email' } = asJson(req.body);
-    const raw = `${subject}\n\n${body}`.trim();
+    rateLimit(req, { key: 'email', limit: 120 });
+    enforcePayloadLimit(req);
+    await connectDB();
+    const user = await getAuthUser(req);
+    if (!user) throw fail('unauthorized', 'auth_error', 401);
+    if (req.method !== 'POST') throw fail('Method not allowed', 'validation_error', 405);
 
-    if (!raw) return res.status(400).json({ error: 'subject or body is required' });
+    const subject = sanitizeString(req.body?.subject || '');
+    const body = sanitizeString(req.body?.body || '');
+    const from = sanitizeString(req.body?.from || '');
+    const platform = sanitizeString(req.body?.platform || 'email');
+    const raw = `${subject}\n\n${body}`.trim();
+    if (!raw) throw fail('subject or body is required', 'validation_error', 400);
 
     const item = await Item.create({
       content: { raw, type: 'email' },
@@ -38,10 +35,10 @@ export default async function handler(req, res) {
       versioning: { current_hash: hashRaw(raw), previous_versions: [] }
     });
 
-    await writeLog({ action: 'email.create', user_id: String(user._id), path: req.url, request: req.body, response: { id: String(item._id) } });
+    await writeLog({ action: 'email.create', user_id: String(user._id), path: req.url, response: { id: String(item._id) } });
     return res.status(201).json(item);
   } catch (error) {
-    await writeLog({ level: 'error', action: 'email.error', user_id: String(user._id), path: req.url, error: error.message });
-    return res.status(500).json({ error: 'Internal server error', detail: error.message });
+    await writeLog({ level: 'error', action: 'email.error', path: req.url, error: error.message });
+    return sendError(res, error);
   }
 }
