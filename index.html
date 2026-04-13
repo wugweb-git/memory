@@ -3,94 +3,507 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Memory System UI</title>
+    <title>Memory System</title>
+    <style>
+      :root { --bg:#f5f5f5; --card:#fff; --text:#111; --primary:#1d4ed8; --muted:#666; }
+      * { box-sizing:border-box; }
+      body { margin:0; font-family:system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:var(--bg); color:var(--text); }
+      .container { max-width:900px; margin:0 auto; padding:16px; }
+      .card { background:var(--card); border:1px solid #ddd; border-radius:10px; padding:12px; margin-bottom:12px; }
+      .row { display:flex; gap:8px; flex-wrap:wrap; }
+      input, select, textarea, button { font:inherit; }
+      input, select, textarea { width:100%; padding:8px; border:1px solid #ccc; border-radius:8px; }
+      button { padding:8px 12px; border-radius:10px; border:1px solid #ccc; cursor:pointer; background:#fff; }
+      button.primary { background:var(--primary); color:white; border-color:var(--primary); }
+      .tabs button.active { background:#111; color:#fff; border-color:#111; }
+      .muted { color:var(--muted); font-size:12px; }
+      .hidden { display:none; }
+      .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+      .topbar { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+      .badge { font-size:12px; padding:2px 8px; border-radius:999px; background:#e5e7eb; }
+      .feed-card { border:1px solid #ddd; border-radius:10px; padding:10px; margin-bottom:10px; background:#fff; }
+      .actions { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+      pre { white-space:pre-wrap; word-break:break-word; }
+      #modal { position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; }
+      #modalContent { width:min(820px,95vw); max-height:85vh; overflow:auto; }
+      .lock::before { content:'🔒 '; }
+      .globe::before { content:'🌐 '; }
+      .layout { display:grid; grid-template-columns:2fr 1fr; gap:12px; }
+      @media (max-width:900px) { .layout { grid-template-columns:1fr; } }
+    </style>
   </head>
   <body>
-    <h1>Memory System</h1>
+    <div class="container">
+      <div class="card topbar">
+        <div>
+          <h1 style="margin:0">Memory System</h1>
+          <div class="muted">Capture, view, and manage all inputs</div>
+        </div>
+        <div>
+          <span id="syncState" class="badge">Up to date</span>
+          <span id="userInfo" class="badge">Guest</span>
+          <button id="logoutBtn" class="hidden">Logout</button>
+        </div>
+      </div>
 
-    <textarea id="raw" placeholder="Paste anything..." rows="4" cols="60"></textarea><br />
-    <button id="saveBtn">Save</button>
-    <button id="refreshBtn">Refresh</button>
-    <button id="healthBtn">Health</button>
-    <p id="status"></p>
+      <div id="authCard" class="card">
+        <h3>Login / Signup</h3>
+        <div class="row">
+          <input id="authEmail" placeholder="email" />
+          <input id="authPassword" type="password" placeholder="password" />
+          <button class="primary" id="loginBtn">Login</button>
+          <button id="signupBtn">Signup</button>
+        </div>
+      </div>
 
-    <h2>Update Item</h2>
-    <input id="updateId" placeholder="item_id" size="35" />
-    <input id="updateRaw" placeholder="new raw content" size="40" />
-    <button id="updateBtn">Update</button>
+      <div id="app" class="hidden">
+        <div class="card">
+          <div class="tabs actions">
+            <button data-tab="text" class="active">Text</button>
+            <button data-tab="link">Link</button>
+            <button data-tab="file">File</button>
+            <button data-tab="email">Email-style</button>
+            <button data-tab="json">Raw JSON</button>
+          </div>
 
-    <h2>Feed</h2>
-    <pre id="feed"></pre>
+          <div id="tab-text" class="tab-panel">
+            <textarea id="textRaw" placeholder="Paste text" rows="4"></textarea>
+          </div>
+          <div id="tab-link" class="tab-panel hidden">
+            <input id="linkRaw" placeholder="https://example.com" />
+          </div>
+          <div id="tab-file" class="tab-panel hidden">
+            <input id="fileRaw" placeholder="File URL or base64" />
+          </div>
+          <div id="tab-email" class="tab-panel hidden">
+            <input id="emailSubject" placeholder="subject" />
+            <textarea id="emailBody" placeholder="body" rows="3"></textarea>
+            <input id="emailFrom" placeholder="from" />
+          </div>
+          <div id="tab-json" class="tab-panel hidden">
+            <textarea id="jsonRaw" rows="7" placeholder='{"raw":"hello","platform":"manual"}'></textarea>
+          </div>
 
-    <h2>Health</h2>
-    <pre id="health"></pre>
+          <div class="grid-2" style="margin-top:8px">
+            <input id="platform" placeholder="source.platform (optional)" />
+            <input id="externalId" placeholder="external_id (optional)" />
+            <select id="visibility">
+              <option value="private">Private</option>
+              <option value="public">Public</option>
+            </select>
+          </div>
+          <div class="actions">
+            <button class="primary" id="saveBtn">Save</button>
+            <button id="clearBtn">Clear</button>
+          </div>
+        </div>
+
+        <div class="card" id="statusBar">Ready</div>
+
+        <div class="card">
+          <div class="row">
+            <input id="search" placeholder="Search..." />
+            <select id="filterType"><option value="">All types</option><option>text</option><option>link</option><option>file</option><option>email</option></select>
+            <select id="filterSource"><option value="">All sources</option><option>manual</option><option>api</option><option>email</option><option>rss</option></select>
+            <select id="filterScope"><option value="my">My Data</option><option value="public">Public Data</option><option value="all">All (admin)</option></select>
+          </div>
+        </div>
+
+        <div class="layout">
+          <div>
+            <div class="card">
+              <div class="actions">
+                <button id="bulkDeleteBtn">Bulk Delete</button>
+                <button id="bulkRefreshBtn">Bulk Refresh</button>
+                <button id="loadMoreBtn">Load More</button>
+                <span id="loading" class="muted"></span>
+              </div>
+              <div id="feed"></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="card">
+              <h3>Automation</h3>
+              <input id="rssInput" placeholder="RSS feed URL" />
+              <div class="muted">Email forwarding: memory@forward.example</div>
+              <div id="automationState" class="muted">No source connected</div>
+            </div>
+
+            <div class="card">
+              <h3>Health</h3>
+              <button id="healthBtn">Refresh Health</button>
+              <pre id="health"></pre>
+            </div>
+
+            <div class="card">
+              <h3>System Logs</h3>
+              <label><input type="checkbox" id="debugMode" /> Debug Mode</label>
+              <button id="logsBtn">Refresh Logs</button>
+              <pre id="logs"></pre>
+            </div>
+
+            <div class="card">
+              <h3>Schema</h3>
+              <button id="toggleSchema">View Schema</button>
+              <pre id="schema" class="hidden"></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal">
+      <div id="modalContent" class="card">
+        <h3>Item Details</h3>
+        <pre id="detail"></pre>
+        <button id="closeModal">Close</button>
+      </div>
+    </div>
 
     <script>
-      const API_BASE = 'https://memory-wugweb.vercel.app/api';
+      const API = '/api';
+      const state = {
+        token: localStorage.getItem('token') || '',
+        user: JSON.parse(localStorage.getItem('user') || 'null'),
+        tab: 'text',
+        items: [],
+        page: 1,
+        limit: 20,
+        selected: new Set(),
+        debug: false,
+        lastQuery: ''
+      };
 
-      async function api(path, options = {}) {
-        const res = await fetch(`${API_BASE}${path}`, options);
+      const schemaExample = {
+        content: { raw: 'Example', type: 'text' },
+        source: { type: 'manual', platform: 'ui', url: '', external_id: '' },
+        owner: { user_id: '...', email: '...' },
+        visibility: 'private',
+        origin: { created_at: 'ISODate', created_by: 'user' },
+        sync: { last_synced_at: 'ISODate', has_changed: false, link_status: 'active', error_reason: '' },
+        versioning: { current_hash: 'sha256', previous_versions: [] }
+      };
+
+      function setStatus(msg, isError = false) {
+        const bar = document.getElementById('statusBar');
+        bar.textContent = msg;
+        bar.style.color = isError ? '#b91c1c' : '#111';
+      }
+
+      function setSync(stateText) {
+        document.getElementById('syncState').textContent = stateText;
+      }
+
+      function authHeaders() {
+        return state.token ? { Authorization: `Bearer ${state.token}` } : {};
+      }
+
+      async function request(path, options = {}) {
+        const payload = {
+          ...options,
+          headers: {
+            'Content-Type': 'application/json',
+            ...authHeaders(),
+            ...(options.headers || {})
+          }
+        };
+
+        const res = await fetch(`${API}${path}`, payload);
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error || 'request failed');
+
+        if (state.debug) {
+          const log = document.getElementById('logs');
+          log.textContent = `REQ ${path}\n${JSON.stringify(options.body ? JSON.parse(options.body) : {}, null, 2)}\n\nRES\n${JSON.stringify(data, null, 2)}\n\n` + log.textContent;
+        }
+
+        if (!res.ok) throw new Error(data.error || 'Request failed');
         return data;
       }
 
-      async function loadFeed() {
-        const data = await api('/items');
-        document.getElementById('feed').textContent = JSON.stringify(data, null, 2);
+      function mountAuth() {
+        const loggedIn = Boolean(state.token && state.user);
+        document.getElementById('authCard').classList.toggle('hidden', loggedIn);
+        document.getElementById('app').classList.toggle('hidden', !loggedIn);
+        document.getElementById('logoutBtn').classList.toggle('hidden', !loggedIn);
+        document.getElementById('userInfo').textContent = loggedIn ? `${state.user.email} (${state.user.role})` : 'Guest';
+      }
+
+      async function login() {
+        const email = document.getElementById('authEmail').value.trim();
+        const password = document.getElementById('authPassword').value;
+        const data = await request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+        state.token = data.token;
+        state.user = data.user;
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        mountAuth();
+        setStatus('Logged in');
+        loadItems(true);
+      }
+
+      async function signup() {
+        const email = document.getElementById('authEmail').value.trim();
+        const password = document.getElementById('authPassword').value;
+        const data = await request('/auth/signup', { method: 'POST', body: JSON.stringify({ email, password }) });
+        state.token = data.token;
+        state.user = data.user;
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        mountAuth();
+        setStatus('Signed up');
+        loadItems(true);
+      }
+
+      function logout() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        state.token = '';
+        state.user = null;
+        state.items = [];
+        renderFeed();
+        mountAuth();
+      }
+
+      function setTab(tab) {
+        state.tab = tab;
+        document.querySelectorAll('.tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
+        document.querySelectorAll('.tab-panel').forEach((p) => p.classList.add('hidden'));
+        document.getElementById(`tab-${tab}`).classList.remove('hidden');
+      }
+
+      function getSavePayload() {
+        const platform = document.getElementById('platform').value.trim();
+        const external_id = document.getElementById('externalId').value.trim();
+        const visibility = document.getElementById('visibility').value;
+
+        if (state.tab === 'text') return { mode: 'items', body: { raw: document.getElementById('textRaw').value.trim(), platform, external_id, visibility } };
+        if (state.tab === 'link') return { mode: 'items', body: { raw: document.getElementById('linkRaw').value.trim(), platform, external_id, visibility } };
+        if (state.tab === 'file') return { mode: 'items', body: { raw: document.getElementById('fileRaw').value.trim(), platform, external_id, visibility } };
+        if (state.tab === 'email') {
+          return {
+            mode: 'email',
+            body: {
+              subject: document.getElementById('emailSubject').value.trim(),
+              body: document.getElementById('emailBody').value.trim(),
+              from: document.getElementById('emailFrom').value.trim(),
+              platform: platform || 'email'
+            }
+          };
+        }
+
+        const rawJson = document.getElementById('jsonRaw').value.trim();
+        const parsed = JSON.parse(rawJson || '{}');
+        return { mode: parsed.subject || parsed.body ? 'email' : (parsed.item_id ? 'sync' : 'items'), body: parsed };
       }
 
       async function saveItem() {
-        const raw = document.getElementById('raw').value.trim();
-        if (!raw) return;
+        const payload = getSavePayload();
+        const bodyStr = JSON.stringify(payload.body);
+        if (bodyStr === '{}' || bodyStr.includes('"raw":""')) throw new Error('Please fill required input');
 
-        const data = await api('/items', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ raw })
-        });
+        setSync('Syncing...');
+        let data;
+        if (payload.mode === 'email') data = await request('/email', { method: 'POST', body: bodyStr });
+        else if (payload.mode === 'sync') data = await request('/sync', { method: 'POST', body: bodyStr });
+        else data = await request('/items', { method: 'POST', body: bodyStr });
 
-        document.getElementById('status').textContent = data.status === 'exists' ? 'Already exists' : 'Saved';
-        await loadFeed();
+        setStatus(data.status === 'exists' ? 'Duplicate detected' : 'Saved');
+        clearForm();
+        await loadItems(true);
+        setSync('Up to date');
       }
 
-      async function updateItem() {
-        const item_id = document.getElementById('updateId').value.trim();
-        const raw = document.getElementById('updateRaw').value.trim();
-        if (!item_id || !raw) return;
-
-        await api('/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ item_id, raw })
+      function clearForm() {
+        ['textRaw','linkRaw','fileRaw','emailSubject','emailBody','emailFrom','jsonRaw','platform','externalId'].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.value = '';
         });
-
-        document.getElementById('status').textContent = 'Updated';
-        await loadFeed();
       }
+
+      let searchTimer;
+      function onSearchChanged() {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => loadItems(true).catch((e) => setStatus(e.message, true)), 250);
+      }
+
+      function queryParams() {
+        const q = document.getElementById('search').value.trim();
+        const type = document.getElementById('filterType').value;
+        const source = document.getElementById('filterSource').value;
+        const scope = document.getElementById('filterScope').value;
+        const params = new URLSearchParams({ page: String(state.page), limit: String(state.limit), scope });
+        if (q) params.set('q', q);
+        if (type) params.set('type', type);
+        if (source) params.set('source', source);
+        params.set('includeHistory', 'true');
+        return params;
+      }
+
+      async function loadItems(reset = false) {
+        if (reset) {
+          state.page = 1;
+          state.items = [];
+        }
+
+        document.getElementById('loading').textContent = 'Loading...';
+        const data = await request(`/items?${queryParams().toString()}`);
+        state.items = reset ? data.items : [...state.items, ...data.items];
+        state.hasMore = data.has_more;
+        renderFeed();
+        document.getElementById('loading').textContent = '';
+      }
+
+      function renderFeed() {
+        const feed = document.getElementById('feed');
+        if (!state.items.length) {
+          feed.innerHTML = '<div class="muted">No data yet</div>';
+          return;
+        }
+
+        feed.innerHTML = state.items.map((item) => {
+          const isOwner = state.user && (state.user.role === 'admin' || item.owner?.user_id === state.user.id);
+          const icon = item.visibility === 'public' ? 'globe' : 'lock';
+          return `
+            <div class="feed-card">
+              <label><input type="checkbox" onchange="toggleSelect('${item._id}', this.checked)"> select</label>
+              <div><strong>${(item.content?.raw || '').slice(0, 180)}</strong></div>
+              <div class="muted ${icon}">type: ${item.content?.type || ''} | source: ${item.source?.type || ''} | owner: ${item.owner?.email || ''}</div>
+              <div class="muted">created: ${item.origin?.created_at || ''} | last sync: ${item.sync?.last_synced_at || ''}</div>
+              <div class="actions">
+                <button onclick="viewDetails('${item._id}')">View Details</button>
+                <button onclick="copyJson('${item._id}')">Copy JSON</button>
+                <button ${isOwner ? '' : 'disabled'} onclick="updateItem('${item._id}')">Update</button>
+                <button ${isOwner ? '' : 'disabled'} onclick="deleteItem('${item._id}')">Delete</button>
+                <button ${isOwner ? '' : 'disabled'} onclick="toggleVisibility('${item._id}', '${item.visibility}')">Toggle Visibility</button>
+                <button onclick="retryHealth('${item._id}', '${encodeURIComponent(item.content?.raw || '')}')">Retry Check</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      function toggleSelect(id, checked) {
+        if (checked) state.selected.add(id); else state.selected.delete(id);
+      }
+      window.toggleSelect = toggleSelect;
+
+      async function updateItem(id) {
+        const next = prompt('New content');
+        if (!next) return;
+        await request('/sync', { method: 'POST', body: JSON.stringify({ item_id: id, raw: next }) });
+        setStatus('Updated');
+        loadItems(true);
+      }
+      window.updateItem = updateItem;
+
+      async function deleteItem(id) {
+        if (!confirm('Delete item?')) return;
+        await request('/items', { method: 'DELETE', body: JSON.stringify({ item_id: id }) });
+        setStatus('Deleted');
+        state.items = state.items.filter((x) => x._id !== id);
+        renderFeed();
+      }
+      window.deleteItem = deleteItem;
+
+      async function toggleVisibility(id, current) {
+        const item = state.items.find((x) => x._id === id);
+        if (!item) return;
+        const next = current === 'public' ? 'private' : 'public';
+        await request('/sync', { method: 'POST', body: JSON.stringify({ item_id: id, raw: item.content.raw }) });
+        await request('/items', { method: 'POST', body: JSON.stringify({ raw: item.content.raw, visibility: next, platform: item.source.platform, external_id: item.source.external_id }) });
+        setStatus('Visibility update requested');
+        loadItems(true);
+      }
+      window.toggleVisibility = toggleVisibility;
+
+      async function copyJson(id) {
+        const item = state.items.find((x) => x._id === id);
+        if (!item) return;
+        await navigator.clipboard.writeText(JSON.stringify(item, null, 2));
+        setStatus('Copied JSON');
+      }
+      window.copyJson = copyJson;
+
+      function viewDetails(id) {
+        const item = state.items.find((x) => x._id === id);
+        if (!item) return;
+        document.getElementById('detail').textContent = JSON.stringify(item, null, 2);
+        document.getElementById('modal').style.display = 'flex';
+      }
+      window.viewDetails = viewDetails;
+
+      async function retryHealth(id, rawEnc) {
+        const raw = decodeURIComponent(rawEnc);
+        await request('/sync', { method: 'POST', body: JSON.stringify({ item_id: id, raw }) });
+        setStatus('Health check retried');
+        loadHealth();
+      }
+      window.retryHealth = retryHealth;
 
       async function loadHealth() {
-        const data = await api('/health');
+        const data = await request('/health');
         document.getElementById('health').textContent = JSON.stringify(data, null, 2);
       }
 
-      document.getElementById('saveBtn').addEventListener('click', () => {
-        saveItem().catch((err) => (document.getElementById('status').textContent = err.message));
-      });
+      async function loadLogs() {
+        const data = await request('/logs');
+        document.getElementById('logs').textContent = JSON.stringify(data, null, 2);
+      }
 
-      document.getElementById('refreshBtn').addEventListener('click', () => {
-        loadFeed().catch((err) => (document.getElementById('status').textContent = err.message));
-      });
+      async function bulkDelete() {
+        for (const id of state.selected) {
+          await request('/items', { method: 'DELETE', body: JSON.stringify({ item_id: id }) });
+        }
+        setStatus('Deleted');
+        state.selected.clear();
+        loadItems(true);
+      }
 
-      document.getElementById('updateBtn').addEventListener('click', () => {
-        updateItem().catch((err) => (document.getElementById('status').textContent = err.message));
-      });
+      async function bulkRefresh() {
+        for (const id of state.selected) {
+          const item = state.items.find((x) => x._id === id);
+          if (!item) continue;
+          await request('/sync', { method: 'POST', body: JSON.stringify({ item_id: id, raw: item.content.raw }) });
+        }
+        setStatus('Updated');
+        loadItems(true);
+      }
 
-      document.getElementById('healthBtn').addEventListener('click', () => {
-        loadHealth().catch((err) => (document.getElementById('status').textContent = err.message));
+      document.querySelectorAll('.tabs button').forEach((btn) => btn.addEventListener('click', () => setTab(btn.dataset.tab)));
+      document.getElementById('loginBtn').addEventListener('click', () => login().catch((e) => setStatus(e.message, true)));
+      document.getElementById('signupBtn').addEventListener('click', () => signup().catch((e) => setStatus(e.message, true)));
+      document.getElementById('logoutBtn').addEventListener('click', logout);
+      document.getElementById('saveBtn').addEventListener('click', () => saveItem().catch((e) => setStatus(e.message, true)));
+      document.getElementById('clearBtn').addEventListener('click', clearForm);
+      document.getElementById('healthBtn').addEventListener('click', () => loadHealth().catch((e) => setStatus(e.message, true)));
+      document.getElementById('logsBtn').addEventListener('click', () => loadLogs().catch((e) => setStatus(e.message, true)));
+      document.getElementById('toggleSchema').addEventListener('click', () => {
+        const el = document.getElementById('schema');
+        el.classList.toggle('hidden');
+        el.textContent = JSON.stringify(schemaExample, null, 2);
       });
+      document.getElementById('bulkDeleteBtn').addEventListener('click', () => bulkDelete().catch((e) => setStatus(e.message, true)));
+      document.getElementById('bulkRefreshBtn').addEventListener('click', () => bulkRefresh().catch((e) => setStatus(e.message, true)));
+      document.getElementById('loadMoreBtn').addEventListener('click', () => {
+        if (!state.hasMore) return setStatus('No more items');
+        state.page += 1;
+        loadItems(false).catch((e) => setStatus(e.message, true));
+      });
+      document.getElementById('search').addEventListener('input', onSearchChanged);
+      ['filterType','filterSource','filterScope'].forEach((id) => document.getElementById(id).addEventListener('change', () => loadItems(true).catch((e) => setStatus(e.message, true))));
+      document.getElementById('debugMode').addEventListener('change', (e) => { state.debug = e.target.checked; });
+      document.getElementById('closeModal').addEventListener('click', () => (document.getElementById('modal').style.display = 'none'));
 
-      loadFeed().catch(() => {});
+      setInterval(() => {
+        if (state.token) loadItems(true).catch(() => {});
+      }, 15000);
+
+      mountAuth();
+      if (state.token) {
+        loadItems(true).catch((e) => setStatus(e.message, true));
+        loadHealth().catch(() => {});
+      }
     </script>
   </body>
 </html>
