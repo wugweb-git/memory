@@ -6,7 +6,7 @@ Minimal Node.js + Express server with MongoDB collections: `items` and `health_q
 
 ```env
 MONGO_URI=mongodb+srv://<user>:<pass>@<cluster>/<db>?retryWrites=true&w=majority
-PORT=5000
+PORT=3000
 ```
 
 ## Run
@@ -42,8 +42,3 @@ npm start
   "platform": "optional"
 }
 ```
-
-
-## Test page
-
-Open `test/index.html` in a browser and use Save/Load buttons against `http://localhost:5000`.
