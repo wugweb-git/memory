@@ -1,17 +1,11 @@
-# Memory System — Production-ready Phase 1
+# Memory System — Single Function API
 
-## What is included
+## Default admin credentials
 
-- Serverless API on Vercel
-- Auth (`/api/auth/*`) with hashed passwords (bcrypt)
-- Multi-user ownership + visibility controls
-- Ingestion (`/api/items`, `/api/sync`, `/api/email`)
-- File upload (`/api/upload`) + file metadata + delete endpoint (`/api/files/delete`)
-- Automation sources (`/api/sources`) + manual sync run (`/api/sync/run`)
-- Health endpoints (`/api/health`, `/api/health/system`)
-- Logs + admin stats (`/api/logs`, `/api/admin/stats`)
-- Backup endpoint (`/api/admin/backup`) + scripts (`scripts/backup.js`, `scripts/restore.js`)
-- Background job layer (`lib/jobs.js`)
+- Email: `admin@wugweb.com`
+- Password: `WugWeb123@`
+
+These can be overridden with `ADMIN_EMAIL` and `ADMIN_PASSWORD` environment variables.
 
 ## Environment variables
 
@@ -26,10 +20,19 @@ Optional:
 - `UPLOAD_DIR`
 - `JOB_SECRET`
 - `APP_VERSION`
+- `ADMIN_EMAIL`
+- `ADMIN_PASSWORD`
 
-See `.env.example`.
+## API routes (single Vercel function)
 
-## API compatibility
-
-- Routes are available under `/api/*`.
-- Also available with `/api/v1/*` alias via `vercel.json` route mapping.
+- `GET /api`
+- `GET /api/test`
+- `POST /api/auth/signup`
+- `POST /api/auth/login`
+- `GET /api/auth/me`
+- `POST /api/auth/logout`
+- `GET /api/items`
+- `POST /api/items`
+- `POST /api/sync`
+- `POST /api/email`
+- `GET /api/health`

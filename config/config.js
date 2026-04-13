@@ -19,7 +19,9 @@ export function loadConfig() {
     requestLimitBytes: Number(readEnv('REQUEST_LIMIT_BYTES', '1048576')),
     uploadDir: readEnv('UPLOAD_DIR', '/tmp/memory-uploads'),
     jobSecret: readEnv('JOB_SECRET', ''),
-    appVersion: readEnv('APP_VERSION', readEnv('VERCEL_GIT_COMMIT_SHA', 'dev'))
+    appVersion: readEnv('APP_VERSION', readEnv('VERCEL_GIT_COMMIT_SHA', 'dev')),
+    adminEmail: readEnv('ADMIN_EMAIL', 'admin@wugweb.com'),
+    adminPassword: readEnv('ADMIN_PASSWORD', 'WugWeb123@')
   };
 }
 

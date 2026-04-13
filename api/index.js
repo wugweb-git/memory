@@ -4,6 +4,7 @@ import { createItem, getItems } from '../lib/items.js';
 import { syncItem } from '../lib/sync.js';
 import { handleEmail } from '../lib/email.js';
 import { checkHealth } from '../lib/health.js';
+import { signup, login, me, logout } from '../lib/authRoutes.js';
 import { sendError, fail } from '../lib/errors.js';
 import { applyCors, enforcePayloadLimit, rateLimit } from '../middleware/requestGuards.js';
 import { writeLog } from '../lib/log.js';
@@ -38,12 +39,42 @@ export default async function handler(req, res) {
       return res.status(200).json({
         ok: true,
         version: config.appVersion,
-        endpoints: ['/api/test', '/api/items', '/api/sync', '/api/email', '/api/health']
+        endpoints: ['/api/test', '/api/auth/signup', '/api/auth/login', '/api/auth/me', '/api/auth/logout', '/api/items', '/api/sync', '/api/email', '/api/health']
       });
     }
 
     if (path === '/api/test' && req.method === 'GET') {
       return res.status(200).json({ status: 'working' });
+    }
+
+
+    if (path === '/api/auth/signup' && req.method === 'POST') {
+      await connectDB();
+      rateLimit(req, { key: 'auth-signup', limit: 60 });
+      enforcePayloadLimit(req);
+      const result = await signup(req);
+      return res.status(result.code).json(result.body);
+    }
+
+    if (path === '/api/auth/login' && req.method === 'POST') {
+      await connectDB();
+      rateLimit(req, { key: 'auth-login', limit: 120 });
+      enforcePayloadLimit(req);
+      const result = await login(req);
+      return res.status(result.code).json(result.body);
+    }
+
+    if (path === '/api/auth/me' && req.method === 'GET') {
+      await connectDB();
+      rateLimit(req, { key: 'auth-me', limit: 180 });
+      const result = await me(req);
+      return res.status(result.code).json(result.body);
+    }
+
+    if (path === '/api/auth/logout' && req.method === 'POST') {
+      rateLimit(req, { key: 'auth-logout', limit: 180 });
+      const result = await logout(req);
+      return res.status(result.code).json(result.body);
     }
 
     if (path === '/api/items' && req.method === 'GET') {
