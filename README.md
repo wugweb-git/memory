@@ -1,44 +1,66 @@
-# Minimal Memory Server
+# Memory System — Phase 1 (Ingestion Engine)
 
-Minimal Node.js + Express server with MongoDB collections: `items` and `health_queue`.
+A backend-first memory system that captures raw data (manual + synced), prevents duplication, tracks changes over time, and maintains source-linked memory.
 
-## Environment variables
+## Features (Phase 1 ONLY)
 
-```env
-MONGO_URI=mongodb+srv://<user>:<pass>@<cluster>/<db>?retryWrites=true&w=majority
-PORT=3000
-```
+- Manual input (`POST /items`)
+- External sync (`POST /sync`)
+- Deduplication (`URL` / `external_id`)
+- Versioning (history tracking)
+- Change detection (hash-based)
+- Link health tracking
+- Health queue (broken links)
 
-## Run
+## What is NOT included
+
+- No AI
+- No tagging
+- No embeddings
+- No identity layer
+
+## Tech Stack
+
+- Node.js (Express)
+- MongoDB (Mongoose)
+- REST API
+
+## API Endpoints
+
+- `POST /items` → create memory
+- `GET /items` → fetch memory
+- `POST /sync` → sync external data
+- `GET /health-queue` → broken links
+
+## Local Setup
 
 ```bash
 npm install
+cp .env.example .env
 npm start
 ```
 
-## API
+Environment variables:
 
-- `GET /health`
-- `POST /items`
-- `GET /items`
-- `POST /sync`
+- `MONGO_URI`
+- `PORT`
 
-### POST /items
+## Philosophy
 
-```json
-{
-  "raw": "string",
-  "external_id": "optional"
-}
-```
+"Capture everything. Interpret later."
 
-### POST /sync
+## Future (Phase 2)
 
-```json
-{
-  "raw": "string",
-  "url": "optional",
-  "external_id": "optional",
-  "platform": "optional"
-}
-```
+- signal extraction
+- pattern detection
+- identity formation
+
+## Repo Structure
+
+- `src/server.js` - Express bootstrap + MongoDB connection
+- `src/routes/items.js` - API routes
+- `src/controllers/itemController.js` - request handlers
+- `src/models/item.model.js` - Item schema
+- `src/models/healthQueue.model.js` - Health queue schema
+- `src/utils/linkHealth.js` - link status helper
+- `test/index.html` - minimal frontend UI

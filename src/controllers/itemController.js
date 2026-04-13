@@ -2,13 +2,17 @@ const Item = require('../models/item.model');
 const HealthQueue = require('../models/healthQueue.model');
 const { checkLinkHealth } = require('../utils/linkHealth');
 
+// Basic URL detection for raw input.
 function isUrl(raw) {
   return typeof raw === 'string' && /^https?:\/\//i.test(raw.trim());
 }
 
+// Keep version history internal for Phase 1 API responses.
 function hideVersionHistory(item) {
   const output = item.toObject ? item.toObject() : item;
-  delete output.versioning?.previous_versions;
+  if (output.versioning) {
+    delete output.versioning.previous_versions;
+  }
   return output;
 }
 
@@ -26,14 +30,16 @@ async function createItem(req, res) {
   if (external_id) filters.push({ 'source.external_id': external_id });
 
   try {
+    // Return existing item instead of creating duplicates.
     if (filters.length > 0) {
       const existing = await Item.findOne({ $or: filters });
       if (existing) {
-        return res.status(200).json(hideVersionHistory(existing));
+        return res.status(200).json({ status: 'exists', item: hideVersionHistory(existing) });
       }
     }
 
     const hash = Item.contentHash(raw);
+    const linkStatus = urlFromRaw ? await checkLinkHealth(urlFromRaw) : 'active';
 
     const item = await Item.create({
       content: {
@@ -50,7 +56,7 @@ async function createItem(req, res) {
         created_by: 'user'
       },
       sync: {
-        link_status: 'active',
+        link_status: linkStatus,
         has_changed: false,
         last_synced_at: new Date()
       },
@@ -60,7 +66,11 @@ async function createItem(req, res) {
       }
     });
 
-    return res.status(201).json(hideVersionHistory(item));
+    if (item.sync.link_status === 'broken') {
+      await HealthQueue.create({ item_id: item._id, issue_type: 'broken_link' });
+    }
+
+    return res.status(201).json({ status: 'saved', item: hideVersionHistory(item) });
   } catch (error) {
     if (error.code === 11000) {
       return res.status(409).json({ error: 'duplicate source url or external_id' });
@@ -181,4 +191,16 @@ async function listItems(req, res) {
   }
 }
 
-module.exports = { createItem, syncItem, listItems };
+async function listHealthQueue(req, res) {
+  try {
+    const issues = await HealthQueue.find({ status: 'pending' })
+      .sort({ detected_at: -1 })
+      .select('item_id issue_type status priority detected_at');
+
+    return res.status(200).json(issues);
+  } catch (error) {
+    return res.status(500).json({ error: 'failed to fetch health queue' });
+  }
+}
+
+module.exports = { createItem, syncItem, listItems, listHealthQueue };

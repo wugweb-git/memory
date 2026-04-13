@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const itemRoutes = require('./routes/items');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5000;
 
 app.use(express.json({ limit: '1mb' }));
 app.use(itemRoutes);
