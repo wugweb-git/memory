@@ -1,26 +1,19 @@
-# Memory System — Phase 1 (Ingestion Engine)
+# Vercel Serverless Adaptation
 
-Serverless memory ingestion system for Vercel using MongoDB + Mongoose.
+This project uses an Express app exported from `src/server.js` and wrapped by `api/index.js` for Vercel.
+
+## What was changed
+
+- `src/server.js` exports Express app (no `app.listen`)
+- `api/index.js` wraps exported app for serverless runtime
+- `vercel.json` routes all `/api/*` requests to `api/index.js`
+- Added `/api/test` route
 
 ## Endpoints
 
-- `GET /api` health index
-- `GET /api/items` latest 50 items
-- `POST /api/items` create manual item `{ raw }`
-- `POST /api/sync` sync external items
-- `POST /api/email` ingest email payload
-- `GET /api/health` list broken-link items
-
-## Vercel 404 Fix
-
-This repo includes:
-
-- `api/index.js` for `/api`
-- explicit route mapping in `vercel.json` for `/api/*`
-- root route `/` mapped to `test/index.html`
-
-## Environment
-
-```env
-MONGO_URI=your_mongo_string
-```
+- `GET /api/test`
+- `GET /api/items`
+- `POST /api/items`
+- `POST /api/sync`
+- `POST /api/email`
+- `GET /api/health`
