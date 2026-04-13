@@ -2,43 +2,25 @@
 
 Serverless memory ingestion system for Vercel using MongoDB + Mongoose.
 
-## Structure
-
-- `api/items.js`
-- `api/sync.js`
-- `api/email.js`
-- `api/health.js`
-- `lib/db.js`
-- `lib/hash.js`
-- `models/Item.js`
-- `models/Health.js`
-
 ## Endpoints
 
-- `GET /api/items` - latest 50 items (history hidden)
-- `POST /api/items` - manual ingestion (`{ raw }`)
-- `POST /api/sync` - external sync (`raw`, `url`, `external_id`, `platform`)
-- `POST /api/email` - email ingestion (`subject`, `body`, `from`)
-- `GET /api/health` - items with `sync.link_status = broken`
+- `GET /api` health index
+- `GET /api/items` latest 50 items
+- `POST /api/items` create manual item `{ raw }`
+- `POST /api/sync` sync external items
+- `POST /api/email` ingest email payload
+- `GET /api/health` list broken-link items
+
+## Vercel 404 Fix
+
+This repo includes:
+
+- `api/index.js` for `/api`
+- explicit route mapping in `vercel.json` for `/api/*`
+- root route `/` mapped to `test/index.html`
 
 ## Environment
 
-Create `.env`:
-
 ```env
 MONGO_URI=your_mongo_string
-```
-
-## Vercel config
-
-`vercel.json`
-
-```json
-{
-  "functions": {
-    "api/*.js": {
-      "maxDuration": 10
-    }
-  }
-}
 ```
