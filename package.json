@@ -1,11 +1,11 @@
 {
   "name": "memory-system-phase1",
   "version": "1.0.0",
-  "description": "Memory System — Phase 1 ingestion engine",
-  "main": "src/server.js",
+  "description": "Memory System Phase 1 serverless ingestion engine",
+  "main": "api/items.js",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "start": "echo 'Serverless project: deploy on Vercel or run vercel dev'",
+    "dev": "echo 'Use: vercel dev'"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

@@ -1,73 +1,26 @@
 <!doctype html>
 <html>
   <body>
-    <h3>Input</h3>
     <textarea id="input" placeholder="Paste anything..."></textarea>
     <button onclick="save()">Save</button>
-    <p id="status"></p>
-
-    <h3>Memory Feed</h3>
-    <pre id="feed"></pre>
-
-    <h3>Health Queue</h3>
-    <pre id="health"></pre>
+    <button onclick="loadItems()">Load</button>
+    <pre id="out"></pre>
 
     <script>
       async function save() {
-        const raw = document.getElementById("input").value;
-
-        const res = await fetch("http://localhost:5000/items", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+        const raw = document.getElementById('input').value;
+        const res = await fetch('/api/items', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ raw })
         });
-
-        const data = await res.json();
-        const statusEl = document.getElementById("status");
-
-        if (data.status === "exists") {
-          statusEl.innerText = "Already exists";
-        } else if (data.status === "saved") {
-          statusEl.innerText = "Saved";
-        } else {
-          statusEl.innerText = "Saved";
-        }
-
-        await loadFeed();
-        await loadHealthQueue();
+        document.getElementById('out').innerText = JSON.stringify(await res.json(), null, 2);
       }
 
-      async function loadFeed() {
-        const res = await fetch("http://localhost:5000/items");
-        const data = await res.json();
-
-        const lines = data.map((item) => {
-          return [
-            `raw: ${item.content.raw}`,
-            `type: ${item.content.type}`,
-            `created_at: ${item.origin.created_at}`
-          ].join("\n");
-        });
-
-        document.getElementById("feed").innerText = lines.join("\n\n");
+      async function loadItems() {
+        const res = await fetch('/api/items');
+        document.getElementById('out').innerText = JSON.stringify(await res.json(), null, 2);
       }
-
-      async function loadHealthQueue() {
-        const res = await fetch("http://localhost:5000/health-queue");
-        const data = await res.json();
-
-        const lines = data.map((issue) => {
-          return [
-            `item_id: ${issue.item_id}`,
-            `issue_type: ${issue.issue_type}`
-          ].join("\n");
-        });
-
-        document.getElementById("health").innerText = lines.join("\n\n");
-      }
-
-      loadFeed();
-      loadHealthQueue();
     </script>
   </body>
 </html>
