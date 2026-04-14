@@ -1,7 +1,7 @@
 {
-  "name": "identity-prism-os",
+  "name": "identity-prism",
   "version": "1.0.0",
-  "description": "Unified Identity Prism: RAG Intelligence + Memory Archival",
+  "description": "Unified Identity Prism OS: RAG Intelligence + Digital Twin Memory",
   "type": "module",
 
   "main": "api/index.js",
