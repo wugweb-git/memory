@@ -82,7 +82,7 @@ export default function IdentityPrismWorkspace() {
     }
   });
 
-  const sendQuery = (e: React.FormEvent) => {
+  const sendQuery = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!input.trim()) {
         toast.warning('Input required: Vector space is empty.');
