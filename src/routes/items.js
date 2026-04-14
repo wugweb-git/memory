@@ -1,10 +1,10 @@
-const express = require('express');
-const {
+import express from 'express';
+import {
   createItem,
   syncItem,
   listItems,
   listHealthQueue
-} = require('../controllers/itemController');
+} from '../controllers/itemController.js';
 
 const router = express.Router();
 
@@ -13,4 +13,4 @@ router.get('/items', listItems);
 router.post('/sync', syncItem);
 router.get('/health-queue', listHealthQueue);
 
-module.exports = router;
+export default router;

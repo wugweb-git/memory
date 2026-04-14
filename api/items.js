@@ -1,7 +1,7 @@
-const { connectDB } = require('../lib/db');
-const { hashRaw } = require('../lib/hash');
-const Item = require('../models/Item');
-const Health = require('../models/Health');
+import { connectDB } from '../lib/db.js';
+import { hashRaw } from '../lib/hash.js';
+import Item from '../models/Item.js';
+import Health from '../models/Health.js';
 
 function asJson(body) {
   if (!body) return {};
@@ -36,7 +36,7 @@ function stripHistory(item) {
   return out;
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   await connectDB();
 
   if (req.method === 'GET') {

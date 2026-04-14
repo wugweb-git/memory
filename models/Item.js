@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const previousVersionSchema = new mongoose.Schema(
   {
@@ -47,4 +47,4 @@ const itemSchema = new mongoose.Schema(
 itemSchema.index({ 'source.url': 1 }, { unique: true, sparse: true });
 itemSchema.index({ 'source.external_id': 1 }, { unique: true, sparse: true });
 
-module.exports = mongoose.models.Item || mongoose.model('Item', itemSchema);
+export default mongoose.models.Item || mongoose.model('Item', itemSchema);

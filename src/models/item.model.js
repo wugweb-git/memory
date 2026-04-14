@@ -1,5 +1,5 @@
-const mongoose = require('mongoose');
-const crypto = require('crypto');
+import mongoose from 'mongoose';
+import crypto from 'crypto';
 
 function contentHash(value) {
   return crypto.createHash('sha256').update(value || '').digest('hex');
@@ -78,4 +78,4 @@ itemSchema.index(
 
 itemSchema.statics.contentHash = contentHash;
 
-module.exports = mongoose.model('Item', itemSchema);
+export default mongoose.models.Item || mongoose.model('Item', itemSchema);

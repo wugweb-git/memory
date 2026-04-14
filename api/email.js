@@ -1,6 +1,6 @@
-const { connectDB } = require('../lib/db');
-const { hashRaw } = require('../lib/hash');
-const Item = require('../models/Item');
+import { connectDB } from '../lib/db.js';
+import { hashRaw } from '../lib/hash.js';
+import Item from '../models/Item.js';
 
 function asJson(body) {
   if (!body) return {};
@@ -14,7 +14,7 @@ function asJson(body) {
   return body;
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   await connectDB();
 
   if (req.method !== 'POST') {

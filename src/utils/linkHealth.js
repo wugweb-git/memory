@@ -11,4 +11,4 @@ async function checkLinkHealth(url) {
   }
 }
 
-module.exports = { checkLinkHealth };
+export { checkLinkHealth };

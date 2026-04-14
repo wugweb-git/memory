@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const healthQueueSchema = new mongoose.Schema(
   {
@@ -36,4 +36,4 @@ const healthQueueSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model('HealthQueue', healthQueueSchema);
+export default mongoose.models.HealthQueue || mongoose.model('HealthQueue', healthQueueSchema);

@@ -1,7 +1,7 @@
-const { connectDB } = require('../lib/db');
-const Item = require('../models/Item');
+import { connectDB } from '../lib/db.js';
+import Item from '../models/Item.js';
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   await connectDB();
 
   if (req.method !== 'GET') {

@@ -1,6 +1,6 @@
-const Item = require('../models/item.model');
-const HealthQueue = require('../models/healthQueue.model');
-const { checkLinkHealth } = require('../utils/linkHealth');
+import Item from '../models/item.model.js';
+import HealthQueue from '../models/healthQueue.model.js';
+import { checkLinkHealth } from '../utils/linkHealth.js';
 
 // Basic URL detection for raw input.
 function isUrl(raw) {
@@ -203,4 +203,4 @@ async function listHealthQueue(req, res) {
   }
 }
 
-module.exports = { createItem, syncItem, listItems, listHealthQueue };
+export { createItem, syncItem, listItems, listHealthQueue };
