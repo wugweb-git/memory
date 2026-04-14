@@ -170,9 +170,28 @@
 
     <script>
       const API = '/api';
+      const USE_MOCK_FLOW = true;
+
+      const mockUser = { id: 'mock-user-1', email: 'demo@memory.local', role: 'admin' };
+      const mockDb = {
+        items: [
+          {
+            _id: 'itm_1',
+            content: { raw: 'Welcome memory item', type: 'text' },
+            source: { type: 'manual', platform: 'ui', url: '', external_id: '' },
+            owner: { user_id: 'mock-user-1', email: 'demo@memory.local' },
+            visibility: 'private',
+            origin: { created_at: new Date().toISOString(), created_by: 'user' },
+            sync: { last_synced_at: new Date().toISOString(), has_changed: false, link_status: 'active', error_reason: '' },
+            versioning: { current_hash: 'mockhash1', previous_versions: [] }
+          }
+        ],
+        logs: [{ at: new Date().toISOString(), level: 'info', message: 'Mock mode enabled' }],
+        sources: []
+      };
       const state = {
-        token: localStorage.getItem('access_token') || '',
-        user: JSON.parse(localStorage.getItem('user') || 'null'),
+        token: USE_MOCK_FLOW ? 'mock-token' : (localStorage.getItem('access_token') || ''),
+        user: USE_MOCK_FLOW ? mockUser : JSON.parse(localStorage.getItem('user') || 'null'),
         tab: 'text',
         items: [],
         page: 1,
@@ -228,11 +247,101 @@
         setStatus('Refreshed');
       }
 
+
+      function nextMockId(prefix = 'itm') {
+        return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2, 7)}`;
+      }
+
+      async function mockRequest(path, options = {}) {
+        const method = (options.method || 'GET').toUpperCase();
+        const [pathname, qs] = path.split('?');
+        const body = options.body ? JSON.parse(options.body) : {};
+
+        if (pathname === '/test-db') return { status: 'db_connected' };
+        if (pathname === '/auth/me') return mockUser;
+        if (pathname === '/auth/login' || pathname === '/auth/signup') {
+          return { user: mockUser, access_token: 'mock-token', refresh_token: 'mock-refresh' };
+        }
+        if (pathname === '/auth/logout') return { ok: true };
+
+        if (pathname === '/items' && method === 'GET') {
+          const params = new URLSearchParams(qs || '');
+          const q = (params.get('q') || '').toLowerCase();
+          const items = mockDb.items.filter((x) => !q || (x.content?.raw || '').toLowerCase().includes(q));
+          return { items, total: items.length, page: 1, limit: 50, has_more: false };
+        }
+
+        if (pathname === '/items' && method === 'POST') {
+          const item = {
+            _id: nextMockId(),
+            content: { raw: body.raw || '', type: /^https?:\/\//i.test(body.raw || '') ? 'link' : 'text' },
+            source: { type: 'manual', platform: body.platform || '', url: /^https?:\/\//i.test(body.raw || '') ? body.raw : '', external_id: body.external_id || '' },
+            owner: { user_id: mockUser.id, email: mockUser.email },
+            visibility: body.visibility || 'private',
+            origin: { created_at: new Date().toISOString(), created_by: 'user' },
+            sync: { last_synced_at: new Date().toISOString(), has_changed: false, link_status: 'active', error_reason: '' },
+            versioning: { current_hash: nextMockId('hash'), previous_versions: [] }
+          };
+          mockDb.items.unshift(item);
+          return { status: 'saved', item };
+        }
+
+        if (pathname === '/items' && method === 'DELETE') {
+          mockDb.items = mockDb.items.filter((x) => x._id !== body.item_id);
+          return { status: 'deleted' };
+        }
+
+        if (pathname === '/sync' && method === 'POST') {
+          const item = mockDb.items.find((x) => x._id === body.item_id);
+          if (item) {
+            item.versioning.previous_versions.push({ raw: item.content.raw, timestamp: new Date().toISOString() });
+            item.content.raw = body.raw || item.content.raw;
+            item.sync.last_synced_at = new Date().toISOString();
+            item.sync.has_changed = true;
+          }
+          return { status: 'updated', item };
+        }
+
+        if (pathname === '/email' && method === 'POST') {
+          const raw = `${body.subject || ''}
+${body.body || ''}`.trim();
+          const item = {
+            _id: nextMockId(),
+            content: { raw, type: 'text' },
+            source: { type: 'email', platform: 'email' },
+            owner: { user_id: mockUser.id, email: mockUser.email },
+            visibility: 'private',
+            origin: { created_at: new Date().toISOString(), created_by: 'system' },
+            sync: { last_synced_at: new Date().toISOString(), has_changed: false, link_status: 'active', error_reason: '' },
+            versioning: { current_hash: nextMockId('hash'), previous_versions: [] }
+          };
+          mockDb.items.unshift(item);
+          return { status: 'saved', item };
+        }
+
+        if (pathname === '/health') {
+          return { items: mockDb.items.filter((x) => x.sync?.link_status === 'broken') };
+        }
+
+        if (pathname === '/logs') return { logs: mockDb.logs };
+        if (pathname === '/sources' && method === 'GET') return mockDb.sources;
+        if (pathname === '/sources' && method === 'POST') {
+          const row = { id: nextMockId('src'), ...body, last_synced_at: new Date().toISOString() };
+          mockDb.sources.push(row);
+          return { status: 'saved', source: row };
+        }
+        if (pathname === '/sync/run') return { last_global_sync: new Date().toISOString() };
+
+        throw new Error(`Mock route not implemented: ${method} ${pathname}`);
+      }
+
       function authHeaders() {
         return state.token ? { Authorization: `Bearer ${state.token}` } : {};
       }
 
       async function request(path, options = {}) {
+        if (USE_MOCK_FLOW) return mockRequest(path, options);
+
         const payload = {
           ...options,
           headers: {
@@ -255,7 +364,7 @@
       }
 
       function mountAuth() {
-        const loggedIn = Boolean(state.token && state.user);
+        const loggedIn = USE_MOCK_FLOW ? true : Boolean(state.token && state.user);
         document.getElementById('authCard').classList.toggle('hidden', loggedIn);
         document.getElementById('app').classList.toggle('hidden', !loggedIn);
         document.getElementById('logoutBtn').classList.toggle('hidden', !loggedIn);
@@ -587,16 +696,23 @@ ${uploaded.dataUrl}` : payload.body.raw;
       }, 15000);
 
       mountAuth();
-      checkDatabaseConnection().catch((e) => {
-        setDbAvailability(false);
-        setStatus(e.message, true);
-      });
-      resumeSession().then((ok) => {
-        if (ok) {
-          loadItems(true).catch((e) => setStatus(e.message, true));
-          loadHealth().catch(() => {});
-        }
-      });
+      if (USE_MOCK_FLOW) {
+        setDbAvailability(true);
+        setStatus('Mock mode active: login disabled, demo data loaded');
+        loadItems(true).catch((e) => setStatus(e.message, true));
+        loadHealth().catch(() => {});
+      } else {
+        checkDatabaseConnection().catch((e) => {
+          setDbAvailability(false);
+          setStatus(e.message, true);
+        });
+        resumeSession().then((ok) => {
+          if (ok) {
+            loadItems(true).catch((e) => setStatus(e.message, true));
+            loadHealth().catch(() => {});
+          }
+        });
+      }
     </script>
   </body>
 </html>
