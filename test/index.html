@@ -41,7 +41,6 @@
       </div>
 
       <div>
-        <button onclick="bulkDelete()">Bulk Delete</button>
         <button onclick="bulkUpdatePrompt()">Bulk Update</button>
       </div>
     </div>
@@ -136,7 +135,6 @@
             <div><strong>${(item.content?.raw || '').slice(0, 200)}</strong></div>
             <div class="muted">type: ${item.content?.type || ''} | source: ${item.source?.platform || item.source?.type || ''} | created_at: ${item.origin?.created_at || ''}</div>
             <button onclick="updateItem('${item._id}')">Update</button>
-            <button onclick="deleteItem('${item._id}')">Delete</button>
             <button onclick="viewDetails('${item._id}')">View Details</button>
           </div>
         `).join('');
@@ -162,34 +160,6 @@
           await loadHealth();
         } catch (e) {
           setStatus(e.message || 'Error occurred', true);
-        }
-      }
-
-      async function deleteItem(id) {
-        if (!confirm('Delete this item?')) return;
-
-        try {
-          await api('/api/items', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ item_id: id })
-          });
-          setStatus('Deleted');
-          selected.delete(id);
-          items = items.filter((x) => x._id !== id);
-          renderItems();
-        } catch (e) {
-          // fallback UI-only removal if backend not available
-          items = items.filter((x) => x._id !== id);
-          renderItems();
-          setStatus('Deleted');
-        }
-      }
-
-      async function bulkDelete() {
-        const ids = Array.from(selected);
-        for (const id of ids) {
-          await deleteItem(id);
         }
       }
 

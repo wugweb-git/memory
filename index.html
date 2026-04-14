@@ -1,0 +1,666 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Memory System</title>
+    <style>
+      :root {
+        --bg: #f5f7fb;
+        --card: #ffffff;
+        --border: #e5e7eb;
+        --text: #0f172a;
+        --muted: #64748b;
+        --primary: #2563eb;
+        --danger: #b91c1c;
+        --ok: #047857;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        color: var(--text);
+        background: var(--bg);
+      }
+      .container {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        background: rgba(245, 247, 251, 0.95);
+        backdrop-filter: blur(4px);
+        border-bottom: 1px solid var(--border);
+      }
+      .topbar-inner {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+        padding: 12px 16px;
+      }
+      .chip {
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 4px 10px;
+        font-size: 12px;
+        color: var(--muted);
+        background: #fff;
+      }
+      .panel {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px;
+        margin-bottom: 12px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 12px;
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: 1.8fr 1fr;
+        gap: 12px;
+      }
+      .row { display: flex; gap: 8px; flex-wrap: wrap; }
+      .row > * { flex: 1; min-width: 160px; }
+      textarea, input, select, button {
+        width: 100%;
+        font: inherit;
+      }
+      textarea, input, select {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px;
+        background: #fff;
+      }
+      button {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: #fff;
+        padding: 10px;
+        cursor: pointer;
+      }
+      button.primary {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+      }
+      button.danger {
+        color: var(--danger);
+        border-color: #fecaca;
+        background: #fff1f2;
+      }
+      .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+      .tabs button.active { background: #dbeafe; border-color: #93c5fd; color: #1d4ed8; }
+      .muted { color: var(--muted); font-size: 13px; }
+      .status { min-height: 20px; font-weight: 600; }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        border: 0;
+      }
+      .feed-card {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 12px;
+        margin-bottom: 10px;
+        background: #fff;
+      }
+      .feed-title { font-weight: 600; margin-bottom: 6px; }
+      .meta { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+      .hidden { display: none !important; }
+      pre {
+        background: #0b1220;
+        color: #e2e8f0;
+        border-radius: 8px;
+        padding: 10px;
+        max-height: 260px;
+        overflow: auto;
+      }
+      #modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+      }
+      #modal .panel { width: min(760px, 100%); max-height: 90vh; overflow: auto; }
+      @media (max-width: 900px) {
+        .layout, .grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <div class="topbar-inner" role="banner">
+        <strong>Memory System</strong>
+        <span class="chip" id="syncState">Idle</span>
+        <span class="chip" id="userInfo">Guest</span>
+        <div style="flex:1"></div>
+        <button id="refreshTopBtn" class="hidden" aria-label="Refresh memory data">Refresh</button>
+        <button id="dbCheckBtn" aria-label="Check storage status">Storage Check</button>
+        <button id="logoutBtn" class="hidden" aria-label="Logout from memory system">Logout</button>
+      </div>
+    </div>
+
+    <div class="container">
+      <div id="statusBar" class="status" role="status" aria-live="polite"></div>
+
+      <div id="authCard" class="panel" role="region" aria-labelledby="authHeading">
+        <h3 id="authHeading">Login / Signup</h3>
+        <div class="grid">
+          <div>
+            <label for="authEmail">Email</label>
+            <input id="authEmail" type="email" placeholder="Email" autocomplete="email" />
+          </div>
+          <div>
+            <label for="authPassword">Password</label>
+            <input id="authPassword" type="password" placeholder="Password" autocomplete="current-password" />
+          </div>
+        </div>
+        <label style="display:flex;gap:8px;align-items:center;margin-top:8px">
+          <input id="rememberMe" type="checkbox" />
+          <span class="muted">Remember me on this device</span>
+        </label>
+        <div class="row" style="margin-top:8px">
+          <button id="loginBtn" class="primary" aria-label="Login">Login</button>
+          <button id="signupBtn" aria-label="Signup">Signup</button>
+        </div>
+      </div>
+
+      <div id="app" class="hidden" role="main" aria-label="Memory application">
+        <div class="layout">
+          <div>
+            <div class="panel" role="region" aria-labelledby="captureHeading">
+              <h3 id="captureHeading">Capture Memory</h3>
+              <div class="tabs" role="tablist" aria-label="Input type tabs">
+                <button data-tab="text" class="active" role="tab" aria-selected="true">Text</button>
+                <button data-tab="link" role="tab" aria-selected="false">Link</button>
+                <button data-tab="file" role="tab" aria-selected="false">File</button>
+                <button data-tab="email" role="tab" aria-selected="false">Email</button>
+                <button data-tab="json" role="tab" aria-selected="false">Raw JSON</button>
+              </div>
+
+              <div id="tab-text" class="tab-panel" role="tabpanel"><textarea id="textRaw" rows="5" placeholder="Paste anything..." aria-label="Text memory input"></textarea></div>
+              <div id="tab-link" class="tab-panel hidden" role="tabpanel"><input id="linkRaw" placeholder="https://..." aria-label="Link memory input" /></div>
+              <div id="tab-file" class="tab-panel hidden" role="tabpanel">
+                <input id="fileRaw" placeholder="File description" aria-label="File description" />
+                <input id="filePicker" type="file" style="margin-top:8px" aria-label="Choose file" />
+                <progress id="uploadProgress" value="0" max="100" style="width:100%; margin-top:8px"></progress>
+                <div class="muted" id="filePreview"></div>
+              </div>
+              <div id="tab-email" class="tab-panel hidden" role="tabpanel">
+                <input id="emailSubject" placeholder="Subject" aria-label="Email subject" />
+                <textarea id="emailBody" rows="4" placeholder="Body" style="margin-top:8px" aria-label="Email body"></textarea>
+                <input id="emailFrom" placeholder="from@example.com" style="margin-top:8px" aria-label="Email from address" />
+              </div>
+              <div id="tab-json" class="tab-panel hidden" role="tabpanel"><textarea id="jsonRaw" rows="7" placeholder='{"raw":"..."}' aria-label="Raw JSON payload"></textarea></div>
+
+              <div class="row" style="margin-top:8px">
+                <input id="platform" placeholder="source.platform (optional)" aria-label="Source platform" />
+                <input id="externalId" placeholder="external_id (optional)" aria-label="External id" />
+                <select id="visibility" aria-label="Visibility">
+                  <option value="private">Private</option>
+                  <option value="public">Public</option>
+                </select>
+              </div>
+              <div class="row" style="margin-top:8px">
+                <button id="saveBtn" class="primary">Save</button>
+                <button id="clearBtn">Clear</button>
+              </div>
+            </div>
+
+            <div class="panel" role="region" aria-labelledby="feedHeading">
+              <h3 id="feedHeading">Memory Feed</h3>
+              <div class="row">
+                <input id="search" placeholder="Search memory" aria-label="Search memory" />
+                <select id="filterType" aria-label="Filter by type">
+                  <option value="">All types</option><option>text</option><option>link</option><option>file</option><option>email</option>
+                </select>
+                <select id="filterSource" aria-label="Filter by source">
+                  <option value="">All sources</option><option>manual</option><option>api</option><option>email</option><option>rss</option><option>spirit_note</option><option>telemetry_event</option>
+                </select>
+                <select id="filterScope" aria-label="Filter by visibility scope"><option value="mine">My data</option><option value="public">Public</option><option value="all">All (admin)</option></select>
+              </div>
+              <div class="row" style="margin-top:8px">
+                <button id="bulkDeleteBtn" class="danger">Bulk Delete</button>
+                <button id="bulkRefreshBtn">Bulk Refresh</button>
+                <button id="loadMoreBtn">Load More</button>
+                <span id="loading" class="muted"></span>
+              </div>
+              <div id="feed" style="margin-top:10px" role="list" aria-live="polite"></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="panel">
+              <h3>Automation</h3>
+              <input id="rssInput" placeholder="RSS/connector URL" aria-label="RSS or connector URL" />
+              <div class="row" style="margin-top:8px"><button id="connectSourceBtn">Connect Source</button><button id="runSyncBtn">Run Sync</button></div>
+              <pre id="automationState"></pre>
+            </div>
+            <div class="panel"><h3>Health</h3><button id="healthBtn">Refresh Health</button><pre id="health"></pre></div>
+            <div class="panel"><h3>Logs</h3><label class="muted"><input type="checkbox" id="debugMode" /> Debug</label><button id="logsBtn">Refresh Logs</button><pre id="logs"></pre></div>
+            <div class="panel"><h3>Schema</h3><button id="toggleSchema">View Schema</button><pre id="schema" class="hidden"></pre></div>
+            <div class="panel"><h3>Avatar Upload (Blob)</h3><input id="avatarFile" type="file" accept="image/jpeg,image/png,image/webp" aria-label="Avatar file" /><button id="avatarUploadBtn">Upload Avatar</button><div id="avatarResult" class="muted"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal" role="dialog" aria-modal="true" aria-label="Item details modal">
+      <div class="panel">
+        <h3>Item Details</h3>
+        <pre id="detail"></pre>
+        <button id="closeModal">Close</button>
+      </div>
+    </div>
+
+    <script>
+      const API = '/api';
+      const persistentToken = localStorage.getItem('access_token');
+      const sessionToken = sessionStorage.getItem('access_token');
+      const persistentUser = localStorage.getItem('user');
+      const sessionUser = sessionStorage.getItem('user');
+      const state = {
+        token: persistentToken || sessionToken || '',
+        user: JSON.parse(persistentUser || sessionUser || 'null'),
+        rememberMe: Boolean(persistentToken),
+        tab: 'text',
+        page: 1,
+        limit: 20,
+        hasMore: false,
+        items: [],
+        selected: new Set(),
+        debug: false
+      };
+
+      const schemaExample = {
+        content: { raw: 'text', type: 'text|link|file|email' },
+        source: { type: 'manual|api|email|rss|spirit_note|telemetry_event', origin: 'manual|platform', platform: 'string', url: 'optional', external_id: 'optional' },
+        external_metadata: { raw_payload: {} },
+        analysis: { taxonomy_tags: [], complexity_score: null, embedding: null, citation_id: '' },
+        versioning: { current_hash: 'sha256', previous_versions: [{ raw: 'old', timestamp: 'ISO' }] }
+      };
+
+      const safe = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+      const isUrl = (v) => /^https?:\/\//i.test(String(v || '').trim());
+
+      function setStatus(msg, err = false) { const el = document.getElementById('statusBar'); el.textContent = msg; el.style.color = err ? 'var(--danger)' : 'var(--ok)'; }
+      function setSync(msg) { document.getElementById('syncState').textContent = msg; }
+      function authHeaders() { return state.token ? { Authorization: `Bearer ${state.token}` } : {}; }
+      function setAuthBusy(busy) {
+        document.getElementById('loginBtn').disabled = busy;
+        document.getElementById('signupBtn').disabled = busy;
+      }
+      function setAppBusy(busy) {
+        document.getElementById('app').setAttribute('aria-busy', busy ? 'true' : 'false');
+        document.getElementById('saveBtn').disabled = busy;
+        document.getElementById('bulkDeleteBtn').disabled = busy;
+        document.getElementById('bulkRefreshBtn').disabled = busy;
+      }
+
+      async function request(path, options = {}) {
+        const res = await fetch(`${API}${path}`, { ...options, headers: { 'Content-Type': 'application/json', ...authHeaders(), ...(options.headers || {}) } });
+        const data = await res.json().catch(() => ({}));
+        if (state.debug) {
+          const log = document.getElementById('logs');
+          log.textContent = `[${new Date().toISOString()}] ${path}\n${JSON.stringify(data, null, 2)}\n\n${log.textContent}`;
+        }
+        if (!res.ok) throw new Error(data.message || data.error || 'Request failed');
+        return data;
+      }
+
+      function mountAuth() {
+        const logged = Boolean(state.token && state.user);
+        document.getElementById('authCard').classList.toggle('hidden', logged);
+        document.getElementById('app').classList.toggle('hidden', !logged);
+        document.getElementById('logoutBtn').classList.toggle('hidden', !logged);
+        document.getElementById('refreshTopBtn').classList.toggle('hidden', !logged);
+        document.getElementById('userInfo').textContent = logged ? `${state.user.email} (${state.user.role})` : 'Guest';
+      }
+
+      async function signup() {
+        setAuthBusy(true);
+        try {
+          const email = document.getElementById('authEmail').value.trim();
+          const password = document.getElementById('authPassword').value;
+          const data = await request('/auth/signup', { method: 'POST', body: JSON.stringify({ email, password }) });
+          applySession(data);
+          setStatus('Signed up');
+        } finally {
+          setAuthBusy(false);
+        }
+      }
+
+      async function login() {
+        setAuthBusy(true);
+        try {
+          const email = document.getElementById('authEmail').value.trim();
+          const password = document.getElementById('authPassword').value;
+          const data = await request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+          applySession(data);
+          setStatus('Logged in');
+        } finally {
+          setAuthBusy(false);
+        }
+      }
+
+      async function logout() {
+        try { await request('/auth/logout', { method: 'POST' }); } catch {}
+        localStorage.removeItem('access_token'); localStorage.removeItem('refresh_token'); localStorage.removeItem('user');
+        sessionStorage.removeItem('access_token'); sessionStorage.removeItem('refresh_token'); sessionStorage.removeItem('user');
+        state.token = '';
+        state.user = null;
+        state.items = [];
+        renderFeed();
+        mountAuth();
+        setStatus('Logged out');
+      }
+
+      function applySession(data) {
+        state.token = data.access_token || data.accessToken || '';
+        state.user = data.user;
+        state.rememberMe = document.getElementById('rememberMe').checked || state.rememberMe;
+        const storage = state.rememberMe ? localStorage : sessionStorage;
+        const other = state.rememberMe ? sessionStorage : localStorage;
+        other.removeItem('access_token'); other.removeItem('refresh_token'); other.removeItem('user');
+        storage.setItem('access_token', state.token);
+        storage.setItem('refresh_token', data.refresh_token || data.refreshToken || '');
+        storage.setItem('user', JSON.stringify(data.user));
+        mountAuth();
+        loadItems(true);
+        loadHealth();
+      }
+
+      async function resumeSession() {
+        if (!state.token) return;
+        try {
+          const me = await request('/auth/me');
+          state.user = me;
+          const storage = state.rememberMe ? localStorage : sessionStorage;
+          storage.setItem('user', JSON.stringify(me));
+          mountAuth();
+          await Promise.all([loadItems(true), loadHealth(), loadLogs()]);
+          setStatus('Session restored');
+        } catch {
+          await logout();
+        }
+      }
+
+      function setTab(tab) {
+        state.tab = tab;
+        document.querySelectorAll('.tabs button').forEach((b) => {
+          const active = b.dataset.tab === tab;
+          b.classList.toggle('active', active);
+          b.setAttribute('aria-selected', String(active));
+        });
+        document.querySelectorAll('.tab-panel').forEach((p) => p.classList.add('hidden'));
+        document.getElementById(`tab-${tab}`).classList.remove('hidden');
+      }
+
+      async function uploadSelectedFile() {
+        const file = document.getElementById('filePicker').files?.[0];
+        if (!file) return null;
+        document.getElementById('uploadProgress').value = 30;
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result || ''));
+          reader.onerror = () => reject(new Error('failed to read file'));
+          reader.readAsDataURL(file);
+        });
+        document.getElementById('uploadProgress').value = 100;
+        document.getElementById('filePreview').textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
+        return { file, dataUrl };
+      }
+
+      function getSavePayload() {
+        const platform = document.getElementById('platform').value.trim();
+        const external_id = document.getElementById('externalId').value.trim();
+        const visibility = document.getElementById('visibility').value;
+
+        if (state.tab === 'text') return { mode: 'items', body: { raw: document.getElementById('textRaw').value.trim(), platform, external_id, visibility } };
+        if (state.tab === 'link') return { mode: 'items', body: { raw: document.getElementById('linkRaw').value.trim(), platform, external_id, visibility } };
+        if (state.tab === 'file') return { mode: 'file', body: { raw: document.getElementById('fileRaw').value.trim(), platform, external_id, visibility } };
+        if (state.tab === 'email') return { mode: 'email', body: { subject: document.getElementById('emailSubject').value.trim(), body: document.getElementById('emailBody').value.trim(), from: document.getElementById('emailFrom').value.trim(), platform: platform || 'email' } };
+        const parsed = JSON.parse(document.getElementById('jsonRaw').value.trim() || '{}');
+        return { mode: parsed.subject || parsed.body ? 'email' : (parsed.item_id ? 'sync' : 'items'), body: parsed };
+      }
+
+      async function saveItem() {
+        const payload = getSavePayload();
+        if (!JSON.stringify(payload.body).trim() || JSON.stringify(payload.body).includes('"raw":""')) throw new Error('Please add valid input');
+
+        setSync('Syncing...');
+        setAppBusy(true);
+        try {
+          let data;
+          if (payload.mode === 'email') data = await request('/email', { method: 'POST', body: JSON.stringify(payload.body) });
+          else if (payload.mode === 'sync') data = await request('/sync', { method: 'POST', body: JSON.stringify(payload.body) });
+          else if (payload.mode === 'file') {
+            const uploaded = await uploadSelectedFile();
+            const raw = uploaded ? `${uploaded.file.name}\n${uploaded.dataUrl}` : payload.body.raw;
+            data = await request('/items', { method: 'POST', body: JSON.stringify({ raw, platform: payload.body.platform, external_id: payload.body.external_id, visibility: payload.body.visibility, source_type: 'blob_asset' }) });
+          } else data = await request('/items', { method: 'POST', body: JSON.stringify(payload.body) });
+
+          setStatus(data.status === 'exists' ? 'Duplicate detected' : 'Saved');
+          clearForm();
+          await loadItems(true);
+          setSync('Up to date');
+        } finally {
+          setAppBusy(false);
+        }
+      }
+
+      function clearForm() {
+        ['textRaw','linkRaw','fileRaw','emailSubject','emailBody','emailFrom','jsonRaw','platform','externalId'].forEach((id) => { const el = document.getElementById(id); if (el) el.value = ''; });
+        document.getElementById('uploadProgress').value = 0;
+        document.getElementById('filePreview').textContent = '';
+      }
+
+      function queryParams() {
+        const params = new URLSearchParams({ page: String(state.page), limit: String(state.limit), scope: document.getElementById('filterScope').value });
+        const q = document.getElementById('search').value.trim();
+        const type = document.getElementById('filterType').value;
+        const source = document.getElementById('filterSource').value;
+        if (q) params.set('q', q);
+        if (type) params.set('type', type);
+        if (source) params.set('source', source);
+        params.set('includeHistory', 'true');
+        return params;
+      }
+
+      function renderValue(raw) {
+        if (typeof raw === 'object' && raw !== null) return `<pre>${safe(JSON.stringify(raw, null, 2))}</pre>`;
+        const text = String(raw || '');
+        if (isUrl(text)) return `<a href="${safe(text)}" target="_blank" rel="noreferrer">${safe(text)}</a>`;
+        return safe(text.length > 260 ? `${text.slice(0, 260)}…` : text);
+      }
+
+      function renderFeed() {
+        const feed = document.getElementById('feed');
+        if (!state.items.length) { feed.innerHTML = '<div class="muted">No data yet</div>'; return; }
+        feed.innerHTML = state.items.map((item) => {
+          const isOwner = state.user && (state.user.role === 'admin' || item.owner?.user_id === state.user.id || item.owner?.user_id === state.user._id);
+          return `
+            <div class="feed-card" role="listitem">
+              <div class="row" style="align-items:center">
+                <label style="max-width:100px"><input type="checkbox" onchange="toggleSelect('${item._id}', this.checked)" /> select</label>
+                <div class="meta">${safe(item.content?.type || 'text')} • ${safe(item.source?.type || '')} • ${safe(item.owner?.email || '')}</div>
+              </div>
+              <div class="feed-title">${renderValue(item.content?.raw)}</div>
+              <div class="meta">created: ${safe(item.origin?.created_at || '')}<br/>synced: ${safe(item.sync?.last_synced_at || '')}</div>
+              <div class="row">
+                <button onclick="viewDetails('${item._id}')">View Details</button>
+                <button onclick="copyJson('${item._id}')">Copy JSON</button>
+                <button ${isOwner ? '' : 'disabled'} onclick="updateItem('${item._id}')">Update</button>
+                <button ${isOwner ? '' : 'disabled'} class="danger" onclick="deleteItem('${item._id}')">Delete</button>
+                <button onclick="retryHealth('${item._id}', '${encodeURIComponent(String(item.content?.raw || ''))}')">Retry Check</button>
+              </div>
+            </div>`;
+        }).join('');
+      }
+
+      async function loadItems(reset = false) {
+        if (reset) { state.page = 1; state.items = []; }
+        setAppBusy(true);
+        document.getElementById('loading').textContent = 'Loading...';
+        try {
+          const data = await request(`/items?${queryParams().toString()}`);
+          state.items = reset ? data.items : state.items.concat(data.items || []);
+          state.hasMore = Boolean(data.has_more);
+          renderFeed();
+          document.getElementById('loading').textContent = '';
+        } finally {
+          setAppBusy(false);
+        }
+      }
+
+      function onSearchChanged() { clearTimeout(window._searchTimer); window._searchTimer = setTimeout(() => loadItems(true).catch((e) => setStatus(e.message, true)), 220); }
+      function toggleSelect(id, checked) { if (checked) state.selected.add(id); else state.selected.delete(id); }
+      window.toggleSelect = toggleSelect;
+
+      async function updateItem(id) {
+        const next = prompt('Updated content');
+        if (!next) return;
+        await request('/sync', { method: 'POST', body: JSON.stringify({ item_id: id, raw: next }) });
+        setStatus('Updated');
+        loadItems(true);
+      }
+      window.updateItem = updateItem;
+
+      async function deleteItem(id) {
+        if (!confirm('Delete item?')) return;
+        await request('/items', { method: 'DELETE', body: JSON.stringify({ item_id: id }) });
+        setStatus('Deleted');
+        state.items = state.items.filter((x) => x._id !== id);
+        renderFeed();
+      }
+      window.deleteItem = deleteItem;
+
+      async function copyJson(id) {
+        const item = state.items.find((x) => x._id === id);
+        if (!item) return;
+        await navigator.clipboard.writeText(JSON.stringify(item, null, 2));
+        setStatus('Copied JSON');
+      }
+      window.copyJson = copyJson;
+
+      function viewDetails(id) {
+        const item = state.items.find((x) => x._id === id);
+        if (!item) return;
+        document.getElementById('detail').textContent = JSON.stringify(item, null, 2);
+        document.getElementById('modal').style.display = 'flex';
+      }
+      window.viewDetails = viewDetails;
+
+      async function retryHealth(id, rawEnc) {
+        await request('/sync', { method: 'POST', body: JSON.stringify({ item_id: id, raw: decodeURIComponent(rawEnc) }) });
+        setStatus('Health rechecked');
+        loadHealth();
+      }
+      window.retryHealth = retryHealth;
+
+      async function loadHealth() { document.getElementById('health').textContent = JSON.stringify(await request('/health'), null, 2); }
+      async function loadLogs() { document.getElementById('logs').textContent = JSON.stringify(await request('/logs'), null, 2); }
+
+      async function connectSource() {
+        const url = document.getElementById('rssInput').value.trim();
+        if (!url) throw new Error('Source URL required');
+        await request('/sources', { method: 'POST', body: JSON.stringify({ type: 'rss', url }) });
+        document.getElementById('automationState').textContent = JSON.stringify(await request('/sources'), null, 2);
+      }
+
+      async function runSyncNow() {
+        setSync('Syncing...');
+        const out = await request('/sync/run', { method: 'POST', body: '{}' });
+        setSync('Up to date');
+        setStatus(`Sync completed at ${out.last_global_sync}`);
+      }
+
+      async function uploadAvatar() {
+        const file = document.getElementById('avatarFile').files?.[0];
+        if (!file) throw new Error('Select image first');
+        const res = await fetch(`${API}/avatar/upload?filename=${encodeURIComponent(file.name)}`, { method: 'POST', body: file, headers: { ...authHeaders() } });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || data.error || 'Upload failed');
+        document.getElementById('avatarResult').innerHTML = `<a href="${API}/avatar/view?pathname=${encodeURIComponent(data.pathname)}" target="_blank" rel="noreferrer">View uploaded file</a>`;
+        setStatus('Avatar uploaded');
+      }
+
+      async function bulkDelete() {
+        for (const id of state.selected) await request('/items', { method: 'DELETE', body: JSON.stringify({ item_id: id }) });
+        state.selected.clear();
+        setStatus('Deleted selected');
+        loadItems(true);
+      }
+      async function bulkRefresh() {
+        for (const id of state.selected) {
+          const item = state.items.find((x) => x._id === id);
+          if (item) await request('/sync', { method: 'POST', body: JSON.stringify({ item_id: id, raw: item.content?.raw || '' }) });
+        }
+        setStatus('Refreshed selected');
+        loadItems(true);
+      }
+
+      async function checkDatabaseConnection() {
+        const data = await request('/test-storage');
+        const ok = data?.blob_store?.ok === true;
+        setStatus(ok ? 'Storage connected' : 'Storage check failed', !ok);
+        return ok;
+      }
+
+      async function quickRefresh() {
+        if (!state.token) return setStatus('Login required', true);
+        await Promise.all([loadItems(true), loadHealth(), loadLogs()]);
+        setStatus('Refreshed');
+      }
+
+      document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.tab)));
+      document.getElementById('loginBtn').addEventListener('click', () => login().catch((e) => setStatus(e.message, true)));
+      document.getElementById('signupBtn').addEventListener('click', () => signup().catch((e) => setStatus(e.message, true)));
+      document.getElementById('logoutBtn').addEventListener('click', () => logout().catch((e) => setStatus(e.message, true)));
+      document.getElementById('refreshTopBtn').addEventListener('click', () => quickRefresh().catch((e) => setStatus(e.message, true)));
+      document.getElementById('dbCheckBtn').addEventListener('click', () => checkDatabaseConnection().catch((e) => setStatus(e.message, true)));
+      document.getElementById('saveBtn').addEventListener('click', () => saveItem().catch((e) => setStatus(e.message, true)));
+      document.getElementById('clearBtn').addEventListener('click', clearForm);
+      document.getElementById('healthBtn').addEventListener('click', () => loadHealth().catch((e) => setStatus(e.message, true)));
+      document.getElementById('logsBtn').addEventListener('click', () => loadLogs().catch((e) => setStatus(e.message, true)));
+      document.getElementById('connectSourceBtn').addEventListener('click', () => connectSource().catch((e) => setStatus(e.message, true)));
+      document.getElementById('runSyncBtn').addEventListener('click', () => runSyncNow().catch((e) => setStatus(e.message, true)));
+      document.getElementById('avatarUploadBtn').addEventListener('click', () => uploadAvatar().catch((e) => setStatus(e.message, true)));
+      document.getElementById('toggleSchema').addEventListener('click', () => {
+        const schema = document.getElementById('schema');
+        schema.classList.toggle('hidden');
+        schema.textContent = JSON.stringify(schemaExample, null, 2);
+      });
+      document.getElementById('bulkDeleteBtn').addEventListener('click', () => bulkDelete().catch((e) => setStatus(e.message, true)));
+      document.getElementById('bulkRefreshBtn').addEventListener('click', () => bulkRefresh().catch((e) => setStatus(e.message, true)));
+      document.getElementById('loadMoreBtn').addEventListener('click', () => { if (!state.hasMore) return setStatus('No more items'); state.page += 1; loadItems(false).catch((e) => setStatus(e.message, true)); });
+      document.getElementById('search').addEventListener('input', onSearchChanged);
+      ['filterType', 'filterSource', 'filterScope'].forEach((id) => document.getElementById(id).addEventListener('change', () => loadItems(true).catch((e) => setStatus(e.message, true))));
+      document.getElementById('debugMode').addEventListener('change', (e) => { state.debug = e.target.checked; });
+      document.getElementById('closeModal').addEventListener('click', () => { document.getElementById('modal').style.display = 'none'; });
+
+      setInterval(() => { if (state.token) loadItems(true).catch(() => {}); }, 30000);
+
+      document.getElementById('rememberMe').checked = state.rememberMe;
+      mountAuth();
+      checkDatabaseConnection().catch((e) => setStatus(e.message, true));
+      resumeSession();
+    </script>
+  </body>
+</html>
