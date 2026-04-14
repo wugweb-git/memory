@@ -12,6 +12,9 @@ done
 
 node -e "JSON.parse(require('fs').readFileSync('vercel.json', 'utf8'))" >/dev/null
 
+echo "Checking environment guardrails..."
+node scripts/validate-env.js
+
 current_branch="$(git rev-parse --abbrev-ref HEAD)"
 current_commit="$(git rev-parse --short HEAD)"
 

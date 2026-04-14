@@ -19,9 +19,16 @@ Optional:
 - `ALLOWED_ORIGINS`
 - `REQUEST_LIMIT_BYTES`
 
-Default admin bootstrap credentials (can be overridden via env):
-- `admin@wugweb.com`
-- `WugWeb123@`
+## Environment Guardrails
+
+To prevent silent failures in production, the system includes an **Environment Audit** script. This runs automatically during the Vercel pre-build phase via `scripts/vercel-readiness.sh`.
+
+You can manually trigger a validation check:
+```bash
+node scripts/validate-env.js
+```
+
+If critical variables (like `MONGODB_URI` or `AUTH_SECRET`) are missing, the build will fail intentionally.
 
 ## API routes
 
@@ -102,6 +109,25 @@ If `origin` is missing in your environment, configure it with:
 ```bash
 ./scripts/setup-origin.sh <git-remote-url>
 ```
+
+## Repository Maintenance (Clean History)
+
+To maintain a clean, linear Git history and avoid messy "octopus" merges:
+
+1. **Configure Pull Strategy**:
+   Run this once on your machine:
+   ```bash
+   git config pull.rebase true
+   ```
+
+2. **GitHub Merge Strategy**:
+   Always use **"Squash and Merge"** or **"Rebase and Merge"** on Pull Requests. Avoid standard merge commits.
+
+3. **Synchronize Local Workbench**:
+   If the remote history has been rewritten (e.g., after an automated cleanup), align your local graph:
+   ```bash
+   git fetch origin && git reset --hard origin/main
+   ```
 
 ### Branch policy
 

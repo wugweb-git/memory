@@ -13,7 +13,10 @@ const options: MongoClientOptions = {
 };
 
 if (!uri) {
-  throw new Error('Mongo URI is required (MONGODB_URI, MONGO_URI, or STORAGE_URL).');
+  const errorMessage = 'CRITICAL: MongoDB connection URI is missing. ' +
+    'Please ensure MONGODB_URI, MONGO_URI, or STORAGE_URL is defined in your environment variables.';
+  console.error(errorMessage);
+  throw new Error(errorMessage);
 }
 
 const client = new MongoClient(uri, options);
