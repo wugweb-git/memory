@@ -1,12 +1,7 @@
 {
-  "version": 2,
-  "functions": {
-    "api/index.js": {
-      "maxDuration": 20
-    }
-  },
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/api/index.js", "continue": true },
-    { "src": "/(.*)", "dest": "/$1" }
-  ]
+  "framework": "nextjs",
+  "buildCommand": "next build",
+  "outputDirectory": ".next",
+  "installCommand": "npm install",
+  "devCommand": "next dev"
 }
