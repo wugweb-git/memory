@@ -7,6 +7,8 @@ Phase 1 is now wrapped on a **Mongo/Redis-free** stack. Runtime state is persist
 Required:
 - `AUTH_SECRET`
 
+If `AUTH_SECRET` is missing, the app falls back to `dev_auth_secret_change_me` to avoid startup/login lockout in misconfigured environments (override in production).
+
 Recommended:
 - `BLOB_READ_WRITE_TOKEN` (required for Blob persistence and avatar upload/view)
 
@@ -16,6 +18,10 @@ Optional:
 - `ADMIN_PASSWORD`
 - `ALLOWED_ORIGINS`
 - `REQUEST_LIMIT_BYTES`
+
+Default admin bootstrap credentials (can be overridden via env):
+- `admin@wugweb.com`
+- `WugWeb123@`
 
 ## API routes
 
@@ -54,7 +60,10 @@ AUTH_SECRET="<secret>" npm run audit
 AUTH_SECRET="<secret>" npm run test:e2e
 AUTH_SECRET="<secret>" npm run db:ping
 AUTH_SECRET="<secret>" ALLOW_IN_MEMORY_STORE=true ./scripts/verify-all.sh
+./scripts/setup-origin.sh <git-remote-url>
 ./scripts/vercel-readiness.sh
+./scripts/check-deployment-url.sh https://<your-vercel-app>.vercel.app
+./scripts/check-auth-flow.sh https://<your-vercel-app>.vercel.app
 
 # Jobs and data lifecycle
 AUTH_SECRET="<secret>" npm run jobs
@@ -87,6 +96,16 @@ It validates:
 - `vercel.json` JSON syntax
 - whether remote `origin` exists
 - branch ahead/behind status versus remote
+
+If `origin` is missing in your environment, configure it with:
+
+```bash
+./scripts/setup-origin.sh <git-remote-url>
+```
+
+### Branch policy
+
+`scripts/verify-all.sh` enforces a local branch policy: maximum 3 branches unless explicitly overridden by team workflow.
 
 ## Notes
 

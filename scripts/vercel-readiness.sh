@@ -20,6 +20,7 @@ echo "Current commit: $current_commit"
 
 if ! git remote get-url origin >/dev/null 2>&1; then
   echo "ERROR: no git remote 'origin' configured. Vercel Git integration cannot receive updates until remote is set."
+  echo "Tip: run ./scripts/setup-origin.sh <git-remote-url>"
   exit 3
 fi
 

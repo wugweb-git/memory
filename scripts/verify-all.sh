@@ -7,6 +7,12 @@ set -euo pipefail
 export AUTH_SECRET
 export ALLOW_IN_MEMORY_STORE
 
+branch_count="$(git for-each-ref --format='%(refname:short)' refs/heads | wc -l | tr -d ' ')"
+if [[ "$branch_count" -gt 3 ]]; then
+  echo "Branch policy violation: more than 3 local branches ($branch_count)."
+  exit 9
+fi
+
 node --check api/index.js
 node --check src/server.js
 node --check lib/items.js
