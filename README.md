@@ -38,3 +38,6 @@ Optional:
 npm run audit
 MONGO_URI="<uri>" AUTH_SECRET="<secret>" npm run test:e2e
 ```
+
+
+Atlas URI format: `mongodb+srv://memory:<db_password>@cluster0.rxieedq.mongodb.net/?appName=Cluster0` (replace `<db_password>` with your actual password).
