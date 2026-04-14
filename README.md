@@ -56,3 +56,9 @@ If your Atlas password is `wugweb`, you can set `DB_PASSWORD=wugweb` and keep `M
 
 `lib/db.js` now calls `attachDatabasePool(...)` with the active Mongo client so pooled connections are managed correctly across function suspend/resume.  
 There is also `lib/mongodb.ts` containing the direct `MongoClient` + `attachDatabasePool` pattern.
+
+Mongo client options are set to:
+- `appName: "devrel.vercel.integration"`
+- `maxIdleTimeMS: 5000`
+
+Prisma Mongo datasource is available at `prisma/schema.prisma` and reads `MONGODB_URI`.
