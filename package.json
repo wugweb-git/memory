@@ -3,8 +3,6 @@
   "version": "1.0.0",
   "description": "Unified Identity Prism OS: RAG Intelligence + Digital Twin Memory",
   "type": "module",
-
-  "main": "api/index.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
