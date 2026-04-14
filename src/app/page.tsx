@@ -39,9 +39,9 @@ const outfit = Outfit({ subsets: ['latin'] });
 
 // --- Mock Stats ---
 const SYSTEM_STATS = [
-  { label: 'VECTOR_DENSITY', value: '4.2k', icon: Database, color: 'text-[#00E5FF]' },
-  { label: 'LOGIC_SYNC', value: '98%', icon: ShieldCheck, color: 'text-[#10B981]' },
-  { label: 'NEURAL_LATENCY', value: '14ms', icon: Activity, color: 'text-[#F59E0B]' },
+  { label: 'VAULT_STATE', value: 'UNILATERAL', icon: ShieldCheck, color: 'text-emerald-500' },
+  { label: 'BLOB_OPS', value: '15/2K', icon: Database, color: 'text-[#00E5FF]' },
+  { label: 'LOGIC_SYNC', value: '98%', icon: Zap, color: 'text-amber-400' },
 ];
 
 export default function IdentityPrismWorkspace() {

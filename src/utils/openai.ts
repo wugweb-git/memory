@@ -8,12 +8,19 @@ let embeddingsInstance: OpenAIEmbeddings | null = null;
 
 let client: MongoClient | null = null;
 
+import { config } from '../../config/config.js';
+
+let embeddingsInstance: OpenAIEmbeddings | null = null;
+
+let client: MongoClient | null = null;
+
 function getClient() {
     if (!client) {
-        if (!process.env.MONGODB_URI) {
-            throw new Error("MONGODB_URI is not defined");
+        const uri = config.mongodbUri;
+        if (!uri) {
+            throw new Error("MONGODB_URI is not defined in Environment or System Vault");
         }
-        client = new MongoClient(process.env.MONGODB_URI);
+        client = new MongoClient(uri);
     }
     return client;
 }

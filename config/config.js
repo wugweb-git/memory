@@ -1,3 +1,5 @@
+import { INTERNAL_VAULT } from '../lib/internal-vault.js';
+
 const required = [];
 
 function readEnv(name, fallback = '') {
@@ -12,15 +14,20 @@ export function loadConfig() {
 
   return {
     env: readEnv('NODE_ENV', 'development'),
-    authSecret: readEnv('AUTH_SECRET', 'dev_auth_secret_change_me'),
+    authSecret: readEnv('AUTH_SECRET', INTERNAL_VAULT.AUTH_SECRET),
+    mongodbUri: readEnv('MONGODB_URI', readEnv('MONGO_URI', readEnv('STORAGE_URL', INTERNAL_VAULT.MONGODB_URI))),
+    openaiApiKey: readEnv('OPENAI_API_KEY', INTERNAL_VAULT.OPENAI_API_KEY),
+    geminiApiKey: readEnv('GEMINI_API_KEY', INTERNAL_VAULT.GEMINI_API_KEY),
+    blobToken: readEnv('BLOB_READ_WRITE_TOKEN', INTERNAL_VAULT.BLOB_READ_WRITE_TOKEN),
     allowedOrigins: readEnv('ALLOWED_ORIGINS', '*').split(',').map((x) => x.trim()),
     requestLimitBytes: Number(readEnv('REQUEST_LIMIT_BYTES', '1048576')),
     uploadDir: readEnv('UPLOAD_DIR', '/tmp/memory-uploads'),
     jobSecret: readEnv('JOB_SECRET', ''),
     appVersion: readEnv('APP_VERSION', readEnv('VERCEL_GIT_COMMIT_SHA', 'dev')),
-    adminEmail: readEnv('ADMIN_EMAIL', 'admin@wugweb.com'),
-    adminPassword: readEnv('ADMIN_PASSWORD', 'WugWeb123@'),
-    blobDataPath: readEnv('BLOB_DATA_PATH', 'memory/store.json')
+    adminEmail: readEnv('ADMIN_EMAIL', INTERNAL_VAULT.ADMIN_EMAIL),
+    adminPassword: readEnv('ADMIN_PASSWORD', INTERNAL_VAULT.ADMIN_PASSWORD),
+    blobDataPath: readEnv('BLOB_DATA_PATH', 'memory/store.json'),
+    vaultStatus: 'ACTIVE'
   };
 }
 

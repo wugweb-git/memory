@@ -3,6 +3,8 @@
  * Ensures all required environment variables are present and correctly formatted.
  */
 
+import { INTERNAL_VAULT } from '../lib/internal-vault.js';
+
 const REQUIRED_VARS = [
   'MONGODB_URI',
   'AUTH_SECRET',
@@ -10,31 +12,36 @@ const REQUIRED_VARS = [
   'ADMIN_PASSWORD'
 ];
 
-// Open-source friendly aliases for MongoDB
 const MONGO_ALIASES = ['MONGODB_URI', 'MONGO_URI', 'STORAGE_URL'];
 
 function validate() {
   console.log('--- SYSTEM_GUARDRAIL: ENVIRONMENT_AUDIT ---');
   let missing = [];
 
-  // Check for Mongo specifically (one of the aliases must be present)
-  const hasMongo = MONGO_ALIASES.some(key => process.env[key]);
-  if (!hasMongo) {
-    missing.push('MONGODB_URI (or MONGO_URI/STORAGE_URL)');
+  // Check for Mongo (Env or Vault)
+  const hasMongoEnv = MONGO_ALIASES.some(key => process.env[key]);
+  const hasMongoVault = Boolean(INTERNAL_VAULT.MONGODB_URI);
+  if (!hasMongoEnv && !hasMongoVault) {
+    missing.push('MONGODB_URI (not in Env or Vault)');
   }
 
-  // Check others
+  // Check others (Env or Vault)
   REQUIRED_VARS.filter(v => v !== 'MONGODB_URI').forEach(v => {
-    if (!process.env[v]) {
+    if (!process.env[v] && !INTERNAL_VAULT[v]) {
       missing.push(v);
     }
   });
 
   if (missing.length > 0) {
-    console.error('ERROR: Missing required environment variables:');
+    console.error('ERROR: Missing required configuration in both Environment and System Vault:');
     missing.forEach(m => console.error(` - ${m}`));
     console.error('System initialization aborted.');
     process.exit(1);
+  }
+
+  const isVaulted = !REQUIRED_VARS.every(v => process.env[v]);
+  if (isVaulted) {
+    console.log('STATUS: Operating in UNILATERAL_VAULT mode (Zero-Config Enabled).');
   }
 
   console.log('SUCCESS: All mandatory environment variables are present.');
