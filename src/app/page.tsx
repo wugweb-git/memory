@@ -244,7 +244,7 @@ export default function IdentityPrismWorkspace() {
                                           {m.role !== 'user' ? highlightKeywords(m.content) : m.content}
                                         </div>
                                         <span className={`text-[9px] mt-4 font-black tracking-[0.2em] text-zinc-600 ${jetBrains.className} uppercase`}>
-                                          {m.role === 'user' ? 'SIGNAL_IN' : 'ARCHIVED_RESPONSE'} // {new Date().toLocaleTimeString()}
+                                          {m.role === 'user' ? 'SIGNAL_IN' : 'ARCHIVED_RESPONSE'}{' // '}{new Date().toLocaleTimeString()}
                                         </span>
                                       </div>
                                     </motion.div>

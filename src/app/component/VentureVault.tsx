@@ -3,7 +3,7 @@ import React from 'react';
 import { 
   Rocket, Server, Shield, Share2, ArrowRight, 
   ExternalLink, Code2, Layers, Cpu, Database,
-  TrendingUp, Globe, Box, Workflow, Fingerprint, Sparkles
+  TrendingUp, Globe, Box, Workflow, Fingerprint, Sparkles, Brain
 } from 'lucide-react';
 import { JetBrains_Mono, Outfit } from 'next/font/google';
 

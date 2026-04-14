@@ -54,7 +54,7 @@ export const MemoryVault = () => {
                 <td className="px-6 py-5">
                    <div className="flex items-center gap-2">
                      <div className="w-1.5 h-1.5 rounded-full bg-[#00E5FF] animate-pulse" />
-                     <span className="text-[10px] text-zinc-500">{file.size} // {file.status}</span>
+                     <span className="text-[10px] text-zinc-500">{file.size}{' // '}{file.status}</span>
                    </div>
                 </td>
                 <td className="px-6 py-5">

@@ -43,7 +43,7 @@ export const JobPipeline = () => {
                   </div>
                   <div className="text-left">
                     <h4 className="text-sm font-bold text-white mb-1">{app.role}</h4>
-                    <p className="text-xs text-zinc-500 font-medium">{app.company} // <span className="text-zinc-600 italic">via {app.source}</span></p>
+                    <p className="text-xs text-zinc-500 font-medium">{app.company}{' // '}<span className="text-zinc-600 italic">via {app.source}</span></p>
                   </div>
                </div>
 

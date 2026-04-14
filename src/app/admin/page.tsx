@@ -291,7 +291,7 @@ export default function AdminConsole() {
                          </div>
                          <h3 className="text-lg font-black text-zinc-400 uppercase tracking-widest mb-4">No cognitive objects yet</h3>
                          <p className="text-[11px] text-zinc-700 max-w-xs uppercase font-black leading-relaxed tracking-[0.2em]">
-                            Initialize a "Spirit Note" or connect a "Pulse Sensor" to begin populating your local memory browser.
+                            Initialize a {`"Spirit Note"`} or connect a {`"Pulse Sensor"`} to begin populating your local memory browser.
                          </p>
                          <div className="mt-10 flex gap-6">
                             <button className="px-8 py-3.5 rounded-2xl bg-white/[0.02] border border-white/5 text-[11px] font-black text-zinc-400 uppercase tracking-widest hover:border-white/20 transition-all flex items-center gap-3">

@@ -49,7 +49,7 @@ export const JobSearchAgent = () => {
 
                   <div className="text-left">
                     <h4 className="text-sm font-bold text-white mb-1 uppercase tracking-wide">{lead.role}</h4>
-                    <p className="text-[10px] text-zinc-500 font-medium tracking-widest uppercase">{lead.company} // <span className="text-zinc-600 italic">via {lead.via}</span></p>
+                    <p className="text-[10px] text-zinc-500 font-medium tracking-widest uppercase">{lead.company}{' // '}<span className="text-zinc-600 italic">via {lead.via}</span></p>
                   </div>
                </div>
 
