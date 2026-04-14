@@ -54,6 +54,7 @@ AUTH_SECRET="<secret>" npm run audit
 AUTH_SECRET="<secret>" npm run test:e2e
 AUTH_SECRET="<secret>" npm run db:ping
 AUTH_SECRET="<secret>" ALLOW_IN_MEMORY_STORE=true ./scripts/verify-all.sh
+./scripts/vercel-readiness.sh
 
 # Jobs and data lifecycle
 AUTH_SECRET="<secret>" npm run jobs
@@ -70,6 +71,22 @@ If you need to merge all local branches into `main` quickly:
 ```
 
 This script only merges **local** branches. If GitHub remote branches are missing locally, run `git fetch --all --prune` first in a repo with a configured `origin`.
+
+### Why Vercel may not reflect local changes
+
+Vercel Git deployments only update when commits are pushed to the connected remote branch.
+
+If local changes are visible but Vercel is stale, run:
+
+```bash
+./scripts/vercel-readiness.sh
+```
+
+It validates:
+- required deployment files (`vercel.json`, `api/index.js`, `index.html`, `package.json`)
+- `vercel.json` JSON syntax
+- whether remote `origin` exists
+- branch ahead/behind status versus remote
 
 ## Notes
 
