@@ -4,11 +4,22 @@ function readEnv(name, fallback = '') {
   return process.env[name] || fallback;
 }
 
+function resolveMongoUri(rawUri, dbPassword) {
+  if (!rawUri) return rawUri;
+  if (rawUri.includes('<db_password>')) {
+    if (!dbPassword) {
+      throw new Error('MONGO_URI includes <db_password> but DB_PASSWORD is missing.');
+    }
+    return rawUri.replace('<db_password>', encodeURIComponent(dbPassword));
+  }
+  return rawUri;
+}
+
 function validateMongoUri(uri) {
   if (!uri) return;
 
   if (uri.includes('<') || uri.includes('>')) {
-    throw new Error('MONGO_URI contains placeholder brackets. Replace <db_password> with your real password value.');
+    throw new Error('MONGO_URI contains placeholder brackets. Replace <db_password> or provide DB_PASSWORD.');
   }
 
   const match = uri.match(/^mongodb(?:\+srv)?:\/\/([^@]+)@/i);
@@ -27,8 +38,10 @@ export function loadConfig() {
     throw new Error(`Missing required env vars: ${missing.join(', ')}`);
   }
 
-  const mongoUri = readEnv('MONGO_URI');
-  const mongoUriFallback = readEnv('MONGO_URI_FALLBACK', '');
+  const dbPassword = readEnv('DB_PASSWORD', '');
+  const mongoUri = resolveMongoUri(readEnv('MONGO_URI'), dbPassword);
+  const mongoUriFallback = resolveMongoUri(readEnv('MONGO_URI_FALLBACK', ''), dbPassword);
+
   validateMongoUri(mongoUri);
   if (mongoUriFallback) validateMongoUri(mongoUriFallback);
 
