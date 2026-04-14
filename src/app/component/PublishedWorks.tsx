@@ -5,13 +5,10 @@ import {
   PenTool, Share2, Youtube, Github, Linkedin, 
   ArrowUpRight, Bookmark, Globe, Layers, BookOpen
 } from 'lucide-react';
-import { JetBrains_Mono, Outfit } from 'next/font/mask-outfit';
+import { JetBrains_Mono, Outfit } from 'next/font/google';
 
 const jetBrains = JetBrains_Mono({ subsets: ['latin'] });
-// Note: mask-outfit is a placeholder for my local Outfit font config if needed. 
-// Standard Outfit from next/font/google is preferred.
-import { Outfit as RegularOutfit } from 'next/font/google';
-const outfit = RegularOutfit({ subsets: ['latin'] });
+const outfit = Outfit({ subsets: ['latin'] });
 
 const MOCK_WORKS = [
   { 
