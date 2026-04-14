@@ -19,11 +19,11 @@ export const KnowledgeSource = () => {
           className="custom-pond"
           onprocessfile={(err) => !err && toast.success('Vector anchored.')}
         />
-        <style jsx global>{`
+        <style dangerouslySetInnerHTML={{ __html: `
           .filepond--panel-root { background-color: #0A0A0A !important; border: 1px dashed rgba(255,255,255,0.1); }
           .filepond--drop-label { color: #555 !important; font-size: 10px !important; letter-spacing: 0.1em; }
           .filepond--label-action { color: #00E5FF !important; }
-        `}</style>
+        ` }} />
       </div>
     </div>
   );
