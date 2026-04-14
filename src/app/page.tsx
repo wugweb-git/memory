@@ -13,8 +13,7 @@ import {
   Menu, Bell, ChevronDown, Command, Settings, User, Power
 } from 'lucide-react';
 import { useChat } from 'ai/react';
-import { FilePond, registerPlugin } from 'react-filepond';
-import 'filepond/dist/filepond.min.css';
+
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Link from 'next/link';
@@ -527,10 +526,10 @@ export default function IdentityPrismWorkspace() {
         <Radar size={24} className={isLoading ? 'animate-spin' : ''} />
       </button>
 
-      <style jsx>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         .animate-spin-slow { animation: spin 4s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-      `}</style>
+      ` }} />
     </div>
   );
 }
