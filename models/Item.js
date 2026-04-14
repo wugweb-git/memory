@@ -1,50 +1,42 @@
 import mongoose from 'mongoose';
 
-const previousVersionSchema = new mongoose.Schema(
-  {
-    raw: { type: String, required: true },
-    timestamp: { type: Date, default: Date.now }
-  },
-  { _id: false }
-);
-
 const itemSchema = new mongoose.Schema(
   {
-    content: {
-      raw: { type: String, required: true },
-      type: { type: String, enum: ['text', 'link', 'file'], required: true }
-    },
-    source: {
-      type: {
-        type: String,
-        enum: ['manual', 'api', 'rss', 'external', 'email'],
-        required: true
-      },
-      platform: String,
-      url: String,
-      external_id: String
-    },
-    origin: {
-      created_at: { type: Date, default: Date.now },
-      created_by: { type: String, enum: ['user', 'system'], required: true }
-    },
-    sync: {
-      last_synced_at: Date,
-      has_changed: { type: Boolean, default: false },
-      link_status: { type: String, enum: ['active', 'broken'], default: 'active' }
-    },
-    versioning: {
-      current_hash: { type: String, required: true },
-      previous_versions: { type: [previousVersionSchema], default: [] }
-    }
+    // CORE DATA (RAG + Vector)
+    text: { type: String, required: true },
+    text_embedding: { type: [Number], select: false }, // Avoid fetching embeddings by default
+    
+    // SIGNAL METADATA
+    sourceType: { type: String, required: true, index: true },
+    sourceOrigin: { type: String, index: true },
+    profileId: { type: String, default: 'system', index: true },
+    isPublic: { type: Boolean, default: false },
+    timestamp: { type: Date, default: Date.now, index: true },
+    
+    // CHUNKING LOGIC
+    chunkIndex: { type: Number, default: 0 },
+    totalChunks: { type: Number, default: 1 },
+    
+    // STRUCTURED REFERENCES
+    sourceUrl: { type: String, index: true },
+    external_id: { type: String, index: true },
+    
+    // INTELLIGENCE & CLASSIFICATION
+    industry_tag: [String],
+    spirit_note: String,
+    concepts: [String],
+    
+    // LEGACY COMPATIBILITY
+    content_type: { type: String, enum: ['text', 'link', 'file'], default: 'text' }
   },
-  {
-    collection: 'items',
-    strict: false
+  { 
+    collection: 'training_data', 
+    timestamps: true,
+    strict: false // Allow dynamic metadata from ingestion pipelines
   }
 );
 
-itemSchema.index({ 'source.url': 1 }, { unique: true, sparse: true });
-itemSchema.index({ 'source.external_id': 1 }, { unique: true, sparse: true });
+itemSchema.index({ sourceType: 1, timestamp: -1 });
+itemSchema.index({ profileId: 1, timestamp: -1 });
 
 export default mongoose.models.Item || mongoose.model('Item', itemSchema);

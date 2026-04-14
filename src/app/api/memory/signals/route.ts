@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MongoClient } from 'mongodb';
+import { config } from '@/config/config.js';
+
+export const dynamic = 'force-dynamic';
 
 /**
  * /api/memory/signals
@@ -7,7 +10,10 @@ import { MongoClient } from 'mongodb';
  */
 export async function GET(req: NextRequest) {
   try {
-    const client = new MongoClient(process.env.MONGODB_URI || '');
+    const uri = config.mongodbUri;
+    if (!uri) throw new Error("MONGODB_URI_MISSING");
+    
+    const client = new MongoClient(uri);
     await client.connect();
     
     // Using the same namespace as defined in utils/openai.ts
