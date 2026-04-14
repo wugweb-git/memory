@@ -40,12 +40,17 @@ export default async function handler(req, res) {
       return res.status(200).json({
         ok: true,
         version: config.appVersion,
-        endpoints: ['/api/test', '/api/auth/signup', '/api/auth/login', '/api/auth/me', '/api/auth/logout', '/api/items', '/api/sync', '/api/email', '/api/health', '/api/logs', '/api/sources', '/api/sync/run']
+        endpoints: ['/api/test', '/api/test-db', '/api/auth/signup', '/api/auth/login', '/api/auth/me', '/api/auth/logout', '/api/items', '/api/sync', '/api/email', '/api/health', '/api/logs', '/api/sources', '/api/sync/run']
       });
     }
 
     if (path === '/api/test' && req.method === 'GET') {
       return res.status(200).json({ status: 'working' });
+    }
+
+    if (path === '/api/test-db' && req.method === 'GET') {
+      await connectDB();
+      return res.status(200).json({ status: 'db_connected' });
     }
 
 

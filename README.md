@@ -3,9 +3,7 @@
 ## Default admin credentials
 
 - Email: `admin@wugweb.com`
-- Password: `WugWeb123@`
-
-These can be overridden with `ADMIN_EMAIL` and `ADMIN_PASSWORD` environment variables.
+- Password: `WugWeb123`
 
 ## Environment variables
 
@@ -14,25 +12,29 @@ Required:
 - `AUTH_SECRET`
 
 Optional:
-- `NODE_ENV`
-- `ALLOWED_ORIGINS`
-- `REQUEST_LIMIT_BYTES`
-- `UPLOAD_DIR`
-- `JOB_SECRET`
-- `APP_VERSION`
+- `MONGO_URI_FALLBACK` (direct mongodb:// fallback if SRV DNS fails)
 - `ADMIN_EMAIL`
 - `ADMIN_PASSWORD`
 
-## API routes (single Vercel function)
+## API routes
 
 - `GET /api`
 - `GET /api/test`
+- `GET /api/test-db`
 - `POST /api/auth/signup`
 - `POST /api/auth/login`
 - `GET /api/auth/me`
 - `POST /api/auth/logout`
 - `GET /api/items`
 - `POST /api/items`
+- `DELETE /api/items`
 - `POST /api/sync`
 - `POST /api/email`
 - `GET /api/health`
+
+## Checks
+
+```bash
+npm run audit
+MONGO_URI="<uri>" AUTH_SECRET="<secret>" npm run test:e2e
+```

@@ -39,9 +39,11 @@
           <h1 style="margin:0">Memory System</h1>
           <div class="muted">Capture, view, and manage all inputs</div>
         </div>
-        <div>
+        <div class="actions" style="margin:0">
           <span id="syncState" class="badge">Up to date</span>
           <span id="userInfo" class="badge">Guest</span>
+          <button id="refreshTopBtn" class="hidden">Refresh</button>
+          <button id="dbCheckBtn">DB Check</button>
           <button id="logoutBtn" class="hidden">Logout</button>
         </div>
       </div>
@@ -177,7 +179,8 @@
         limit: 20,
         selected: new Set(),
         debug: false,
-        lastQuery: ''
+        lastQuery: '',
+        dbReady: null
       };
 
       const schemaExample = {
@@ -198,6 +201,31 @@
 
       function setSync(stateText) {
         document.getElementById('syncState').textContent = stateText;
+      }
+
+      function setDbAvailability(isReady) {
+        state.dbReady = isReady;
+        const disabled = isReady === false;
+        ['loginBtn', 'signupBtn', 'saveBtn'].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.disabled = disabled;
+        });
+      }
+
+      async function checkDatabaseConnection() {
+        const data = await request('/test-db');
+        const ok = data.status === 'db_connected';
+        setDbAvailability(ok);
+        setStatus(ok ? 'Database connected' : 'Database check failed', !ok);
+      }
+
+      async function quickRefresh() {
+        if (!state.token) {
+          setStatus('Login required', true);
+          return;
+        }
+        await Promise.all([loadItems(true), loadHealth(), loadLogs()]);
+        setStatus('Refreshed');
       }
 
       function authHeaders() {
@@ -231,6 +259,7 @@
         document.getElementById('authCard').classList.toggle('hidden', loggedIn);
         document.getElementById('app').classList.toggle('hidden', !loggedIn);
         document.getElementById('logoutBtn').classList.toggle('hidden', !loggedIn);
+        document.getElementById('refreshTopBtn').classList.toggle('hidden', !loggedIn);
         document.getElementById('userInfo').textContent = loggedIn ? `${state.user.email} (${state.user.role})` : 'Guest';
       }
 
@@ -528,6 +557,8 @@ ${uploaded.dataUrl}` : payload.body.raw;
       document.getElementById('loginBtn').addEventListener('click', () => login().catch((e) => setStatus(e.message, true)));
       document.getElementById('signupBtn').addEventListener('click', () => signup().catch((e) => setStatus(e.message, true)));
       document.getElementById('logoutBtn').addEventListener('click', () => logout().catch(() => {}));
+      document.getElementById('refreshTopBtn').addEventListener('click', () => quickRefresh().catch((e) => setStatus(e.message, true)));
+      document.getElementById('dbCheckBtn').addEventListener('click', () => checkDatabaseConnection().catch((e) => setStatus(e.message, true)));
       document.getElementById('saveBtn').addEventListener('click', () => saveItem().catch((e) => setStatus(e.message, true)));
       document.getElementById('clearBtn').addEventListener('click', clearForm);
       document.getElementById('healthBtn').addEventListener('click', () => loadHealth().catch((e) => setStatus(e.message, true)));
@@ -556,6 +587,10 @@ ${uploaded.dataUrl}` : payload.body.raw;
       }, 15000);
 
       mountAuth();
+      checkDatabaseConnection().catch((e) => {
+        setDbAvailability(false);
+        setStatus(e.message, true);
+      });
       resumeSession().then((ok) => {
         if (ok) {
           loadItems(true).catch((e) => setStatus(e.message, true));

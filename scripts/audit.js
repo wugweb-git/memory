@@ -1,4 +1,5 @@
 import fs from 'fs/promises';
+import request from 'supertest';
 import app from '../src/server.js';
 
 function assert(cond, message) {
@@ -7,38 +8,45 @@ function assert(cond, message) {
 
 async function auditUI() {
   const html = await fs.readFile('index.html', 'utf-8');
-  const required = ['Memory System', 'id="feed"', 'id="health"'];
+  const requiredTokens = [
+    'Memory System',
+    'id="authCard"',
+    'id="saveBtn"',
+    'id="refreshTopBtn"',
+    'id="dbCheckBtn"',
+    'id="feed"',
+    'id="health"',
+    "request('/items'",
+    "request('/sync'",
+    "request('/email'",
+    "request('/health'"
+  ];
 
-  for (const token of required) {
+  for (const token of requiredTokens) {
     assert(html.includes(token), `UI missing token: ${token}`);
   }
 
-  return { ok: true, checked: required.length };
+  return { ok: true, checked: requiredTokens.length };
 }
 
-function getRoutes() {
-  const routes = [];
-  const stack = app._router?.stack || app.router?.stack || [];
-  stack.forEach((layer) => {
-    if (!layer.route) return;
-    routes.push({
-      path: layer.route.path,
-      methods: Object.keys(layer.route.methods).map((method) => method.toUpperCase())
-    });
-  });
-  return routes;
-}
-
-function auditRoutes() {
-  const routes = getRoutes();
+async function auditApiIndex() {
+  const res = await request(app).get('/api').expect(200);
+  const endpoints = res.body?.endpoints || [];
   const expected = [
-    ['GET', '/api'],
-    ['GET', '/api/*']
+    '/api/test',
+    '/api/test-db',
+    '/api/auth/signup',
+    '/api/auth/login',
+    '/api/auth/me',
+    '/api/auth/logout',
+    '/api/items',
+    '/api/sync',
+    '/api/email',
+    '/api/health'
   ];
 
-  for (const [method, path] of expected) {
-    const found = routes.find((route) => route.path === path && route.methods.includes(method));
-    assert(Boolean(found), `Route missing: ${method} ${path}`);
+  for (const endpoint of expected) {
+    assert(endpoints.includes(endpoint), `API index missing endpoint: ${endpoint}`);
   }
 
   return { ok: true, checked: expected.length };
@@ -46,8 +54,8 @@ function auditRoutes() {
 
 async function run() {
   const ui = await auditUI();
-  const route = auditRoutes();
-  console.log(JSON.stringify({ ui, route }, null, 2));
+  const api = await auditApiIndex();
+  console.log(JSON.stringify({ ui, api }, null, 2));
 }
 
 run().catch((err) => {
