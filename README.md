@@ -51,3 +51,8 @@ Atlas URI format: `mongodb+srv://memory:<db_password>@cluster0.rxieedq.mongodb.n
 
 
 If your Atlas password is `wugweb`, you can set `DB_PASSWORD=wugweb` and keep `MONGO_URI` with `<db_password>`.
+
+## Vercel database pool
+
+`lib/db.js` now calls `attachDatabasePool(...)` with the active Mongo client so pooled connections are managed correctly across function suspend/resume.  
+There is also `lib/mongodb.ts` containing the direct `MongoClient` + `attachDatabasePool` pattern.
