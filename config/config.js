@@ -1,4 +1,5 @@
-const required = ['MONGO_URI', 'AUTH_SECRET'];
+const required = ['AUTH_SECRET'];
+const mongoEnvKeys = ['MONGO_URI', 'MONGODB_URI', 'STORAGE_URL'];
 
 function readEnv(name, fallback = '') {
   return process.env[name] || fallback;
@@ -38,8 +39,13 @@ export function loadConfig() {
     throw new Error(`Missing required env vars: ${missing.join(', ')}`);
   }
 
+  const mongoEnvKey = mongoEnvKeys.find((key) => readEnv(key));
+  if (!mongoEnvKey) {
+    throw new Error(`Missing MongoDB env var. Set one of: ${mongoEnvKeys.join(', ')}`);
+  }
+
   const dbPassword = readEnv('DB_PASSWORD', '');
-  const mongoUri = resolveMongoUri(readEnv('MONGO_URI'), dbPassword);
+  const mongoUri = resolveMongoUri(readEnv(mongoEnvKey), dbPassword);
   const mongoUriFallback = resolveMongoUri(readEnv('MONGO_URI_FALLBACK', ''), dbPassword);
 
   validateMongoUri(mongoUri);
@@ -47,6 +53,7 @@ export function loadConfig() {
 
   return {
     env: nodeEnv,
+    mongoEnvKey,
     mongoUri,
     mongoUriFallback,
     authSecret: readEnv('AUTH_SECRET'),

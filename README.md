@@ -8,8 +8,8 @@
 ## Environment variables
 
 Required:
-- `MONGO_URI`
 - `AUTH_SECRET`
+- one of: `MONGO_URI` or `MONGODB_URI` or `STORAGE_URL`
 
 Optional:
 - `DB_PASSWORD` (used to replace `<db_password>` token in URI)
@@ -38,6 +38,12 @@ Optional:
 ```bash
 npm run audit
 MONGO_URI="<uri>" AUTH_SECRET="<secret>" npm run test:e2e
+```
+
+You can also use:
+
+```bash
+MONGODB_URI="<uri>" AUTH_SECRET="<secret>" npm run test:e2e
 ```
 
 
