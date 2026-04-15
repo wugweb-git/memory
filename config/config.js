@@ -19,9 +19,16 @@ export function loadConfig() {
     throw new Error(`Missing required env vars: ${missing.join(', ')}`);
   }
 
+  const env = readEnv('NODE_ENV', 'development');
+  const authSecret = readEnv('AUTH_SECRET', INTERNAL_VAULT.AUTH_SECRET);
+
+  if (env === 'production' && !String(authSecret).trim()) {
+    throw new Error('Missing required env var in production: AUTH_SECRET');
+  }
+
   return {
-    env: readEnv('NODE_ENV', 'development'),
-    authSecret: readEnv('AUTH_SECRET', INTERNAL_VAULT.AUTH_SECRET),
+    env,
+    authSecret,
     mongodbUri: readEnvAny(['MONGODB_URI', 'MONGO_URI', 'STORAGE_URL'], INTERNAL_VAULT.MONGODB_URI),
     openaiApiKey: readEnv('OPENAI_API_KEY', INTERNAL_VAULT.OPENAI_API_KEY),
     geminiApiKey: readEnvAny(['GEMINI_API_KEY', 'Gemini_API_Key'], INTERNAL_VAULT.GEMINI_API_KEY),
