@@ -26,7 +26,7 @@ export function loadConfig() {
     throw new Error('Missing required env var in production: AUTH_SECRET');
   }
 
-  const authSecret = readEnv('AUTH_SECRET', INTERNAL_VAULT.AUTH_SECRET);
+  const authSecret = readEnv('AUTH_SECRET', INTERNAL_VAULT.AUTH_SECRET).trim();
 
   return {
     env,
