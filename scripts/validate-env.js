@@ -28,6 +28,18 @@ function resolveMongoUri() {
   return envUri || readValue(INTERNAL_VAULT.MONGODB_URI);
 }
 
+function hasConfiguredVar(key) {
+  return Boolean(process.env[key] || INTERNAL_VAULT[key]);
+}
+
+function resolveMongoUri() {
+  for (const key of MONGO_ALIASES) {
+    if (process.env[key]) return process.env[key];
+    if (INTERNAL_VAULT[key]) return INTERNAL_VAULT[key];
+  }
+  return null;
+}
+
 function validate() {
   console.log('--- SYSTEM_GUARDRAIL: ENVIRONMENT_AUDIT ---');
   const missing = [];
