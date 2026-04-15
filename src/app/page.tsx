@@ -132,11 +132,8 @@ export default function IdentityPrismWorkspace() {
               <Plus size={24} />
            </button>
            
-           <div className="flex flex-col gap-6 text-text-tertiary">
-              <button className="p-2 hover:text-text-primary transition-colors focus-ring" aria-label="Command indexing"><Command size={20} /></button>
-              <button className="p-2 hover:text-text-primary transition-colors focus-ring" aria-label="Neural search"><Search size={20} /></button>
-              <button className="p-2 hover:text-text-primary transition-colors focus-ring" aria-label="Notifications"><Bell size={20} /></button>
-              <button className="p-2 hover:text-text-primary transition-colors focus-ring" aria-label="Profile context"><User size={20} /></button>
+           <div className="flex flex-col gap-4 text-text-tertiary text-center px-2">
+              <span className="text-xs font-semibold tracking-wide">Primary navigation is in the top bar</span>
            </div>
 
            <div className="mt-auto flex flex-col gap-4 items-center mb-4">
@@ -153,7 +150,7 @@ export default function IdentityPrismWorkspace() {
         </aside>
 
         <main className="flex-1 overflow-y-auto custom-scrollbar relative p-[var(--space-page)] flex flex-col" role="main">
-          <div className="max-w-[1200px] mx-auto w-full space-y-[var(--space-2xl)] pb-32">
+          <div className="max-w-[1200px] mx-auto w-full space-y-[var(--space-2xl)] pb-40">
             <AnimatePresence mode="wait">
               {currentView === 'dashboard' && (
                 <motion.div 

@@ -70,12 +70,12 @@ export const VentureVault = ({ selectedIndustry }: { selectedIndustry?: string }
 
         {filtered.map((node) => (
           <article key={node.id} className="glass-panel rounded-2xl p-6 border border-primary hover:border-accent/20 transition-all duration-500 group relative overflow-hidden">
-            <header className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-secondary border border-primary flex items-center justify-center text-text-secondary group-hover:text-accent transition-colors">
+            <header className="flex items-center justify-between mb-6 gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-secondary border border-primary flex items-center justify-center text-text-secondary group-hover:text-accent transition-colors shrink-0">
                   {node.industry === 'Fintech' ? <TrendingUp size={18} aria-hidden="true" /> : <Brain size={18} aria-hidden="true" />}
                 </div>
-                <div>
+                <div className="min-w-0">
                   <h3 className="text-sm font-semibold text-text-primary tracking-tight">{node.name}</h3>
                   <p className="text-[10px] font-mono text-text-tertiary uppercase tracking-widest">{node.industry}</p>
                 </div>
@@ -84,6 +84,14 @@ export const VentureVault = ({ selectedIndustry }: { selectedIndustry?: string }
                 Node_{node.id.padStart(2, '0')}
               </span>
             </header>
+
+            <div className="mb-5 rounded-xl overflow-hidden border border-primary bg-secondary/60">
+              <img
+                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(node.name)}&background=111111&color=ffffff&size=512&bold=true`}
+                alt={`${node.name} visual thumbnail`}
+                className="w-full h-28 object-cover opacity-90"
+              />
+            </div>
 
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div className="space-y-1">
