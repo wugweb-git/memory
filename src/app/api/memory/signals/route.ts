@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MongoClient } from 'mongodb';
+<<<<<<< HEAD
 import { config } from '@/config/runtime-config';
+=======
+import { config } from '../../../../../config/config.js';
+>>>>>>> 34908eb (Fix memory signals config import path)
 
 export const dynamic = 'force-dynamic';
 
