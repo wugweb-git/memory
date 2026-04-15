@@ -22,6 +22,7 @@ import { applyCors, enforcePayloadLimit, rateLimit } from '../middleware/request
 import { writeLog } from '../lib/log.js';
 import { ingestPulse, ingestSoul } from '../lib/ingest.js';
 import { validatePulsePayload, validateSpiritNotePayload } from '../lib/validation.js';
+import { ingestMemoryPacket, listMemoryPackets, memoryMonitor, packetAction, replayIngestion, updateMemorySource } from '../lib/memory.js';
 
 function requestUrl(req) { return req.originalUrl || req.url; }
 function getPathname(req) { const parsed = new URL(requestUrl(req), 'http://localhost'); return parsed.pathname.replace(/\/$/, '') || '/'; }
@@ -46,7 +47,8 @@ export default async function handler(req, res) {
           '/api/auth/signup', '/api/auth/login', '/api/auth/me', '/api/auth/logout',
           '/api/items', '/api/sync', '/api/email', '/api/health', '/api/logs',
           '/api/sources', '/api/sync/run', '/api/telemetry-config', '/api/blob-metadata',
-          '/api/ingest/soul', '/api/ingest/pulse'
+          '/api/ingest/soul', '/api/ingest/pulse',
+          '/api/memory/ingest', '/api/memory/packets', '/api/memory/monitor', '/api/memory/source', '/api/memory/replay', '/api/memory/packet/action'
         ]
       });
     }
@@ -95,6 +97,42 @@ export default async function handler(req, res) {
     if (path === '/api/telemetry-config' && req.method === 'POST') { rateLimit(req, { key: 'telemetry-config', limit: 120 }); enforcePayloadLimit(req); const r = await createTelemetryConfig(req); return res.status(r.code).json(r.body); }
     if (path === '/api/blob-metadata' && req.method === 'GET') { rateLimit(req, { key: 'blob-metadata', limit: 120 }); const r = await listBlobMetadata(req); return res.status(r.code).json(r.body); }
     if (path === '/api/blob-metadata' && req.method === 'POST') { rateLimit(req, { key: 'blob-metadata', limit: 120 }); enforcePayloadLimit(req); const r = await createBlobMetadata(req); return res.status(r.code).json(r.body); }
+
+    if (path === '/api/memory/ingest' && req.method === 'POST') {
+      rateLimit(req, { key: 'memory-ingest', limit: 240 });
+      enforcePayloadLimit(req);
+      const r = await ingestMemoryPacket(req);
+      return res.status(r.code).json(r.body);
+    }
+    if (path === '/api/memory/packets' && req.method === 'GET') {
+      rateLimit(req, { key: 'memory-packets', limit: 240 });
+      const r = await listMemoryPackets(req);
+      return res.status(r.code).json(r.body);
+    }
+    if (path === '/api/memory/monitor' && req.method === 'GET') {
+      rateLimit(req, { key: 'memory-monitor', limit: 180 });
+      const r = await memoryMonitor(req);
+      return res.status(r.code).json(r.body);
+    }
+    if (path === '/api/memory/source' && req.method === 'POST') {
+      rateLimit(req, { key: 'memory-source', limit: 120 });
+      enforcePayloadLimit(req);
+      const r = await updateMemorySource(req);
+      return res.status(r.code).json(r.body);
+    }
+    if (path === '/api/memory/replay' && req.method === 'POST') {
+      rateLimit(req, { key: 'memory-replay', limit: 120 });
+      enforcePayloadLimit(req);
+      const r = await replayIngestion(req);
+      return res.status(r.code).json(r.body);
+    }
+    if (path === '/api/memory/packet/action' && req.method === 'POST') {
+      rateLimit(req, { key: 'memory-packet-action', limit: 120 });
+      enforcePayloadLimit(req);
+      const r = await packetAction(req);
+      return res.status(r.code).json(r.body);
+    }
+
     if (path === '/api/health' && req.method === 'GET') { rateLimit(req, { key: 'health', limit: 120 }); const r = await checkHealth(req); return res.status(r.code).json(r.body); }
 
     throw fail('Not found', 'validation_error', 404);

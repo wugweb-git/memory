@@ -102,6 +102,12 @@ If credentials were ever committed to git history, do this immediately:
 - `POST /api/blob-metadata`
 - `POST /api/ingest/soul`
 - `POST /api/ingest/pulse`
+- `POST /api/memory/ingest`
+- `GET /api/memory/packets`
+- `GET /api/memory/monitor`
+- `POST /api/memory/source`
+- `POST /api/memory/replay`
+- `POST /api/memory/packet/action`
 
 ## Scripts
 
