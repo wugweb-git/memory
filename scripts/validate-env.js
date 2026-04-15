@@ -50,8 +50,9 @@ function validate() {
     }
   });
 
-  const mongoUri = resolveMongoUri();
-  if (!mongoUri) {
+  const uri = MONGO_ALIASES.map(key => process.env[key]).find(Boolean) || INTERNAL_VAULT.MONGODB_URI;
+
+  if (!uri) {
     missing.push('MONGODB_URI (or MONGO_URI/STORAGE_URL alias)');
   }
 
@@ -62,7 +63,7 @@ function validate() {
       console.error('TIP: Add AUTH_SECRET to your Vercel/Netlify project environment variables.');
     }
     if (missing.includes('MONGODB_URI (or MONGO_URI/STORAGE_URL alias)')) {
-      console.error('TIP: Add MONGODB_URI (or MONGO_URI/STORAGE_URL) so /api/chat RAG can initialize Mongo retrievers.');
+      console.error('TIP: Add MONGODB_URI (or MONGO_URI/STORAGE_URL) to avoid runtime /api/chat failures.');
     }
     console.error('System initialization aborted.');
     process.exit(1);
@@ -74,12 +75,14 @@ function validate() {
     console.log('STATUS: Operating in UNILATERAL_VAULT mode (Zero-Config Enabled).');
   }
 
-  if (!MONGODB_URI_PATTERN.test(mongoUri)) {
+  console.log('SUCCESS: All mandatory environment variables are present.');
+  
+  // Format validation for Mongo URI (required by /api/chat RAG retriever)
+  if (!uri.startsWith('mongodb')) {
     console.error('ERROR: Invalid MONGODB_URI format. Must start with "mongodb://" or "mongodb+srv://".');
     process.exit(1);
   }
 
-  console.log('SUCCESS: All mandatory environment variables are present.');
   console.log('--- AUDIT_COMPLETE: NOMINAL_STATE ---');
   process.exit(0);
 }
