@@ -1,12 +1,29 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ 
+  subsets: ["latin"],
+  variable: '--font-inter',
+  display: 'swap',
+});
+
+const jetbrains = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: '--font-jetbrains',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
-  title: "Identity Prism",
-  description: "High-fidelity Personal Operating System"
+  title: "Identity Prism | Neural OS",
+  description: "High-fidelity Personal Operating System & Neural RAG Matrix",
+  robots: "index, follow",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#000000",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -15,8 +32,27 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var theme = localStorage.getItem('theme');
+                  var supportDark = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+                  if (!theme && supportDark) theme = 'dark';
+                  if (!theme) theme = 'light';
+                  document.documentElement.setAttribute('data-theme', theme);
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body className={`${inter.variable} ${jetbrains.variable} font-sans`}>
+        {children}
+      </body>
     </html>
   );
 }

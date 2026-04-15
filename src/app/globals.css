@@ -1,56 +1,113 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 3, 3, 3;
-  --background-end-rgb: 5, 5, 5;
-  --accent-cyan: #00E5FF;
-  --accent-emerald: #10B981;
-  --accent-orange: #F59E0B;
-  --accent-purple: #8B5CF6;
-  --glass-bg: rgba(255, 255, 255, 0.03);
-  --glass-border: rgba(255, 255, 255, 0.08);
+  /* DARK (default) — Nothing OS / Framer reference */
+  --bg-primary: #000000;
+  --bg-secondary: #0A0A0A;
+  --bg-tertiary: #141414;
+  --bg-elevated: #1A1A1A;
+  --border-primary: rgba(255, 255, 255, 0.08);
+  --border-secondary: rgba(255, 255, 255, 0.04);
+  --text-primary: #FFFFFF;
+  --text-secondary: #A1A1AA;   /* zinc-400 — WCAG AA on black */
+  --text-tertiary: #71717A;    /* zinc-500 — WCAG AA on elevated */
+  --text-disabled: #3F3F46;    /* zinc-700 */
+  --accent: #00AAFF;           /* adjusted cyan — 4.6:1 on black */
+  --accent-muted: rgba(0, 170, 255, 0.12);
+  --success: #22C55E;
+  --danger: #EF4444;
+  --warning: #EAB308;
+
+  /* Fluid typography scale */
+  --font-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.8125rem);    /* 12–13px */
+  --font-sm: clamp(0.8125rem, 0.75rem + 0.3vw, 0.875rem);    /* 13–14px */
+  --font-base: clamp(0.875rem, 0.8rem + 0.4vw, 1rem);          /* 14–16px */
+  --font-lg: clamp(1.125rem, 1rem + 0.5vw, 1.25rem);         /* 18–20px */
+  --font-xl: clamp(1.5rem, 1.2rem + 1vw, 2rem);              /* 24–32px */
+  --font-2xl: clamp(2rem, 1.5rem + 1.5vw, 2.5rem);            /* 32–40px */
+
+  /* Spacing scale */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: clamp(2rem, 1.5rem + 2vw, 4rem);
+  --space-page: clamp(1rem, 2vw, 3rem);
+
+  /* Component states */
+  --state-hover: rgba(255, 255, 255, 0.04);
+  --state-active: rgba(255, 255, 255, 0.08);
+  --state-focus-ring: 0 0 0 2px var(--accent);
+  --state-disabled-opacity: 0.38;
+
+  --sidebar-width: clamp(3.5rem, 5vw, 5rem);
+  --panel-width: clamp(20rem, 25vw, 28rem);
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-start-rgb));
-  font-family: 'Inter', 'Outfit', sans-serif;
-  overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
+[data-theme="light"] {
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #FAFAFA;
+  --bg-tertiary: #F4F4F5;
+  --bg-elevated: #FFFFFF;
+  --border-primary: rgba(0, 0, 0, 0.08);
+  --border-secondary: rgba(0, 0, 0, 0.04);
+  --text-primary: #09090B;
+  --text-secondary: #52525B;
+  --text-tertiary: #71717A;
+  --text-disabled: #D4D4D8;
+  --accent: #0066CC;           /* darker blue — 4.5:1 on white */
+  --accent-muted: rgba(0, 102, 204, 0.08);
+  --success: #16A34A;
+  --danger: #DC2626;
+  --warning: #CA8A04;
+
+  --state-hover: rgba(0, 0, 0, 0.04);
+  --state-active: rgba(0, 0, 0, 0.08);
+}
+
+@layer base {
+  body {
+    @apply antialiased overflow-x-hidden;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
 }
 
 @layer components {
   .glass-panel {
-    @apply bg-white/[0.03] backdrop-blur-3xl border border-white/[0.08] shadow-2xl;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    @apply backdrop-blur-3xl shadow-2xl;
   }
   
   .glass-card {
-    @apply bg-white/[0.02] backdrop-blur-xl border border-white/[0.05] shadow-xl hover:bg-white/[0.04] hover:border-white/[0.1] transition-all duration-500;
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-secondary);
+    @apply transition-all duration-300;
   }
-  
-  .grid-bg {
-    background-image: 
-      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-    background-size: 50px 50px;
+
+  .focus-ring {
+    @apply outline-none ring-offset-2 ring-offset-black transition-shadow;
   }
-  
-  .neon-glow-cyan {
-    box-shadow: 0 0 20px rgba(0, 229, 255, 0.15), 0 0 40px rgba(0, 229, 255, 0.05);
-  }
-  
-  .neon-glow-emerald {
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.15), 0 0 40px rgba(16, 185, 129, 0.05);
+
+  .focus-ring:focus-visible {
+    box-shadow: var(--state-focus-ring);
   }
 }
 
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
@@ -58,45 +115,28 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--border-primary);
   border-radius: 10px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 229, 255, 0.3);
+  background: var(--text-disabled);
 }
 
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-
-.animate-pulse-slow {
-  animation: pulse 8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 0.1; transform: scale(1); }
-  50% { opacity: 0.3; transform: scale(1.1); }
-}
-
-.scanline {
-  width: 100%;
-  height: 2px;
-  background: rgba(0, 229, 255, 0.1);
-  opacity: 0.5;
-  position: absolute;
-  bottom: 100%;
-  animation: scanline 8s linear infinite;
-  pointer-events: none;
-  z-index: 50;
+.grid-bg {
+  background-image: 
+    linear-gradient(var(--border-secondary) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-secondary) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
 
 @keyframes scanline {
-  0% { bottom: 100%; }
-  100% { bottom: 0; }
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+.scanline {
+  @apply fixed inset-x-0 w-full h-[1px] opacity-10 pointer-events-none z-50;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  animation: scanline 8s linear infinite;
 }
