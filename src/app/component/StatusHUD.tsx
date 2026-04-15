@@ -7,7 +7,7 @@ import {
   Terminal, Cpu, Sparkles
 } from 'lucide-react';
 
-export type ViewMode = 'dashboard' | 'vault' | 'publications' | 'inspiration' | 'jobs' | 'activity' | 'connections';
+export type ViewMode = 'dashboard' | 'buffer' | 'vault' | 'publications' | 'inspiration' | 'jobs' | 'activity' | 'connections';
 
 interface StatProps {
   label: string;
@@ -25,6 +25,7 @@ interface StatusHUDProps {
 export const StatusHUD = ({ stats, currentView, onViewChange }: StatusHUDProps) => {
   const tabs = [
     { id: 'dashboard', label: 'Console', icon: Terminal },
+    { id: 'buffer', label: 'Buffer', icon: Database },
     { id: 'vault', label: 'Venture Vault', icon: VaultIcon },
     { id: 'publications', label: 'Works Hub', icon: FileEdit },
     { id: 'inspiration', label: 'Inspiration', icon: Sparkles },

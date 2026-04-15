@@ -25,6 +25,7 @@ import { IdentityPillars } from './component/IdentityPillars';
 import { InspirationHub } from './component/InspirationHub';
 import { ProfileHeader } from './component/ProfileHeader';
 import { ThemeToggle } from './component/ThemeToggle';
+import { BlobBuffer } from './component/BlobBuffer';
 
 const SYSTEM_STATS = [
   { label: 'VAULT_STATE', value: 'UNILATERAL', icon: ShieldCheck, color: 'text-success' },
@@ -297,6 +298,7 @@ export default function IdentityPrismWorkspace() {
 
               {/* Other views omitted for brevity, adding similar logic as dashboard */}
               {currentView === 'vault' && <motion.div key="vault" initial={{ opacity: 0 }} animate={{ opacity: 1 }}><VentureVault selectedIndustry={selectedIndustry || undefined} /></motion.div>}
+              {currentView === 'buffer' && <motion.div key="buffer" initial={{ opacity: 0 }} animate={{ opacity: 1 }}><BlobBuffer /></motion.div>}
               {currentView === 'publications' && <motion.div key="pubs" initial={{ opacity: 0 }} animate={{ opacity: 1 }}><PublishedWorks /></motion.div>}
               {currentView === 'inspiration' && <motion.div key="insp" initial={{ opacity: 0 }} animate={{ opacity: 1 }}><InspirationHub /></motion.div>}
               {currentView === 'jobs' && <motion.div key="jobs" initial={{ opacity: 0 }} animate={{ opacity: 1 }}><JobSearchAgent /></motion.div>}
