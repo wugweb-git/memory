@@ -67,7 +67,6 @@ function validate() {
     process.exit(1);
   }
 
-  console.log('SUCCESS: All mandatory environment variables are present.');
   console.log('--- AUDIT_COMPLETE: NOMINAL_STATE ---');
   process.exit(0);
 }
