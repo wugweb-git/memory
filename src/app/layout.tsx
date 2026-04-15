@@ -16,8 +16,39 @@ const jetbrains = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "Identity Prism | Neural OS",
-  description: "High-fidelity Personal Operating System & Neural RAG Matrix",
+  description: "High-fidelity Personal Operating System & Neural RAG Matrix. A professional-grade OS for semantic memory and venture mapping.",
+  keywords: ["Neural OS", "Identity Prism", "RAG", "Personal AI", "Venture Mapping", "Systems Architecture"],
+  authors: [{ name: "Vedanshu Srivastava" }],
+  creator: "Vedanshu Srivastava",
+  publisher: "Vedanshu Srivastava",
   robots: "index, follow",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://wugweb.com",
+    siteName: "Identity Prism",
+    title: "Identity Prism | Neural OS",
+    description: "High-fidelity Personal Operating System & Neural RAG Matrix. A professional-grade OS for semantic memory and venture mapping.",
+    images: [
+      {
+        url: "https://wugweb.com/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Identity Prism OS Dashboard Preview",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Identity Prism | Neural OS",
+    description: "High-fidelity Personal Operating System & Neural RAG Matrix. A professional-grade OS for semantic memory and venture mapping.",
+    images: ["https://wugweb.com/og-image.png"],
+    creator: "@vedanshus",
+  },
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {
