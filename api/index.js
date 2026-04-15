@@ -22,6 +22,18 @@ import { applyCors, enforcePayloadLimit, rateLimit } from '../middleware/request
 import { writeLog } from '../lib/log.js';
 import { ingestPulse, ingestSoul } from '../lib/ingest.js';
 import { validatePulsePayload, validateSpiritNotePayload } from '../lib/validation.js';
+import {
+  exportData,
+  getMemoryPanel,
+  importData,
+  ingestManagedPacket,
+  mergePackets,
+  moveToBlob,
+  optimizeMemoryStorage,
+  reclassifyData,
+  restoreFromArchive,
+  setSourceTrust
+} from '../lib/memoryManagement.js';
 
 function requestUrl(req) { return req.originalUrl || req.url; }
 function getPathname(req) { const parsed = new URL(requestUrl(req), 'http://localhost'); return parsed.pathname.replace(/\/$/, '') || '/'; }
@@ -46,7 +58,8 @@ export default async function handler(req, res) {
           '/api/auth/signup', '/api/auth/login', '/api/auth/me', '/api/auth/logout',
           '/api/items', '/api/sync', '/api/email', '/api/health', '/api/logs',
           '/api/sources', '/api/sync/run', '/api/telemetry-config', '/api/blob-metadata',
-          '/api/ingest/soul', '/api/ingest/pulse'
+          '/api/ingest/soul', '/api/ingest/pulse',
+          '/api/memory/manage', '/api/memory/import', '/api/memory/export', '/api/memory/optimize'
         ]
       });
     }
@@ -86,6 +99,24 @@ export default async function handler(req, res) {
       const r = await ingestPulse(req);
       return res.status(r.code).json(r.body);
     }
+
+    if (path === '/api/memory/manage' && req.method === 'GET') { rateLimit(req, { key: 'memory-manage', limit: 120 }); const r = await getMemoryPanel(req); return res.status(r.code).json(r.body); }
+    if (path === '/api/memory/manage' && req.method === 'POST') {
+      rateLimit(req, { key: 'memory-manage', limit: 120 });
+      enforcePayloadLimit(req);
+      const action = String(req.body?.action || '').toLowerCase();
+      if (action === 'ingest') { const r = await ingestManagedPacket(req); return res.status(r.code).json(r.body); }
+      if (action === 'reclassify') { const r = await reclassifyData(req); return res.status(r.code).json(r.body); }
+      if (action === 'merge') { const r = await mergePackets(req); return res.status(r.code).json(r.body); }
+      if (action === 'move_to_blob') { const r = await moveToBlob(req); return res.status(r.code).json(r.body); }
+      if (action === 'restore_archive') { const r = await restoreFromArchive(req); return res.status(r.code).json(r.body); }
+      if (action === 'set_source_trust') { const r = await setSourceTrust(req); return res.status(r.code).json(r.body); }
+      throw fail('invalid memory manage action', 'validation_error', 400);
+    }
+
+    if (path === '/api/memory/import' && req.method === 'POST') { rateLimit(req, { key: 'memory-import', limit: 60 }); enforcePayloadLimit(req); const r = await importData(req); return res.status(r.code).json(r.body); }
+    if (path === '/api/memory/export' && req.method === 'POST') { rateLimit(req, { key: 'memory-export', limit: 60 }); enforcePayloadLimit(req); const r = await exportData(req); return res.status(r.code).json(r.body); }
+    if (path === '/api/memory/optimize' && req.method === 'POST') { rateLimit(req, { key: 'memory-optimize', limit: 60 }); const r = await optimizeMemoryStorage(req); return res.status(r.code).json(r.body); }
 
     if (path === '/api/logs' && req.method === 'GET') { rateLimit(req, { key: 'logs', limit: 120 }); const r = await getLogs(req); return res.status(r.code).json(r.body); }
     if (path === '/api/sources' && req.method === 'GET') { rateLimit(req, { key: 'sources', limit: 120 }); const r = await listSources(req); return res.status(r.code).json(r.body); }
