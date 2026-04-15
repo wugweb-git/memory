@@ -22,6 +22,7 @@ import { applyCors, enforcePayloadLimit, rateLimit } from '../middleware/request
 import { writeLog } from '../lib/log.js';
 import { ingestPulse, ingestSoul } from '../lib/ingest.js';
 import { validatePulsePayload, validateSpiritNotePayload } from '../lib/validation.js';
+import { enqueueProcessingFromRequest, listProcessingSignals, runProcessingFromRequest } from '../lib/processing.js';
 
 function requestUrl(req) { return req.originalUrl || req.url; }
 function getPathname(req) { const parsed = new URL(requestUrl(req), 'http://localhost'); return parsed.pathname.replace(/\/$/, '') || '/'; }
@@ -46,7 +47,7 @@ export default async function handler(req, res) {
           '/api/auth/signup', '/api/auth/login', '/api/auth/me', '/api/auth/logout',
           '/api/items', '/api/sync', '/api/email', '/api/health', '/api/logs',
           '/api/sources', '/api/sync/run', '/api/telemetry-config', '/api/blob-metadata',
-          '/api/ingest/soul', '/api/ingest/pulse'
+          '/api/ingest/soul', '/api/ingest/pulse', '/api/processing/enqueue', '/api/processing/run', '/api/processing/signals'
         ]
       });
     }
@@ -95,6 +96,24 @@ export default async function handler(req, res) {
     if (path === '/api/telemetry-config' && req.method === 'POST') { rateLimit(req, { key: 'telemetry-config', limit: 120 }); enforcePayloadLimit(req); const r = await createTelemetryConfig(req); return res.status(r.code).json(r.body); }
     if (path === '/api/blob-metadata' && req.method === 'GET') { rateLimit(req, { key: 'blob-metadata', limit: 120 }); const r = await listBlobMetadata(req); return res.status(r.code).json(r.body); }
     if (path === '/api/blob-metadata' && req.method === 'POST') { rateLimit(req, { key: 'blob-metadata', limit: 120 }); enforcePayloadLimit(req); const r = await createBlobMetadata(req); return res.status(r.code).json(r.body); }
+
+    if (path === '/api/processing/enqueue' && req.method === 'POST') {
+      rateLimit(req, { key: 'processing-enqueue', limit: 120 });
+      enforcePayloadLimit(req);
+      const r = await enqueueProcessingFromRequest(req);
+      return res.status(r.code).json(r.body);
+    }
+    if (path === '/api/processing/run' && req.method === 'POST') {
+      rateLimit(req, { key: 'processing-run', limit: 60 });
+      const r = await runProcessingFromRequest(req);
+      return res.status(r.code).json(r.body);
+    }
+    if (path === '/api/processing/signals' && req.method === 'GET') {
+      rateLimit(req, { key: 'processing-signals', limit: 180 });
+      const r = await listProcessingSignals();
+      return res.status(r.code).json(r.body);
+    }
+
     if (path === '/api/health' && req.method === 'GET') { rateLimit(req, { key: 'health', limit: 120 }); const r = await checkHealth(req); return res.status(r.code).json(r.body); }
 
     throw fail('Not found', 'validation_error', 404);
