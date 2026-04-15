@@ -34,9 +34,9 @@ function validate() {
     }
   });
 
-  const uri = resolveMongoUri();
-  if (!uri) {
-    missing.push('MONGODB_URI (or alias: MONGO_URI / STORAGE_URL)');
+  const mongoUri = MONGO_ALIASES.map(key => process.env[key]).find(Boolean) || INTERNAL_VAULT.MONGODB_URI;
+  if (!mongoUri) {
+    missing.push('MONGODB_URI (or MONGO_URI / STORAGE_URL)');
   }
 
   if (missing.length > 0) {
@@ -48,6 +48,9 @@ function validate() {
     if (missing.includes('AUTH_SECRET')) {
       console.error('TIP: Add AUTH_SECRET to your Vercel/Netlify project environment variables.');
     }
+    if (missing.some((item) => item.startsWith('MONGODB_URI'))) {
+      console.error('TIP: Configure Mongo using one of: MONGODB_URI, MONGO_URI, or STORAGE_URL.');
+    }
     console.error('System initialization aborted.');
     process.exit(1);
   }
@@ -58,9 +61,9 @@ function validate() {
   }
 
   console.log('SUCCESS: All mandatory environment variables are present.');
-
-  // Format validation for URI
-  if (!uri.startsWith('mongodb')) {
+  
+  // Optional format validation for URI when Mongo is set
+  if (!mongoUri.startsWith('mongodb')) {
     console.error('ERROR: Invalid MONGODB_URI format. Must start with "mongodb://" or "mongodb+srv://".');
     process.exit(1);
   }
