@@ -114,6 +114,11 @@ export default async function handler(req, res) {
       const r = await memoryMonitor(req);
       return res.status(r.code).json(r.body);
     }
+    if (path === '/api/memory/source' && req.method === 'GET') {
+      rateLimit(req, { key: 'memory-source', limit: 180 });
+      const r = await listSources(req);
+      return res.status(r.code).json(r.body);
+    }
     if (path === '/api/memory/source' && req.method === 'POST') {
       rateLimit(req, { key: 'memory-source', limit: 120 });
       enforcePayloadLimit(req);

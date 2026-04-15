@@ -61,6 +61,7 @@ If critical variables (like `MONGODB_URI` or `AUTH_SECRET`) are missing, the bui
 - `POST /api/memory/ingest`
 - `GET /api/memory/packets`
 - `GET /api/memory/monitor`
+- `GET /api/memory/source`
 - `POST /api/memory/source`
 - `POST /api/memory/replay`
 - `POST /api/memory/packet/action`
