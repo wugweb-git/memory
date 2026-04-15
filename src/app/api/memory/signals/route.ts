@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MongoClient } from 'mongodb';
-<<<<<<< HEAD
 import { config } from '@/config/runtime-config';
+<<<<<<< HEAD
 =======
 import { config } from '../../../../../config/config.js';
 >>>>>>> 34908eb (Fix memory signals config import path)
+=======
+>>>>>>> 1dec1f0 (Merge memory repository fix (resolved by keeping alias import))
 
 export const dynamic = 'force-dynamic';
 
