@@ -5,23 +5,35 @@
 
 import { INTERNAL_VAULT } from '../lib/internal-vault.js';
 
-const REQUIRED_VARS = [
-  'AUTH_SECRET'
-];
-
+const REQUIRED_VARS = ['AUTH_SECRET'];
 const MONGO_ALIASES = ['MONGODB_URI', 'MONGO_URI', 'STORAGE_URL'];
+const MONGODB_URI_PATTERN = /^mongodb(\+srv)?:\/\//;
+
+function readValue(value) {
+  if (typeof value !== 'string') {
+    return '';
+  }
+  return value.trim();
+}
+
+function resolveRequiredValue(key) {
+  return readValue(process.env[key]) || readValue(INTERNAL_VAULT[key]);
+}
 
 function resolveMongoUri() {
-  return MONGO_ALIASES.map((key) => process.env[key]).find(Boolean) || INTERNAL_VAULT.MONGODB_URI;
+  const envUri = MONGO_ALIASES
+    .map((key) => readValue(process.env[key]))
+    .find(Boolean);
+
+  return envUri || readValue(INTERNAL_VAULT.MONGODB_URI);
 }
 
 function validate() {
   console.log('--- SYSTEM_GUARDRAIL: ENVIRONMENT_AUDIT ---');
   const missing = [];
 
-  // Check required vars (Env or Vault)
   REQUIRED_VARS.forEach((key) => {
-    if (!process.env[key] && !INTERNAL_VAULT[key]) {
+    if (!resolveRequiredValue(key)) {
       missing.push(key);
     }
   });
@@ -37,19 +49,20 @@ function validate() {
     if (missing.includes('AUTH_SECRET')) {
       console.error('TIP: Add AUTH_SECRET to your Vercel/Netlify project environment variables.');
     }
-    if (missing.some((key) => key.startsWith('MONGODB_URI'))) {
+    if (missing.includes('MONGODB_URI (or MONGO_URI/STORAGE_URL alias)')) {
       console.error('TIP: Add MONGODB_URI (or MONGO_URI/STORAGE_URL) so /api/chat RAG can initialize Mongo retrievers.');
     }
     console.error('System initialization aborted.');
     process.exit(1);
   }
 
-  const isVaulted = !REQUIRED_VARS.every((key) => process.env[key]) || !MONGO_ALIASES.some((key) => process.env[key]);
-  if (isVaulted) {
+  const hasDirectRequiredEnv = REQUIRED_VARS.every((key) => readValue(process.env[key]));
+  const hasDirectMongoEnv = MONGO_ALIASES.some((key) => readValue(process.env[key]));
+  if (!hasDirectRequiredEnv || !hasDirectMongoEnv) {
     console.log('STATUS: Operating in UNILATERAL_VAULT mode (Zero-Config Enabled).');
   }
 
-  if (!mongoUri.startsWith('mongodb')) {
+  if (!MONGODB_URI_PATTERN.test(mongoUri)) {
     console.error('ERROR: Invalid MONGODB_URI format. Must start with "mongodb://" or "mongodb+srv://".');
     process.exit(1);
   }
