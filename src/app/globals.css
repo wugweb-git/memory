@@ -7,14 +7,14 @@
 :root {
   /* DARK (default) — Nothing OS / Framer reference */
   --bg-primary: #000000;
-  --bg-secondary: #0A0A0A;
-  --bg-tertiary: #141414;
-  --bg-elevated: #1A1A1A;
-  --border-primary: rgba(255, 255, 255, 0.08);
-  --border-secondary: rgba(255, 255, 255, 0.04);
+  --bg-secondary: #0D0D0D;
+  --bg-tertiary: #171717;
+  --bg-elevated: #1F1F1F;
+  --border-primary: rgba(255, 255, 255, 0.14);
+  --border-secondary: rgba(255, 255, 255, 0.08);
   --text-primary: #FFFFFF;
-  --text-secondary: #A1A1AA;   /* zinc-400 — WCAG AA on black */
-  --text-tertiary: #71717A;    /* zinc-500 — WCAG AA on elevated */
+  --text-secondary: #D4D4D8;   /* stronger for body readability */
+  --text-tertiary: #A1A1AA;    /* stronger metadata contrast */
   --text-disabled: #3F3F46;    /* zinc-700 */
   --accent: #00AAFF;           /* adjusted cyan — 4.6:1 on black */
   --accent-muted: rgba(0, 170, 255, 0.12);
@@ -51,14 +51,14 @@
 
 [data-theme="light"] {
   --bg-primary: #FFFFFF;
-  --bg-secondary: #FAFAFA;
-  --bg-tertiary: #F4F4F5;
+  --bg-secondary: #F5F5F5;
+  --bg-tertiary: #EDEDEF;
   --bg-elevated: #FFFFFF;
   --border-primary: rgba(0, 0, 0, 0.08);
   --border-secondary: rgba(0, 0, 0, 0.04);
   --text-primary: #09090B;
-  --text-secondary: #52525B;
-  --text-tertiary: #71717A;
+  --text-secondary: #27272A;
+  --text-tertiary: #3F3F46;
   --text-disabled: #D4D4D8;
   --accent: #0066CC;           /* darker blue — 4.5:1 on white */
   --accent-muted: rgba(0, 102, 204, 0.08);

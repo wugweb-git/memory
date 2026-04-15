@@ -323,19 +323,32 @@ export default function IdentityPrismWorkspace() {
 
                   <div className="p-2">
                     <label htmlFor="query-input" className="sr-only">Cognitive Query</label>
-                    <textarea 
-                      id="query-input"
-                      value={input}
-                      onChange={handleInputChange}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          if (!isLoading && input.trim() !== '') sendQuery(e as any);
-                        }
-                      }}
-                      placeholder="INITIATE_COGNITIVE_QUERY..."
-                      className="w-full h-24 p-4 bg-transparent text-lg font-medium text-text-primary placeholder:text-text-disabled focus:outline-none resize-none scrollbar-hide"
-                    />
+                    <div className="rounded-2xl border border-primary bg-primary/40 px-3 py-2 flex items-start gap-2">
+                      <Search size={18} className="mt-2 text-text-tertiary shrink-0" aria-hidden="true" />
+                      <textarea 
+                        id="query-input"
+                        value={input}
+                        onChange={handleInputChange}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            if (!isLoading && input.trim() !== '') sendQuery(e as any);
+                          }
+                        }}
+                        placeholder="Initiate cognitive query..."
+                        className="w-full h-24 p-2 bg-transparent text-base font-medium text-text-primary placeholder:text-text-disabled focus:outline-none resize-none scrollbar-hide"
+                      />
+                      {input.trim() && (
+                        <button
+                          type="button"
+                          onClick={() => handleInputChange({ target: { value: '' } } as any)}
+                          className="mt-1 p-2 rounded-lg text-text-tertiary hover:text-text-primary bg-secondary border border-primary focus-ring"
+                          aria-label="Clear query"
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <div className="px-6 py-4 flex items-center justify-between border-t border-primary bg-tertiary/20">

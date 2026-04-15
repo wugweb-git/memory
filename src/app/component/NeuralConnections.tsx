@@ -2,7 +2,7 @@
 import React from 'react';
 import { 
   Github, Youtube, Layout, Linkedin, 
-  ExternalLink, Zap, Globe2, Palette, Share2, Plus
+  ExternalLink, Zap, Globe2, Palette, Share2, Plus, CheckCircle2, Clock3, AlertTriangle, Loader2
 } from 'lucide-react';
 
 type ConnectionNode = {
@@ -25,9 +25,16 @@ const STATUS_COLORS: Record<string, string> = {
 
 const STATUS_DOT: Record<string, string> = {
   Synced: 'bg-success',
-  Indexing: 'bg-accent animate-ping',
+  Indexing: 'bg-accent',
   Idle: 'bg-text-disabled',
   Error: 'bg-danger',
+};
+
+const STATUS_ICON: Record<string, any> = {
+  Synced: CheckCircle2,
+  Indexing: Loader2,
+  Idle: Clock3,
+  Error: AlertTriangle,
 };
 
 const NODES: ConnectionNode[] = [
@@ -52,6 +59,16 @@ export const NeuralConnections = () => {
         </span>
       </div>
 
+      <div className="rounded-xl border border-primary bg-secondary px-4 py-3">
+        <div className="flex items-center justify-between text-xs font-semibold text-text-secondary mb-2">
+          <span>Sync progress</span>
+          <span>72%</span>
+        </div>
+        <div className="h-2 bg-tertiary rounded-full border border-primary overflow-hidden">
+          <div className="h-full bg-accent rounded-full" style={{ width: '72%' }} aria-hidden="true" />
+        </div>
+      </div>
+
       <ul role="list" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {NODES.map((node) => (
           <li key={node.id} role="listitem">
@@ -66,6 +83,16 @@ export const NeuralConnections = () => {
                 </div>
                 <div className="flex flex-col items-end gap-1">
                   <div className="flex items-center gap-2">
+                    {(() => {
+                      const StatusIcon = STATUS_ICON[node.status];
+                      return (
+                        <StatusIcon
+                          size={12}
+                          className={`${STATUS_COLORS[node.status]} ${node.status === 'Indexing' ? 'animate-spin' : ''}`}
+                          aria-hidden="true"
+                        />
+                      );
+                    })()}
                     <span className={`text-[10px] font-bold tracking-widest uppercase ${STATUS_COLORS[node.status]}`}>
                       {node.status}
                     </span>

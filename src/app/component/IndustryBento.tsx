@@ -54,11 +54,11 @@ export const IndustryBento = ({
         {INDUSTRIES.map((industry) => {
           const isSelected = selected === industry.name;
           return (
-            <div 
+            <button
+              type="button"
               key={industry.id}
               role="option"
               aria-selected={isSelected}
-              tabIndex={0}
               onClick={() => onSelect(industry.name)}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(industry.name); } }}
               className={`group p-5 rounded-2xl border transition-all duration-300 cursor-pointer relative overflow-hidden focus-ring ${
@@ -90,7 +90,7 @@ export const IndustryBento = ({
                   <span className={`text-[10px] font-mono font-bold ${isSelected ? 'text-accent' : 'text-text-tertiary'}`}>{industry.count}</span>
                 </div>
               </div>
-            </div>
+            </button>
           );
         })}
         

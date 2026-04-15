@@ -59,6 +59,15 @@ export const VentureVault = ({ selectedIndustry }: { selectedIndustry?: string }
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {filtered.length === 0 && (
+          <article className="md:col-span-2 glass-panel rounded-2xl p-10 border border-primary text-center space-y-3">
+            <h3 className="text-lg font-semibold text-text-primary">No ventures for this filter yet</h3>
+            <p className="text-sm text-text-secondary">
+              Try clearing the active vector filter or add a new venture node to populate this view.
+            </p>
+          </article>
+        )}
+
         {filtered.map((node) => (
           <article key={node.id} className="glass-panel rounded-2xl p-6 border border-primary hover:border-accent/20 transition-all duration-500 group relative overflow-hidden">
             <header className="flex items-center justify-between mb-6">
