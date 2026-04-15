@@ -82,6 +82,26 @@
   h1, h2, h3, h4, h5, h6 {
     @apply font-semibold tracking-tight;
   }
+
+  button,
+  a,
+  input,
+  textarea,
+  [role="button"],
+  [role="tab"],
+  [role="option"] {
+    @apply outline-none;
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  [role="button"]:focus-visible,
+  [role="tab"]:focus-visible,
+  [role="option"]:focus-visible {
+    box-shadow: var(--state-focus-ring);
+  }
 }
 
 @layer components {

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "./component/ThemeProvider";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -16,6 +17,7 @@ const jetbrains = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "Identity Prism | Neural OS",
+  metadataBase: new URL("https://wugweb.com"),
   description: "High-fidelity Personal Operating System & Neural RAG Matrix. A professional-grade OS for semantic memory and venture mapping.",
   keywords: ["Neural OS", "Identity Prism", "RAG", "Personal AI", "Venture Mapping", "Systems Architecture"],
   authors: [{ name: "Vedanshu Srivastava" }],
@@ -82,7 +84,7 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.variable} ${jetbrains.variable} font-sans`}>
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

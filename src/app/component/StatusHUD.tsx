@@ -42,8 +42,8 @@ export const StatusHUD = ({ stats, currentView, onViewChange }: StatusHUDProps) 
             <Cpu size={16} className="text-accent" />
           </div>
           <div className="hidden md:flex flex-col">
-            <span className="text-xs font-bold tracking-widest uppercase text-text-primary">PRISM_CORE</span>
-            <span className="text-[10px] font-mono text-text-tertiary uppercase flex items-center gap-1.5">
+            <span className="text-sm font-semibold tracking-wide text-text-primary">Prism Core</span>
+            <span className="text-xs font-mono text-text-tertiary flex items-center gap-1.5">
               <span className="w-1 h-1 bg-success rounded-full inline-block" />Status: Nominal
             </span>
           </div>
@@ -56,9 +56,10 @@ export const StatusHUD = ({ stats, currentView, onViewChange }: StatusHUDProps) 
               key={tab.id}
               role="tab"
               aria-selected={currentView === tab.id}
+              aria-current={currentView === tab.id ? 'page' : undefined}
               aria-controls={`panel-${tab.id}`}
               onClick={() => onViewChange(tab.id as ViewMode)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold tracking-wide uppercase transition-all focus-ring ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all focus-ring ${
                 currentView === tab.id 
                   ? 'bg-accent/10 text-accent border border-accent/20' 
                   : 'text-text-tertiary hover:text-text-primary hover:bg-tertiary'
@@ -76,7 +77,7 @@ export const StatusHUD = ({ stats, currentView, onViewChange }: StatusHUDProps) 
         <div className="flex items-center gap-6 pr-6 border-r border-primary">
           {stats.map((stat, i) => (
             <div key={i} className="flex flex-col items-end gap-0.5">
-              <span className="text-[10px] font-bold tracking-widest text-text-tertiary flex items-center gap-1.5 uppercase">
+              <span className="text-xs font-semibold tracking-wide text-text-tertiary flex items-center gap-1.5">
                 <stat.icon size={10} className={stat.color} aria-hidden="true" /> {stat.label}
               </span>
               <span className="text-sm font-mono font-bold text-text-secondary">{stat.value}</span>

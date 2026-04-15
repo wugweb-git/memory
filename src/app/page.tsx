@@ -111,7 +111,19 @@ export default function IdentityPrismWorkspace() {
 
       <div className="flex-1 flex overflow-hidden relative z-10">
         {/* Responsive Sidebar */}
-        <aside className="w-[var(--sidebar-width)] border-r border-primary flex flex-col items-center py-8 gap-8 bg-secondary/80 backdrop-blur-xl shrink-0" role="navigation">
+        <aside
+          className={`border-r border-primary flex flex-col items-center py-8 gap-8 bg-secondary/80 backdrop-blur-xl shrink-0 transition-all duration-300 ${sidebarOpen ? 'w-[var(--sidebar-width)]' : 'w-14'}`}
+          role="navigation"
+          aria-label="Workspace controls"
+        >
+           <button
+             className="p-2 rounded-lg text-text-tertiary hover:text-text-primary transition-colors focus-ring"
+             onClick={() => setSidebarOpen((v) => !v)}
+             aria-label="Toggle sidebar"
+             aria-expanded={sidebarOpen}
+           >
+             <Command size={18} />
+           </button>
            <button 
              className="p-3 rounded-2xl bg-accent/10 text-accent hover:scale-110 active:scale-95 transition-all focus-ring"
              aria-label="New cognitive thread"
@@ -166,15 +178,15 @@ export default function IdentityPrismWorkspace() {
                       <section className="space-y-6">
                          <div className="flex items-center justify-between px-2 pb-2 border-b border-primary">
                            <div className="flex items-center gap-3">
-                              <h3 className="text-xs font-bold uppercase tracking-wider text-text-primary flex items-center gap-2">
+                              <h3 className="text-sm font-semibold tracking-wide text-text-primary flex items-center gap-2">
                                 <Terminal size={14} className="text-accent" /> Memory Sync Core {selectedIndustry && `// ${selectedIndustry.toUpperCase()}`}
                               </h3>
-                              <span className="px-2 py-0.5 rounded-full bg-success/10 border border-success/20 text-[10px] font-bold text-success uppercase tracking-widest">
+                              <span className="px-2 py-0.5 rounded-full bg-success/10 border border-success/20 text-xs font-semibold text-success tracking-wide">
                                  RAG_ACTIVE
                               </span>
                            </div>
                            {messages.length > 0 && (
-                             <button onClick={() => setMessages([])} className="text-[10px] font-bold text-danger/80 hover:text-danger transition-all uppercase tracking-widest bg-danger/5 px-2 py-1 rounded border border-danger/10">
+                             <button onClick={() => setMessages([])} className="text-xs font-semibold text-danger/80 hover:text-danger transition-all tracking-wide bg-danger/5 px-2 py-1 rounded border border-danger/10 focus-ring">
                                 Wipe Context
                              </button>
                            )}
@@ -189,7 +201,7 @@ export default function IdentityPrismWorkspace() {
                                 >
                                   <Brain size={64} className="text-text-tertiary/20 mb-6" />
                                   <h2 className="text-xl font-medium text-text-primary mb-2">Initialize Neural Recall</h2>
-                                  <p className="text-xs font-bold text-text-tertiary uppercase tracking-widest">Awaiting logic spark...</p>
+                                  <p className="text-sm font-medium text-text-tertiary tracking-wide">Awaiting logic spark...</p>
                                 </motion.div>
                               ) : (
                                 <div className="space-y-12 relative z-10">
@@ -213,7 +225,7 @@ export default function IdentityPrismWorkspace() {
                                         }`}>
                                           {m.role !== 'user' ? highlightKeywords(m.content) : m.content}
                                         </div>
-                                        <span className="text-[10px] mt-3 font-mono text-text-disabled uppercase">
+                                        <span className="text-xs mt-3 font-mono text-text-disabled">
                                           {m.role === 'user' ? 'SIGNAL_IN' : 'SYNC_OUT'}{' // '}{new Date().toLocaleTimeString()}
                                         </span>
                                       </div>
@@ -245,7 +257,7 @@ export default function IdentityPrismWorkspace() {
                        <VoiceIngestion />
                        
                        <div className="glass-panel p-8 rounded-2xl flex flex-col gap-6">
-                          <h4 className="text-[11px] font-bold tracking-widest text-accent flex items-center justify-between uppercase">
+                          <h4 className="text-sm font-semibold tracking-wide text-accent flex items-center justify-between">
                             SYSTEM_HEALTH <Activity size={14} className={isLoading ? "animate-pulse" : ""} />
                           </h4>
                           <div className="space-y-6">
@@ -255,7 +267,7 @@ export default function IdentityPrismWorkspace() {
                                 { label: 'Link Strength', val: '98%', color: 'bg-success', pct: 98 },
                              ].map((sys) => (
                                <div key={sys.label} className="space-y-2">
-                                  <div className="flex justify-between text-[10px] font-bold text-text-tertiary uppercase">
+                                  <div className="flex justify-between text-xs font-semibold text-text-tertiary">
                                      <span>{sys.label}</span>
                                      <span className="text-text-secondary">{sys.val}</span>
                                   </div>
@@ -267,7 +279,7 @@ export default function IdentityPrismWorkspace() {
                           </div>
 
                           <div className="pt-4 border-t border-primary flex items-center justify-between">
-                             <span className="text-[10px] font-bold text-text-tertiary uppercase">RAG_STATUS: {auditReport?.report?.sectors?.intelligence?.status || 'IDLE'}</span>
+                             <span className="text-xs font-semibold text-text-tertiary">RAG_STATUS: {auditReport?.report?.sectors?.intelligence?.status || 'IDLE'}</span>
                              <button onClick={() => setShowAudit(true)} className="p-2 rounded-lg bg-tertiary text-text-tertiary hover:text-accent transition-colors focus-ring" aria-label="Open diagnostics">
                                <Settings size={14} />
                              </button>
@@ -276,7 +288,7 @@ export default function IdentityPrismWorkspace() {
 
                        <button className="w-full p-8 rounded-2xl border-2 border-dashed border-primary bg-secondary/20 hover:bg-secondary/40 hover:border-accent/40 transition-all group flex flex-col items-center justify-center text-center gap-4 focus-ring">
                           <Plus size={24} className="text-text-disabled group-hover:text-accent group-hover:rotate-90 transition-all duration-500" />
-                          <span className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest group-hover:text-text-secondary">Initialize_New_Vector</span>
+                          <span className="text-xs font-semibold text-text-tertiary tracking-wide group-hover:text-text-secondary">Initialize New Vector</span>
                        </button>
                     </aside>
                   </div>
@@ -303,7 +315,7 @@ export default function IdentityPrismWorkspace() {
               <div className="max-w-3xl mx-auto">
                 <form onSubmit={sendQuery} className="group relative bg-secondary border border-primary rounded-3xl shadow-3xl overflow-hidden focus-within:border-accent/50 transition-all duration-300">
                   <div className="flex items-center px-6 py-2 border-b border-primary bg-tertiary/50">
-                    <div className="flex items-center gap-4 text-[10px] font-bold text-text-tertiary uppercase tracking-wider">
+                    <div className="flex items-center gap-4 text-xs font-semibold text-text-tertiary tracking-wide">
                       <span className="flex items-center gap-2"><RefreshCcw size={12} className="animate-spin text-accent" /> SYST_SYNC: ACTIVE</span>
                       <span className="flex items-center gap-2 border-l border-primary pl-4">MODE: {searchMode}</span>
                     </div>
@@ -330,7 +342,7 @@ export default function IdentityPrismWorkspace() {
                     <button 
                       type="submit"
                       disabled={isLoading || input.trim() === ''}
-                      className="ml-auto px-8 py-2.5 rounded-xl font-bold text-[11px] uppercase tracking-widest transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-accent text-primary hover:bg-accent/80 focus-ring"
+                      className="ml-auto px-8 py-2.5 rounded-xl font-semibold text-sm tracking-wide transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-accent text-primary hover:bg-accent/80 focus-ring"
                     >
                       {isLoading ? 'EXECUTING...' : 'INITIATE SYNC'}
                     </button>
@@ -354,8 +366,8 @@ export default function IdentityPrismWorkspace() {
             <div className="glass-panel w-full max-w-xl p-8 rounded-3xl border border-primary shadow-3xl relative overflow-hidden">
                <div className="flex items-center justify-between mb-8">
                   <div className="space-y-1">
-                     <h2 id="audit-title" className="text-xl font-bold text-text-primary uppercase tracking-tight">System_Audit</h2>
-                     <p className="text-[10px] font-mono text-text-tertiary uppercase tracking-widest">DIAGNOSTICS_v4.2</p>
+                     <h2 id="audit-title" className="text-xl font-semibold text-text-primary tracking-tight">System Audit</h2>
+                     <p className="text-xs font-mono text-text-tertiary tracking-wide">DIAGNOSTICS_v4.2</p>
                   </div>
                   <button onClick={() => setShowAudit(false)} className="p-2 rounded-xl bg-tertiary border border-primary text-text-tertiary hover:text-text-primary transition-all focus-ring" aria-label="Close audit">
                      <X size={20} />
@@ -366,7 +378,7 @@ export default function IdentityPrismWorkspace() {
                   {!auditReport ? (
                     <div className="py-12 flex flex-col items-center justify-center gap-4">
                        <RefreshCcw size={32} className="text-accent animate-spin" />
-                       <span className="text-xs font-bold text-text-tertiary uppercase tracking-widest">Scanning layers...</span>
+                       <span className="text-sm font-medium text-text-tertiary tracking-wide">Scanning layers...</span>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -375,18 +387,18 @@ export default function IdentityPrismWorkspace() {
                             <div className="flex items-center gap-4">
                                <ShieldCheck size={18} className={data.status === 'ONLINE' || data.status === 'SYNCHRONIZED' ? 'text-success' : 'text-danger'} />
                                <div className="text-left">
-                                  <h4 className="text-xs font-bold text-text-primary uppercase tracking-wide">{sector.replace('_', ' ')}</h4>
-                                  <p className="text-[9px] text-text-tertiary font-medium uppercase">{data.note || 'Core Layer'}</p>
+                                  <h4 className="text-sm font-semibold text-text-primary tracking-wide">{sector.replace('_', ' ')}</h4>
+                                  <p className="text-xs text-text-tertiary font-medium">{data.note || 'Core Layer'}</p>
                                </div>
                             </div>
-                            <span className={`text-[10px] font-bold uppercase tracking-wider ${data.status === 'ONLINE' || data.status === 'SYNCHRONIZED' ? 'text-success' : 'text-danger'}`}>
+                            <span className={`text-xs font-semibold tracking-wide ${data.status === 'ONLINE' || data.status === 'SYNCHRONIZED' ? 'text-success' : 'text-danger'}`}>
                                {data.status}
                             </span>
                          </div>
                        ))}
                        <div className="pt-6 mt-6 border-t border-primary flex items-center justify-between">
-                          <span className="text-[10px] font-mono text-text-disabled uppercase">ID: {Math.random().toString(36).substring(7).toUpperCase()}</span>
-                          <button onClick={performAudit} className="text-[10px] font-bold text-accent hover:underline uppercase tracking-widest focus-ring">Re-run Diagnostics</button>
+                          <span className="text-xs font-mono text-text-disabled">ID: {Math.random().toString(36).substring(7).toUpperCase()}</span>
+                          <button onClick={performAudit} className="text-xs font-semibold text-accent hover:underline tracking-wide focus-ring">Re-run diagnostics</button>
                        </div>
                     </div>
                   )}

@@ -22,7 +22,7 @@ export const ActivityLog = () => {
   useEffect(() => {
     const fetchSignals = async () => {
       try {
-        const res = await fetch('/api/memory/signals');
+        const res = await fetch('/api/memory/signals', { cache: 'no-store' });
         if (!res.ok) throw new Error("Sync failure");
         const data = await res.json();
         setSignals(data);
@@ -43,9 +43,9 @@ export const ActivityLog = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-text-primary tracking-tight">Activity Signals</h2>
-          <p className="text-xs text-text-tertiary font-normal mt-1 uppercase tracking-wider">Creation + Curation Stream</p>
+          <p className="text-sm text-text-tertiary font-normal mt-1 tracking-wide">Creation + Curation Stream</p>
         </div>
-        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase ${
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold tracking-wide ${
           error ? 'bg-danger/10 border-danger/20 text-danger' : 'bg-success/10 border-success/20 text-success'
         }`} role="status">
           <RefreshCw size={11} className={loading ? "animate-spin" : ""} aria-hidden="true" /> 
@@ -62,12 +62,12 @@ export const ActivityLog = () => {
         {loading && signals.length === 0 ? (
           <li className="pl-8 py-16 flex flex-col items-center justify-center gap-3 text-text-tertiary" role="status">
             <RefreshCw size={28} className="animate-spin" aria-hidden="true" />
-            <span className="text-xs font-bold uppercase tracking-widest">Loading signals...</span>
+            <span className="text-sm font-medium tracking-wide">Loading signals...</span>
           </li>
         ) : error && signals.length === 0 ? (
           <li className="pl-8 py-16 flex flex-col items-center justify-center gap-3" role="alert">
             <AlertCircle size={28} className="text-danger/40" aria-hidden="true" />
-            <span className="text-xs font-bold uppercase tracking-widest text-text-tertiary">Database node desynchronized.</span>
+            <span className="text-sm font-medium tracking-wide text-text-tertiary">Database node desynchronized.</span>
           </li>
         ) : (
           signals.map((signal) => (
@@ -84,7 +84,7 @@ export const ActivityLog = () => {
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-3 mb-3">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className={`text-[10px] font-bold tracking-widest flex items-center gap-1.5 uppercase ${
+                      <span className={`text-xs font-semibold tracking-wide flex items-center gap-1.5 ${
                         signal.type === 'creation' ? 'text-accent' : 'text-success'
                       }`}>
                         {signal.type === 'creation' 
@@ -92,7 +92,7 @@ export const ActivityLog = () => {
                           : <Bookmark size={10} aria-hidden="true" />
                         } {signal.action}
                       </span>
-                      <span className="text-[10px] text-text-tertiary font-mono">via {signal.source}</span>
+                      <span className="text-xs text-text-tertiary font-mono">via {signal.source}</span>
                     </div>
                     <h4 className="text-sm font-semibold text-text-primary group-hover:text-accent transition-colors flex items-center gap-2">
                       {signal.target} 
@@ -100,8 +100,8 @@ export const ActivityLog = () => {
                     </h4>
                   </div>
                   <div className="flex flex-col items-start md:items-end shrink-0 gap-1">
-                    <time dateTime={signal.time} className="text-[10px] font-mono text-text-tertiary">{signal.time}</time>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-secondary border border-primary text-text-tertiary font-mono uppercase tracking-widest">{signal.industry}</span>
+                    <time dateTime={signal.time} className="text-xs font-mono text-text-tertiary">{signal.time}</time>
+                    <span className="text-xs px-2 py-0.5 rounded bg-secondary border border-primary text-text-tertiary font-mono tracking-wide">{signal.industry}</span>
                   </div>
                 </div>
 

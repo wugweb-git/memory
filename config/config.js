@@ -6,6 +6,13 @@ function readEnv(name, fallback = '') {
   return process.env[name] || fallback;
 }
 
+function readEnvAny(names, fallback = '') {
+  for (const name of names) {
+    if (process.env[name]) return process.env[name];
+  }
+  return fallback;
+}
+
 export function loadConfig() {
   const missing = required.filter((k) => !readEnv(k));
   if (missing.length) {
@@ -15,9 +22,9 @@ export function loadConfig() {
   return {
     env: readEnv('NODE_ENV', 'development'),
     authSecret: readEnv('AUTH_SECRET', INTERNAL_VAULT.AUTH_SECRET),
-    mongodbUri: readEnv('MONGODB_URI', readEnv('MONGO_URI', readEnv('STORAGE_URL', INTERNAL_VAULT.MONGODB_URI))),
+    mongodbUri: readEnvAny(['MONGODB_URI', 'MONGO_URI', 'STORAGE_URL'], INTERNAL_VAULT.MONGODB_URI),
     openaiApiKey: readEnv('OPENAI_API_KEY', INTERNAL_VAULT.OPENAI_API_KEY),
-    geminiApiKey: readEnv('GEMINI_API_KEY', INTERNAL_VAULT.GEMINI_API_KEY),
+    geminiApiKey: readEnvAny(['GEMINI_API_KEY', 'Gemini_API_Key'], INTERNAL_VAULT.GEMINI_API_KEY),
     blobToken: readEnv('BLOB_READ_WRITE_TOKEN', INTERNAL_VAULT.BLOB_READ_WRITE_TOKEN),
     allowedOrigins: readEnv('ALLOWED_ORIGINS', '*').split(',').map((x) => x.trim()),
     requestLimitBytes: Number(readEnv('REQUEST_LIMIT_BYTES', '1048576')),

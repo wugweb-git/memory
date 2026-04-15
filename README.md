@@ -7,10 +7,12 @@ Phase 1 is now wrapped on a **Mongo/Redis-free** stack. Runtime state is persist
 Required:
 - `AUTH_SECRET`
 
-If `AUTH_SECRET` is missing, the app falls back to `dev_auth_secret_change_me` to avoid startup/login lockout in misconfigured environments (override in production).
+If `AUTH_SECRET` is missing, local development falls back to `dev_auth_secret_change_me`. In production, `AUTH_SECRET` must be explicitly set in environment variables.
 
 Recommended:
 - `BLOB_READ_WRITE_TOKEN` (required for Blob persistence and avatar upload/view)
+- `OPENAI_API_KEY`
+- `GEMINI_API_KEY` (alias supported: `Gemini_API_Key`)
 
 Optional:
 - `BLOB_DATA_PATH` (default: `memory/store.json`)
@@ -18,6 +20,22 @@ Optional:
 - `ADMIN_PASSWORD`
 - `ALLOWED_ORIGINS`
 - `REQUEST_LIMIT_BYTES`
+
+## Deployment quick-fix (Vercel + Netlify)
+
+If deploys are failing, the issue is usually **build/config/env**, not RAG logic.
+
+1. Use Node 20 in the platform settings.
+2. Set required env vars (`AUTH_SECRET`, and `BLOB_READ_WRITE_TOKEN` if you need Blob persistence/uploads).
+3. Keep platform config minimal:
+   - `vercel.json` should only define `"framework": "nextjs"`.
+   - `netlify.toml` should use the Next.js plugin and should not force `publish = ".next"`.
+4. Ensure lockfile is in sync with `package.json` (`npm install` locally, commit lockfile).
+5. Verify locally before pushing:
+   ```bash
+   npm install
+   npm run build
+   ```
 
 ## Environment Guardrails
 
@@ -28,7 +46,33 @@ You can manually trigger a validation check:
 node scripts/validate-env.js
 ```
 
-If critical variables (like `MONGODB_URI` or `AUTH_SECRET`) are missing, the build will fail intentionally.
+If `AUTH_SECRET` is missing, the audit fails intentionally. `MONGODB_URI` is optional in Blob-first mode; when absent, signals endpoints return empty data until Mongo is configured.
+
+## Secret hygiene (important)
+
+If credentials were ever committed to git history, do this immediately:
+1. Revoke/rotate those keys in the provider dashboards (OpenAI, MongoDB, Vercel Blob, etc.).
+2. Replace them with platform environment variables (Vercel/Netlify project settings).
+3. Never commit real keys again (including base64-encoded forms).
+
+### Rotation + redeploy runbook
+
+1. Rotate these keys first:
+   - `OPENAI_API_KEY`
+   - `MONGODB_URI` (or `MONGO_URI`)
+   - `BLOB_READ_WRITE_TOKEN`
+   - `GEMINI_API_KEY` (if used)
+   - `AUTH_SECRET`
+2. Add the rotated values to:
+   - **Vercel** → Project → Settings → Environment Variables
+   - **Netlify** → Site settings → Environment variables
+3. Validate repo content before deploy:
+   ```bash
+   npm run security:scan
+   node scripts/validate-env.js
+   npm run build
+   ```
+4. Redeploy from the latest commit in each platform dashboard.
 
 ## API routes
 

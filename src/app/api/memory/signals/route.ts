@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MongoClient } from 'mongodb';
-import { config } from '../../../../config/config.js';
+import { config } from '@/config/runtime-config';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,11 +9,20 @@ export const dynamic = 'force-dynamic';
  * Fetches the most recent ingestion activity from the Unified Memory Engine.
  */
 export async function GET(req: NextRequest) {
+  const uri =
+    process.env.MONGO_URI ||
+    process.env.MONGODB_URI ||
+    process.env.STORAGE_URL ||
+    config.mongodbUri;
+
+  if (!uri || !uri.startsWith('mongodb')) {
+    return NextResponse.json([]);
+  }
+
+  let client: MongoClient | null = null;
+
   try {
-    const uri = config.mongodbUri;
-    if (!uri) throw new Error("MONGODB_URI_MISSING");
-    
-    const client = new MongoClient(uri);
+    client = new MongoClient(uri);
     await client.connect();
     
     // Using the same namespace as defined in utils/openai.ts
@@ -25,8 +34,6 @@ export async function GET(req: NextRequest) {
       .sort({ timestamp: -1 })
       .limit(20)
       .toArray();
-
-    await client.close();
 
     // Map MongoDB documents to the ActivityEntry interface
     const activityEntries = signals.map(s => ({
@@ -44,6 +51,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(activityEntries);
   } catch (error: any) {
     console.error('Signals Fetch Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json([]);
+  } finally {
+    if (client) {
+      await client.close();
+    }
   }
 }

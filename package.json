@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "security:scan": "bash scripts/scan-secrets.sh",
     "memory:audit": "node scripts/audit.js",
     "memory:backup": "node scripts/backup.js",
     "db:ping": "node scripts/ping.js"
