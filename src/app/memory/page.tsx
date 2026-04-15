@@ -10,6 +10,8 @@ type MonitorState = {
     failed_count: number;
     retry_queue_count: number;
     source_count: number;
+    item_count: number;
+    growth_rate_per_day: number;
     ingestion_logs: any[];
   };
   storage: {
@@ -23,6 +25,7 @@ type MonitorState = {
   };
   sources: any[];
   activity: any[];
+  documents: any[];
   review_queue: {
     hold: any[];
     failed: any[];
@@ -50,6 +53,7 @@ export default function MemoryControlSurface() {
   const [selectedPacket, setSelectedPacket] = useState<any | null>(null);
   const [statusFilter, setStatusFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
+  const [activityFilter, setActivityFilter] = useState('');
   const [loading, setLoading] = useState(false);
 
   const fetchMonitor = async () => {
@@ -140,6 +144,7 @@ export default function MemoryControlSurface() {
           <div className="rounded-xl border border-zinc-800 p-4 bg-zinc-900/40">
             <p className="text-xs text-zinc-400">Sources</p>
             <p className="text-lg font-semibold">{monitor?.stats.source_count ?? '--'}</p>
+            <p className="text-xs text-zinc-500">Growth/day: {monitor?.stats.growth_rate_per_day ?? '--'}</p>
           </div>
         </section>
 
@@ -229,6 +234,60 @@ export default function MemoryControlSurface() {
               <p>CORRECTION: {monitor?.review_queue.correction?.length ?? 0}</p>
               <p className="text-zinc-500">Restricted packets are encrypted-at-rest flagged and excluded from automatic replay.</p>
             </div>
+          </div>
+        </section>
+
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="rounded-xl border border-zinc-800 p-4 bg-zinc-900/40">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold">Activity Feed</h3>
+              <input
+                className="px-2 py-1 rounded bg-zinc-900 border border-zinc-700 text-xs"
+                placeholder="filter by source/type"
+                value={activityFilter}
+                onChange={(e) => setActivityFilter(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2 max-h-48 overflow-auto text-xs">
+              {monitor?.activity
+                ?.filter((row) => {
+                  if (!activityFilter) return true;
+                  const haystack = `${row.source || ''} ${row.type || ''}`.toLowerCase();
+                  return haystack.includes(activityFilter.toLowerCase());
+                })
+                .map((row) => (
+                  <div key={row._id} className="p-2 rounded border border-zinc-800 bg-zinc-950">
+                    <p>{row.source} • {row.type}</p>
+                    <p className="text-zinc-500">{row.status} • {row.event_time}</p>
+                  </div>
+                ))}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-zinc-800 p-4 bg-zinc-900/40">
+            <h3 className="text-sm font-semibold mb-3">Ingestion Decisions</h3>
+            <div className="space-y-2 max-h-48 overflow-auto text-xs">
+              {monitor?.stats?.ingestion_logs?.map((log) => (
+                <div key={log._id} className="p-2 rounded border border-zinc-800 bg-zinc-950">
+                  <p>{log.source} → {log.decision}</p>
+                  <p className="text-zinc-500">{log.reason} • retries: {log.retry_count ?? 0}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-zinc-800 p-4 bg-zinc-900/40">
+          <h3 className="text-sm font-semibold mb-3">Documents Panel</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
+            {(monitor?.documents || []).map((doc: any) => (
+              <div key={doc._id} className="p-2 rounded border border-zinc-800 bg-zinc-950">
+                <p className="font-medium">{doc.type}</p>
+                <p className="text-zinc-500">{doc.title || 'Untitled'}</p>
+                <p className="text-zinc-500">{doc.encryption_required ? 'Encrypted' : 'Standard'} • {doc.restricted_access ? 'Restricted' : 'Accessible'}</p>
+              </div>
+            ))}
+            {!(monitor?.documents || []).length && <p className="text-zinc-500">No documents indexed.</p>}
           </div>
         </section>
       </main>

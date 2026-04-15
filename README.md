@@ -105,6 +105,7 @@ If credentials were ever committed to git history, do this immediately:
 - `POST /api/memory/ingest`
 - `GET /api/memory/packets`
 - `GET /api/memory/monitor`
+- `GET /api/memory/source`
 - `POST /api/memory/source`
 - `POST /api/memory/replay`
 - `POST /api/memory/packet/action`
