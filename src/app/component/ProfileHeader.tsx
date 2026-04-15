@@ -1,107 +1,111 @@
 "use client";
 import React from 'react';
 import { 
-  ShieldCheck, MapPin, Link as LinkIcon, 
-  Twitter, Github, Linkedin, ExternalLink,
-  Sparkles, Zap, Brain, Globe, Cpu, User
+  ShieldCheck, MapPin, Globe, Cpu,
+  Twitter, Github, Linkedin, ExternalLink
 } from 'lucide-react';
-import { JetBrains_Mono, Outfit } from 'next/font/google';
-
-const jetBrains = JetBrains_Mono({ subsets: ['latin'] });
-const outfit = Outfit({ subsets: ['latin'] });
 
 export const ProfileHeader = () => {
+  const socials = [
+    { label: 'LinkedIn', icon: Linkedin, href: '#', ariaLabel: 'Visit LinkedIn profile' },
+    { label: 'GitHub', icon: Github, href: '#', ariaLabel: 'Visit GitHub profile' },
+    { label: 'Twitter', icon: Twitter, href: '#', ariaLabel: 'Visit Twitter/X profile' },
+    { label: 'Portfolio', icon: ExternalLink, href: '#', ariaLabel: 'Visit portfolio website' },
+  ];
+
+  const stats = [
+    { label: 'Venture DNA', val: '4.2k Nodes', pct: 92 },
+    { label: 'Logic Sync', val: '98%', pct: 98 },
+    { label: 'Neural Weight', val: 'High', pct: 75 },
+  ];
+
   return (
-    <div className="relative w-full">
-      {/* Ambient background glow */}
-      <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-[#00E5FF]/5 blur-[120px] rounded-full pointer-events-none" />
-      
-      <div className="glass-panel p-12 rounded-[3rem] border border-white/[0.08] relative overflow-hidden flex flex-col md:flex-row items-center md:items-start gap-12 group">
-        {/* Profile Signal Identity */}
-        <div className="relative shrink-0">
-           <div className="absolute -inset-2 bg-gradient-to-tr from-[#00E5FF] to-[#10B981] rounded-[2.5rem] blur-xl opacity-20 group-hover:opacity-40 transition-opacity duration-1000" />
-           <div className="relative w-48 h-48 rounded-[2.2rem] bg-black border border-white/10 flex items-center justify-center overflow-hidden shadow-3xl">
+    <section aria-label="Profile overview">
+      <div className="glass-panel p-8 rounded-2xl border border-primary relative overflow-hidden">
+        <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
+          
+          {/* Avatar */}
+          <div className="relative shrink-0">
+            <div className="w-32 h-32 md:w-40 md:h-40 rounded-2xl bg-secondary border border-primary flex items-center justify-center overflow-hidden">
               <img 
                 src="/user.png" 
-                alt="Avatar" 
-                className="w-full h-full object-cover opacity-90 group-hover:scale-110 transition-transform duration-1000" 
-                onError={(e) => (e.currentTarget.src = 'https://ui-avatars.com/api/?name=V&size=512&background=030303&color=00E5FF&bold=true')} 
+                alt="Vedanshu Srivastava – Systems Architect & Founder"
+                className="w-full h-full object-cover"
+                onError={(e) => (e.currentTarget.src = 'https://ui-avatars.com/api/?name=VS&size=512&background=0A0A0A&color=00AAFF&bold=true')} 
               />
-           </div>
-           
-           {/* Active Node Indicator */}
-           <div className="absolute -bottom-2 -right-2 w-14 h-14 rounded-2xl bg-black border border-white/10 flex items-center justify-center text-emerald-500 shadow-2xl">
-              <div className="relative">
-                 <div className="absolute inset-0 bg-emerald-500 rounded-full blur-sm animate-pulse" />
-                 <ShieldCheck size={28} className="relative z-10" />
-              </div>
-           </div>
-        </div>
+            </div>
+            {/* Verified badge */}
+            <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-xl bg-secondary border border-primary flex items-center justify-center text-success" aria-label="Verified identity">
+              <ShieldCheck size={20} aria-hidden="true" />
+            </div>
+          </div>
 
-        {/* Identity Metadata */}
-        <div className="flex-1 text-center md:text-left space-y-8 py-2">
-           <div className="space-y-3">
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mb-2">
-                 <h1 className={`text-4xl md:text-5xl font-black text-white tracking-tight ${outfit.className}`}>
-                    Vedanshu Srivastava
-                 </h1>
-                 <div className="px-3 py-1 rounded-xl bg-[#00E5FF]/10 border border-[#00E5FF]/20 text-[10px] font-black text-[#00E5FF] tracking-[0.2em] uppercase flex items-center gap-2">
-                    <Sparkles size={12} className="animate-pulse" /> Identity_Prism_v4.2
-                 </div>
+          {/* Identity */}
+          <div className="flex-1 text-center md:text-left space-y-5">
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-1">
+                <h1 className="text-2xl md:text-[var(--font-xl)] font-bold text-text-primary tracking-tight">
+                  Vedanshu Srivastava
+                </h1>
+                <span className="px-2.5 py-1 rounded-lg bg-accent/10 border border-accent/20 text-xs font-bold text-accent tracking-wider uppercase">
+                  Identity_Prism
+                </span>
               </div>
-              <p className={`text-xl text-zinc-400 font-medium ${outfit.className} max-w-2xl leading-relaxed`}>
-                Systems Architect & Founder. Building the intersection of <span className="text-white border-b border-[#00E5FF]/40">Human Spirit</span> and <span className="text-white border-b border-[#10B981]/40">Machine Logic</span>.
+              <p className="text-base text-text-secondary font-normal max-w-2xl leading-relaxed">
+                Systems Architect &amp; Founder. Building the intersection of{' '}
+                <strong className="text-text-primary font-semibold">Human Spirit</strong> and{' '}
+                <strong className="text-text-primary font-semibold">Machine Logic</strong>.
               </p>
-           </div>
+            </div>
 
-           <div className="flex flex-wrap items-center justify-center md:justify-start gap-8">
-              <div className="flex items-center gap-3 text-zinc-500">
-                 <MapPin size={16} className="text-[#00E5FF]" />
-                 <span className={`text-[11px] font-black uppercase tracking-widest ${jetBrains.className}`}>GLOBAL_DEPLOYMENT</span>
+            {/* Meta */}
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-5">
+              <div className="flex items-center gap-2 text-text-tertiary">
+                <MapPin size={14} className="text-accent" aria-hidden="true" />
+                <span className="text-xs font-mono uppercase tracking-widest">GLOBAL_DEPLOYMENT</span>
               </div>
-              <div className="flex items-center gap-3 text-zinc-500">
-                 <Globe size={16} className="text-[#10B981]" />
-                 <span className={`text-[11px] font-black uppercase tracking-widest ${jetBrains.className}`}>WUGWEB.COM</span>
+              <div className="flex items-center gap-2 text-text-tertiary">
+                <Globe size={14} aria-hidden="true" />
+                <span className="text-xs font-mono uppercase tracking-widest">WUGWEB.COM</span>
               </div>
-              <div className="flex items-center gap-3 text-zinc-500">
-                 <Cpu size={16} className="text-[#F59E0B]" />
-                 <span className={`text-[11px] font-black uppercase tracking-widest ${jetBrains.className}`}>RAG_VECTOR_ACTIVE</span>
+              <div className="flex items-center gap-2 text-text-tertiary">
+                <Cpu size={14} aria-hidden="true" />
+                <span className="text-xs font-mono uppercase tracking-widest">RAG_ACTIVE</span>
               </div>
-           </div>
+            </div>
 
-           <div className="pt-8 border-t border-white/[0.06] flex flex-wrap items-center justify-center md:justify-start gap-4">
-              {[
-                { label: 'LinkedIn', icon: Linkedin, color: 'hover:text-blue-500' },
-                { label: 'GitHub', icon: Github, color: 'hover:text-white' },
-                { label: 'Twitter', icon: Twitter, color: 'hover:text-cyan-400' },
-                { label: 'Portfolio', icon: ExternalLink, color: 'hover:text-[#00E5FF]' },
-              ].map(social => (
-                <button key={social.label} className={`flex items-center gap-3 px-6 py-2.5 rounded-2xl bg-white/[0.02] border border-white/5 text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] transition-all hover:bg-white/5 hover:border-white/20 ${social.color}`}>
-                   <social.icon size={14} /> {social.label}
-                </button>
+            {/* Socials */}
+            <div className="pt-4 border-t border-primary flex flex-wrap items-center justify-center md:justify-start gap-3">
+              {socials.map(social => (
+                <a 
+                  key={social.label} 
+                  href={social.href}
+                  aria-label={social.ariaLabel}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary border border-primary text-xs font-semibold text-text-tertiary uppercase tracking-wide transition-all hover:bg-tertiary hover:text-text-primary hover:border-primary focus-ring"
+                >
+                  <social.icon size={14} aria-hidden="true" /> {social.label}
+                </a>
               ))}
-           </div>
-        </div>
+            </div>
+          </div>
 
-        {/* Real-time Bio Stats */}
-        <div className="hidden lg:flex flex-col gap-6 justify-center pl-12 border-l border-white/[0.06]">
-           {[
-             { label: 'Venture_DNA', val: '4.2k Nodes', pct: 92, color: 'bg-[#00E5FF]' },
-             { label: 'Logic_Sync', val: '98%', pct: 98, color: 'bg-[#10B981]' },
-             { label: 'Neural_Weight', val: 'High', pct: 75, color: 'bg-purple-500' },
-           ].map(stat => (
-             <div key={stat.label} className="w-48 space-y-3">
+          {/* Right Stats */}
+          <div className="hidden lg:flex flex-col gap-4 justify-center pl-8 border-l border-primary min-w-[11rem]">
+            {stats.map(stat => (
+              <div key={stat.label} className="space-y-1.5">
                 <div className="flex justify-between items-end">
-                   <span className="text-[9px] font-black text-zinc-600 tracking-[0.2em] uppercase">{stat.label}</span>
-                   <span className={`text-[11px] font-black text-zinc-300 ${jetBrains.className}`}>{stat.val}</span>
+                  <span className="text-[10px] font-bold text-text-tertiary tracking-widest uppercase">{stat.label}</span>
+                  <span className="text-xs font-mono font-bold text-text-secondary">{stat.val}</span>
                 </div>
-                <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden p-[1px]">
-                   <div className={`h-full ${stat.color} opacity-60 rounded-full transition-all duration-1000`} style={{ width: `${stat.pct}%` }} />
+                <div className="h-1 w-full bg-tertiary rounded-full overflow-hidden border border-primary">
+                  <div className="h-full bg-accent opacity-60 rounded-full transition-all duration-1000" style={{ width: `${stat.pct}%` }} />
                 </div>
-             </div>
-           ))}
+              </div>
+            ))}
+          </div>
+
         </div>
       </div>
-    </div>
+    </section>
   );
 };

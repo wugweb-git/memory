@@ -2,28 +2,23 @@
 import React from 'react';
 import { 
   Cpu, Layout, Briefcase, HeartPulse, Shield, Globe, 
-  Terminal, Zap, Code, PenTool, Coffee, Search, 
-  Database, Gauge, TrendingUp, Layers, Brain, 
-  ChevronRight, ArrowUpRight, Plus, X
+  Terminal, Zap, Database, TrendingUp, Layers, Brain, 
+  Coffee, Plus, X
 } from 'lucide-react';
-import { JetBrains_Mono, Outfit } from 'next/font/google';
-
-const jetBrains = JetBrains_Mono({ subsets: ['latin'] });
-const outfit = Outfit({ subsets: ['latin'] });
 
 export const INDUSTRIES = [
-  { id: '1', name: 'Systems Architect', icon: Cpu, count: 42, color: 'text-blue-400', bg: 'bg-blue-400/5', border: 'border-blue-400/20' },
-  { id: '2', name: 'Fintech', icon: TrendingUp, count: 18, color: 'text-emerald-400', bg: 'bg-emerald-400/5', border: 'border-emerald-400/20' },
-  { id: '3', name: 'UX/Product', icon: Layout, count: 25, color: 'text-purple-400', bg: 'bg-purple-400/5', border: 'border-purple-400/20' },
-  { id: '4', name: 'AI Engineering', icon: Brain, count: 33, color: 'text-[#00E5FF]', bg: 'bg-[#00E5FF]/5', border: 'border-[#00E5FF]/20' },
-  { id: '5', name: 'Life Coaching', icon: HeartPulse, count: 12, color: 'text-red-400', bg: 'bg-red-400/5', border: 'border-red-400/20' },
-  { id: '6', name: 'Marketing', icon: Globe, count: 15, color: 'text-orange-400', bg: 'bg-orange-400/5', border: 'border-orange-400/20' },
-  { id: '7', name: 'F&B Strategy', icon: Coffee, count: 9, color: 'text-amber-400', bg: 'bg-amber-400/5', border: 'border-amber-400/20' },
-  { id: '8', name: 'Product Delivery', icon: Layers, count: 21, color: 'text-indigo-400', bg: 'bg-indigo-400/5', border: 'border-indigo-400/20' },
-  { id: '9', name: '0→1 Thinking', icon: Shield, count: 14, color: 'text-cyan-400', bg: 'bg-cyan-400/5', border: 'border-cyan-400/20' },
-  { id: '10', name: 'Tech/DevOps', icon: Terminal, count: 28, color: 'text-zinc-400', bg: 'bg-zinc-400/5', border: 'border-zinc-400/20' },
-  { id: '11', name: 'Digital Identity', icon: Database, count: 7, color: 'text-blue-500', bg: 'bg-blue-500/5', border: 'border-blue-500/20' },
-  { id: '12', name: 'Salesforce CRM', icon: Zap, count: 14, color: 'text-[#00A1E0]', bg: 'bg-[#00A1E0]/5', border: 'border-[#00A1E0]/20' },
+  { id: '1', name: 'Systems Architect', icon: Cpu, count: 42 },
+  { id: '2', name: 'Fintech', icon: TrendingUp, count: 18 },
+  { id: '3', name: 'UX/Product', icon: Layout, count: 25 },
+  { id: '4', name: 'AI Engineering', icon: Brain, count: 33 },
+  { id: '5', name: 'Life Coaching', icon: HeartPulse, count: 12 },
+  { id: '6', name: 'Marketing', icon: Globe, count: 15 },
+  { id: '7', name: 'F&B Strategy', icon: Coffee, count: 9 },
+  { id: '8', name: 'Product Delivery', icon: Layers, count: 21 },
+  { id: '9', name: '0→1 Thinking', icon: Shield, count: 14 },
+  { id: '10', name: 'Tech/DevOps', icon: Terminal, count: 28 },
+  { id: '11', name: 'Digital Identity', icon: Database, count: 7 },
+  { id: '12', name: 'Salesforce CRM', icon: Zap, count: 14 },
 ];
 
 export const IndustryBento = ({ 
@@ -34,64 +29,83 @@ export const IndustryBento = ({
   onSelect: (id: string | null) => void 
 }) => {
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between px-2">
-        <h3 className={`text-[11px] font-black tracking-[0.3em] text-zinc-500 uppercase flex items-center gap-3 ${outfit.className}`}>
-           <Layers size={14} className="text-[#00E5FF]" /> Active Vectors // {INDUSTRIES.length} Logic Clusters
+    <section aria-label="Industry vectors">
+      <div className="flex items-center justify-between px-1 mb-4">
+        <h3 className="text-xs font-bold tracking-widest text-text-tertiary uppercase flex items-center gap-2">
+          <Layers size={13} className="text-accent" aria-hidden="true" /> Active Vectors — {INDUSTRIES.length} Clusters
         </h3>
         {selected && (
           <button 
             onClick={() => onSelect(null)}
-            className="text-[10px] font-black text-red-500/60 hover:text-red-500 transition-colors uppercase flex items-center gap-2 bg-red-500/5 px-3 py-1.5 rounded-xl border border-red-500/10"
+            className="text-xs font-semibold text-danger/70 hover:text-danger transition-colors uppercase flex items-center gap-1.5 bg-danger/5 px-3 py-1.5 rounded-lg border border-danger/10 focus-ring"
+            aria-label="Clear filter"
           >
-            Clear Filter <X size={10} />
+            Clear Filter <X size={11} aria-hidden="true" />
           </button>
         )}
       </div>
       
-      <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6">
-        {INDUSTRIES.map((industry) => (
-          <div 
-            key={industry.id} 
-            onClick={() => onSelect(industry.name)}
-            className={`group p-6 rounded-[2rem] border transition-all duration-700 hover:scale-105 active:scale-95 cursor-pointer relative overflow-hidden backdrop-blur-3xl lg:p-7 ${
-              selected === industry.name 
-                ? 'bg-[#00E5FF]/10 border-[#00E5FF]/40 shadow-[0_0_30px_rgba(0,229,255,0.1)] ring-1 ring-[#00E5FF]/20' 
-                : `${industry.bg} ${industry.border} hover:border-white/30`
-            }`}
-          >
-            {/* Top Right Arrow */}
-            <div className={`absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all ${selected === industry.name ? 'opacity-100 text-[#00E5FF]' : ''}`}>
-               <ArrowUpRight size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-            </div>
-
-            <div className="flex items-center justify-between mb-8">
-               <div className={`w-10 h-10 rounded-xl bg-black border border-white/10 group-hover:border-white/30 flex items-center justify-center transition-all ${selected === industry.name ? 'border-[#00E5FF]/40' : ''}`}>
-                  <industry.icon size={18} className={`${industry.color} transition-colors ${selected === industry.name ? 'text-[#00E5FF]' : ''}`} />
-               </div>
-               <span className={`text-[9px] font-black ${jetBrains.className} text-zinc-800`}>{industry.id.padStart(2, '0')}</span>
-            </div>
-            
-            <div className="space-y-4">
-              <h4 className={`text-[12px] font-black text-white uppercase tracking-wider mb-2 leading-tight group-hover:text-white transition-colors`}>{industry.name}</h4>
-              <div className="flex items-center gap-3">
-                 <div className="h-1 flex-1 bg-white/5 rounded-full overflow-hidden p-[1px]">
-                    <div className={`h-full ${industry.color.replace('text', 'bg')} opacity-60 transition-all duration-1000 ease-out`} style={{ width: `${(industry.count / 42) * 100}%` }} />
-                 </div>
-                 <span className={`text-[10px] font-black ${jetBrains.className} ${industry.color}`}>{industry.count}</span>
+      <div
+        role="listbox"
+        aria-label="Select an industry to filter"
+        aria-multiselectable="false"
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3"
+      >
+        {INDUSTRIES.map((industry) => {
+          const isSelected = selected === industry.name;
+          return (
+            <div 
+              key={industry.id}
+              role="option"
+              aria-selected={isSelected}
+              tabIndex={0}
+              onClick={() => onSelect(industry.name)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(industry.name); } }}
+              className={`group p-5 rounded-2xl border transition-all duration-300 cursor-pointer relative overflow-hidden focus-ring ${
+                isSelected 
+                  ? 'bg-accent/10 border-accent/30 ring-1 ring-accent/20' 
+                  : 'glass-card border-primary hover:border-primary hover:bg-secondary'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-5">
+                <div className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-colors ${
+                  isSelected ? 'bg-accent/10 border-accent/30 text-accent' : 'bg-secondary border-primary text-text-tertiary group-hover:border-primary group-hover:text-text-secondary'
+                }`}>
+                  <industry.icon size={16} aria-hidden="true" />
+                </div>
+                <span className="text-[10px] font-mono text-text-disabled">{industry.id.padStart(2, '0')}</span>
+              </div>
+              
+              <div className="space-y-3">
+                <h4 className={`text-xs font-semibold uppercase tracking-wide leading-tight transition-colors ${
+                  isSelected ? 'text-accent' : 'text-text-primary'
+                }`}>{industry.name}</h4>
+                <div className="flex items-center gap-2">
+                  <div className="h-0.5 flex-1 bg-primary rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full transition-all duration-700 ${isSelected ? 'bg-accent' : 'bg-text-tertiary'} opacity-50`} 
+                      style={{ width: `${(industry.count / 42) * 100}%` }} 
+                    />
+                  </div>
+                  <span className={`text-[10px] font-mono font-bold ${isSelected ? 'text-accent' : 'text-text-tertiary'}`}>{industry.count}</span>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         
-        {/* Dynamic New Cluster Piece: Infinite Scalability */}
-        <div className="p-7 rounded-[2rem] border border-dashed border-white/10 bg-black/20 flex flex-col items-center justify-center text-center group hover:border-[#00E5FF]/40 transition-all duration-700 cursor-pointer min-h-[160px]">
-            <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-800 group-hover:text-[#00E5FF] group-hover:rotate-90 transition-all duration-500 mb-4">
-               <Plus size={20} />
-            </div>
-            <p className="text-[10px] font-black text-zinc-700 tracking-[0.3em] uppercase group-hover:text-zinc-500 transition-colors">Add_New_Vector</p>
-        </div>
+        {/* Add new */}
+        <button
+          className="p-5 rounded-2xl border-2 border-dashed border-primary bg-secondary/30 flex flex-col items-center justify-center text-center group hover:border-accent/30 transition-all duration-500 cursor-pointer min-h-[120px] focus-ring"
+          aria-label="Add new industry vector"
+          onClick={() => {}}
+        >
+          <div className="w-9 h-9 rounded-xl bg-secondary border border-primary flex items-center justify-center text-text-disabled group-hover:text-accent group-hover:rotate-90 transition-all duration-500 mb-3">
+            <Plus size={18} aria-hidden="true" />
+          </div>
+          <span className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest group-hover:text-text-secondary transition-colors">Add Vector</span>
+        </button>
       </div>
-    </div>
+    </section>
   );
 };

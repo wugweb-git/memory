@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Brain, User, Terminal, Cpu, Radar, Plus, Search, 
+  Brain, User, Terminal, Plus, Search, 
   Bell, Command, Settings, Power, RefreshCcw, X, 
   Activity, ShieldCheck, Database, Zap
 } from 'lucide-react';
@@ -22,6 +22,7 @@ import { JobSearchAgent } from './component/JobSearchAgent';
 import { IndustryBento } from './component/IndustryBento';
 import { VoiceIngestion } from './component/VoiceIngestion';
 import { IdentityPillars } from './component/IdentityPillars';
+import { InspirationHub } from './component/InspirationHub';
 import { ProfileHeader } from './component/ProfileHeader';
 import { ThemeToggle } from './component/ThemeToggle';
 

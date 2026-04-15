@@ -1,13 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { 
-  History, Activity, Zap, CheckCircle2, Clock, GitCommit, 
-  PenTool, Layout, Layers, HeartPulse, RefreshCw, 
-  Heart, Bookmark, Sparkles, Globe, MoveUpRight, AlertCircle 
-} from 'lucide-react';
-import { JetBrains_Mono } from 'next/font/google';
-
-const jetBrains = JetBrains_Mono({ subsets: ['latin'] });
+import { RefreshCw, PenTool, Bookmark, MoveUpRight, AlertCircle } from 'lucide-react';
 
 export type ActivityEntry = {
   id: string;
@@ -35,92 +28,93 @@ export const ActivityLog = () => {
         setSignals(data);
         setError(false);
       } catch (err) {
-        console.error("Signal Fetch Error:", err);
         setError(true);
       } finally {
         setLoading(false);
       }
     };
     fetchSignals();
-    const interval = setInterval(fetchSignals, 30000); // Poll every 30s
+    const interval = setInterval(fetchSignals, 30000);
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto w-full py-6">
+    <section className="space-y-6 max-w-4xl mx-auto w-full" aria-label="Activity signals">
       <div className="flex items-center justify-between">
-        <div className="text-left">
-          <h2 className="text-2xl font-bold tracking-tight text-white mb-1 uppercase tracking-[0.1em]">Activity Signals</h2>
-          <p className="text-zinc-500 text-xs tracking-widest uppercase">Creation + Curation Stream // The Digital Vacuum</p>
+        <div>
+          <h2 className="text-xl font-bold text-text-primary tracking-tight">Activity Signals</h2>
+          <p className="text-xs text-text-tertiary font-normal mt-1 uppercase tracking-wider">Creation + Curation Stream</p>
         </div>
-        <div className="flex items-center gap-3">
-           <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase ${
-             error ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-           }`}>
-              <RefreshCw size={12} className={loading ? "animate-spin" : "animate-spin-slow"} /> 
-              {error ? 'VACUUM_SYNC_ERR' : 'VACUUM_STATUS: NOMINAL'}
-           </div>
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase ${
+          error ? 'bg-danger/10 border-danger/20 text-danger' : 'bg-success/10 border-success/20 text-success'
+        }`} role="status">
+          <RefreshCw size={11} className={loading ? "animate-spin" : ""} aria-hidden="true" /> 
+          <span>{error ? 'Sync Error' : 'Nominal'}</span>
         </div>
       </div>
 
-      <div className="relative border-l border-white/5 ml-4 space-y-12 py-4">
+      <ol 
+        role="feed" 
+        aria-label="Activity feed"
+        aria-busy={loading}
+        className="relative border-l border-primary ml-3 space-y-6"
+      >
         {loading && signals.length === 0 ? (
-          <div className="py-20 flex flex-col items-center justify-center gap-4 text-zinc-700">
-             <RefreshCw size={32} className="animate-spin" />
-             <span className="text-[10px] font-black uppercase tracking-widest">Awaiting Neural Signals...</span>
-          </div>
+          <li className="pl-8 py-16 flex flex-col items-center justify-center gap-3 text-text-tertiary" role="status">
+            <RefreshCw size={28} className="animate-spin" aria-hidden="true" />
+            <span className="text-xs font-bold uppercase tracking-widest">Loading signals...</span>
+          </li>
         ) : error && signals.length === 0 ? (
-          <div className="py-20 flex flex-col items-center justify-center gap-4 text-red-500/40">
-             <AlertCircle size={32} />
-             <span className="text-[10px] font-black uppercase tracking-widest text-zinc-700">Database node desynchronized.</span>
-          </div>
+          <li className="pl-8 py-16 flex flex-col items-center justify-center gap-3" role="alert">
+            <AlertCircle size={28} className="text-danger/40" aria-hidden="true" />
+            <span className="text-xs font-bold uppercase tracking-widest text-text-tertiary">Database node desynchronized.</span>
+          </li>
         ) : (
           signals.map((signal) => (
-            <div key={signal.id} className="relative pl-10">
-              <div className={`absolute left-[-9px] top-0 w-4 h-4 rounded-full border-2 border-[#030303] flex items-center justify-center ${
-                signal.type === 'creation' 
-                  ? 'bg-blue-500 shadow-[0_0_100px_rgba(59,130,246,0.3)]' 
-                  : 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.3)]'
-              }`} />
+            <li key={signal.id} className="relative pl-8">
+              {/* Timeline dot */}
+              <span 
+                className={`absolute left-[-7px] top-1.5 w-3.5 h-3.5 rounded-full border-2 border-primary ${
+                  signal.type === 'creation' ? 'bg-accent' : 'bg-success'
+                }`}
+                aria-hidden="true"
+              />
               
-              <div className="glass-card p-5 rounded-3xl border border-white/5 hover:border-white/10 transition-all group max-w-3xl bg-black/40 backdrop-blur-xl">
-                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
-                    <div className="text-left">
-                       <div className="flex items-center gap-2 mb-1">
-                         <span className={`text-[10px] font-black tracking-[0.2em] flex items-center gap-1.5 uppercase ${
-                           signal.type === 'creation' ? 'text-blue-400' : 'text-emerald-400'
-                         }`}>
-                           {signal.type === 'creation' ? <PenTool size={10} /> : <Bookmark size={10} />} {signal.action}
-                         </span>
-                         <span className="text-[10px] font-bold text-zinc-600 tracking-widest uppercase truncate max-w-[100px]">via {signal.source}</span>
-                       </div>
-                       <h4 className="text-sm font-bold text-white group-hover:text-[#00E5FF] transition-colors flex items-center gap-2 line-clamp-1">
-                          {signal.target} <MoveUpRight size={12} className="text-zinc-700 group-hover:text-[#00E5FF]" />
-                       </h4>
+              <article className="glass-card p-5 rounded-2xl border border-primary hover:border-primary/50 transition-all group">
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-3 mb-3">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-[10px] font-bold tracking-widest flex items-center gap-1.5 uppercase ${
+                        signal.type === 'creation' ? 'text-accent' : 'text-success'
+                      }`}>
+                        {signal.type === 'creation' 
+                          ? <PenTool size={10} aria-hidden="true" /> 
+                          : <Bookmark size={10} aria-hidden="true" />
+                        } {signal.action}
+                      </span>
+                      <span className="text-[10px] text-text-tertiary font-mono">via {signal.source}</span>
                     </div>
-                    <div className="flex flex-col items-end shrink-0">
-                       <span className={`text-[9px] font-black ${jetBrains.className} text-zinc-600 uppercase`}>{signal.time}</span>
-                       <span className="text-[9px] font-bold text-zinc-500 px-2 py-0.5 rounded bg-white/5 border border-white/5 mt-1 uppercase tracking-widest">{signal.industry}</span>
-                    </div>
-                 </div>
+                    <h4 className="text-sm font-semibold text-text-primary group-hover:text-accent transition-colors flex items-center gap-2">
+                      {signal.target} 
+                      <MoveUpRight size={12} className="text-text-disabled group-hover:text-accent transition-colors" aria-hidden="true" />
+                    </h4>
+                  </div>
+                  <div className="flex flex-col items-start md:items-end shrink-0 gap-1">
+                    <time dateTime={signal.time} className="text-[10px] font-mono text-text-tertiary">{signal.time}</time>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-secondary border border-primary text-text-tertiary font-mono uppercase tracking-widest">{signal.industry}</span>
+                  </div>
+                </div>
 
-                 {signal.spiritNote && (
-                   <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] mt-2">
-                      <p className="text-[11px] text-zinc-400 leading-relaxed font-medium italic line-clamp-2">
-                        &quot;{signal.spiritNote}&quot;
-                      </p>
-                   </div>
-                 )}
-              </div>
-            </div>
+                {signal.spiritNote && (
+                  <blockquote className="p-3 rounded-xl bg-secondary border border-primary mt-2">
+                    <p className="text-xs text-text-secondary leading-relaxed italic">&ldquo;{signal.spiritNote}&rdquo;</p>
+                  </blockquote>
+                )}
+              </article>
+            </li>
           ))
         )}
-      </div>
-
-      <style dangerouslySetInnerHTML={{ __html: `
-        .animate-spin-slow { animation: spin 4s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-      ` }} />
-    </div>
+      </ol>
+    </section>
   );
 };
