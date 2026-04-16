@@ -2,8 +2,10 @@
 import React from 'react';
 import { 
   ShieldCheck, MapPin, Globe, Cpu,
-  Twitter, Github, Linkedin, ExternalLink
+  Twitter, Github, Linkedin, ExternalLink,
+  Zap, Star
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export const ProfileHeader = () => {
   const socials = [
@@ -14,94 +16,116 @@ export const ProfileHeader = () => {
   ];
 
   const stats = [
-    { label: 'Venture DNA', val: '4.2k Nodes', pct: 92 },
-    { label: 'Logic Sync', val: '98%', pct: 98 },
-    { label: 'Neural Weight', val: 'High', pct: 75 },
+    { label: 'Neural_Density', val: '4.2k Nodes', pct: 92 },
+    { label: 'Logic_Stability', val: '98%', pct: 98 },
+    { label: 'Experience_Matrix', val: 'Level_4', pct: 75 },
   ];
 
+  const skills = ['Systems Arch', 'RAG Neural', 'Venture Mapping', 'Digital Twin'];
+
   return (
-    <section aria-label="Profile overview">
-      <div className="glass-panel p-8 rounded-2xl border border-primary relative overflow-hidden">
-        <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
+    <section aria-label="Profile overview" className="w-full">
+      <div className="glass-panel p-10 rounded-[2.5rem] border border-border-primary relative overflow-hidden shadow-2xl">
+        {/* Subtle background texture */}
+        <div className="absolute inset-0 grid-bg opacity-5 pointer-events-none" />
+        <div className="absolute -top-10 -right-10 w-64 h-64 bg-accent/5 rounded-full blur-[100px] pointer-events-none" />
+
+        <div className="flex flex-col lg:flex-row items-center lg:items-start gap-12 relative z-10">
           
-          {/* Avatar */}
+          {/* Avatar / Portrait */}
           <div className="relative shrink-0">
-            <div className="w-32 h-32 md:w-40 md:h-40 rounded-2xl bg-secondary border border-primary flex items-center justify-center overflow-hidden">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+              className="w-32 h-32 md:w-48 md:h-48 rounded-[2rem] bg-secondary border border-border-secondary flex items-center justify-center overflow-hidden shadow-inner p-2 bg-gradient-to-tr from-secondary to-bg-primary"
+            >
               <img 
                 src="/user.png" 
                 alt="Vedanshu Srivastava – Systems Architect & Founder"
-                className="w-full h-full object-cover"
-                onError={(e) => (e.currentTarget.src = 'https://ui-avatars.com/api/?name=VS&size=512&background=0A0A0A&color=00AAFF&bold=true')} 
+                className="w-full h-full object-cover rounded-[1.5rem]"
+                onError={(e) => (e.currentTarget.src = 'https://ui-avatars.com/api/?name=VS&size=512&background=F5F5F0&color=00AAFF&bold=true')} 
               />
-            </div>
-            {/* Verified badge */}
-            <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-xl bg-secondary border border-primary flex items-center justify-center text-success" aria-label="Verified identity">
-              <ShieldCheck size={20} aria-hidden="true" />
+            </motion.div>
+            {/* Verified badge: Tactile style */}
+            <div className="absolute -bottom-3 -right-3 w-12 h-12 rounded-2xl bg-accent-high text-bg-primary border border-white flex items-center justify-center shadow-xl shadow-black/10" aria-label="Verified identity">
+              <ShieldCheck size={24} strokeWidth={2.5} aria-hidden="true" />
             </div>
           </div>
 
-          {/* Identity */}
-          <div className="flex-1 text-center md:text-left space-y-5">
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-1">
-                <h1 className="text-2xl md:text-[var(--font-xl)] font-bold text-text-primary tracking-tight">
+          {/* Identity Matrix */}
+          <div className="flex-1 text-center lg:text-left space-y-8">
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 mb-1 kinetic-text">
+                <h1 className="text-3xl md:text-5xl font-black text-text-primary tracking-tighter uppercase italic">
                   Vedanshu Srivastava
                 </h1>
-                <span className="px-2.5 py-1 rounded-lg bg-accent/10 border border-accent/20 text-xs font-bold text-accent tracking-wider uppercase">
-                  Identity_Prism
-                </span>
+                <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-[10px] font-black text-bg-primary tracking-[0.2em] uppercase shadow-lg shadow-accent/20">
+                  <Star size={10} fill="currentColor" /> Master_Prism
+                </div>
               </div>
-              <p className="text-base text-text-secondary font-normal max-w-2xl leading-relaxed">
+              <p className="text-lg md:text-xl text-text-secondary font-medium max-w-2xl leading-relaxed italic tracking-tight">
                 Systems Architect &amp; Founder. Building the intersection of{' '}
-                <strong className="text-text-primary font-semibold">Human Spirit</strong> and{' '}
-                <strong className="text-text-primary font-semibold">Machine Logic</strong>.
+                <span className="text-text-primary font-black uppercase tracking-tighter decoration-accent/30 decoration-4 underline-offset-4 underline">Human Spirit</span> and{' '}
+                <span className="text-text-primary font-black uppercase tracking-tighter decoration-accent/30 decoration-4 underline-offset-4 underline">Machine Logic</span>.
               </p>
             </div>
 
-            {/* Meta */}
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-5">
-              <div className="flex items-center gap-2 text-text-tertiary">
-                <MapPin size={14} className="text-accent" aria-hidden="true" />
-                <span className="text-xs font-mono uppercase tracking-widest">GLOBAL_DEPLOYMENT</span>
+            {/* Neural Meta Nodes */}
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6">
+              <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-bg-secondary/50 border border-border-secondary group hover:border-accent/40 transition-colors">
+                <MapPin size={14} className="text-accent group-hover:scale-125 transition-transform" />
+                <span className="text-[10px] font-black font-mono uppercase tracking-[0.2em] text-text-tertiary">Global_Matrix_Deploy</span>
               </div>
-              <div className="flex items-center gap-2 text-text-tertiary">
-                <Globe size={14} aria-hidden="true" />
-                <span className="text-xs font-mono uppercase tracking-widest">WUGWEB.COM</span>
+              <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-bg-secondary/50 border border-border-secondary group hover:border-accent/40 transition-colors">
+                <Globe size={14} className="text-text-tertiary group-hover:rotate-12 transition-transform" />
+                <span className="text-[10px] font-black font-mono uppercase tracking-[0.2em] text-text-tertiary">wugweb.com/nexus</span>
               </div>
-              <div className="flex items-center gap-2 text-text-tertiary">
-                <Cpu size={14} aria-hidden="true" />
-                <span className="text-xs font-mono uppercase tracking-widest">RAG_ACTIVE</span>
+              <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-success/5 border border-success/20 group">
+                <div className="w-1.5 h-1.5 bg-success rounded-full animate-pulse" />
+                <span className="text-[10px] font-black font-mono uppercase tracking-[0.2em] text-success">LLM_Anchor_Active</span>
               </div>
             </div>
 
-            {/* Socials */}
-            <div className="pt-4 border-t border-primary flex flex-wrap items-center justify-center md:justify-start gap-3">
+            {/* Social Signal Linklets */}
+            <div className="pt-6 border-t border-border-secondary flex flex-wrap items-center justify-center lg:justify-start gap-3">
               {socials.map(social => (
                 <a 
                   key={social.label} 
                   href={social.href}
                   aria-label={social.ariaLabel}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary border border-primary text-xs font-semibold text-text-tertiary uppercase tracking-wide transition-all hover:bg-tertiary hover:text-text-primary hover:border-primary focus-ring"
+                  className="flex items-center gap-2.5 px-5 py-2.5 rounded-2xl bg-bg-elevated border border-border-primary text-[10px] font-black text-text-tertiary uppercase tracking-widest transition-all hover:bg-black hover:text-bg-primary hover:scale-105 active:scale-95 shadow-sm"
                 >
-                  <social.icon size={14} aria-hidden="true" /> {social.label}
+                  <social.icon size={14} /> {social.label}
                 </a>
               ))}
             </div>
           </div>
 
-          {/* Right Stats */}
-          <div className="hidden lg:flex flex-col gap-4 justify-center pl-8 border-l border-primary min-w-[11rem]">
+          {/* Right Core Stats */}
+          <div className="hidden xl:flex flex-col gap-8 justify-center pl-12 border-l border-border-secondary min-w-[15rem]">
             {stats.map(stat => (
-              <div key={stat.label} className="space-y-1.5">
+              <div key={stat.label} className="space-y-3">
                 <div className="flex justify-between items-end">
-                  <span className="text-[10px] font-bold text-text-tertiary tracking-widest uppercase">{stat.label}</span>
-                  <span className="text-xs font-mono font-bold text-text-secondary">{stat.val}</span>
+                  <span className="text-[9px] font-black text-text-tertiary tracking-[0.3em] uppercase">{stat.label}</span>
+                  <span className="text-[10px] font-black font-mono text-accent">{stat.val}</span>
                 </div>
-                <div className="h-1 w-full bg-tertiary rounded-full overflow-hidden border border-primary">
-                  <div className="h-full bg-accent opacity-60 rounded-full transition-all duration-1000" style={{ width: `${stat.pct}%` }} />
+                <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden p-[1px] border border-border-secondary shadow-inner">
+                  <motion.div 
+                    initial={{ width: 0 }} animate={{ width: `${stat.pct}%` }}
+                    transition={{ duration: 1.5, ease: "easeOut" }}
+                    className="h-full bg-accent-high opacity-80 rounded-full" 
+                  />
                 </div>
               </div>
             ))}
+            
+            <div className="pt-4 space-y-3">
+               <span className="text-[9px] font-black text-text-tertiary tracking-[0.3em] uppercase block">Skill_Nodes</span>
+               <div className="flex flex-wrap gap-2">
+                  {skills.map(s => (
+                    <span key={s} className="px-3 py-1 bg-secondary rounded border border-border-secondary text-[8px] font-bold text-text-secondary uppercase tracking-widest">{s}</span>
+                  ))}
+               </div>
+            </div>
           </div>
 
         </div>
