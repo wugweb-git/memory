@@ -6,10 +6,9 @@ import type { ReactNode } from 'react';
 export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const root = document.documentElement;
-    const savedTheme = localStorage.getItem('theme');
-    const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    const theme = savedTheme || systemTheme;
-    root.setAttribute('data-theme', theme);
+    // Forced Light Mode for 2026 Neo-minimalist overhaul
+    root.setAttribute('data-theme', 'light');
+    localStorage.setItem('theme', 'light');
   }, []);
 
   return <>{children}</>;

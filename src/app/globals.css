@@ -5,158 +5,82 @@
 @tailwind utilities;
 
 :root {
-  /* DARK (default) — Nothing OS / Framer reference */
-  --bg-primary: #000000;
-  --bg-secondary: #0D0D0D;
-  --bg-tertiary: #171717;
-  --bg-elevated: #1F1F1F;
-  --border-primary: rgba(255, 255, 255, 0.14);
-  --border-secondary: rgba(255, 255, 255, 0.08);
-  --text-primary: #FFFFFF;
-  --text-secondary: #D4D4D8;   /* stronger for body readability */
-  --text-tertiary: #A1A1AA;    /* stronger metadata contrast */
-  --text-disabled: #3F3F46;    /* zinc-700 */
-  --accent: #00AAFF;           /* adjusted cyan — 4.6:1 on black */
-  --accent-muted: rgba(0, 170, 255, 0.12);
-  --success: #22C55E;
-  --danger: #EF4444;
-  --warning: #EAB308;
-
-  /* Fluid typography scale */
-  --font-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.8125rem);    /* 12–13px */
-  --font-sm: clamp(0.8125rem, 0.75rem + 0.3vw, 0.875rem);    /* 13–14px */
-  --font-base: clamp(0.875rem, 0.8rem + 0.4vw, 1rem);          /* 14–16px */
-  --font-lg: clamp(1.125rem, 1rem + 0.5vw, 1.25rem);         /* 18–20px */
-  --font-xl: clamp(1.5rem, 1.2rem + 1vw, 2rem);              /* 24–32px */
-  --font-2xl: clamp(2rem, 1.5rem + 1.5vw, 2.5rem);            /* 32–40px */
-
-  /* Spacing scale */
-  --space-xs: 0.25rem;
-  --space-sm: 0.5rem;
-  --space-md: 1rem;
-  --space-lg: 1.5rem;
-  --space-xl: 2rem;
-  --space-2xl: clamp(2rem, 1.5rem + 2vw, 4rem);
-  --space-page: clamp(1rem, 2vw, 3rem);
-
-  /* Component states */
-  --state-hover: rgba(255, 255, 255, 0.04);
-  --state-active: rgba(255, 255, 255, 0.08);
-  --state-focus-ring: 0 0 0 2px var(--accent);
-  --state-disabled-opacity: 0.38;
-
-  --sidebar-width: clamp(3.5rem, 5vw, 5rem);
-  --panel-width: clamp(20rem, 25vw, 28rem);
-}
-
-[data-theme="light"] {
-  --bg-primary: #FFFFFF;
-  --bg-secondary: #F5F5F5;
-  --bg-tertiary: #EDEDEF;
-  --bg-elevated: #FFFFFF;
+  /* LIGHT (2026 Neo-Minimalist / Earthy) */
+  --bg-primary: #F5F5F0;      /* Off-white porcelain */
+  --bg-secondary: #EDEDE8;    /* Warm stone */
+  --bg-tertiary: #E0E0DB;     /* Basalt clay */
+  --bg-elevated: #FFFFFF;     /* Pure bone */
+  
   --border-primary: rgba(0, 0, 0, 0.08);
   --border-secondary: rgba(0, 0, 0, 0.04);
-  --text-primary: #09090B;
-  --text-secondary: #27272A;
-  --text-tertiary: #3F3F46;
-  --text-disabled: #D4D4D8;
-  --accent: #0066CC;           /* darker blue — 4.5:1 on white */
-  --accent-muted: rgba(0, 102, 204, 0.08);
-  --success: #16A34A;
-  --danger: #DC2626;
-  --warning: #CA8A04;
+  --border-active: rgba(0, 170, 255, 0.4);
 
-  --state-hover: rgba(0, 0, 0, 0.04);
-  --state-active: rgba(0, 0, 0, 0.08);
-}
+  --text-primary: #0A0A0A;     /* Deep obsidian */
+  --text-secondary: #2D2D2A;   /* Warm charcoal */
+  --text-tertiary: #6B6B65;    /* Muted stone */
+  --text-disabled: #A1A19A;    /* Dark pebble */
+  
+  --accent: #00AAFF;           /* Electric Cyan */
+  --accent-high: #000000;      /* High contrast spark */
+  --accent-muted: rgba(0, 170, 255, 0.08);
+  
+  --success: #059669;
+  --danger: #E11D48;
+  --warning: #D97706;
 
-@layer base {
-  body {
-    @apply antialiased overflow-x-hidden;
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    font-family: 'Inter', sans-serif;
-    transition: background-color 0.3s ease, color 0.3s ease;
-  }
+  /* Fluid typography scale (Kinetic) */
+  --font-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.8125rem);
+  --font-sm: clamp(0.8125rem, 0.75rem + 0.3vw, 0.875rem);
+  --font-base: clamp(0.875rem, 0.8rem + 0.4vw, 1rem);
+  --font-lg: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
+  --font-xl: clamp(1.75rem, 1.5rem + 1.2vw, 2.5rem);
+  --font-2xl: clamp(2.5rem, 2rem + 2vw, 4rem);
 
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold tracking-tight;
-  }
-
-  button,
-  a,
-  input,
-  textarea,
-  [role="button"],
-  [role="tab"],
-  [role="option"] {
-    @apply outline-none;
-  }
-
-  button:focus-visible,
-  a:focus-visible,
-  input:focus-visible,
-  textarea:focus-visible,
-  [role="button"]:focus-visible,
-  [role="tab"]:focus-visible,
-  [role="option"]:focus-visible {
-    box-shadow: var(--state-focus-ring);
-  }
+  /* Spacing */
+  --space-page: clamp(1.5rem, 4vw, 4rem);
+  --radius-xl: 2rem;
+  --radius-2xl: 2.5rem;
 }
 
 @layer components {
   .glass-panel {
-    background-color: var(--bg-secondary);
+    background: linear-gradient(135deg, rgba(237, 237, 232, 0.7) 0%, rgba(245, 245, 240, 0.8) 100%);
     border: 1px solid var(--border-primary);
-    @apply backdrop-blur-3xl shadow-2xl;
+    box-shadow: 
+      0 10px 40px rgba(0, 0, 0, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    @apply backdrop-blur-3xl;
   }
   
   .glass-card {
-    background-color: var(--bg-tertiary);
+    background: rgba(255, 255, 255, 0.4);
     border: 1px solid var(--border-secondary);
-    @apply transition-all duration-300 shadow-[0_1px_0_rgba(255,255,255,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.35)];
+    box-shadow: 
+      0 4px 20px rgba(0, 0, 0, 0.03),
+      inset 0 1px 1px rgba(255, 255, 255, 0.4);
+    @apply transition-all duration-500 hover:border-border-primary hover:bg-bg-elevated hover:-translate-y-1;
   }
 
-  .focus-ring {
-    @apply outline-none ring-offset-2 ring-offset-black transition-shadow;
+  .bento-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 1.5rem;
   }
 
-  .focus-ring:focus-visible {
-    box-shadow: var(--state-focus-ring);
+  .kinetic-text {
+    @apply transition-all duration-500 hover:scale-[1.01] hover:tracking-tighter;
   }
 }
 
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: var(--border-primary);
-  border-radius: 10px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: var(--text-disabled);
+.scanline {
+  @apply fixed inset-x-0 w-full h-[2px] opacity-5 pointer-events-none z-50;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  animation: scanline 15s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 .grid-bg {
   background-image: 
     linear-gradient(var(--border-secondary) 1px, transparent 1px),
     linear-gradient(90deg, var(--border-secondary) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
-
-@keyframes scanline {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100vh); }
-}
-
-.scanline {
-  @apply fixed inset-x-0 w-full h-[1px] opacity-10 pointer-events-none z-50;
-  background: linear-gradient(90deg, transparent, var(--accent), transparent);
-  animation: scanline 8s linear infinite;
+  background-size: 80px 80px;
 }

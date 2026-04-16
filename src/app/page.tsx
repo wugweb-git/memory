@@ -26,19 +26,22 @@ import { InspirationHub } from './component/InspirationHub';
 import { ProfileHeader } from './component/ProfileHeader';
 import { ThemeToggle } from './component/ThemeToggle';
 import { BlobBuffer } from './component/BlobBuffer';
+import { ExperienceMatrix } from './component/ExperienceMatrix';
+import { MemoryVault } from './component/MemoryVault';
+import { JobPipeline } from './component/JobPipeline';
 
 const SYSTEM_STATS = [
-  { label: 'VAULT_STATE', value: 'UNILATERAL', icon: ShieldCheck, color: 'text-success' },
-  { label: 'BLOB_OPS', value: '15/2K', icon: Database, color: 'text-accent' },
-  { label: 'LOGIC_SYNC', value: '98%', icon: Zap, color: 'text-warning' },
+  { label: 'UPLINK_STRENGTH', value: '98.4%', icon: Zap, color: 'text-accent' },
+  { label: 'NEURAL_DENSITY', value: '4.2k Nodes', icon: Brain, color: 'text-warning' },
+  { label: 'VAULT_INTEGRITY', value: 'NOMINAL', icon: ShieldCheck, color: 'text-success' },
 ];
 
 export default function IdentityPrismWorkspace() {
-  const [currentView, setCurrentView] = useState<ViewMode>('dashboard');
+  const [currentView, setCurrentView] = useState<ViewMode>('L3');
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
   const [searchMode, setSearchMode] = useState<'MMR' | 'Vector'>('MMR');
   const [temp, setTemp] = useState(0.8);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [showAudit, setShowAudit] = useState(false);
@@ -90,17 +93,18 @@ export default function IdentityPrismWorkspace() {
   };
 
   return (
-    <div className="min-h-screen bg-primary text-text-primary flex flex-col selection:bg-accent/30 transition-colors">
+    <div className="min-h-screen bg-primary text-text-primary flex flex-col selection:bg-accent/30 transition-colors duration-1000">
       <ToastContainer 
         position="bottom-right" 
-        theme="dark" 
+        theme="light" 
         toastClassName="!bg-secondary !border !border-primary !rounded-2xl !backdrop-blur-3xl !text-text-primary" 
       />
       
       {/* Background Interactivity */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
-        <div className="absolute inset-0 grid-bg opacity-30" />
-        <div className="absolute -top-[20%] -right-[10%] w-[80vw] h-[80vh] bg-accent/5 rounded-full blur-[120px]" />
+        <div className="absolute inset-0 grid-bg opacity-10" />
+        <div className="absolute top-[10%] left-[5%] w-[60vw] h-[60vh] bg-accent/5 rounded-full blur-[150px] animate-pulse" />
+        <div className="absolute bottom-[10%] right-[5%] w-[40vw] h-[40vh] bg-accent/3 rounded-full blur-[120px]" />
         <div className="scanline" />
       </div>
 
@@ -111,132 +115,162 @@ export default function IdentityPrismWorkspace() {
       />
 
       <div className="flex-1 flex overflow-hidden relative z-10">
-        {/* Responsive Sidebar */}
-        <aside
-          className={`border-r border-primary flex flex-col items-center py-8 gap-8 bg-secondary/80 backdrop-blur-xl shrink-0 transition-all duration-300 ${sidebarOpen ? 'w-[var(--sidebar-width)]' : 'w-14'}`}
-          role="navigation"
-          aria-label="Workspace controls"
-        >
-           <button
-             className="p-2 rounded-lg text-text-tertiary hover:text-text-primary transition-colors focus-ring"
-             onClick={() => setSidebarOpen((v) => !v)}
-             aria-label="Toggle sidebar"
-             aria-expanded={sidebarOpen}
-           >
-             <Command size={18} />
-           </button>
-           <button 
-             className="p-3 rounded-2xl bg-accent/10 text-accent hover:scale-110 active:scale-95 transition-all focus-ring"
-             aria-label="New cognitive thread"
-           >
-              <Plus size={24} />
-           </button>
-           
-           <div className="flex flex-col gap-4 text-text-tertiary text-center px-2">
-              <span className="text-xs font-semibold tracking-wide">Primary navigation is in the top bar</span>
-           </div>
-
-           <div className="mt-auto flex flex-col gap-4 items-center mb-4">
-              <ThemeToggle />
-              <button className="p-2 text-text-tertiary hover:text-text-primary transition-colors focus-ring" aria-label="Settings"><Settings size={20} /></button>
-              <button 
-                onClick={() => setShowAudit(true)}
-                className="p-2 text-text-tertiary hover:text-danger transition-colors focus-ring"
-                aria-label="System diagnostic audit"
-              >
-                 <Power size={20} />
-              </button>
-           </div>
-        </aside>
-
-        <main className="flex-1 overflow-y-auto custom-scrollbar relative p-[var(--space-page)] flex flex-col" role="main">
-          <div className="max-w-[1200px] mx-auto w-full space-y-[var(--space-2xl)] pb-40">
+        <main className="flex-1 overflow-y-auto custom-scrollbar relative flex flex-col pt-8" role="main">
+          <div className="max-w-[1400px] mx-auto w-full px-[var(--space-page)] space-y-[var(--space-2xl)] pb-40">
             <AnimatePresence mode="wait">
-              {currentView === 'dashboard' && (
+              {/* L0: GENESIS — Intake Layer */}
+              {currentView === 'L0' && (
                 <motion.div 
-                  key="dashboard"
-                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                  className="space-y-[var(--space-2xl)]"
+                  key="L0"
+                  initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
+                  className="grid grid-cols-1 lg:grid-cols-12 gap-8"
                 >
-                  {!selectedIndustry && (
-                    <div className="space-y-[var(--space-xl)]">
-                       <ProfileHeader />
-                       <IdentityPillars />
-                    </div>
-                  )}
+                  <div className="lg:col-span-8 space-y-8">
+                     <section className="glass-panel p-8 rounded-3xl border border-primary relative overflow-hidden">
+                        <div className="flex items-center justify-between mb-8">
+                           <div className="space-y-1">
+                              <h3 className="text-xl font-bold tracking-tight">Cognitive Intake Panel</h3>
+                              <p className="text-xs font-mono text-text-tertiary">LAYER_0 // UNSTRUCTURED_INGRESS</p>
+                           </div>
+                           <Activity className="text-accent animate-pulse" size={20} />
+                        </div>
+                        <VoiceIngestion />
+                     </section>
+                     <ActivityLog />
+                  </div>
+                  <div className="lg:col-span-4 space-y-8">
+                     <InspirationHub />
+                     <section className="glass-panel p-6 rounded-2xl border border-primary">
+                        <h4 className="text-xs font-black tracking-widest text-accent mb-4 uppercase">Capture Sources</h4>
+                        <KnowledgeSource />
+                     </section>
+                  </div>
+                </motion.div>
+              )}
 
-                  <IndustryBento 
-                    selected={selectedIndustry || undefined} 
-                    onSelect={setSelectedIndustry} 
-                  />
+              {/* L1: MEMORY — Storage Layer */}
+              {currentView === 'L1' && (
+                <motion.div 
+                  key="L1"
+                  initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.02 }}
+                  className="space-y-8"
+                >
+                  <MemoryVault />
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                     <BlobBuffer />
+                     <VentureVault selectedIndustry={selectedIndustry || undefined} />
+                  </div>
+                </motion.div>
+              )}
 
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-[var(--space-lg)]">
-                    <div className="lg:col-span-8 space-y-[var(--space-xl)]">
-                      {/* Interaction Core */}
-                      <section className="space-y-6">
-                         <div className="flex items-center justify-between px-2 pb-2 border-b border-primary">
-                           <div className="flex items-center gap-3">
-                              <h3 className="text-sm font-semibold tracking-wide text-text-primary flex items-center gap-2">
-                                <Terminal size={14} className="text-accent" /> Memory Sync Core {selectedIndustry && `// ${selectedIndustry.toUpperCase()}`}
+              {/* L2: LOGIC — Processing Layer */}
+              {currentView === 'L2' && (
+                <motion.div 
+                  key="L2"
+                  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
+                  className="space-y-8"
+                >
+                  <ExperienceMatrix selectedIndustry={selectedIndustry || undefined} />
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                     <div className="lg:col-span-12">
+                        <NeuralConnections />
+                     </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* L3: IDENTITY — Synthesis Layer (Digital Twin) */}
+              {currentView === 'L3' && (
+                <motion.div 
+                  key="L3"
+                  initial={{ opacity: 0, filter: 'blur(10px)' }} animate={{ opacity: 1, filter: 'blur(0px)' }} exit={{ opacity: 0, filter: 'blur(10px)' }}
+                  className="space-y-16"
+                >
+                  <div className="space-y-12">
+                     <ProfileHeader />
+                     <div className="kinetic-text">
+                        <IdentityPillars />
+                     </div>
+                  </div>
+
+                  <section className="space-y-6">
+                    <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-text-tertiary ml-2 kinetic-text">Sector_Synthesis</h2>
+                    <IndustryBento 
+                      selected={selectedIndustry || undefined} 
+                      onSelect={setSelectedIndustry} 
+                    />
+                  </section>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                    <div className="lg:col-span-8 space-y-10">
+                      {/* Interaction Core / Digital Twin Chat */}
+                      <section className="space-y-8">
+                         <div className="flex items-center justify-between px-4 pb-4 border-b border-border-secondary">
+                           <div className="flex items-center gap-4">
+                              <h3 className="text-xs font-black tracking-[0.3em] text-text-primary flex items-center gap-4 uppercase kinetic-text">
+                                <Brain size={18} className="text-accent" /> Neural Sync Interface
                               </h3>
-                              <span className="px-2 py-0.5 rounded-full bg-success/10 border border-success/20 text-xs font-semibold text-success tracking-wide">
-                                 RAG_ACTIVE
-                              </span>
+                              <div className="w-2 h-2 rounded-full bg-success animate-ping" />
                            </div>
                            {messages.length > 0 && (
-                             <button onClick={() => setMessages([])} className="text-xs font-semibold text-danger/80 hover:text-danger transition-all tracking-wide bg-danger/5 px-2 py-1 rounded border border-danger/10 focus-ring">
-                                Wipe Context
+                             <button onClick={() => setMessages([])} className="text-[10px] font-black text-danger/60 hover:text-danger tracking-widest bg-danger/5 px-3 py-1.5 rounded-full border border-danger/10 uppercase transition-all hover:bg-danger/10">
+                                Wipe Neural Context
                              </button>
                            )}
                          </div>
 
-                         <div className="glass-panel rounded-[2rem] min-h-[50vh] flex flex-col p-8 relative overflow-hidden transition-all group focus-within:ring-1 focus-within:ring-accent/30" aria-live="polite">
+                         <div className="glass-panel rounded-radius-2xl min-h-[60vh] flex flex-col p-12 relative overflow-hidden transition-all duration-700 group border-white/5 focus-within:border-accent/40 shadow-3xl">
                             <AnimatePresence mode="popLayout">
                               {messages.length === 0 ? (
                                 <motion.div 
-                                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                                  initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
                                   className="flex flex-col items-center justify-center flex-1 text-center py-20"
                                 >
-                                  <Brain size={64} className="text-text-tertiary/20 mb-6" />
-                                  <h2 className="text-xl font-medium text-text-primary mb-2">Initialize Neural Recall</h2>
-                                  <p className="text-sm font-medium text-text-tertiary tracking-wide">Awaiting logic spark...</p>
+                                  <div className="w-24 h-24 rounded-full bg-accent/10 flex items-center justify-center mb-10 border border-accent/20 shadow-[0_0_50px_rgba(0,170,255,0.1)]">
+                                     <Sparkles size={40} className="text-accent" />
+                                  </div>
+                                  <h2 className="text-4xl font-black text-text-primary mb-4 italic tracking-tighter kinetic-text">Prism Awakens</h2>
+                                  <p className="text-xs font-bold text-text-tertiary tracking-[0.3em] uppercase opacity-40">Awaiting semantic ignition</p>
                                 </motion.div>
                               ) : (
-                                <div className="space-y-12 relative z-10">
+                                <div className="space-y-16 relative z-10">
                                   {messages.map((m) => (
-                                    <div 
+                                    <motion.div 
+                                      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                                       key={m.id}
-                                      className={`flex gap-6 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}
+                                      className={`flex gap-10 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}
                                     >
-                                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border transition-all ${
+                                      <div className={`w-14 h-14 rounded-3xl flex items-center justify-center shrink-0 border-2 transition-all duration-500 ${
                                         m.role === 'user' 
-                                          ? 'bg-accent/10 border-accent/20 text-accent shadow-lg shadow-accent/5' 
-                                          : 'bg-tertiary border-primary text-text-tertiary'
+                                          ? 'bg-accent/10 border-accent/40 text-accent shadow-[0_0_30px_rgba(0,170,255,0.2)]' 
+                                          : 'bg-bg-secondary border-border-primary text-text-tertiary shadow-2xl'
                                       }`}>
-                                        {m.role === 'user' ? <User size={18} /> : <Brain size={18} />}
+                                        {m.role === 'user' ? <User size={26} /> : <Brain size={26} />}
                                       </div>
                                       <div className={`flex flex-col max-w-[85%] ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
-                                        <div className={`p-6 rounded-2xl text-sm leading-relaxed ${
+                                        <div className={`p-10 rounded-radius-2xl text-lg font-medium leading-relaxed shadow-3xl ${
                                           m.role === 'user' 
-                                          ? 'bg-secondary border border-primary text-text-primary rounded-tr-none' 
-                                          : 'bg-elevated border border-primary text-text-secondary rounded-tl-none'
+                                          ? 'bg-bg-secondary border-2 border-border-primary text-text-primary rounded-tr-none' 
+                                          : 'bg-bg-elevated border-2 border-border-primary text-text-primary rounded-tl-none backdrop-blur-3xl'
                                         }`}>
-                                          {m.role !== 'user' ? highlightKeywords(m.content) : m.content}
+                                          <div className="kinetic-text">
+                                            {m.role !== 'user' ? highlightKeywords(m.content) : m.content}
+                                          </div>
                                         </div>
-                                        <span className="text-xs mt-3 font-mono text-text-disabled">
-                                          {m.role === 'user' ? 'SIGNAL_IN' : 'SYNC_OUT'}{' // '}{new Date().toLocaleTimeString()}
+                                        <span className="text-[10px] mt-6 font-black font-mono text-text-disabled uppercase tracking-[0.25em] opacity-50 kinetic-text">
+                                          {m.role === 'user' ? 'UPLINK_STABLE' : 'TWIN_REFLEX'}{' // '}{new Date().toLocaleTimeString()}
                                         </span>
                                       </div>
-                                    </div>
+                                    </motion.div>
                                   ))}
                                   {isLoading && (
-                                    <div className="flex gap-6 animate-pulse">
-                                      <div className="w-10 h-10 rounded-xl bg-tertiary border border-primary flex items-center justify-center">
-                                         <RefreshCcw size={14} className="text-accent animate-spin" />
+                                    <div className="flex gap-10 animate-pulse">
+                                      <div className="w-14 h-14 rounded-3xl bg-bg-secondary border-2 border-border-primary flex items-center justify-center">
+                                         <RefreshCcw size={22} className="text-accent animate-spin" />
                                       </div>
-                                      <div className="space-y-3 w-[60%]">
-                                         <div className="h-4 bg-tertiary rounded-full w-1/3" />
-                                         <div className="h-12 bg-tertiary rounded-2xl w-full" />
+                                      <div className="space-y-5 w-[70%]">
+                                         <div className="h-5 bg-bg-elevated rounded-full w-1/4" />
+                                         <div className="h-24 bg-bg-elevated rounded-radius-xl w-full" />
                                       </div>
                                     </div>
                                   )}
@@ -244,86 +278,65 @@ export default function IdentityPrismWorkspace() {
                               )}
                             </AnimatePresence>
                             <div ref={messagesEndRef} />
+                            
+                            {/* Decorative Corner Gradients */}
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-[60px] pointer-events-none" />
+                            <div className="absolute bottom-0 left-0 w-32 h-32 bg-accent/5 blur-[60px] pointer-events-none" />
                          </div>
                       </section>
-
-                      <VentureVault selectedIndustry={selectedIndustry || undefined} />
                     </div>
 
-                    {/* Right Panel */}
-                    <aside className="lg:col-span-4 space-y-[var(--space-lg)]" role="complementary">
-                       <VoiceIngestion />
-                       
-                       <div className="glass-panel p-8 rounded-2xl flex flex-col gap-6">
-                          <h4 className="text-sm font-semibold tracking-wide text-accent flex items-center justify-between">
-                            SYSTEM_HEALTH <Activity size={14} className={isLoading ? "animate-pulse" : ""} />
-                          </h4>
-                          <div className="space-y-6">
-                             {[
-                                { label: 'Vector Index', val: auditReport?.report?.sectors?.vector_engine?.status === 'SYNCHRONIZED' ? 'OK' : 'SYNC', color: 'bg-success', pct: auditReport?.report?.sectors?.vector_engine?.status === 'SYNCHRONIZED' ? 100 : 30 },
-                                { label: 'Node Density', val: '4.2k', color: 'bg-accent', pct: 92 },
-                                { label: 'Link Strength', val: '98%', color: 'bg-success', pct: 98 },
-                             ].map((sys) => (
-                               <div key={sys.label} className="space-y-2">
-                                  <div className="flex justify-between text-xs font-semibold text-text-tertiary">
-                                     <span>{sys.label}</span>
-                                     <span className="text-text-secondary">{sys.val}</span>
-                                  </div>
-                                  <div className="h-1 w-full bg-tertiary rounded-full overflow-hidden p-[1px] border border-primary">
-                                     <motion.div initial={{ width: 0 }} animate={{ width: `${sys.pct}%` }} className={`h-full ${sys.color} opacity-60 rounded-full`} />
-                                  </div>
-                                </div>
-                              ))}
-                          </div>
-
-                          <div className="pt-4 border-t border-primary flex items-center justify-between">
-                             <span className="text-xs font-semibold text-text-tertiary">RAG_STATUS: {auditReport?.report?.sectors?.intelligence?.status || 'IDLE'}</span>
-                             <button onClick={() => setShowAudit(true)} className="p-2 rounded-lg bg-tertiary text-text-tertiary hover:text-accent transition-colors focus-ring" aria-label="Open diagnostics">
-                               <Settings size={14} />
-                             </button>
-                          </div>
+                    <aside className="lg:col-span-4 space-y-8" role="complementary">
+                       <PublishedWorks />
+                       <JobPipeline />
+                       <div className="glass-panel p-8 rounded-[2rem] border border-primary space-y-6">
+                           <h4 className="text-xs font-black tracking-[0.2em] text-accent uppercase flex items-center justify-between">
+                             System Matrix <Activity size={14} className={isLoading ? "animate-pulse" : ""} />
+                           </h4>
+                           <div className="space-y-6">
+                              {[
+                                 { label: 'Layer Sync', val: '99.2%', color: 'bg-accent', pct: 99 },
+                                 { label: 'Twin Alignment', val: '84.5%', color: 'bg-success', pct: 84 },
+                                 { label: 'Cache Depth', val: '12.4GB', color: 'bg-warning', pct: 45 },
+                              ].map((sys) => (
+                                <div key={sys.label} className="space-y-3">
+                                   <div className="flex justify-between text-[10px] font-black text-text-tertiary uppercase tracking-widest">
+                                      <span>{sys.label}</span>
+                                      <span className="text-text-primary">{sys.val}</span>
+                                   </div>
+                                   <div className="h-1.5 w-full bg-primary rounded-full overflow-hidden p-[1px] border border-primary shadow-inner">
+                                      <motion.div initial={{ width: 0 }} animate={{ width: `${sys.pct}%` }} className={`h-full ${sys.color} opacity-80 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.2)]`} />
+                                   </div>
+                                 </div>
+                               ))}
+                           </div>
                        </div>
-
-                       <button className="w-full p-8 rounded-2xl border-2 border-dashed border-primary bg-secondary/20 hover:bg-secondary/40 hover:border-accent/40 transition-all group flex flex-col items-center justify-center text-center gap-4 focus-ring">
-                          <Plus size={24} className="text-text-disabled group-hover:text-accent group-hover:rotate-90 transition-all duration-500" />
-                          <span className="text-xs font-semibold text-text-tertiary tracking-wide group-hover:text-text-secondary">Initialize New Vector</span>
-                       </button>
                     </aside>
                   </div>
                 </motion.div>
               )}
-
-              {/* Other views omitted for brevity, adding similar logic as dashboard */}
-              {currentView === 'vault' && <motion.div key="vault" initial={{ opacity: 0 }} animate={{ opacity: 1 }}><VentureVault selectedIndustry={selectedIndustry || undefined} /></motion.div>}
-              {currentView === 'buffer' && <motion.div key="buffer" initial={{ opacity: 0 }} animate={{ opacity: 1 }}><BlobBuffer /></motion.div>}
-              {currentView === 'publications' && <motion.div key="pubs" initial={{ opacity: 0 }} animate={{ opacity: 1 }}><PublishedWorks /></motion.div>}
-              {currentView === 'inspiration' && <motion.div key="insp" initial={{ opacity: 0 }} animate={{ opacity: 1 }}><InspirationHub /></motion.div>}
-              {currentView === 'jobs' && <motion.div key="jobs" initial={{ opacity: 0 }} animate={{ opacity: 1 }}><JobSearchAgent /></motion.div>}
-              {currentView === 'activity' && <motion.div key="acts" initial={{ opacity: 0 }} animate={{ opacity: 1 }}><ActivityLog /></motion.div>}
-              {currentView === 'connections' && <motion.div key="conn" initial={{ opacity: 0 }} animate={{ opacity: 1 }}><NeuralConnections /></motion.div>}
             </AnimatePresence>
           </div>
 
-          {/* Fixed Input Dock */}
+          {/* Fixed Input Dock — Only in Identity View */}
           <AnimatePresence>
-            {currentView === 'dashboard' && (
+            {currentView === 'L3' && (
               <motion.section 
-                initial={{ y: 200 }} animate={{ y: 0 }} exit={{ y: 200 }}
-                className="fixed bottom-0 left-[var(--sidebar-width)] right-0 p-8 bg-gradient-to-t from-primary via-primary/95 to-transparent z-[55]"
+                initial={{ y: 200, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 200, opacity: 0 }}
+                className="fixed bottom-0 left-0 right-0 p-12 bg-gradient-to-t from-bg-primary via-bg-primary/95 to-transparent z-[55] pointer-events-none"
               >
-              <div className="max-w-3xl mx-auto">
-                <form onSubmit={sendQuery} className="group relative bg-secondary border border-primary rounded-3xl shadow-3xl overflow-hidden focus-within:border-accent/50 transition-all duration-300">
-                  <div className="flex items-center px-6 py-2 border-b border-primary bg-tertiary/50">
-                    <div className="flex items-center gap-4 text-xs font-semibold text-text-tertiary tracking-wide">
-                      <span className="flex items-center gap-2"><RefreshCcw size={12} className="animate-spin text-accent" /> SYST_SYNC: ACTIVE</span>
-                      <span className="flex items-center gap-2 border-l border-primary pl-4">MODE: {searchMode}</span>
+              <div className="max-w-4xl mx-auto pointer-events-auto">
+                <form onSubmit={sendQuery} className="group relative glass-panel rounded-radius-2xl border-white/5 focus-within:border-accent/50 transition-all duration-700 shadow-3xl">
+                  <div className="flex items-center px-10 py-4 border-b border-border-secondary bg-white/[0.02]">
+                    <div className="flex items-center gap-8 text-[10px] font-black text-text-tertiary tracking-[0.3em] uppercase kinetic-text">
+                      <span className="flex items-center gap-2"><RefreshCcw size={14} className="animate-spin text-accent" /> Uplink: Quantum_Stable</span>
+                      <span className="flex items-center gap-2 border-l border-border-secondary pl-8">Core: Neural_Prism_v4 // MMR_Sync</span>
                     </div>
                   </div>
 
-                  <div className="p-2">
-                    <label htmlFor="query-input" className="sr-only">Cognitive Query</label>
-                    <div className="rounded-2xl border border-primary bg-primary/40 px-3 py-2 flex items-start gap-2">
-                      <Search size={18} className="mt-2 text-text-tertiary shrink-0" aria-hidden="true" />
+                  <div className="p-6">
+                    <div className="rounded-radius-xl border border-border-secondary bg-bg-primary/40 px-8 py-6 flex items-start gap-6 shadow-inner transition-all focus-within:bg-bg-primary/60">
+                      <Search size={26} className="mt-4 text-text-disabled shrink-0" aria-hidden="true" />
                       <textarea 
                         id="query-input"
                         value={input}
@@ -334,29 +347,24 @@ export default function IdentityPrismWorkspace() {
                             if (!isLoading && input.trim() !== '') sendQuery(e as any);
                           }
                         }}
-                        placeholder="Initiate cognitive query..."
-                        className="w-full h-24 p-2 bg-transparent text-base font-medium text-text-primary placeholder:text-text-disabled focus:outline-none resize-none scrollbar-hide"
+                        placeholder="Pose a cognitive query to the Digital Twin..."
+                        className="w-full h-28 p-2 bg-transparent text-xl font-bold text-text-primary placeholder:text-text-disabled placeholder:italic focus:outline-none resize-none scrollbar-hide kinetic-text"
                       />
-                      {input.trim() && (
-                        <button
-                          type="button"
-                          onClick={() => handleInputChange({ target: { value: '' } } as any)}
-                          className="mt-1 p-2 rounded-lg text-text-tertiary hover:text-text-primary bg-secondary border border-primary focus-ring"
-                          aria-label="Clear query"
-                        >
-                          <X size={14} />
-                        </button>
-                      )}
                     </div>
                   </div>
 
-                  <div className="px-6 py-4 flex items-center justify-between border-t border-primary bg-tertiary/20">
+                  <div className="px-10 py-8 flex items-center justify-between border-t border-border-secondary bg-white/[0.02]">
+                    <div className="flex gap-6">
+                       <button type="button" className="p-4 rounded-2xl bg-bg-elevated border border-border-secondary text-text-tertiary hover:text-accent transition-all group hover:scale-110">
+                          <Plus size={22} className="group-hover:rotate-90 transition-transform duration-500" />
+                       </button>
+                    </div>
                     <button 
                       type="submit"
                       disabled={isLoading || input.trim() === ''}
-                      className="ml-auto px-8 py-2.5 rounded-xl font-semibold text-sm tracking-wide transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-accent text-primary hover:bg-accent/80 focus-ring"
+                      className="px-12 py-4 rounded-2xl font-black text-xs tracking-[0.2em] uppercase transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-accent text-bg-primary hover:bg-accent-high hover:scale-105 active:scale-95 shadow-2xl shadow-accent/40 kinetic-text"
                     >
-                      {isLoading ? 'EXECUTING...' : 'INITIATE SYNC'}
+                      {isLoading ? 'EXECUTING_SYNC...' : 'INITIATE_NEURAL_SYNAPSE'}
                     </button>
                   </div>
                 </form>

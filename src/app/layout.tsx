@@ -73,11 +73,7 @@ export default function RootLayout({
             __html: `
               (function() {
                 try {
-                  var theme = localStorage.getItem('theme');
-                  var supportDark = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
-                  if (!theme && supportDark) theme = 'dark';
-                  if (!theme) theme = 'light';
-                  document.documentElement.setAttribute('data-theme', theme);
+                  document.documentElement.setAttribute('data-theme', 'light');
                 } catch (e) {}
               })();
             `,
