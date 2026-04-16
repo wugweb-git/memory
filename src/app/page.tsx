@@ -31,9 +31,9 @@ import { MemoryVault } from './component/MemoryVault';
 import { JobPipeline } from './component/JobPipeline';
 
 const SYSTEM_STATS = [
-  { label: 'UPLINK_STRENGTH', value: '98.4%', icon: Zap, color: 'text-accent' },
+  { label: 'UPLINK_FLUX', value: '98.4%', icon: Zap, color: 'text-accent' },
   { label: 'NEURAL_DENSITY', value: '4.2k Nodes', icon: Brain, color: 'text-warning' },
-  { label: 'VAULT_INTEGRITY', value: 'NOMINAL', icon: ShieldCheck, color: 'text-success' },
+  { label: 'MATRIX_INTEGRITY', value: 'NOMINAL', icon: ShieldCheck, color: 'text-success' },
 ];
 
 export default function IdentityPrismWorkspace() {
