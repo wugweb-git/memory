@@ -128,9 +128,9 @@ export default function IdentityPrismWorkspace() {
                   <div className="lg:col-span-8 space-y-8">
                      <section className="glass-panel p-8 rounded-3xl border border-primary relative overflow-hidden">
                         <div className="flex items-center justify-between mb-8">
-                           <div className="space-y-1">
-                              <h3 className="text-xl font-bold tracking-tight">Cognitive Intake Panel</h3>
-                              <p className="text-xs font-mono text-text-tertiary">LAYER_0 // UNSTRUCTURED_INGRESS</p>
+                           <div className="space-y-1 kinetic-text">
+                              <h3 className="text-xl font-black tracking-tight uppercase italic">Cognitive Intake Panel</h3>
+                              <p className="text-xs font-mono text-text-tertiary font-bold">LAYER_0 // UNSTRUCTURED_INGRESS</p>
                            </div>
                            <Activity className="text-accent animate-pulse" size={20} />
                         </div>
