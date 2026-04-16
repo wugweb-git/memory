@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pdf from "pdf-parse";
-import { PrismaClient } from '@prisma/client';
-import { CharacterTextSplitter } from 'langchain/text_splitter';
-
-const prisma = new PrismaClient();
+import { MemoryService } from '@/lib/memory/service';
 
 export async function POST(req: NextRequest) {
   try {
@@ -39,53 +36,35 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "No text extracted from file" }, { status: 400 });
     }
 
-    // 2. Persist File Metadata (Document Table)
-    const doc = await prisma.document.create({
-      data: {
+    // 2. CONSOLIDATED INGESTION: Pass to MemoryService
+    // This handles Gating, Normalization, Noise Filtering, and Persistence
+    const result = await MemoryService.ingest({
+      source: 'manual',
+      source_id: `file_${Date.now()}`,
+      type: 'document',
+      content: parsedText,
+      metadata: {
         file_name: fileName,
-        file_type: uploadedFile.type || 'unknown',
-        file_url: 'local://uploads/' + fileName, // Placeholder for local upload
-        size_bytes: uploadedFile.size,
-        metadata: {
-          last_modified: (uploadedFile as any).lastModified,
-          ingestion_path: 'api/upload_v3'
-        }
+        file_size: uploadedFile.size,
+        file_type: uploadedFile.type,
+        ingestion_path: 'api/upload/consolidated_v1'
+      },
+      trace: {
+        origin: 'user_upload',
+        ingestion_path: ['browser', 'api/upload', 'MemoryService']
       }
-    });
+    }, 'system_user'); // TODO: Pass real user ID from auth
 
-    // 3. Persist to Memory (MemoryPacket Table)
-    // We split into chunks and store in MemoryPacket for RAG capability
-    const chunks = await new CharacterTextSplitter({
-      separator: "\n", chunkSize: 1000, chunkOverlap: 100
-    }).splitText(parsedText);
-
-    // Create a MemoryPacket for the document
-    const packet = await prisma.memoryPacket.create({
-      data: {
-        type: 'document',
-        content: parsedText,
-        priority: 'medium',
-        status: 'accepted',
-        metadata: {
-          file_id: doc.id,
-          file_name: fileName,
-          chunk_count: chunks.length
-        }
-      }
-    });
-
-    // 4. Log Activity
-    await prisma.activityStream.create({
-      data: {
-        event: 'DOCUMENT_UPLOADED',
-        target: doc.id
-      }
-    });
+    if (result.status !== 'ACCEPTED') {
+      return NextResponse.json({ 
+        message: 'File processing stalled by Ingestion Gate', 
+        reason: result.reason 
+      }, { status: 202 });
+    }
 
     return NextResponse.json({ 
-      message: "Resourced anchored to Postgres", 
-      docId: doc.id, 
-      packetId: packet.id 
+      message: "Resource anchored to Memory Store", 
+      packetId: result.packet_id 
     }, { status: 200 });
 
   } catch (error: any) {

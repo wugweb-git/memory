@@ -6,114 +6,153 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "mongodb"
+  url      = env("MONGODB_URI")
 }
 
-// --- LAYER 0: BLOB (Buffer Layer) ---
-
-enum BlobState {
-  raw
-  reviewed
-  promotable
-  promoted
-  rejected
-  expired
-}
-
-model BlobItem {
-  id           String    @id @default(uuid())
-  type         String
-  source       String
-  source_id    String?
-  raw_payload  Json
-  file_ref     String?
-  size         Int
-  hash         String
-  state        BlobState @default(raw)
-  created_at   DateTime  @default(now())
-  updated_at   DateTime  @updatedAt
-  expires_at   DateTime?
-  trace_json   Json?
-  events       BlobEvent[]
-
-  @@index([state])
-  @@index([hash])
-}
-
-model BlobEvent {
-  id            String   @id @default(uuid())
-  blob_id       String
-  event_type    String
-  actor         String   @default("system")
-  payload       Json?
-  created_at    DateTime @default(now())
-  blob_item     BlobItem @relation(fields: [blob_id], references: [id], onDelete: Cascade)
-
-  @@index([blob_id])
-}
-
-// --- LAYER 1: MEMORY (Core) ---
+// --- LAYER 1: MEMORY (NoSQL Memory Store) ---
 
 model MemoryPacket {
-  id           String   @id @default(uuid())
-  type         String
-  content      String
-  metadata     Json?
-  priority     String   @default("medium")
-  status       String   @default("accepted")
-  owner_id     String?
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  type              String
+  source            String
+  source_id         String
 
-  @@index([status])
+  content           Json
+  metadata          Json
+
+  event_time        DateTime
+  ingestion_time    DateTime @default(now())
+  last_updated      DateTime @updatedAt
+
+  ownership         String   @default("self")
+  sensitivity       String   @default("normal") // normal | restricted
+
+  priority          String   @default("medium") // low | medium | high | critical
+  confidence        Float    @default(1.0)
+
+  status            String   @default("active") // active | partial | failed | archived
+  hash              String   @unique
+
+  trace             Json     // { origin, ingestion_path, parent_origin_id, retry_count, error_reason }
+  
+  // -- AG HARDENING --
+  embedding_status  String   @default("pending") // pending | processing | embedded | failed
+  processing_status String   @default("pending") // pending | processing | completed | failed
+  is_embeddable     Boolean  @default(true)
+  schema_version    Int      @default(1)
+  processing_errors Json?    // Array of error objects [{ time, reason, level }]
+
+  @@index([source])
   @@index([type])
+  @@index([ingestion_time])
+  @@index([status])
+  @@index([embedding_status])
+  @@index([processing_status])
+  @@map("memory_packets")
+}
+
+model Source {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  type            String   // system | manual | external
+  
+  trust_score     Float    @default(0.5)
+  priority_level  String   @default("medium") // high | medium | low
+
+  auth_status     String   @default("disconnected")
+  last_sync       DateTime?
+  failure_count   Int      @default(0)
+
+  @@index([name])
+  @@map("sources")
 }
 
 model ActivityStream {
-  id        String   @id @default(uuid())
-  event     String
-  target    String
-  timestamp DateTime @default(now())
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  packet_id     String   @db.ObjectId
+  activity_type String
+  timestamp     DateTime @default(now())
+  metadata      Json
+
+  @@index([packet_id])
+  @@index([timestamp])
+  @@map("activity_stream")
 }
 
-model SourceRegistry {
-  id            String @id @default(uuid())
-  source_id     String @unique
-  type          String
-  trust_score   Float  @default(0.5)
-  priority      String @default("low")
-}
+// --- DOCUMENTS & ASSETS ---
 
 model Document {
-  id           String   @id @default(uuid())
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  packet_id    String   @db.ObjectId
   file_name    String
   file_type    String
   file_url     String
   size_bytes   Int
+  is_sensitive Boolean  @default(false)
   metadata     Json?
-  created_at   DateTime @default(now())
+
+  @@index([packet_id])
+  @@map("documents")
 }
 
+model IngestionLog {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  packet_id     String?  @db.ObjectId
+  decision      String   // ACCEPT | HOLD | REDIRECT | REJECT
+  reason        String
+  timestamp     DateTime @default(now())
+  raw_payload   Json?
+
+  @@index([timestamp])
+  @@map("ingestion_logs")
+}
+
+model RetryQueue {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  packet_id     String   @db.ObjectId
+  retry_count   Int      @default(0)
+  last_attempt  DateTime?
+  status        String   @default("pending") // pending | failed
+  next_retry_at DateTime?
+
+  @@index([status])
+  @@index([next_retry_at])
+  @@map("retry_queue")
+}
+
+model Embedding {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  packet_id       String   @db.ObjectId
+  embedding       Float[]
+  text_chunk      String
+  metadata        Json
+
+  @@index([packet_id])
+  @@map("embeddings")
+}
+
+// --- SYSTEM ---
+
 model User {
-  id            String   @id @default(uuid())
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
   email         String   @unique
   password_hash String
   role          String   @default("user")
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 
-  @@index([email])
+  @@map("users")
 }
 
 model SystemLog {
-  id         String   @id @default(uuid())
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
   level      String   @default("info")
   message    String
   user_id    String?
   metadata   Json?
   created_at DateTime @default(now())
 
-  @@index([level])
+  @@index([created_at])
+  @@map("system_logs")
 }
