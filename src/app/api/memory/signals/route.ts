@@ -1,66 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MongoClient } from 'mongodb';
-import { config } from '@/config/runtime-config';
-<<<<<<< HEAD
-=======
-import { config } from '../../../../../config/config.js';
->>>>>>> 34908eb (Fix memory signals config import path)
-=======
->>>>>>> 1dec1f0 (Merge memory repository fix (resolved by keeping alias import))
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export const dynamic = 'force-dynamic';
 
 /**
  * /api/memory/signals
- * Fetches the most recent ingestion activity from the Unified Memory Engine.
+ * Fetches the most recent ingestion activity from the Unified Memory Engine (Postgres).
  */
 export async function GET(req: NextRequest) {
-  const uri =
-    process.env.MONGO_URI ||
-    process.env.MONGODB_URI ||
-    process.env.STORAGE_URL ||
-    config.mongodbUri;
-
-  if (!uri || !uri.startsWith('mongodb')) {
-    return NextResponse.json([]);
-  }
-
-  let client: MongoClient | null = null;
-
   try {
-    client = new MongoClient(uri);
-    await client.connect();
-    
-    // Using the same namespace as defined in utils/openai.ts
-    const db = client.db('chatter');
-    const collection = db.collection('training_data');
-    
-    const signals = await collection
-      .find({})
-      .sort({ timestamp: -1 })
-      .limit(20)
-      .toArray();
+    const packets = await prisma.memoryPacket.findMany({
+      where: { status: 'accepted' },
+      orderBy: { created_at: 'desc' },
+      take: 20
+    });
 
-    // Map MongoDB documents to the ActivityEntry interface
-    const activityEntries = signals.map(s => ({
-      id: s._id.toString(),
-      type: s.sourceType === 'spirit_note' ? 'creation' : 'curation',
-      action: s.sourceType === 'spirit_note' ? 'POST_PUBLISHED' : 'COLLECTOR_SAVE',
-      target: s.text?.substring(0, 60) + '...',
-      source: s.sourceOrigin || 'unknown',
-      sourceUrl: s.sourceUrl || '#',
-      time: s.timestamp ? new Date(s.timestamp).toLocaleString() : 'Recent',
-      industry: s.industry_tag?.[0] || 'Uncategorized',
-      spiritNote: s.spirit_note || s.text?.substring(0, 100) + '...'
+    const activityEntries = packets.map(p => ({
+      id: p.id,
+      type: p.type === 'document' ? 'creation' : 'curation',
+      action: p.type === 'document' ? 'UPLOADED' : 'SIGNAL_SAVED',
+      target: p.content?.substring(0, 60) + '...',
+      source: (p.metadata as any)?.source_id || 'unknown',
+      sourceUrl: (p.metadata as any)?.source_url || '#',
+      time: p.created_at.toLocaleString(),
+      industry: (p.metadata as any)?.industry || 'Uncategorized',
+      spiritNote: (p.metadata as any)?.spiritNote || p.content?.substring(0, 100) + '...'
     }));
 
     return NextResponse.json(activityEntries);
   } catch (error: any) {
     console.error('Signals Fetch Error:', error);
     return NextResponse.json([]);
-  } finally {
-    if (client) {
-      await client.close();
-    }
   }
 }

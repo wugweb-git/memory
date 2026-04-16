@@ -1,4 +1,119 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
-  provider = "mongodb"
-  url      = env("MONGODB_URI")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// --- LAYER 0: BLOB (Buffer Layer) ---
+
+enum BlobState {
+  raw
+  reviewed
+  promotable
+  promoted
+  rejected
+  expired
+}
+
+model BlobItem {
+  id           String    @id @default(uuid())
+  type         String
+  source       String
+  source_id    String?
+  raw_payload  Json
+  file_ref     String?
+  size         Int
+  hash         String
+  state        BlobState @default(raw)
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+  expires_at   DateTime?
+  trace_json   Json?
+  events       BlobEvent[]
+
+  @@index([state])
+  @@index([hash])
+}
+
+model BlobEvent {
+  id            String   @id @default(uuid())
+  blob_id       String
+  event_type    String
+  actor         String   @default("system")
+  payload       Json?
+  created_at    DateTime @default(now())
+  blob_item     BlobItem @relation(fields: [blob_id], references: [id], onDelete: Cascade)
+
+  @@index([blob_id])
+}
+
+// --- LAYER 1: MEMORY (Core) ---
+
+model MemoryPacket {
+  id           String   @id @default(uuid())
+  type         String
+  content      String
+  metadata     Json?
+  priority     String   @default("medium")
+  status       String   @default("accepted")
+  owner_id     String?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@index([status])
+  @@index([type])
+}
+
+model ActivityStream {
+  id        String   @id @default(uuid())
+  event     String
+  target    String
+  timestamp DateTime @default(now())
+}
+
+model SourceRegistry {
+  id            String @id @default(uuid())
+  source_id     String @unique
+  type          String
+  trust_score   Float  @default(0.5)
+  priority      String @default("low")
+}
+
+model Document {
+  id           String   @id @default(uuid())
+  file_name    String
+  file_type    String
+  file_url     String
+  size_bytes   Int
+  metadata     Json?
+  created_at   DateTime @default(now())
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password_hash String
+  role          String   @default("user")
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  @@index([email])
+}
+
+model SystemLog {
+  id         String   @id @default(uuid())
+  level      String   @default("info")
+  message    String
+  user_id    String?
+  metadata   Json?
+  created_at DateTime @default(now())
+
+  @@index([level])
 }

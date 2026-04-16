@@ -1,23 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { deleteBlobItem, getBlobItem, patchBlobItem } from '@/lib/blobLayer';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
-  const item = await getBlobItem(params.id);
-  if (!item) return NextResponse.json({ error: 'Blob item not found' }, { status: 404 });
-  return NextResponse.json(item);
+/**
+ * GET /api/blob/[id]
+ * Retrieves a single blob item with full event history.
+ */
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
+
+  try {
+    const item = await prisma.blobItem.findUnique({
+      where: { id },
+      include: { events: { orderBy: { created_at: 'desc' } } }
+    });
+
+    if (!item) {
+      return NextResponse.json({ error: 'Item not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(item);
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const payload = await req.json();
-  const item = await patchBlobItem(params.id, payload);
-  if (!item) return NextResponse.json({ error: 'Blob item not found' }, { status: 404 });
-  return NextResponse.json(item);
-}
+/**
+ * DELETE /api/blob/[id]
+ * Deletes a single blob item.
+ */
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
 
-export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
-  const ok = await deleteBlobItem(params.id);
-  if (!ok) return NextResponse.json({ error: 'Blob item not found' }, { status: 404 });
-  return NextResponse.json({ ok: true });
+  try {
+    await prisma.blobItem.delete({ where: { id } });
+    return NextResponse.json({ success: true, id });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
 }

@@ -1,13 +1,13 @@
-import { MongoDBAtlasVectorSearch } from '@langchain/community/vectorstores/mongodb_atlas';
-import { getEmbeddingsTransformer, searchArgs } from './openai';
-import { CharacterTextSplitter } from 'langchain/text_splitter';
+import { PrismaClient } from '@prisma/client';
 import { put } from '@vercel/blob';
 
+const prisma = new PrismaClient();
+
 /**
- * IDENTITY PRISM: UNIFIED MEMORY ENGINE (V.2.0.26)
+ * IDENTITY PRISM: UNIFIED MEMORY ENGINE (V.3.0.0 - POSTGRES REBOOT)
  * -----------------------------------------------
- * The Core Guardrails and Ingestion Pipeline for the Digital Twin.
- * Handles dual-layer persistence (Archival Blob + Intelligent Vector).
+ * Unified ingestion logic for Layer 1, now fully backed by Supabase Postgres.
+ * Removes MongoDB Atlas and unifies with Layer 0 architecture.
  */
 
 export type MemoryObject = {
@@ -28,59 +28,47 @@ export async function anchorToMemory({
   profileId = 'system'
 }: MemoryObject) {
   
-  // GUARDRAIL 1: Payload Clamping (Min/Max content checks)
+  // GUARDRAIL 1: Payload Clamping
   const cleanedRaw = String(raw).trim();
   if (cleanedRaw.length < 5) {
-     throw new Error("LOGIC_ERROR: Insufficient signal density for vectorization.");
+     throw new Error("LOGIC_ERROR: Insufficient signal density for ingestion.");
   }
   if (cleanedRaw.length > 50000) {
      throw new Error("SYSTEM_ERROR: Payload exceeds memory-buffer capacity.");
   }
 
-  const timestamp = new Date().toISOString();
+  const timestamp = new Date();
   
   try {
-    // 1. INTELLIGENT LAYER: Vectorize & Cluster in MongoDB Atlas
-    const splitter = new CharacterTextSplitter({
-      separator: "\n",
-      chunkSize: 800,
-      chunkOverlap: 80
+    // 1. PERSISTENCE LAYER: Supabase Postgres (MemoryPacket)
+    // We store the primary content and metadata in the unified Postgres backbone.
+    const packet = await prisma.memoryPacket.create({
+      data: {
+        type: sourceType,
+        content: cleanedRaw,
+        priority: 'medium',
+        status: 'accepted',
+        owner_id: profileId,
+        metadata: {
+          ...metadata,
+          source_origin: sourceOrigin,
+          is_public: isPublic,
+          ingestion_path: 'memory_engine_v3'
+        }
+      }
     });
-    
-    const chunks = await splitter.splitText(cleanedRaw);
-    
-    // GUARDRAIL 2: Metadata Sanitization
-    const atlasMetadata = chunks.map((chunk, i) => ({
-      sourceType: String(sourceType),
-      sourceOrigin: String(sourceOrigin),
-      profileId: String(profileId),
-      timestamp,
-      isPublic: Boolean(isPublic),
-      chunkIndex: i,
-      totalChunks: chunks.length,
-      ...Object.fromEntries(
-        Object.entries(metadata).filter(([_, v]) => typeof v !== 'object')
-      ) // Flatten and sanitize simple metadata
-    }));
 
-    // Perform Vector Indexing
-    await MongoDBAtlasVectorSearch.fromTexts(
-      chunks,
-      atlasMetadata,
-      getEmbeddingsTransformer(),
-      searchArgs()
-    );
-
-    // 2. ARCHIVAL LAYER: Soul Persistence in Vercel Blob
+    // 2. ARCHIVAL LAYER: Soul Persistence in Vercel Blob (Optional but kept for parity)
     let blobUrl = null;
     if (process.env.BLOB_READ_WRITE_TOKEN) {
       const filename = `prism/soul/${profileId}/${Date.now()}.json`;
       const blobPayload = JSON.stringify({
+        id: packet.id,
         raw: cleanedRaw,
         sourceType,
         sourceOrigin,
         metadata,
-        timestamp,
+        timestamp: timestamp.toISOString(),
         integrity_hash: Buffer.from(cleanedRaw).toString('base64').substring(0, 16)
       });
       
@@ -89,14 +77,34 @@ export async function anchorToMemory({
         addRandomSuffix: true
       });
       blobUrl = url;
+
+      // Update packet with blob reference
+      await prisma.memoryPacket.update({
+        where: { id: packet.id },
+        data: {
+          metadata: {
+            ...(packet.metadata as any),
+            blob_url: blobUrl
+          }
+        }
+      });
     }
+
+    // 3. ACTIVITY STREAM
+    await prisma.activityStream.create({
+      data: {
+        event: 'SIGNAL_ANCHORED',
+        target: packet.id,
+        timestamp
+      }
+    });
 
     return {
       success: true,
       status: 'SIGNAL_ANCHORED',
       stats: {
-        nodeCount: chunks.length,
-        timestamp,
+        id: packet.id,
+        timestamp: timestamp.toISOString(),
         vaultUrl: blobUrl
       }
     };

@@ -4,6 +4,10 @@ import { getBlobStats } from '@/lib/blobLayer';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const stats = await getBlobStats();
-  return NextResponse.json(stats);
+  try {
+    const stats = await getBlobStats();
+    return NextResponse.json(stats);
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }

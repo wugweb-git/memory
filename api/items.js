@@ -1,16 +1,12 @@
-import { connectDB } from '../lib/db.js';
+import { PrismaClient } from '@prisma/client';
 import { hashRaw } from '../lib/hash.js';
-import Item from '../models/Item.js';
-import Health from '../models/Health.js';
+
+const prisma = new PrismaClient();
 
 function asJson(body) {
   if (!body) return {};
   if (typeof body === 'string') {
-    try {
-      return JSON.parse(body);
-    } catch {
-      return {};
-    }
+    try { return JSON.parse(body); } catch { return {}; }
   }
   return body;
 }
@@ -19,72 +15,65 @@ function isUrl(raw) {
   return typeof raw === 'string' && /^https?:\/\//i.test(raw.trim());
 }
 
-async function linkStatusFor(raw, type) {
-  if (type !== 'link') return 'active';
-
-  try {
-    const res = await fetch(raw, { method: 'GET' });
-    return res.ok ? 'active' : 'broken';
-  } catch {
-    return 'broken';
-  }
-}
-
-function stripHistory(item) {
-  const out = item.toObject ? item.toObject() : item;
-  if (out.versioning) delete out.versioning.previous_versions;
-  return out;
-}
-
 export default async function handler(req, res) {
-  await connectDB();
+  try {
+    if (req.method === 'GET') {
+      const items = await prisma.memoryPacket.findMany({
+        where: { status: 'accepted' },
+        orderBy: { created_at: 'desc' },
+        take: 50
+      });
+      return res.status(200).json(items);
+    }
 
-  if (req.method === 'GET') {
-    const includeHistory = req.query && req.query.includeHistory === 'true';
-    const query = Item.find().sort({ 'origin.created_at': -1 }).limit(50);
-    if (!includeHistory) query.select('-versioning.previous_versions');
+    if (req.method === 'POST') {
+      const { raw } = asJson(req.body);
+      if (!raw) return res.status(400).json({ error: 'raw is required' });
 
-    const items = await query;
-    return res.status(200).json(items);
-  }
+      const type = isUrl(raw) ? 'link' : 'text';
+      const cleanRaw = String(raw).trim();
+      const hash = hashRaw(cleanRaw);
 
-  if (req.method === 'POST') {
-    const { raw } = asJson(req.body);
-    if (!raw) return res.status(400).json({ error: 'raw is required' });
+      // Deduplication
+      const existing = await prisma.memoryPacket.findFirst({
+        where: { 
+          content: cleanRaw,
+          status: { not: 'rejected' }
+        }
+      });
 
-    const type = isUrl(raw) ? 'link' : 'text';
-    const url = type === 'link' ? raw.trim() : undefined;
-
-    if (url) {
-      const existing = await Item.findOne({ 'source.url': url });
       if (existing) {
-        return res.status(200).json({ status: 'exists', item: stripHistory(existing) });
+        return res.status(200).json({ status: 'exists', item: existing });
       }
+
+      const item = await prisma.memoryPacket.create({
+        data: {
+          type: type,
+          content: cleanRaw,
+          priority: 'medium',
+          status: 'accepted',
+          metadata: { hash, source_origin: 'legacy_api' }
+        }
+      });
+
+      return res.status(201).json({ status: 'saved', item });
     }
 
-    const link_status = await linkStatusFor(raw, type);
-    const item = await Item.create({
-      content: { raw, type },
-      source: { type: 'manual', url },
-      origin: { created_at: new Date(), created_by: 'user' },
-      sync: { last_synced_at: new Date(), has_changed: false, link_status },
-      versioning: { current_hash: hashRaw(raw), previous_versions: [] }
-    });
+    if (req.method === 'DELETE') {
+      const { item_id } = asJson(req.body);
+      if (!item_id) return res.status(400).json({ error: 'item_id is required' });
 
-    if (link_status === 'broken') {
-      await Health.create({ item_id: item._id, link_status: 'broken', checked_at: new Date() });
+      await prisma.memoryPacket.update({
+        where: { id: item_id },
+        data: { status: 'rejected' }
+      });
+
+      return res.status(200).json({ status: 'deleted', item_id });
     }
 
-    return res.status(201).json({ status: 'saved', item: stripHistory(item) });
+    return res.status(405).json({ error: 'Method not allowed' });
+  } catch (error) {
+    console.error('Legacy API Error:', error);
+    return res.status(500).json({ error: error.message });
   }
-
-  if (req.method === 'DELETE') {
-    const { item_id } = asJson(req.body);
-    if (!item_id) return res.status(400).json({ error: 'item_id is required' });
-
-    await Item.deleteOne({ _id: item_id });
-    return res.status(200).json({ status: 'deleted', item_id });
-  }
-
-  return res.status(405).json({ error: 'Method not allowed' });
 };
