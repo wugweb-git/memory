@@ -92,6 +92,10 @@ export function normalize(raw: any, userId: string): MemoryPacket {
       retry_count: Number(raw.trace?.retry_count) || 0
     },
     embedding_status: 'pending',
+    processing_status: 'pending',
+    semantic_status: 'pending',
+    retry_count: 0,
+    max_retries: 2,
     is_embeddable: isEmbeddable,
     schema_version: 1,
     processing_errors: []

@@ -293,3 +293,41 @@ model SystemSettings {
 
   @@map("system_settings")
 }
+
+// --- LAYER 0: QUARANTINE (Blob Store) ---
+
+model BlobItem {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  type        String
+  source      String
+  source_id   String?
+  raw_payload Json
+  file_ref    String?
+  size        Int
+  hash        String
+  state       String   @default("raw")
+  trace_json  Json
+  owner_id    String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  expires_at  DateTime?
+  events      BlobEvent[]
+
+  @@index([hash])
+  @@index([state])
+  @@map("blob_items")
+}
+
+model BlobEvent {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  blob_id    String   @db.ObjectId
+  event_type String
+  actor      String?
+  payload    Json?
+  created_at DateTime @default(now())
+  
+  blob       BlobItem @relation(fields: [blob_id], references: [id], onDelete: Cascade)
+
+  @@index([blob_id])
+  @@map("blob_events")
+}

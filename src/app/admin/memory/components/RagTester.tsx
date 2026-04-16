@@ -141,7 +141,7 @@ export default function RagTester() {
               </div>
 
               <div className="text-sm text-gray-300 leading-relaxed font-serif bg-black/30 p-4 rounded border border-white/5">
-                "{result.chunk}"
+                &quot;{result.chunk}&quot;
               </div>
             </motion.div>
           ))}

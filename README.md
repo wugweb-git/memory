@@ -37,6 +37,17 @@ If deploys are failing, the issue is usually **build/config/env**, not RAG logic
    npm run build
    ```
 
+## System Architecture (The Layers)
+
+The Identity Prism OS is built on a modular, layered architecture for maximum resilience and intelligence:
+
+- **[Layer 1: Memory & Ingestion](docs/layer-1-memory.md)**: The Blob-first storage and RAG core.
+- **[Layer 2: Deep Processing](docs/layer-2-processing.md)**: Signal extraction and enrichment engine.
+- **[Layer 2.5: Semantic Intelligence](docs/layer-2.5-enrichment.md)**: Hardened governance and pattern recognition.
+- **[Recycling Bin](docs/RECYCLING.md)**: Repository of deferred logic and components.
+
+## Architecture Highlights
+
 ## Environment Guardrails
 
 To prevent silent failures in production, the system includes an **Environment Audit** script. This runs automatically during the Vercel pre-build phase via `scripts/vercel-readiness.sh`.

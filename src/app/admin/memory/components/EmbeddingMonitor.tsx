@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { PieChart, RefreshCw, AlertCircle, CheckCircle2, Clock, PlayCircle } from 'lucide-react';
+import { PieChart, RefreshCw, AlertCircle, CheckCircle2, Clock, PlayCircle, Zap } from 'lucide-react';
 
 interface Stats {
   pending: number;

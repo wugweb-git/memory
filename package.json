@@ -1,19 +1,21 @@
 {
   "name": "identity-prism",
-  "version": "1.0.0",
-  "description": "Unified Identity Prism OS: RAG Intelligence + Digital Twin Memory",
+  "version": "1.0.0-hardened",
+  "description": "Unified Identity Prism OS: RAG Intelligence + Digital Twin Memory (Hardened v1.0)",
   "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "postinstall": "prisma generate",
     "security:scan": "bash scripts/scan-secrets.sh"
   },
   "dependencies": {
     "@langchain/community": "^0.0.30",
     "@langchain/openai": "^0.0.16",
     "@prisma/client": "^6.19.3",
+    "@vercel/analytics": "^2.0.1",
     "@vercel/blob": "^0.27.0",
     "@vercel/functions": "^3.4.3",
     "@web-std/file": "^3.0.3",
@@ -55,5 +57,8 @@
     "supertest": "^7.2.2",
     "tailwindcss": "^3.3.0",
     "typescript": "^5"
+  },
+  "overrides": {
+    "mongodb": "$mongodb"
   }
 }

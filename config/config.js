@@ -39,7 +39,7 @@ export function loadConfig() {
     requestLimitBytes: Number(readEnv('REQUEST_LIMIT_BYTES', '1048576')),
     uploadDir: readEnv('UPLOAD_DIR', '/tmp/memory-uploads'),
     jobSecret: readEnv('JOB_SECRET', ''),
-    appVersion: readEnv('APP_VERSION', readEnv('VERCEL_GIT_COMMIT_SHA', 'dev')),
+    appVersion: readEnv('APP_VERSION', 'v1.0.0-hardened'),
     adminEmail: readEnv('ADMIN_EMAIL', INTERNAL_VAULT.ADMIN_EMAIL),
     adminPassword: readEnv('ADMIN_PASSWORD', INTERNAL_VAULT.ADMIN_PASSWORD),
     blobDataPath: readEnv('BLOB_DATA_PATH', 'memory/store.json'),
