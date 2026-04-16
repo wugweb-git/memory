@@ -87,7 +87,14 @@ export async function processEmbedding(packetId: string) {
     // 4. BATCH EMBEDDING
     const estimatedTokens = Math.ceil(contentStr.length / 4);
     console.log(`[RAG] Generating ${chunks.length} embeddings (~${estimatedTokens} tokens) for packet ${packetId}...`);
-    const vectorResults = await embeddings.embedDocuments(chunks);
+    
+    let vectorResults;
+    try {
+      vectorResults = await embeddings.embedDocuments(chunks);
+    } catch (apiErr: any) {
+      console.error(`[RAG] OpenAI Embedding Failure:`, apiErr.message);
+      throw new Error(`LLM_UNAVAILABLE: ${apiErr.message}`);
+    }
 
     // 5. VECTOR STORE SYNC (Delete stale first if any)
     // CRITICAL: Verify packet still exists before writing to prevent orphans
