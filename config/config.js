@@ -20,21 +20,10 @@ export function loadConfig() {
   }
 
   const env = readEnv('NODE_ENV', 'development');
-<<<<<<< HEAD
-<<<<<<< HEAD
-  const authSecret = readEnv('AUTH_SECRET', INTERNAL_VAULT.AUTH_SECRET).trim();
-
-  if (env === 'production' && !authSecret) {
-    throw new Error('Missing required AUTH_SECRET in production environment.');
-=======
-  const authSecret = readEnv('AUTH_SECRET', INTERNAL_VAULT.AUTH_SECRET);
-=======
   const rawAuthSecret = process.env.AUTH_SECRET;
->>>>>>> 2e2f27e (Fix production AUTH_SECRET guard to validate raw env)
 
   if (env === 'production' && !String(rawAuthSecret ?? '').trim()) {
     throw new Error('Missing required env var in production: AUTH_SECRET');
->>>>>>> f23c7cf (Fail closed on missing AUTH_SECRET in production)
   }
 
   const authSecret = readEnv('AUTH_SECRET', INTERNAL_VAULT.AUTH_SECRET);

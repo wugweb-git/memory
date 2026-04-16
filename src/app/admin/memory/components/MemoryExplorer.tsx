@@ -15,10 +15,13 @@ interface Packet {
   sensitivity: string;
 }
 
+import PacketInspector from './PacketInspector';
+
 export default function MemoryExplorer() {
   const [packets, setPackets] = useState<Packet[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState('');
+  const [selectedPacketId, setSelectedPacketId] = useState<string | null>(null);
 
   const fetchPackets = async () => {
     setLoading(true);
@@ -38,7 +41,7 @@ export default function MemoryExplorer() {
   }, [filterType]);
 
   return (
-    <div className="bg-[#0a0a0a] rounded-xl border border-white/10 overflow-hidden">
+    <div className="bg-[#0a0a0a] rounded-xl border border-white/10 overflow-hidden relative">
       <div className="p-6 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
         <div>
           <h2 className="text-xl font-semibold text-white flex items-center gap-2">
@@ -113,7 +116,10 @@ export default function MemoryExplorer() {
                   {new Date(packet.ingestion_time).toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4 text-right">
-                  <button className="p-2 hover:bg-white/10 rounded-md transition-all text-gray-600 hover:text-white">
+                  <button 
+                    onClick={() => setSelectedPacketId(packet.id)}
+                    className="p-2 hover:bg-white/10 rounded-md transition-all text-gray-600 hover:text-white"
+                  >
                     <Eye className="w-4 h-4" />
                   </button>
                 </td>
@@ -136,6 +142,14 @@ export default function MemoryExplorer() {
           <button className="p-1 hover:text-white transition-all"><ChevronRight className="w-4 h-4" /></button>
         </div>
       </div>
+
+      {/* INSPECTOR OVERLAY */}
+      {selectedPacketId && (
+        <PacketInspector 
+          packetId={selectedPacketId} 
+          onClose={() => setSelectedPacketId(null)} 
+        />
+      )}
     </div>
   );
 }
