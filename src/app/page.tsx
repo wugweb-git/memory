@@ -29,6 +29,7 @@ import { BlobBuffer } from './component/BlobBuffer';
 import { ExperienceMatrix } from './component/ExperienceMatrix';
 import { MemoryVault } from './component/MemoryVault';
 import { JobPipeline } from './component/JobPipeline';
+import { UniversalSync } from './component/UniversalSync';
 
 const SYSTEM_STATS = [
   { label: 'UPLINK_FLUX', value: '98.4%', icon: Zap, color: 'text-accent' },
@@ -140,10 +141,15 @@ export default function IdentityPrismWorkspace() {
                   </div>
                   <div className="lg:col-span-4 space-y-8">
                      <InspirationHub />
-                     <section className="glass-panel p-6 rounded-2xl border border-primary">
+                      <section className="glass-panel p-6 rounded-2xl border border-primary">
                         <h4 className="text-xs font-black tracking-widest text-accent mb-4 uppercase">Capture Sources</h4>
-                        <KnowledgeSource />
-                     </section>
+                        <div className="space-y-6">
+                           <KnowledgeSource />
+                           <div className="pt-6 border-t border-border-secondary/30">
+                              <UniversalSync />
+                           </div>
+                        </div>
+                      </section>
                   </div>
                 </motion.div>
               )}
