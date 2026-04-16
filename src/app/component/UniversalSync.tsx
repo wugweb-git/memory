@@ -16,22 +16,34 @@ export const UniversalSync = () => {
     if (!url.trim()) return;
     setIsSyncing(true);
     
-    // Simulate API call to parse URL
-    setTimeout(() => {
+    try {
+      // Validate URL format
+      new URL(url);
+      
+      // Simulate API call to parse URL
+      setTimeout(() => {
+        setIsSyncing(false);
+        try {
+          const host = new URL(url).hostname;
+          const type = host.includes('linkedin') ? 'LinkedIn' : 'External';
+          
+          setSyncedItems(prev => [{
+            id: Math.random().toString(),
+            type,
+            title: url.replace(/^https?:\/\//, '').split('/')[0] + ' // Fragment',
+            status: 'Synced'
+          }, ...prev]);
+          
+          toast.success(`${type} node bridged to Genesis stream.`);
+          setUrl('');
+        } catch (e) {
+          toast.error("Bridge failure: Neural parsing error.");
+        }
+      }, 3000);
+    } catch (e) {
       setIsSyncing(false);
-      const host = new URL(url).hostname;
-      const type = host.includes('linkedin') ? 'LinkedIn' : 'External';
-      
-      setSyncedItems(prev => [{
-        id: Math.random().toString(),
-        type,
-        title: url.replace(/^https?:\/\//, '').split('/')[0] + ' // Fragment',
-        status: 'Synced'
-      }, ...prev]);
-      
-      toast.success(`${type} node bridged to Genesis stream.`);
-      setUrl('');
-    }, 3000);
+      toast.error("Invalid URL format. Check the uplink string.");
+    }
   };
 
   return (
