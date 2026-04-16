@@ -1,11 +1,9 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { ingestionGate, generateHash, addProcessingError } from './gate';
 import { normalize } from './normalization';
 import { shouldFilter } from './noise-filter';
 import { MemoryPacket, ProcessingError, EmbeddingStatus } from './types';
 import { encrypt, isEncryptionConfigured } from './encryption';
-
-const prisma = new PrismaClient();
 
 export class MemoryService {
   /**

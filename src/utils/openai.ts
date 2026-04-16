@@ -1,7 +1,7 @@
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { MongoDBAtlasVectorSearch, MongoDBAtlasVectorSearchLibArgs } from '@langchain/community/vectorstores/mongodb_atlas';
 import { MongoClient } from 'mongodb';
-import { config } from '../../config/config.js';
+import { config } from '../config';
 
 let embeddingsInstance: OpenAIEmbeddings | null = null;
 let client: MongoClient | null = null;
