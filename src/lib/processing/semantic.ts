@@ -198,7 +198,7 @@ export class SemanticEngine {
               name: rawTopic.name.toLowerCase(),
               strength: rawTopic.confidence,
               packet_ids: [packetId],
-              test_run_id: test_run_id,
+              test_run_id: testRunId,
               processing_state: "complete" // ATOMICITY: Start as complete
             }
           });
@@ -338,7 +338,7 @@ export class SemanticEngine {
     const matches = content.match(capsRegex) || [];
     
     const stopwords = ['The', 'And', 'But', 'If', 'This', 'That', 'With', 'From', 'Each'];
-    const uniqueMatches = [...new Set(matches)].filter(m => !stopwords.includes(m) && m.length > 2);
+    const uniqueMatches = Array.from(new Set(matches)).filter(m => !stopwords.includes(m) && m.length > 2);
 
     uniqueMatches.slice(0, ENTITY_LIMIT).forEach(name => {
       entities.push({ name, type: 'concept', confidence: 0.6 });
@@ -375,7 +375,7 @@ export class SemanticEngine {
         data: { 
           occurrences: { increment: 1 }, 
           last_seen: new Date(),
-          packet_ids: { has: packetId } ? undefined : { push: packetId }
+          packet_ids: entity.packet_ids.includes(packetId) ? undefined : { push: packetId }
         }
       });
       

@@ -90,7 +90,7 @@ export class MemoryService {
       const packet = await prisma.memoryPacket.create({
         data: {
           ...packetData,
-          event_time: new Date(packetData.timestamps.event_time),
+          event_time: new Date(packetData.event_time),
           content: packetData.content as any,
           metadata: packetData.metadata as any,
           trace: packetData.trace as any,

@@ -74,11 +74,9 @@ export function normalize(raw: any, userId: string): MemoryPacket {
       ...metadata,
       normalized_at: ingestionTime
     },
-    timestamps: {
-      event_time: new Date(eventTime).toISOString(),
-      ingestion_time: ingestionTime,
-      last_updated: ingestionTime
-    },
+    event_time: new Date(eventTime).toISOString(),
+    ingestion_time: ingestionTime,
+    last_updated: ingestionTime,
     ownership: 'self',
     sensitivity,
     priority: raw.priority || 'medium',
@@ -89,12 +87,12 @@ export function normalize(raw: any, userId: string): MemoryPacket {
       origin: raw.trace?.origin || source,
       ingestion_path: [...(raw.trace?.ingestion_path || []), `${source}->gate->normalize`],
       parent_origin_id: raw.trace?.parent_origin_id || null,
-      retry_count: Number(raw.trace?.retry_count) || 0
+      attempt_count: Number(raw.trace?.attempt_count) || 0
     },
     embedding_status: 'pending',
     processing_status: 'pending',
     semantic_status: 'pending',
-    retry_count: 0,
+    attempt_count: 0,
     max_retries: 2,
     is_embeddable: isEmbeddable,
     schema_version: 1,

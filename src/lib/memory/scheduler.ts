@@ -1,5 +1,6 @@
 import { processEmbedding } from './rag';
 import { PrismaClient } from '@prisma/client';
+// @ts-ignore - node-cron types may be missing in restricted envs
 import cron from 'node-cron';
 import { SettingsController } from './settings';
 import { ProcessingEngine } from '../processing/engine';
@@ -204,7 +205,7 @@ cron.schedule('0 0 * * *', async () => {
     
     // Cleanup orphans
     const allEmbeddings = await prisma.embedding.findMany({ select: { packet_id: true } });
-    const uniqueIds = [...new Set(allEmbeddings.map(e => e.packet_id))];
+    const uniqueIds = Array.from(new Set(allEmbeddings.map(e => e.packet_id)));
     for (const pid of uniqueIds) {
       const exists = await prisma.memoryPacket.findUnique({ where: { id: pid } });
       if (!exists) await prisma.embedding.deleteMany({ where: { packet_id: pid } });
