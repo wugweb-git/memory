@@ -252,37 +252,30 @@ export async function bulkBlobAction({ ids, action }: { ids: string[]; action: s
     throw new Error(`Unsupported bulk action: ${action}`);
   }
 
-  if (ids.length === 0) {
-    return 0;
-  }
+  const idsToUpdate = await prisma.blobItem.findMany({
+    where: {
+      id: { in: ids },
+      NOT: { state: nextState }
+    },
+    select: { id: true }
+  });
 
-  return prisma.$transaction(async (tx) => {
-    const candidates = await tx.blobItem.findMany({
-      where: {
-        id: { in: ids },
-        state: { not: nextState }
-      },
-      select: { id: true }
-    });
+  const result = await prisma.blobItem.updateMany({
+    where: {
+      id: { in: idsToUpdate.map((item) => item.id) }
+    },
+    data: { state: nextState }
+  });
 
-    const updatedIds = candidates.map((item) => item.id);
-    if (updatedIds.length === 0) {
-      return 0;
-    }
-
-    await tx.blobItem.updateMany({
-      where: { id: { in: updatedIds } },
-      data: { state: nextState }
-    });
-
-    await tx.blobEvent.createMany({
-      data: updatedIds.map((blobId) => ({
-        blob_id: blobId,
+  if (idsToUpdate.length > 0) {
+    await prisma.blobEvent.createMany({
+      data: idsToUpdate.map(({ id }) => ({
+        blob_id: id,
         event_type: `BULK_${action.toUpperCase()}`,
         payload: {}
       }))
     });
+  }
 
-    return updatedIds.length;
-  });
+  return updatedCount;
 }
