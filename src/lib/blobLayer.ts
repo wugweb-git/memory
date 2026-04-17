@@ -1,6 +1,6 @@
 import prisma from './prisma';
 import crypto from 'crypto';
-import { MemoryService } from './memory/service';
+import type { Prisma } from '@prisma/client';
 // Note: recursive import fixed below with a mock or internal logic if needed,
 // but for this audit we ensure stability.
 
@@ -15,6 +15,57 @@ function computeHash(content: any) {
 
 function sizeOf(content: any) {
   return Buffer.byteLength(typeof content === 'string' ? content : JSON.stringify(content), 'utf8');
+}
+
+async function upsertMemoryPacketFromBlob(
+  tx: Prisma.TransactionClient,
+  item: {
+    id: string;
+    type: string;
+    source: string;
+    source_id: string | null;
+    raw_payload: any;
+    hash: string;
+    trace_json: any;
+    created_at: Date;
+    test_run_id: string;
+  }
+) {
+  const promotedSourceId = item.source_id || item.id;
+
+  const existing = await tx.memoryPacket.findFirst({
+    where: {
+      hash: item.hash,
+      source: item.source || 'unknown',
+      source_id: promotedSourceId
+    },
+    select: { id: true }
+  });
+
+  if (existing) {
+    return existing;
+  }
+
+  return tx.memoryPacket.create({
+    data: {
+      type: item.type || 'unknown',
+      source: item.source || 'unknown',
+      source_id: promotedSourceId,
+      content: item.raw_payload || {},
+      metadata: {
+        promoted_from_blob_id: item.id,
+        blob_hash: item.hash,
+        promotion_path: 'api/blob/promote'
+      },
+      event_time: item.created_at,
+      hash: item.hash,
+      trace: item.trace_json || {
+        origin: item.source || 'unknown',
+        ingestion_path: 'blob/promote'
+      },
+      test_run_id: item.test_run_id || 'PROD'
+    }
+  });
 }
 
 export async function Push_To_Blob(packet: any) {
@@ -141,73 +192,59 @@ export async function Reject_Blob_Item(id: string, reason?: string) {
 }
 
 export async function Promote_To_Memory(id: string) {
-  const blobItem = await prisma.blobItem.findUnique({
-    where: { id }
-  });
-
-  if (!blobItem) {
-    throw new Error('BLOB_NOT_FOUND');
-  }
-
-  const ingestResult = await MemoryService.ingest({
-    type: blobItem.type || 'unknown',
-    source: blobItem.source || 'blob',
-    source_id: blobItem.source_id || `blob:${blobItem.id}`,
-    content: blobItem.raw_payload,
-    metadata: {
-      promoted_from_blob_id: blobItem.id,
-      file_ref: blobItem.file_ref,
-      blob_size: blobItem.size,
-      blob_state: blobItem.state
-    },
-    event_time: blobItem.created_at.toISOString(),
-    trace: {
-      ...(blobItem.trace_json as any),
-      ingestion_path: ['api/blob/promote', 'MemoryService'],
-      promoted_at: new Date().toISOString(),
-      promotion_path: 'api/blob/promote'
-    },
-    test_run_id: blobItem.test_run_id
-  }, 'blob-promoter');
-
-  if (ingestResult.status !== 'ACCEPTED' && ingestResult.status !== 'IGNORE') {
-    throw new Error(`PROMOTION_INGESTION_FAILED:${ingestResult.reason || ingestResult.status}`);
-  }
-
-  const createdMemoryPacket = ingestResult.status === 'ACCEPTED';
-  const memoryPacketId = ingestResult.packet_id;
-
-  const promotedBlobItem = blobItem.state === 'promoted'
-    ? blobItem
-    : await prisma.blobItem.update({
-        where: { id },
-        data: { state: 'promoted' }
-      });
-
-  await prisma.blobEvent.create({
-    data: {
-      blob_id: id,
-      event_type: 'PROMOTE',
-      payload: {
-        memory_packet_id: memoryPacketId,
-        created_memory_packet: createdMemoryPacket
+  return prisma.$transaction(async (tx) => {
+    const existingItem = await tx.blobItem.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        type: true,
+        source: true,
+        source_id: true,
+        raw_payload: true,
+        hash: true,
+        trace_json: true,
+        created_at: true,
+        test_run_id: true
       }
-    }
-  });
+    });
 
-  return {
-    ...promotedBlobItem,
-    memory_packet_id: memoryPacketId,
-    created_memory_packet: createdMemoryPacket
-  };
+    if (!existingItem) {
+      throw new Error(`Blob item not found: ${id}`);
+    }
+
+    const memoryPacket = await upsertMemoryPacketFromBlob(tx, existingItem);
+
+    const item = await tx.blobItem.update({
+      where: { id },
+      data: { state: 'promoted' }
+    });
+
+    await tx.blobEvent.create({
+      data: {
+        blob_id: id,
+        event_type: 'PROMOTE',
+        payload: { memory_packet_id: memoryPacket.id }
+      }
+    });
+
+    return item;
+  });
 }
 
 export async function bulkBlobAction({ ids, action }: { ids: string[]; action: string }) {
+  if (action === 'promote') {
+    let promotedCount = 0;
+    for (const id of ids) {
+      await Promote_To_Memory(id);
+      promotedCount += 1;
+    }
+    return promotedCount;
+  }
+
   const actionMap: Record<string, string> = {
     review: 'reviewed',
     promotable: 'promotable',
-    reject: 'rejected',
-    promote: 'promoted'
+    reject: 'rejected'
   };
 
   const nextState = actionMap[action];
