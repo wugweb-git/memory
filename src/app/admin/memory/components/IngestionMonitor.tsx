@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, ShieldCheck, ShieldAlert, Zap, Clock, ChevronRight } from 'lucide-react';
 
@@ -20,7 +20,7 @@ export default function IngestionMonitor({ testRunId = 'PROD' }: IngestionMonito
   const [logs, setLogs] = useState<IngestionLog[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     setIsRefreshing(true);
     try {
       const response = await fetch(`/api/memory/stats?test_run_id=${testRunId}`);
@@ -31,13 +31,13 @@ export default function IngestionMonitor({ testRunId = 'PROD' }: IngestionMonito
     } finally {
       setIsRefreshing(false);
     }
-  };
+  }, [testRunId]);
 
   useEffect(() => {
     fetchLogs();
     const interval = setInterval(fetchLogs, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchLogs]);
 
   return (
     <div className="bg-[#0a0a0a] rounded-xl border border-white/10 p-6">
