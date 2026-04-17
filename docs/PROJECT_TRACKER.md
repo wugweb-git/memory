@@ -28,7 +28,7 @@ This document serves as the primary tracking "sheet" for system bugs, architectu
 | TSK-001 | Action Engine Initialization | HIGH | Layer 3 | 🕒 PENDING |
 | TSK-002 | External Tool Integration (Calendar/Tasks) | MEDIUM | Layer 3 | 🕒 PENDING |
 | TSK-003 | Behavioral Feedback Loop (L3 -> L2) | MEDIUM | Layer 3 | 🕒 PENDING |
-| TSK-004 | Multi-modal Signal Extraction (Audio/Video) | LOW | Layer 2.5 | 🕒 BACKLOG |
+| TSK-004 | Multi-modal Signal Extraction (Audio/Video) | LOW | Layer 2 | 🕒 BACKLOG |
 
 ---
 *Last Updated: April 2026*
