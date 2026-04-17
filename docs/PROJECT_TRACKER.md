@@ -11,6 +11,9 @@ This document serves as the primary tracking "sheet" for system bugs, architectu
 | BUG-003 | Unique constraint race conditions | Integrated `isUniqueError` handling and `dedup_hash` logic for idempotent upserts. | ✅ FIXED |
 | BUG-004 | Vector Search leak | Added `$vectorSearch` filter mandatory propagation for `test_run_id`. | ✅ FIXED |
 | BUG-005 | Topic model isolation gap | Added `processing_state` and `test_run_id` to `Topic` model and API routes. | ✅ FIXED |
+| BUG-006 | Vercel Build Failure (Next.js) | Corrected non-existent version `16.2.4` to stable `14.1.0` in `package.json`. | ✅ FIXED |
+| BUG-007 | Vercel Build Failure (CSS) | Defined `border` and `bg` color groups in `tailwind.config.ts` to resolve `@apply` errors. | ✅ FIXED |
+| BUG-008 | RAG/OpenAI Desync | Unified `openai.ts` namespace and fields with Layer 2.5 hardened schema. | ✅ FIXED |
 
 ## 🏗️ Architectural Resolutions
 
