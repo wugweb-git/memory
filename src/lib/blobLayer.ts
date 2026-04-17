@@ -240,5 +240,5 @@ export async function bulkBlobAction({ ids, action }: { ids: string[]; action: s
     });
   }
 
-  return updatedCount;
+  return result.count;
 }
