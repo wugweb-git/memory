@@ -3,13 +3,14 @@ import { retrieve } from '@/lib/memory/rag';
 
 export async function POST(req: NextRequest) {
   try {
-    const { query, filters } = await req.json();
+    const { query, filters, test_run_id } = await req.json();
 
     if (!query) {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 });
     }
 
-    const results = await retrieve(query, filters || {});
+    const searchFilters = { ...(filters || {}), test_run_id: test_run_id || 'PROD' };
+    const results = await retrieve(query, searchFilters);
 
     return NextResponse.json({ results });
   } catch (error: any) {

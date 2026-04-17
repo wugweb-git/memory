@@ -5,6 +5,9 @@ const prisma = new PrismaClient();
 
 export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url);
+    const test_run_id = searchParams.get('test_run_id') || 'PROD';
+
     const [
       packets,
       retries,
@@ -12,11 +15,11 @@ export async function GET(req: NextRequest) {
       activity,
       documents
     ] = await Promise.all([
-      prisma.memoryPacket.findMany({ where: { status: { not: 'rejected' } } }),
-      prisma.retryQueue.findMany({}),
+      prisma.memoryPacket.findMany({ where: { status: { not: 'rejected' }, test_run_id } }),
+      prisma.retryQueue.findMany({ where: { test_run_id } }),
       prisma.source.findMany({}),
-      prisma.activityStream.findMany({ orderBy: { timestamp: 'desc' }, take: 50 }),
-      prisma.document.findMany({ take: 100 })
+      prisma.activityStream.findMany({ where: { test_run_id }, orderBy: { timestamp: 'desc' }, take: 50 }),
+      prisma.document.findMany({ where: { test_run_id }, take: 100 })
     ]);
 
     const holdPackets = packets.filter(p => p.status === 'hold');

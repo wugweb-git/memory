@@ -7,42 +7,81 @@ export async function GET() {
   try {
     const [
       totalPackets,
-      failedEmbeddings,
+      failedJobs,
+      terminalFailures,
+      activeLocks,
+      staleLocks,
       semanticFallbacks,
-      retryQueueCount,
-      processingStats
+      processingStats,
+      entityIsolation,
+      systemSettings
     ] = await Promise.all([
       prisma.memoryPacket.count(),
-      prisma.memoryPacket.count({ where: { embedding_status: 'failed' } }),
+      prisma.memoryPacket.count({ where: { processing_status: 'failed' } }),
+      prisma.memoryPacket.count({ where: { attempt_count: { gte: 3 } } }),
+      prisma.memoryPacket.count({ where: { processing_lock: true } }),
+      prisma.memoryPacket.count({ 
+        where: { 
+          processing_lock: true, 
+          locked_at: { lt: new Date(Date.now() - 10 * 60 * 1000) } // > 10 mins
+        } 
+      }),
       prisma.semanticObject.count({ where: { fallback: true } }),
-      prisma.memoryPacket.count({ where: { retry_count: { gt: 0 }, status: 'active' } }),
       prisma.memoryPacket.groupBy({
         by: ['processing_status'],
         _count: true
-      })
+      }),
+      prisma.entity.groupBy({
+        by: ['processing_state'],
+        _count: true
+      }),
+      prisma.systemSettings.findFirst()
     ]);
 
-    // System Health Score (Simplified)
-    const healthScore = totalPackets > 0 
-      ? Math.max(0, 100 - (failedEmbeddings / totalPackets) * 50 - (retryQueueCount / totalPackets) * 20)
-      : 100;
+    // Hardened Status Contract
+    let status: 'LOCKED' | 'DEGRADED' | 'BROKEN' = 'LOCKED';
+    
+    const failRate = totalPackets > 0 ? (failedJobs / totalPackets) : 0;
+    const lockPressure = activeLocks > 5 ? 'high' : 'normal';
+
+    if (failRate > 0.1 || terminalFailures > 5 || staleLocks > 2) {
+      status = 'BROKEN';
+    } else if (failRate > 0.02 || activeLocks > 10 || semanticFallbacks > 5) {
+      status = 'DEGRADED';
+    }
+
+    // Force broken if system explicitly locked or disabled
+    if (systemSettings && systemSettings.system_status === 'maintenance') {
+      status = 'BROKEN';
+    }
 
     return NextResponse.json({
-      health_score: Math.round(healthScore),
+      status,
+      core_integrity: status === 'LOCKED' ? 'PASSED' : 'VERIFY',
       metrics: {
         total_memory_packets: totalPackets,
-        failed_embeddings: failedEmbeddings,
+        terminal_failures: terminalFailures,
+        failed_jobs: failedJobs,
+        active_locks: activeLocks,
+        stale_locks: staleLocks,
         semantic_fallbacks: semanticFallbacks,
-        active_retry_queue: retryQueueCount,
-        processing_distribution: processingStats
+        processing_distribution: processingStats,
+        entity_isolation_state: entityIsolation,
+        lock_pressure: lockPressure,
+        fail_rate: Number(failRate.toFixed(4))
       },
-      status: healthScore > 80 ? 'healthy' : healthScore > 50 ? 'degraded' : 'critical',
+      governance: {
+        semantic_enabled: systemSettings?.semantic_enabled ?? true,
+        rag_enabled: systemSettings?.rag_enabled ?? true,
+        version: 'v1.1.0-hardened-distributed'
+      },
       timestamp: new Date().toISOString()
     });
 
   } catch (error: any) {
+    console.error(`[HealthCheck] Fetch failed:`, error);
     return NextResponse.json(
-      { error: 'METRICS_FETCH_FAILED', details: error.message },
+      { status: 'BROKEN', error: 'METRICS_FETCH_FAILED', details: error.message },
       { status: 500 }
     );
   }

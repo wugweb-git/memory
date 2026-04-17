@@ -12,14 +12,18 @@ interface IngestionLog {
   source: string;
 }
 
-export default function IngestionMonitor() {
+interface IngestionMonitorProps {
+  testRunId?: string;
+}
+
+export default function IngestionMonitor({ testRunId = 'PROD' }: IngestionMonitorProps) {
   const [logs, setLogs] = useState<IngestionLog[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const fetchLogs = async () => {
     setIsRefreshing(true);
     try {
-      const response = await fetch('/api/memory/stats');
+      const response = await fetch(`/api/memory/stats?test_run_id=${testRunId}`);
       const data = await response.json();
       setLogs(data.recent_ingestion_logs || []);
     } catch (err) {

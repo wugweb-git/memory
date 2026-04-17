@@ -13,7 +13,11 @@ interface RetrievalResult {
   timestamp: string;
 }
 
-export default function RagTester() {
+interface RagTesterProps {
+  testRunId?: string;
+}
+
+export default function RagTester({ testRunId = 'PROD' }: RagTesterProps) {
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<RetrievalResult[]>([]);
@@ -30,7 +34,7 @@ export default function RagTester() {
       const response = await fetch('/api/memory/retrieve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query }),
+        body: JSON.stringify({ query, test_run_id: testRunId }),
       });
 
       const data = await response.json();

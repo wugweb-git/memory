@@ -11,7 +11,14 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url);
+    const testRunId = searchParams.get('test_run_id') || 'PROD';
+
     const entities = await prisma.entity.findMany({
+      where: {
+        processing_state: 'complete',
+        test_run_id: testRunId
+      },
       orderBy: { occurrences: 'desc' },
       take: 100
     });

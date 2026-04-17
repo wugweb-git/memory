@@ -12,7 +12,14 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url);
+    const testRunId = searchParams.get('test_run_id') || 'PROD';
+
     const semantic = await prisma.semanticObject.findMany({
+      where: {
+        processing_state: 'complete',
+        test_run_id: testRunId
+      },
       orderBy: { timestamp: 'desc' },
       take: 50
     });

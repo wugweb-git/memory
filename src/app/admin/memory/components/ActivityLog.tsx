@@ -11,7 +11,11 @@ interface LogEntry {
   target?: string;
 }
 
-export default function ActivityLog() {
+interface ActivityLogProps {
+  testRunId?: string;
+}
+
+export default function ActivityLog({ testRunId = 'PROD' }: ActivityLogProps) {
   const [logs, setLogs] = useState<LogEntry[]>([]);
 
   useEffect(() => {

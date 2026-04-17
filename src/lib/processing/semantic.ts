@@ -1,6 +1,8 @@
+import { ChatOpenAI } from '@langchain/openai';
+import { SystemMessage, HumanMessage } from '@langchain/core/messages';
 import { SettingsController } from '../memory/settings';
-
-const prisma = new PrismaClient();
+import prisma, { isUniqueError } from '@/lib/prisma';
+import crypto from 'crypto';
 
 const model = new ChatOpenAI({
   modelName: 'gpt-4o-mini',
@@ -19,25 +21,88 @@ const RECONCILIATION_THRESHOLD = 0.85;
  * Extracts entities, intents, topics, and relationships from MemoryPackets.
  */
 export class SemanticEngine {
-  static async processSemantic(packetId: string): Promise<{ success: boolean; entityCount: number; fallback: boolean }> {
+  private static reconciliationLocks = new Map<string, Promise<void>>();
+
+  /**
+   * Generates a stable hash for deduplication.
+   */
+  private static generateHash(input: string): string {
+    return crypto.createHash('sha256').update(input).digest('hex');
+  }
+
+  /**
+   * Acquires a soft lock on a MemoryPacket to prevent double-processing.
+   * Lock expires after 5 minutes.
+   */
+  private static async acquireLock(packetId: string): Promise<boolean> {
+    const now = new Date();
+    const expiryTime = new Date(now.getTime() - 5 * 60 * 1000);
+
+    const result = await prisma.memoryPacket.updateMany({
+      where: {
+        id: packetId,
+        OR: [
+          { processing_lock: false },
+          { locked_at: { lt: expiryTime } }
+        ]
+      },
+      data: {
+        processing_lock: true,
+        locked_at: now
+      }
+    });
+
+    return result.count > 0;
+  }
+
+  /**
+   * Releases a soft lock on a MemoryPacket.
+   */
+  private static async releaseLock(packetId: string) {
+    await prisma.memoryPacket.update({
+      where: { id: packetId },
+      data: {
+        processing_lock: false,
+        locked_at: null
+      }
+    });
+  }
+
+  static async processSemantic(
+    packetId: string, 
+    options: { llmClient?: any; testRunId?: string } = {}
+  ): Promise<{ success: boolean; entityCount: number; fallback: boolean }> {
+    const { llmClient = model, testRunId = 'PROD' } = options;
     try {
       // 0. Feature Flag Check (DB-level Singleton)
       const config = await SettingsController.getSettings();
-      if (!config.semantic_enabled) {
+      if (!config.semantic_enabled && testRunId === 'PROD') {
         return { success: false, entityCount: 0, fallback: false };
       }
 
       // 1. Fetch Packet and Signals (L1 + L2)
-      const packet = await prisma.memoryPacket.findUnique({ where: { id: packetId } });
-      const signals = await prisma.signal.findMany({ where: { packet_id: packetId } });
+      const packet = await prisma.memoryPacket.findFirst({ 
+        where: { id: packetId, test_run_id: testRunId } 
+      });
+      const signals = await prisma.signal.findMany({ 
+        where: { packet_id: packetId } 
+      });
 
       if (!packet) return { success: false, entityCount: 0, fallback: false };
 
-      // 2. Strict Idempotency: Clear previous semantic objects and relationships for this packet
-      await Promise.all([
-        prisma.semanticObject.deleteMany({ where: { packet_id: packetId } }),
-        prisma.relationship.deleteMany({ where: { packet_id: packetId } }),
-      ]);
+      // 1.5. Acquire Lock
+      const lockAcquired = await this.acquireLock(packetId);
+      if (!lockAcquired) {
+        console.warn(`[SemanticEngine] Packet ${packetId} is already being processed or locked.`);
+        return { success: false, entityCount: 0, fallback: false };
+      }
+
+      try {
+        await Promise.all([
+          prisma.semanticObject.deleteMany({ where: { packet_id: packetId, test_run_id: testRunId } }),
+          prisma.relationship.deleteMany({ where: { packet_id: packetId, test_run_id: testRunId } }),
+          prisma.pendingEdge.deleteMany({ where: { packet_id: packetId, test_run_id: testRunId } }),
+        ]);
 
       const contentStr = typeof packet.content === 'string' 
         ? packet.content 
@@ -76,7 +141,7 @@ export class SemanticEngine {
           }
         `;
 
-        const response = await model.call([
+        const response = await llmClient.call([
           new SystemMessage("Extract structured semantic intelligence strictly as JSON."),
           new HumanMessage(extractionPrompt),
         ]);
@@ -98,7 +163,9 @@ export class SemanticEngine {
           rawEntity.type, 
           rawEntity.confidence,
           packetId,
-          isFallback ? 'unverified' : 'verified'
+          isFallback ? 'unverified' : 'verified',
+          testRunId,
+          "pending" // ATOMICITY: Start as pending
         );
 
         processedEntities.push({
@@ -117,7 +184,12 @@ export class SemanticEngine {
           if (rawTopic.confidence < CONFIDENCE_THRESHOLD) continue;
           
           const topic = await prisma.topic.upsert({
-            where: { name: rawTopic.name.toLowerCase() },
+            where: { 
+              name_test_run_id: { 
+                name: rawTopic.name.toLowerCase(), 
+                test_run_id: testRunId 
+              } 
+            },
             update: {
               strength: { increment: 0.1 },
               packet_ids: { push: packetId },
@@ -126,7 +198,9 @@ export class SemanticEngine {
             create: {
               name: rawTopic.name.toLowerCase(),
               strength: rawTopic.confidence,
-              packet_ids: [packetId]
+              packet_ids: [packetId],
+              test_run_id: testRunId,
+              processing_state: "pending" // ATOMICITY: Start as pending
             }
           });
           processedTopics.push({ topic: topic.name, confidence: rawTopic.confidence });
@@ -134,26 +208,63 @@ export class SemanticEngine {
       }
 
       // 6. Store Relationships (STRICT: Both sides must be verified)
-      if (!isFallback) {
-        for (const rel of (data.relationships || []).slice(0, RELATIONSHIP_LIMIT)) {
+      if (!isFallback && data.relationships) {
+        for (const rel of data.relationships.slice(0, RELATIONSHIP_LIMIT)) {
+          if (rel.weight < CONFIDENCE_THRESHOLD) continue;
+
           const fromEnt = processedEntities.find(e => e.name.toLowerCase() === rel.from.toLowerCase());
           const toEnt = processedEntities.find(e => e.name.toLowerCase() === rel.to.toLowerCase());
 
           if (fromEnt && toEnt && fromEnt.verification_status === 'verified' && toEnt.verification_status === 'verified') {
-            await prisma.relationship.create({
-              data: {
+            // DUPLICATE GUARD
+            const existingRel = await prisma.relationship.findFirst({
+              where: {
                 from_entity_id: fromEnt.entity_id,
                 to_entity_id: toEnt.entity_id,
                 type: rel.type.toLowerCase().replace(' ', '_'),
+                test_run_id: testRunId
+              }
+            });
+
+            if (!existingRel) {
+              const relDedupHash = this.generateHash(`${fromEnt.entity_id}_${toEnt.entity_id}_${rel.type.toLowerCase().replace(' ', '_')}_${testRunId}`);
+              
+              try {
+                await prisma.relationship.create({
+                  data: {
+                    from_entity_id: fromEnt.entity_id,
+                    to_entity_id: toEnt.entity_id,
+                    type: rel.type.toLowerCase().replace(' ', '_'),
+                    weight: rel.weight || 0.5,
+                    packet_id: packetId,
+                    test_run_id: testRunId,
+                    dedup_hash: relDedupHash,
+                    processing_state: "pending" // ATOMICITY: Start as pending
+                  }
+                });
+              } catch (err: any) {
+                if (!isUniqueError(err)) throw err;
+                // Race condition: another worker created it. Safe to ignore.
+                console.log(`[SemanticEngine] Relationship collision handled for ${relDedupHash}`);
+              }
+            }
+          } else {
+            // Store as PendingEdge for future reconciliation
+            await prisma.pendingEdge.create({
+              data: {
+                from_name: rel.from.toLowerCase(),
+                to_name: rel.to.toLowerCase(),
+                type: rel.type.toLowerCase().replace(' ', '_'),
                 weight: rel.weight || 0.5,
-                packet_id: packetId
+                packet_id: packetId,
+                test_run_id: testRunId
               }
             });
           }
         }
       }
 
-      // 7. Final Semantic Object
+      // 7. Final Semantic Object (Atomicity: Start as pending)
       await prisma.semanticObject.create({
         data: {
           packet_id: packetId,
@@ -165,17 +276,41 @@ export class SemanticEngine {
           })),
           intents: data.intents || [],
           topics: processedTopics,
-          confidence: isFallback ? 0.6 : (data.entities?.length > 0 ? data.entities[0].confidence : 1.0),
+          confidence: isFallback ? 0.3 : (data.entities?.length > 0 ? data.entities[0].confidence : 1.0),
           verification_status: isFallback ? 'unverified' : 'verified',
           fallback: isFallback,
-          model: isFallback ? 'rule-based' : 'gpt-4o-mini'
+          model: isFallback ? 'rule-based' : 'gpt-4o-mini',
+          test_run_id: testRunId,
+          processing_state: "pending"
         }
       });
+
+      // 8. Atomicity Flip (Flip all to complete)
+      await Promise.all([
+        prisma.entity.updateMany({ 
+          where: { packet_ids: { has: packetId }, processing_state: "pending" }, 
+          data: { processing_state: "complete" } 
+        }),
+        prisma.relationship.updateMany({ 
+          where: { packet_id: packetId, processing_state: "pending" }, 
+          data: { processing_state: "complete" } 
+        }),
+        prisma.semanticObject.updateMany({ 
+          where: { packet_id: packetId, processing_state: "pending" }, 
+          data: { processing_state: "complete" } 
+        }),
+        prisma.topic.updateMany({
+          where: { packet_ids: { has: packetId }, processing_state: "pending" },
+          data: { processing_state: "complete" }
+        })
+      ]);
 
       return { success: true, entityCount: processedEntities.length, fallback: isFallback };
     } catch (error: any) {
       console.error('[SemanticEngine] Failure:', error);
       throw error;
+    } finally {
+      await this.releaseLock(packetId);
     }
   }
 
@@ -216,33 +351,51 @@ export class SemanticEngine {
   /**
    * Hybrid Normalization: Exact -> Alias -> Fuzzy
    */
-  private static async normalizeEntity(name: string, type: string, confidence: number, packetId: string, status: string = 'verified') {
+  private static async normalizeEntity(
+    name: string, 
+    type: string, 
+    confidence: number, 
+    packetId: string, 
+    status: string = 'verified',
+    testRunId: string = 'PROD',
+    processingState: string = 'complete'
+  ) {
     const normalized = name.toLowerCase().trim();
+    const dedupHash = this.generateHash(`${normalized}_${type}_${testRunId}`);
 
-    // 1. Exact Match
-    let entity = await prisma.entity.findUnique({ where: { name: normalized } });
+    // 1. Dedup Hash Match (Exact)
+    let entity = await prisma.entity.findFirst({ 
+      where: { 
+        dedup_hash: dedupHash
+      } 
+    });
+
     if (entity) {
       const updated = await prisma.entity.update({
         where: { id: entity.id },
         data: { 
           occurrences: { increment: 1 }, 
           last_seen: new Date(),
-          packet_ids: { push: packetId }
+          packet_ids: { has: packetId } ? undefined : { push: packetId }
         }
       });
       
       // If found verified match for unverified, trigger reconciliation
       if (status === 'verified' && updated.verification_status === 'unverified') {
-        await this.reconcile(entity.id, updated.id); // Placeholder for complex logic
+        await this.reconcileEntities(updated.id, testRunId); 
       }
       return updated;
     }
 
     // 2. Alias Match
-    const aliasMatch = await prisma.entityAlias.findUnique({ 
-      where: { alias: normalized },
+    const aliasMatch = await prisma.entityAlias.findFirst({ 
+      where: { 
+        alias: normalized, 
+        test_run_id: testRunId 
+      },
       include: { entity: true } 
     });
+
     if (aliasMatch) {
       return await prisma.entity.update({
         where: { id: aliasMatch.entity_id },
@@ -259,7 +412,8 @@ export class SemanticEngine {
       const partialMatch = await prisma.entity.findFirst({
         where: {
           type,
-          name: { contains: normalized }
+          test_run_id: testRunId,
+          normalized_name: { contains: normalized }
         }
       });
       if (partialMatch) {
@@ -267,7 +421,8 @@ export class SemanticEngine {
           data: {
             entity_id: partialMatch.id,
             alias: normalized,
-            confidence: confidence
+            confidence: confidence,
+            test_run_id: testRunId
           }
         });
         return partialMatch;
@@ -275,74 +430,187 @@ export class SemanticEngine {
     }
 
     // 4. Create New Entity
-    const newEntity = await prisma.entity.create({
-      data: {
-        name: normalized,
-        normalized_name: normalized,
-        type,
-        confidence,
-        verification_status: status,
-        fallback: status === 'unverified',
-        packet_ids: [packetId],
-        occurrences: 1
+    try {
+      const newEntity = await prisma.entity.create({
+        data: {
+          name: normalized,
+          normalized_name: normalized,
+          type,
+          confidence,
+          verification_status: status,
+          source_type: status === 'unverified' ? 'fallback' : 'llm',
+          processing_state: processingState,
+          dedup_hash: dedupHash,
+          packet_ids: [packetId],
+          occurrences: 1,
+          test_run_id: testRunId
+        }
+      });
+
+      // TRIGGER RECONCILIATION if new verified entity might match old unverified ones
+      if (status === 'verified') {
+        await this.reconcileEntities(newEntity.id, testRunId);
       }
-    });
 
-    // TRIGGER RECONCILIATION if new verified entity might match old unverified ones
-    if (status === 'verified') {
-      await this.reconcileEntities(newEntity.id);
+      return newEntity;
+    } catch (err: any) {
+      if (!isUniqueError(err)) throw err;
+      
+      // COLLISION: Another worker beat us. Fetch and update.
+      console.log(`[SemanticEngine] Entity collision handled for ${dedupHash}`);
+      return await prisma.entity.update({
+        where: { dedup_hash_test_run_id: { dedup_hash: dedupHash, test_run_id: testRunId } },
+        data: {
+          occurrences: { increment: 1 },
+          last_seen: new Date(),
+          packet_ids: { push: packetId }
+        }
+      });
     }
-
-    return newEntity;
   }
 
   /**
    * RECONCILIATION SYSTEM: Upgrade unverified -> verified via fuzzy/alias match
+   * Also promotes PendingEdge to Relationship
    */
-  static async reconcileEntities(verifiedId: string) {
-    const verified = await prisma.entity.findUnique({ where: { id: verifiedId } });
-    if (!verified || verified.verification_status !== 'verified') return;
+  static async reconcileEntities(verifiedId: string, testRunId: string = 'PROD') {
+    const lockKey = `${verifiedId}_${testRunId}`;
+    while (this.reconciliationLocks.has(lockKey)) {
+      await this.reconciliationLocks.get(lockKey);
+    }
 
-    // Scan for unverified entities of same type
-    const candidates = await prisma.entity.findMany({
-      where: {
-        type: verified.type,
-        verification_status: 'unverified'
-      }
+    let resolveLock: () => void;
+    const lockPromise = new Promise<void>((resolve) => {
+      resolveLock = resolve;
     });
+    this.reconciliationLocks.set(lockKey, lockPromise);
 
-    for (const unverified of candidates) {
-      // Basic Jaro-Winkler or similarity check (placeholder representation)
-      const similarity = this.calculateSimilarity(verified.name, unverified.name);
-      
-      if (similarity >= RECONCILIATION_THRESHOLD) {
-        console.log(`[Reconciliation] Merging unverified ${unverified.name} into verified ${verified.name}`);
+    try {
+      const verified = await prisma.entity.findUnique({ 
+        where: { id: verifiedId },
+        include: { aliases: true }
+      });
+      if (!verified || verified.verification_status !== 'verified') return;
+
+      // A. Entity Merging Logic
+      const candidates = await prisma.entity.findMany({
+        where: {
+          type: verified.type,
+          verification_status: 'unverified',
+          test_run_id: testRunId
+        }
+      });
+
+      for (const unverified of candidates) {
+        // IDEMPOTENCY: Same type mandatory (enforced by candidate query)
+        const similarity = this.calculateSimilarity(verified.name, unverified.name);
         
-        await prisma.$transaction([
-          // 1. Move packet references
-          prisma.entity.update({
+        if (similarity >= RECONCILIATION_THRESHOLD) {
+          console.log(`[Reconciliation] Merging unverified ${unverified.name} into verified ${verified.name}`);
+          
+          await prisma.entity.update({
             where: { id: verified.id },
             data: {
               packet_ids: { push: unverified.packet_ids },
               occurrences: { increment: unverified.occurrences }
             }
-          }),
-          // 2. Add alias
-          prisma.entityAlias.upsert({
-            where: { alias: unverified.name },
-            update: { entity_id: verified.id },
-            create: {
-              entity_id: verified.id,
-              alias: unverified.name,
-              confidence: 0.85
-            }
-          }),
-          // 3. Delete unverified
-          prisma.entity.delete({ where: { id: unverified.id } })
-        ]);
+          });
 
-        // Future hook: Retroactively scan packets for relationship discovery
-        // await this.discoverRelationships(verified.id);
+          const existingAliasDedupHash = this.generateHash(`${unverified.name}_alias_${verified.id}_${testRunId}`);
+          const existingAlias = await prisma.entityAlias.findFirst({
+            where: { alias: unverified.name, test_run_id: testRunId }
+          });
+
+          if (!existingAlias) {
+            await prisma.entityAlias.create({
+              data: {
+                entity_id: verified.id,
+                alias: unverified.name,
+                confidence: 0.85,
+                test_run_id: testRunId
+              }
+            });
+          }
+          await prisma.entity.delete({ where: { id: unverified.id } });
+
+          // Deterministic Promotion
+          await this.promotePendingEdges(verified.id, testRunId);
+        }
+      }
+    } finally {
+      this.reconciliationLocks.delete(lockKey);
+      resolveLock!();
+    }
+  }
+
+  /**
+   * Promotes PendingEdges to Relationships if both sides are verified.
+   * Deterministic and Idempotent.
+   */
+  static async promotePendingEdges(entityId: string, testRunId: string = 'PROD') {
+    const entity = await prisma.entity.findUnique({ 
+      where: { id: entityId },
+      include: { aliases: true }
+    });
+    if (!entity || entity.verification_status !== 'verified') return;
+
+    const validNames = [entity.name, entity.normalized_name, ...entity.aliases.map(a => a.alias)];
+    
+    const relevantEdges = await prisma.pendingEdge.findMany({
+      where: {
+        test_run_id: testRunId,
+        OR: [
+          { from_name: { in: validNames } },
+          { to_name: { in: validNames } }
+        ]
+      }
+    });
+
+    for (const edge of relevantEdges) {
+      const fromIsSelf = validNames.includes(edge.from_name);
+      const otherSideName = fromIsSelf ? edge.to_name : edge.from_name;
+      
+      const otherSide = await prisma.entity.findFirst({
+        where: {
+          test_run_id: testRunId,
+          verification_status: 'verified',
+          OR: [
+            { name: otherSideName },
+            { normalized_name: otherSideName },
+            { aliases: { some: { alias: otherSideName } } }
+          ]
+        }
+      });
+
+      if (otherSide) {
+        const fromId = fromIsSelf ? entity.id : otherSide.id;
+        const toId = fromIsSelf ? otherSide.id : entity.id;
+        const relDedupHash = this.generateHash(`${fromId}_${toId}_${edge.type}_${testRunId}`);
+
+        const existing = await prisma.relationship.findFirst({
+          where: { dedup_hash: relDedupHash }
+        });
+
+        if (!existing) {
+          try {
+            await prisma.relationship.create({
+              data: {
+                from_entity_id: fromId,
+                to_entity_id: toId,
+                type: edge.type,
+                weight: edge.weight,
+                packet_id: edge.packet_id,
+                test_run_id: testRunId,
+                dedup_hash: relDedupHash,
+                processing_state: "complete"
+              }
+            });
+          } catch (err: any) {
+            if (!isUniqueError(err)) throw err;
+            console.log(`[SemanticEngine] Promotion collision handled for ${relDedupHash}`);
+          }
+        }
+        await prisma.pendingEdge.delete({ where: { id: edge.id } });
       }
     }
   }
@@ -378,7 +646,7 @@ export class SemanticEngine {
     return costs[s2.length];
   }
 
-  private static reconcile(oldId: string, newId: string) {
+  private static reconcile(oldId: string, newId: string, testRunId: string) {
     // Basic redirect for direct exact matches found during normalization
   }
 }

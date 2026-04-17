@@ -11,15 +11,18 @@ interface Stats {
   failed: number;
 }
 
-export default function EmbeddingMonitor() {
+interface EmbeddingMonitorProps {
+  testRunId?: string;
+}
+
+export default function EmbeddingMonitor({ testRunId = 'PROD' }: EmbeddingMonitorProps) {
   const [stats, setStats] = useState<Stats>({ pending: 0, processing: 0, embedded: 0, failed: 0 });
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const fetchStats = async () => {
     setIsRefreshing(true);
     try {
-      // TODO: Implement /api/memory/stats or similar
-      const response = await fetch('/api/memory/stats');
+      const response = await fetch(`/api/memory/stats?test_run_id=${testRunId}`);
       const data = await response.json();
       setStats(data.embedding_stats || { pending: 0, processing: 0, embedded: 0, failed: 0 });
     } catch (err) {

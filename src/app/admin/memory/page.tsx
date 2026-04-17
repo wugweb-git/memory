@@ -1,10 +1,18 @@
+'use client';
+
+import React, { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import RagTester from './components/RagTester';
 import MemoryExplorer from './components/MemoryExplorer';
 import IngestionMonitor from './components/IngestionMonitor';
 import EmbeddingMonitor from './components/EmbeddingMonitor';
 import ActivityLog from './components/ActivityLog';
 import { Shield, Brain, Layers, Cpu } from 'lucide-react';
-export default function AdminMemoryPage() {
+
+function AdminMemoryContent() {
+  const searchParams = useSearchParams();
+  const testRunId = searchParams.get('test_run_id') || 'PROD';
+
   return (
     <div className="min-h-screen bg-black text-white p-8 font-sans">
       {/* HEADER */}
@@ -28,11 +36,19 @@ export default function AdminMemoryPage() {
             <span className="flex items-center gap-1.5 text-purple-400 font-medium">
               <Cpu className="w-4 h-4" /> Layer 2.5: Hardened
             </span>
+            {testRunId !== 'PROD' && (
+              <>
+                <span className="text-gray-600">|</span>
+                <span className="flex items-center gap-1.5 text-amber-400 font-bold px-2 py-0.5 rounded border border-amber-500/20 bg-amber-500/5 uppercase tracking-widest text-[10px]">
+                  Scope: {testRunId}
+                </span>
+              </>
+            )}
           </div>
         </div>
         <div className="flex flex-col items-end gap-1">
           <div className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-xs font-mono text-gray-400">
-            Governed Mode • Self-Healing Active
+            {testRunId === 'PROD' ? 'Live Production' : 'Validation Mode'} • Self-Healing Active
           </div>
           <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">System Healthy</p>
         </div>
@@ -41,15 +57,15 @@ export default function AdminMemoryPage() {
       <div className="grid grid-cols-12 gap-10">
         {/* LEFT COLUMN: SYSTEM STATUS & HEALTH */}
         <div className="col-span-12 lg:col-span-4 flex flex-col gap-10">
-          <ActivityLog />
-          <IngestionMonitor />
-          <EmbeddingMonitor />
+          <ActivityLog testRunId={testRunId} />
+          <IngestionMonitor testRunId={testRunId} />
+          <EmbeddingMonitor testRunId={testRunId} />
         </div>
 
         {/* RIGHT COLUMN: RAG TOOLS & EXPLORER */}
         <div className="col-span-12 lg:col-span-8 flex flex-col gap-10">
-          <RagTester />
-          <MemoryExplorer />
+          <RagTester testRunId={testRunId} />
+          <MemoryExplorer testRunId={testRunId} />
           <div className="p-6 bg-gradient-to-br from-purple-500/5 to-transparent border border-white/10 rounded-xl">
              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Hardening Audit (L2.5)</h3>
              <ul className="grid grid-cols-2 gap-4 text-xs">
@@ -83,5 +99,13 @@ export default function AdminMemoryPage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function AdminMemoryPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center text-white/20 font-mono text-[10px] tracking-widest uppercase animate-pulse">Initializing Control Surface...</div>}>
+      <AdminMemoryContent />
+    </Suspense>
   );
 }

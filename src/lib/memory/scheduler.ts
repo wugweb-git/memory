@@ -22,10 +22,28 @@ function classifyError(err: any): 'transient' | 'permanent' | 'llm_unavailable' 
  * Calculates next retry time using exponential backoff (5m -> 30m).
  */
 function getNextRetryAt(retryCount: number): Date {
-  const delays = [5 * 60 * 1000, 30 * 60 * 1000];
-  const delay = delays[retryCount] || (30 * 60 * 1000);
+  const delays = [5 * 60 * 1000, 30 * 60 * 1000, 120 * 60 * 1000]; // 5m, 30m, 2h
+  const delay = delays[retryCount] || (120 * 60 * 1000);
   return new Date(Date.now() + delay);
 }
+
+// Hourly stale lock cleanup (Security/Safety)
+cron.schedule('0 * * * *', async () => {
+  const staleThreshold = new Date(Date.now() - 10 * 60 * 1000); // 10 mins
+  const cleared = await prisma.memoryPacket.updateMany({
+    where: {
+      processing_lock: true,
+      locked_at: { lt: staleThreshold }
+    },
+    data: {
+      processing_lock: false,
+      locked_at: null
+    }
+  });
+  if (cleared.count > 0) {
+    console.log(`[Scheduler] Cleared ${cleared.count} stale processing locks.`);
+  }
+});
 
 // 1. RAG Embedding Worker (Priority: Fresh > Recent > Backlog)
 cron.schedule('*/1 * * * *', async () => {
@@ -47,6 +65,7 @@ cron.schedule('*/1 * * * *', async () => {
       ]
     },
     orderBy: [
+      { priority: 'desc' },
       { ingestion_time: 'desc' }, // High Priority: Fresh items
       { retry_count: 'asc' }
     ],
@@ -58,15 +77,15 @@ cron.schedule('*/1 * * * *', async () => {
       await processEmbedding(packet.id);
     } catch (err: any) {
       const type = classifyError(err);
-      const isPermanent = type === 'permanent' || packet.retry_count >= 1; // 2nd attempt fail = permanent if not transient
+      const isPermanent = type === 'permanent' || packet.attempt_count >= 2; // 3 total attempts
       
       await prisma.memoryPacket.update({
         where: { id: packet.id },
         data: {
           embedding_status: isPermanent ? 'failed' : 'pending',
-          error_type: type,
-          retry_count: { increment: 1 },
-          next_retry_at: isPermanent ? null : getNextRetryAt(packet.retry_count),
+          retry_classification: type,
+          attempt_count: { increment: 1 },
+          next_retry_at: isPermanent ? null : getNextRetryAt(packet.attempt_count),
           last_attempt_at: new Date()
         }
       });
@@ -89,26 +108,36 @@ cron.schedule('*/2 * * * *', async () => {
         { next_retry_at: { lte: now }, retry_count: { lt: 2 } }
       ]
     },
-    orderBy: { ingestion_time: 'desc' },
+    orderBy: [
+      { priority: 'desc' },
+      { ingestion_time: 'desc' }
+    ],
     take: 50
   });
 
   for (const packet of l2Targets) {
     try {
-      await prisma.memoryPacket.update({ where: { id: packet.id }, data: { processing_status: 'processing' } });
+      await prisma.memoryPacket.update({ 
+        where: { id: packet.id }, 
+        data: { processing_status: 'processing', locked_at: new Date() } 
+      });
       const result = await ProcessingEngine.processPacket(packet.id);
       if (result.success) {
-        await prisma.memoryPacket.update({ where: { id: packet.id }, data: { processing_status: 'completed', retry_count: 0 } });
+        await prisma.memoryPacket.update({ 
+          where: { id: packet.id }, 
+          data: { processing_status: 'completed', attempt_count: 0 } 
+        });
       }
     } catch (err: any) {
       const type = classifyError(err);
+      const isPermanent = type === 'permanent' || packet.attempt_count >= 2;
       await prisma.memoryPacket.update({
         where: { id: packet.id },
         data: {
-          processing_status: (type === 'permanent' || packet.retry_count >= 1) ? 'failed' : 'pending',
-          error_type: type,
-          retry_count: { increment: 1 },
-          next_retry_at: getNextRetryAt(packet.retry_count),
+          processing_status: isPermanent ? 'failed' : 'pending',
+          retry_classification: type,
+          attempt_count: { increment: 1 },
+          next_retry_at: isPermanent ? null : getNextRetryAt(packet.attempt_count),
           last_attempt_at: new Date()
         }
       });
@@ -121,41 +150,44 @@ cron.schedule('*/2 * * * *', async () => {
   const l25Targets = await prisma.memoryPacket.findMany({
     where: {
       processing_status: 'completed',
-      semantic_status: { in: ['pending', 'failed'] }, // Include failed for retries
+      semantic_status: { in: ['pending', 'failed'] },
       status: 'active',
       OR: [
-        { retry_count: 0 },
-        { next_retry_at: { lte: now }, retry_count: { lt: 2 } }
+        { attempt_count: 0 },
+        { next_retry_at: { lte: now }, attempt_count: { lt: 3 } }
       ]
     },
-    orderBy: { ingestion_time: 'desc' },
+    orderBy: [
+      { priority: 'desc' },
+      { ingestion_time: 'desc' }
+    ],
     take: 20
   });
 
   for (const packet of l25Targets) {
     try {
-      await prisma.memoryPacket.update({ where: { id: packet.id }, data: { semantic_status: 'processing' } });
-      const result = await SemanticEngine.processSemantic(packet.id);
+      // Logic inside processSemantic handles its own locking
+      const result = await SemanticEngine.processSemantic(packet.id, { testRunId: 'PROD' });
       
       await prisma.memoryPacket.update({
         where: { id: packet.id },
         data: { 
           semantic_status: result.fallback ? 'partial' : 'completed',
-          retry_count: 0,
-          error_type: null
+          attempt_count: 0,
+          retry_classification: null
         }
       });
     } catch (err: any) {
       const type = classifyError(err);
-      const isPermanent = type === 'permanent' || packet.retry_count >= 1;
+      const isPermanent = type === 'permanent' || packet.attempt_count >= 2;
       
       await prisma.memoryPacket.update({
         where: { id: packet.id },
         data: {
           semantic_status: isPermanent ? 'failed' : 'pending',
-          error_type: type,
-          retry_count: { increment: 1 },
-          next_retry_at: isPermanent ? null : getNextRetryAt(packet.retry_count),
+          retry_classification: type,
+          attempt_count: { increment: 1 },
+          next_retry_at: isPermanent ? null : getNextRetryAt(packet.attempt_count),
           last_attempt_at: new Date()
         }
       });

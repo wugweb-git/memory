@@ -111,6 +111,7 @@ export async function processEmbedding(packetId: string) {
       packet_id: packetId,
       embedding: vectorResults[index],
       text_chunk: chunk,
+      test_run_id: packet.test_run_id, // Propagate from packet
       metadata: {
         model: EMBEDDING_MODEL,
         version: EMBEDDING_VERSION,
@@ -174,6 +175,8 @@ export async function retrieve(query: string, filters: any = {}) {
     return { results: [], message: 'QUERY_TOO_SHORT' };
   }
 
+  const test_run_id = filters.test_run_id || 'PROD';
+
   // 2. GENERATE QUERY VECTOR
   const queryVector = await embeddings.embedQuery(cleanQuery);
 
@@ -182,7 +185,10 @@ export async function retrieve(query: string, filters: any = {}) {
   const collection = db.collection('embeddings');
 
   // Build filters for MongoDB
-  const mongoFilter: any = {};
+  const mongoFilter: any = {
+    test_run_id: { $eq: test_run_id }
+  };
+  
   if (filters.type) mongoFilter['metadata.type'] = filters.type;
   if (filters.source) mongoFilter['metadata.source'] = filters.source;
   if (filters.sensitivity) mongoFilter['metadata.sensitivity'] = filters.sensitivity;

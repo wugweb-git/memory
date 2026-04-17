@@ -12,14 +12,22 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url);
+    const test_run_id = searchParams.get('test_run_id') || 'PROD';
+
     const patterns = await prisma.pattern.findMany({
+      where: {
+        test_run_id,
+        processing_state: 'complete'
+      },
       orderBy: { last_detected: 'desc' }
     });
 
     return NextResponse.json({
       patterns,
       system_state: 'nominal',
-      last_refresh: patterns[0]?.last_detected || new Date().toISOString()
+      last_refresh: patterns[0]?.last_detected || new Date().toISOString(),
+      test_run_id
     });
   } catch (error: any) {
     console.error('[API Intelligence] Fetch error:', error);

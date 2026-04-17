@@ -9,9 +9,10 @@ export async function GET(req: NextRequest) {
     const type = searchParams.get('type');
     const source = searchParams.get('source');
     const status = searchParams.get('status');
-    const limit = Number(searchParams.get('limit')) || 20;
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const test_run_id = searchParams.get('test_run_id') || 'PROD';
 
-    const where: any = {};
+    const where: any = { test_run_id };
     if (type) where.type = type;
     if (source) where.source = source;
     if (status) where.status = status;

@@ -53,7 +53,7 @@ export class MemoryService {
       
       // 5. Deduplication (Hash-based)
       packetData.hash = generateHash(packetData);
-      const existing = await prisma.memoryPacket.findUnique({
+      const existing = await prisma.memoryPacket.findFirst({
         where: { hash: packetData.hash }
       });
 
@@ -166,11 +166,10 @@ export class MemoryService {
    * ATOMIC DELETE: Full cascading cleanup of memory, vectors, and activity.
    */
   static async deletePacket(packetId: string) {
-    return prisma.$transaction([
-      prisma.embedding.deleteMany({ where: { packet_id: packetId } }),
-      prisma.activityStream.deleteMany({ where: { packet_id: packetId } }),
-      prisma.retryQueue.deleteMany({ where: { packet_id: packetId } }),
-      prisma.memoryPacket.delete({ where: { id: packetId } })
-    ]);
+    // Sequential deletes to avoid transaction dependency
+    await prisma.embedding.deleteMany({ where: { packet_id: packetId } });
+    await prisma.activityStream.deleteMany({ where: { packet_id: packetId } });
+    await prisma.retryQueue.deleteMany({ where: { packet_id: packetId } });
+    return prisma.memoryPacket.delete({ where: { id: packetId } });
   }
 }

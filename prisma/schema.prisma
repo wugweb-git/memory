@@ -32,25 +32,32 @@ model MemoryPacket {
   confidence        Float    @default(1.0)
 
   status            String   @default("active") // active | partial | failed | archived
-  hash              String   @unique
+  hash              String
 
   trace             Json     // { origin, ingestion_path, parent_origin_id, retry_count, error_reason }
   
   // -- AG HARDENING (LOCKED) --
   embedding_status  String   @default("pending") // pending | processing | embedded | failed
-  processing_status String   @default("pending") // pending | processing | completed | failed
+  processing_status String   @default("pending") // pending | retrying | failed | complete
   semantic_status   String   @default("pending") // pending | processing | completed | partial | failed
   
-  retry_count       Int      @default(0)
-  max_retries       Int      @default(2)
+  processing_lock   Boolean  @default(false)
+  locked_at         DateTime?
+  
+  attempt_count     Int      @default(0)
+  max_retries       Int      @default(3)
   next_retry_at     DateTime?
-  last_attempt_at   DateTime?
-  error_type        String?   // transient | permanent | llm_unavailable
+  last_retried_at   DateTime?
+  retry_classification String? // llm_failure | parse_error | db_error
+  
+  fallback_used     Boolean  @default(false)
   
   is_embeddable     Boolean  @default(true)
-  schema_version    Int      @default(1)
+  schema_version    Int      @default(2) // Incremented
   processing_errors Json?    // Array of error objects [{ time, reason, level }]
   semantic_errors   Json?    // Array of error objects [{ time, reason, level }]
+  
+  test_run_id       String   @default("PROD")
 
   @@index([source])
   @@index([type])
@@ -59,6 +66,9 @@ model MemoryPacket {
   @@index([embedding_status])
   @@index([processing_status])
   @@index([semantic_status])
+  @@index([test_run_id])
+  @@index([processing_lock])
+  @@index([hash])
   @@map("memory_packets")
 }
 
@@ -87,9 +97,11 @@ model ActivityStream {
   intensity     Float?   @default(0.5)
   source        String?
   metadata      Json
+  test_run_id   String   @default("PROD")
 
   @@index([packet_id])
   @@index([timestamp])
+  @@index([test_run_id])
   @@map("activity_stream")
 }
 
@@ -108,10 +120,14 @@ model Signal {
   timestamp          DateTime
   signal_hash        String   @unique
   metadata           Json
+  test_run_id        String   @default("PROD")
+  processing_state   String   @default("complete")
 
   @@index([packet_id])
   @@index([type])
   @@index([timestamp])
+  @@index([test_run_id])
+  @@index([processing_state])
   @@map("signals")
 }
 
@@ -124,9 +140,13 @@ model Pattern {
   consistency_score Float
   last_detected     DateTime @default(now())
   metadata          Json
+  test_run_id       String   @default("PROD")
+  processing_state  String   @default("complete")
 
   @@index([type])
   @@index([window_type])
+  @@index([test_run_id])
+  @@index([processing_state])
   @@map("patterns")
 }
 
@@ -141,8 +161,10 @@ model Document {
   size_bytes   Int
   is_sensitive Boolean  @default(false)
   metadata     Json?
+  test_run_id  String   @default("PROD")
 
   @@index([packet_id])
+  @@index([test_run_id])
   @@map("documents")
 }
 
@@ -153,8 +175,10 @@ model IngestionLog {
   reason        String
   timestamp     DateTime @default(now())
   raw_payload   Json?
+  test_run_id   String   @default("PROD")
 
   @@index([timestamp])
+  @@index([test_run_id])
   @@map("ingestion_logs")
 }
 
@@ -165,9 +189,11 @@ model RetryQueue {
   last_attempt  DateTime?
   status        String   @default("pending") // pending | failed
   next_retry_at DateTime?
+  test_run_id   String   @default("PROD")
 
   @@index([status])
   @@index([next_retry_at])
+  @@index([test_run_id])
   @@map("retry_queue")
 }
 
@@ -177,8 +203,10 @@ model Embedding {
   embedding       Float[]
   text_chunk      String
   metadata        Json
+  test_run_id     String   @default("PROD")
 
   @@index([packet_id])
+  @@index([test_run_id])
   @@map("embeddings")
 }
 
@@ -221,41 +249,54 @@ model SemanticObject {
   confidence        Float
   verification_status String   @default("verified") // verified | unverified
   fallback          Boolean  @default(false)
+  processing_state  String   @default("complete") // pending | complete (atomicity)
   timestamp         DateTime @default(now())
+  test_run_id       String   @default("PROD")
 
   @@index([packet_id])
+  @@index([test_run_id])
+  @@index([processing_state])
   @@map("semantic_objects")
 }
 
 model Entity {
   id                String   @id @default(auto()) @map("_id") @db.ObjectId
-  name              String   @unique
+  name              String
   normalized_name   String
-  type              String   // person | company | project | skill | tool | location | concept
+  type              String   // person | organization | project | concept
   confidence        Float
-  verification_status String   @default("verified") // verified | unverified
+  verification_status String   @default("unverified") // verified | unverified
   fallback          Boolean  @default(false)
-  
-  packet_ids        String[] @db.ObjectId // References for reconciliation
+  packet_ids        String[] @db.ObjectId
   occurrences       Int      @default(1)
-  first_seen        DateTime @default(now())
   last_seen         DateTime @default(now())
   
+  processing_state  String   @default("complete") // pending | complete (atomicity)
+  source_type       String   @default("llm")     // llm | fallback
+  dedup_hash        String   // hash(normalized_name + type + test_run_id)
+  
+  test_run_id       String   @default("PROD")
+  
   aliases           EntityAlias[]
-
-  @@index([normalized_name])
+  
+  @@unique([dedup_hash, test_run_id])
+  @@index([normalized_name, type, test_run_id])
   @@index([type])
+  @@index([test_run_id])
+  @@index([processing_state])
   @@map("entities")
 }
 
 model EntityAlias {
   id                String   @id @default(auto()) @map("_id") @db.ObjectId
   entity_id         String   @db.ObjectId
-  alias             String   @unique
+  alias             String
   confidence        Float
+  test_run_id       String   @default("PROD")
   
-  entity            Entity   @relation(fields: [entity_id], references: [id])
+  entity            Entity      @relation(fields: [entity_id], references: [id])
 
+  @@index([alias, test_run_id])
   @@index([entity_id])
   @@map("entity_aliases")
 }
@@ -264,24 +305,52 @@ model Relationship {
   id                String   @id @default(auto()) @map("_id") @db.ObjectId
   from_entity_id    String   @db.ObjectId
   to_entity_id      String   @db.ObjectId
-  type              String   // working_on | uses | related_to | belongs_to | learning
+  type              String
   weight            Float
   packet_id         String   @db.ObjectId
   timestamp         DateTime @default(now())
+  
+  processing_state  String   @default("complete") // pending | complete (atomicity)
+  dedup_hash        String   // hash(from_id + to_id + type + test_run_id)
+  
+  test_run_id       String   @default("PROD")
 
+  @@unique([dedup_hash, test_run_id])
   @@index([from_entity_id])
   @@index([to_entity_id])
   @@index([packet_id])
+  @@index([test_run_id])
+  @@index([processing_state])
   @@map("relationships")
+}
+
+model PendingEdge {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  from_name       String
+  to_name         String
+  type            String
+  weight          Float
+  packet_id       String   @db.ObjectId
+  test_run_id     String   @default("PROD")
+  timestamp       DateTime @default(now())
+
+  @@index([test_run_id])
+  @@map("pending_edges")
 }
 
 model Topic {
   id                String   @id @default(auto()) @map("_id") @db.ObjectId
-  name              String   @unique
-  strength          Float    @default(1.0)
+  name              String
+  strength          Float
   packet_ids        String[] @db.ObjectId
   last_updated      DateTime @default(now())
+  
+  processing_state  String   @default("complete") // pending | complete (atomicity)
+  test_run_id       String   @default("PROD")
 
+  @@unique([name, test_run_id])
+  @@index([processing_state])
+  @@index([test_run_id])
   @@map("topics")
 }
 
@@ -311,10 +380,12 @@ model BlobItem {
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
   expires_at  DateTime?
+  test_run_id String   @default("PROD")
   events      BlobEvent[]
 
   @@index([hash])
   @@index([state])
+  @@index([test_run_id])
   @@map("blob_items")
 }
 

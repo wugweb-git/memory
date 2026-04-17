@@ -1,125 +1,64 @@
-# Memory System — Phase 1 (Blob-first)
+# Identity Prism OS — Layer 2.5 (Hardened Semantic Engine)
 
-Phase 1 is now wrapped on a **Mongo/Redis-free** stack. Runtime state is persisted to **Vercel Blob** via a JSON store.
+Identity Prism is a proactive behavioral OS built on a multi-layer semantic architecture. It has evolved from a simple ingestor into a hardened, production-grade intelligence engine capable of high-fidelity signal extraction, entity reconciliation, and proactive pattern recognition.
 
-## Environment variables
+## 🏗️ System Architecture (The Layers)
 
-Required:
-- `AUTH_SECRET`
+The system is organized into decoupled layers to ensure operational integrity and scalability:
 
-If `AUTH_SECRET` is missing, local development falls back to `dev_auth_secret_change_me`. In production, `AUTH_SECRET` must be explicitly set in environment variables.
+- **[Layer 1: Neural Memory](docs/layer-1-memory.md)**: Standardized ingestion and RAG core. Enforces the "Packet" contract.
+- **[Layer 2: Signal Interpretation](docs/layer-2-processing.md)**: Real-time telemetry extraction (category, intensity, category).
+- **[Layer 2.5: Semantic Intelligence (LOCKED)](docs/layer-2.5-enrichment.md)**: Hardened governance, entity reconciliation, and environment isolation.
+- **Layer 3: Action Engine (INCOMING)**: Proactive behavioral layer for autonomous tasks and suggestions.
+
+---
+
+## 🔒 Operational Hardening (L2.5)
+
+To ensure production stability, the system implements **Operational Hardening** at Layer 2.5:
+
+1.  **Environment Isolation**: Strict `test_run_id` flow ensures test data never pollutes production read paths or vector store results. 
+2.  **Atomic Write Flow**: Uses a `pending` -> `complete` state transition to simulate transactions and prevent partial visibility during semantic digestion.
+3.  **Concurrency Safety**: Identity creation is guarded by `dedup_hash` unique constraints and `isUniqueError` handling in the application layer.
+4.  **Diagnostic Audit**: A 20-point diagnostic suite ensures isolation and integrity across 15+ data models.
+
+---
+
+## 🚀 API Control Surface
+
+### Core Memory APIs
+- `POST /api/memory/ingest`: Ingest raw content into L1.
+- `GET /api/memory/list`: List packets with mandatory `test_run_id` scoping.
+- `POST /api/memory/retrieve`: High-fidelity vector search/RAG retrieval.
+- `GET /api/memory/stats`: Project-wide telemetry stats.
+
+### Layer 2 & 2.5 Semantic APIs
+- `GET /api/processing/entities`: Scoped list of normalized entities (Person, Project, Concept).
+- `GET /api/processing/signals`: Real-time behavioral signal stream.
+- `GET /api/processing/topics`: Distribution of thematic topics.
+- `GET /api/processing/intelligence`: Behavioral patterns and descriptive insights.
+- `GET /api/processing/semantic`: Full semantic objects for specific packets.
+
+### Administrative & Diagnostics
+- `POST /api/admin/semantic-diagnose`: Trigger the 20-point hardening audit.
+- `GET /api/admin/system-health`: Global system health monitoring.
+- `POST /api/admin/cleanup`: native script for purging environment-scoped test data.
+
+---
+
+## 🔑 Environment Variables
+
+Required for Production:
+- `AUTH_SECRET`: Core auth security.
+- `MONGODB_URI`: Primary NoSQL and Vector Store.
+- `OPENAI_API_KEY`: LLM operations (GPT-4o).
+- `BLOB_READ_WRITE_TOKEN`: File/Avatar storage (Vercel Blob).
 
 Recommended:
-- `BLOB_READ_WRITE_TOKEN` (required for Blob persistence and avatar upload/view)
-- `OPENAI_API_KEY`
-- `GEMINI_API_KEY` (alias supported: `Gemini_API_Key`)
+- `GEMINI_API_KEY`: Fallback LLM and high-throughput extraction.
+- `JOB_SECRET`: Secures background processing cycles.
 
-Optional:
-- `BLOB_DATA_PATH` (default: `memory/store.json`)
-- `ADMIN_EMAIL`
-- `ADMIN_PASSWORD`
-- `ALLOWED_ORIGINS`
-- `REQUEST_LIMIT_BYTES`
-
-## Deployment quick-fix (Vercel + Netlify)
-
-If deploys are failing, the issue is usually **build/config/env**, not RAG logic.
-
-1. Use Node 20 in the platform settings.
-2. Set required env vars (`AUTH_SECRET`, and `BLOB_READ_WRITE_TOKEN` if you need Blob persistence/uploads).
-3. Keep platform config minimal:
-   - `vercel.json` should only define `"framework": "nextjs"`.
-   - `netlify.toml` should use the Next.js plugin and should not force `publish = ".next"`.
-4. Ensure lockfile is in sync with `package.json` (`npm install` locally, commit lockfile).
-5. Verify locally before pushing:
-   ```bash
-   npm install
-   npm run build
-   ```
-
-## System Architecture (The Layers)
-
-The Identity Prism OS is built on a modular, layered architecture for maximum resilience and intelligence:
-
-- **[Layer 1: Memory & Ingestion](docs/layer-1-memory.md)**: The Blob-first storage and RAG core.
-- **[Layer 2: Deep Processing](docs/layer-2-processing.md)**: Signal extraction and enrichment engine.
-- **[Layer 2.5: Semantic Intelligence](docs/layer-2.5-enrichment.md)**: Hardened governance and pattern recognition.
-- **[Recycling Bin](docs/RECYCLING.md)**: Repository of deferred logic and components.
-
-## Architecture Highlights
-
-## Environment Guardrails
-
-To prevent silent failures in production, the system includes an **Environment Audit** script. This runs automatically during the Vercel pre-build phase via `scripts/vercel-readiness.sh`.
-
-You can manually trigger a validation check:
-```bash
-node scripts/validate-env.js
-```
-
-If `AUTH_SECRET` is missing, the audit fails intentionally. `MONGODB_URI` is optional in Blob-first mode; when absent, signals endpoints return empty data until Mongo is configured.
-
-## Secret hygiene (important)
-
-If credentials were ever committed to git history, do this immediately:
-1. Revoke/rotate those keys in the provider dashboards (OpenAI, MongoDB, Vercel Blob, etc.).
-2. Replace them with platform environment variables (Vercel/Netlify project settings).
-3. Never commit real keys again (including base64-encoded forms).
-
-### Rotation + redeploy runbook
-
-1. Rotate these keys first:
-   - `OPENAI_API_KEY`
-   - `MONGODB_URI` (or `MONGO_URI`)
-   - `BLOB_READ_WRITE_TOKEN`
-   - `GEMINI_API_KEY` (if used)
-   - `AUTH_SECRET`
-2. Add the rotated values to:
-   - **Vercel** → Project → Settings → Environment Variables
-   - **Netlify** → Site settings → Environment variables
-3. Validate repo content before deploy:
-   ```bash
-   npm run security:scan
-   node scripts/validate-env.js
-   npm run build
-   ```
-4. Redeploy from the latest commit in each platform dashboard.
-
-## API routes
-
-- `GET /api`
-- `GET /api/test`
-- `GET /api/test-db` (compat alias for storage check)
-- `GET /api/test-storage`
-- `POST /api/avatar/upload?filename=<name>`
-- `GET /api/avatar/view?pathname=<blob-path>`
-- `POST /api/auth/signup`
-- `POST /api/auth/login`
-- `GET /api/auth/me`
-- `POST /api/auth/logout`
-- `GET /api/items`
-- `POST /api/items`
-- `DELETE /api/items`
-- `POST /api/sync`
-- `POST /api/email`
-- `GET /api/health`
-- `GET /api/logs`
-- `GET /api/sources`
-- `POST /api/sources`
-- `POST /api/sync/run`
-- `GET /api/telemetry-config`
-- `POST /api/telemetry-config`
-- `GET /api/blob-metadata`
-- `POST /api/blob-metadata`
-- `POST /api/ingest/soul`
-- `POST /api/ingest/pulse`
-- `POST /api/memory/ingest`
-- `GET /api/memory/packets`
-- `GET /api/memory/monitor`
-- `GET /api/memory/source`
-- `POST /api/memory/source`
-- `POST /api/memory/replay`
-- `POST /api/memory/packet/action`
+---
 
 ## Scripts
 

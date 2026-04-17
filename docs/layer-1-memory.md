@@ -1,27 +1,23 @@
-# Layer 1: Memory & Ingestion Core
+# Layer 1: Neural Memory Core
 
-Layer 1 is the foundational storage and retrieval engine for the Identity Prism OS. It is designed to be "Blob-first," minimizing external dependencies while maintaining high performance for RAG (Retrieval-Augmented Generation).
+Layer 1 is the foundational ingestion and retrieval engine for the Identity Prism OS. It handles the transition from raw environmental data to standardized, searchable **MemoryPackets**.
 
 ## Core Architecture
 
 ### 1. Ingestion Infrastructure
-- **Endpoints**: `POST /api/memory/ingest`, `POST /api/ingest/soul` (Spirit Notes), `POST /api/ingest/pulse` (Telemetry).
-- **Validation**: Enforces strict payload contracts before processing to ensure data integrity.
-- **Queueing**: Implements adaptive retries and governance to handle high-volume ingress.
+- **Standardized Packet**: All incoming data (Spirit Notes, Pulse Telemetry, CRM items) is transformed into a `MemoryPacket` structure.
+- **Validation**: Strict payload contracts ensure ingestion integrity before downstream processing.
+- **Scoping**: Every packet is assigned a `test_run_id` to maintain architectural isolation.
 
-### 2. Storage Strategy (Blob-first)
-- **Primary Store**: Vercel Blob serves as the primary JSON datastore for runtime states, avatars, and configuration.
-- **Fallback**: Supports an in-memory store for local development smoke tests when credentials are absent.
-- **MongoDB**: Optional but recommended for long-term telemetry and historical logs.
+### 2. Neural Storage (MongoDB + Vector)
+- **Primary Persistence**: MongoDB serves as the source of truth for all memory packets and their metadata.
+- **Vector Search**: Integrated RAG (Retrieval-Augmented Generation) uses specialized indices for high-fidelity context retrieval.
+- **Asset Storage**: Vercel Blob remains the primary store for large binary assets and file uploads.
 
-### 3. RAG & Retrieval
-- **Vector Prep**: Prepares data for vector embedding with focused signal extraction.
-- **Search**: Optimized for fast retrieval of context for the interpretation layers.
+### 3. RAG Retrieval
+- **Scoped Search**: Vector retrieval is strictly isolated by `test_run_id` at the query level.
+- **Signal-First Indexing**: Retrieval is optimized based on extracted behavioral signals, providing higher relevance than simple keyword search.
 
 ## Security & Governance
-- **Authorization**: Hardened `AUTH_SECRET` validation (production-grade).
-- **Hardening**: Fail-closed mechanism for missing environment variables.
-- **Audit Trails**: Real-time logging of ingestion events and storage state.
-
-## Recycling Logic
-- Redundant logic from various feature branches has been consolidated here to maintain a linear and stable ingestion pipeline.
+- **Authorization**: Hardened JWT/Auth validation for all ingestion and retrieval paths.
+- **Environment Shielding**: Fail-closed mechanism prevents ingestion if core secrets are missing.

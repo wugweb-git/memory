@@ -17,7 +17,11 @@ interface Packet {
 
 import PacketInspector from './PacketInspector';
 
-export default function MemoryExplorer() {
+interface MemoryExplorerProps {
+  testRunId?: string;
+}
+
+export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerProps) {
   const [packets, setPackets] = useState<Packet[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState('');
@@ -26,7 +30,7 @@ export default function MemoryExplorer() {
   const fetchPackets = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/memory/list?limit=10${filterType ? `&type=${filterType}` : ''}`);
+      const response = await fetch(`/api/memory/list?limit=10&test_run_id=${testRunId}${filterType ? `&type=${filterType}` : ''}`);
       const data = await response.json();
       setPackets(data.packets || []);
     } catch (err) {

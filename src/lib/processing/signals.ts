@@ -17,10 +17,10 @@ const SIGNAL_HIERARCHY: Record<SignalType, number> = {
 /**
  * Generates a unique hash for a signal to ensure idempotency.
  */
-function generateSignalHash(packetId: string, type: string, ruleVersion: number): string {
+function generateSignalHash(packetId: string, type: string, ruleVersion: number, testRunId: string = 'PROD'): string {
   return crypto
     .createHash('md5')
-    .update(`${packetId}-${type}-${ruleVersion}`)
+    .update(`${packetId}-${type}-${ruleVersion}-${testRunId}`)
     .digest('hex');
 }
 
@@ -36,6 +36,7 @@ export function extractSignals(packet: MemoryPacket): Signal[] {
 
   const source = packet.source.toLowerCase();
   const packetId = packet.id!;
+  const testRunId = (packet as any).test_run_id || 'PROD';
 
   // Rule: Work Activity
   if (source === 'github' || (source === 'gmail' && /work|project|meeting|sprint|task/i.test((packet.metadata as any).subject || ''))) {
@@ -122,7 +123,7 @@ export function extractSignals(packet: MemoryPacket): Signal[] {
       return {
         ...sig,
         intensity_relative: sig.intensity_absolute || 0.5, // Initial normalization
-        signal_hash: generateSignalHash(packetId, type, RULE_VERSION),
+        signal_hash: generateSignalHash(packetId, type, RULE_VERSION, testRunId),
         metadata: {
           ...sig.metadata,
           is_primary: idx === 0,
