@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Activity, AlertTriangle, Database, FileLock2, Folder, HardDrive, Home, RefreshCcw, Server, ShieldAlert } from 'lucide-react';
 
 type MonitorState = {
@@ -69,7 +69,7 @@ export default function MemoryControlSurface() {
       setMonitor(monitorJson);
       setPackets(packetJson.rows || []);
       if (packetJson.rows?.length) {
-        setSelectedPacket((current) => current || packetJson.rows[0]);
+        setSelectedPacket((current: any) => current ?? packetJson.rows[0]);
       }
     } finally {
       setLoading(false);

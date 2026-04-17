@@ -1,4 +1,3 @@
-import { Sandbox } from "@vercel/sandbox";
 import { NextResponse } from "next/server";
 
 /**
@@ -9,18 +8,10 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const sandbox = await Sandbox.create();
-    
-    // Execute a test command in the isolated env
-    const cmd = await sandbox.runCommand("echo", ["Hello from Vercel Sandbox!"]);
-    const output = await cmd.stdout();
-    
-    await sandbox.stop();
-
     return NextResponse.json({
       success: true,
-      output: output.trim(),
-      message: "Sandbox environment verified and terminated."
+      output: "Sandbox dependency disabled in this build profile.",
+      message: "Diagnostic route is active; external sandbox runtime is not configured."
     });
   } catch (error: any) {
     console.error('[Sandbox] Execution failed:', error);

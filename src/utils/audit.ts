@@ -1,6 +1,6 @@
 import { MongoClient } from 'mongodb';
 import { getEmbeddingsTransformer, searchArgs } from './openai';
-import { MongoDBAtlasVectorSearch } from '@langchain/community/vectorstores/mongodb_atlas';
+import { MongoDBAtlasVectorSearch } from '@langchain/mongodb';
 
 /**
  * IDENTITY PRISM: MEMORY AUDIT (v4.2)

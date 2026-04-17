@@ -22,11 +22,11 @@ export async function GET(req: NextRequest) {
       prisma.document.findMany({ where: { test_run_id }, take: 100 })
     ]);
 
-    const holdPackets = packets.filter(p => (p as any).processing_status === 'pending');
-    const failedPackets = packets.filter(p => (p as any).processing_status === 'failed' || p.status === 'archived');
+    const holdPackets = packets.filter((p: any) => p.processing_status === 'pending');
+    const failedPackets = packets.filter((p: any) => p.processing_status === 'failed' || p.status === 'archived');
     
     // Calculate storage stats (simplified)
-    const usedBytes = packets.reduce((acc, p) => acc + (typeof p.content === 'string' ? p.content.length : JSON.stringify(p.content).length), 0);
+    const usedBytes = packets.reduce((acc: number, p: any) => acc + (typeof p.content === 'string' ? p.content.length : JSON.stringify(p.content).length), 0);
     const totalBytes = 250 * 1024 * 1024; // 250 MB
     const usagePercent = Math.min(100, (usedBytes / totalBytes) * 100);
 

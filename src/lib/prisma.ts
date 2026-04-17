@@ -17,10 +17,7 @@ export default prisma;
  * Checks if a thrown error is a Prisma Unique Constraint violation (P2002).
  */
 export function isUniqueError(error: any): boolean {
-  return (
-    error instanceof Prisma.PrismaClientKnownRequestError &&
-    error.code === 'P2002'
-  );
+  return Boolean(error && typeof error === 'object' && (error as any).code === 'P2002');
 }
 
 if (process.env.NODE_ENV !== 'production') globalThis.prismaGlobal = prisma;

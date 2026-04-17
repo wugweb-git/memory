@@ -23,7 +23,7 @@ export function validateTrace(trace: any, existingTrace?: TraceSchema): TraceSch
     origin: trace.origin || 'unknown',
     ingestion_path: Array.isArray(trace.ingestion_path) ? trace.ingestion_path : [],
     parent_origin_id: trace.parent_origin_id || null,
-    retry_count: Number(trace.retry_count) || 0,
+    attempt_count: Number(trace.attempt_count ?? trace.retry_count) || 0,
     error_reason: trace.error_reason || undefined
   };
 
@@ -92,7 +92,7 @@ export function generateHash(packet: Partial<MemoryPacket>): string {
     source: packet.source,
     source_id: packet.source_id,
     content: packet.content,
-    event_time: packet.timestamps?.event_time
+    event_time: packet.event_time
   });
   return crypto.createHash('sha256').update(data).digest('hex');
 }
