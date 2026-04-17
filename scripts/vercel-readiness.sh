@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-required_files=("vercel.json" "api/index.js" "package.json")
+required_files=("vercel.json" "package.json" "next.config.mjs")
 
 for file in "${required_files[@]}"; do
   if [[ ! -f "$file" ]]; then

@@ -4,10 +4,12 @@ import { SettingsController } from '../memory/settings';
 import prisma, { isUniqueError } from '@/lib/prisma';
 import crypto from 'crypto';
 
-const model = new ChatOpenAI({
-  modelName: 'gpt-4o-mini',
-  temperature: 0,
-});
+function getModel() {
+  return new ChatOpenAI({
+    modelName: 'gpt-4o-mini',
+    temperature: 0,
+  });
+}
 
 const ENTITY_LIMIT = 5;
 const RELATIONSHIP_LIMIT = 3;
@@ -72,7 +74,8 @@ export class SemanticEngine {
     packetId: string, 
     options: { llmClient?: any; testRunId?: string } = {}
   ): Promise<{ success: boolean; entityCount: number; fallback: boolean }> {
-    const { llmClient = model, testRunId = 'PROD' } = options;
+    const { llmClient, testRunId = 'PROD' } = options;
+    const model = llmClient ?? getModel();
     try {
       // 0. Feature Flag Check (DB-level Singleton)
       const config = await SettingsController.getSettings();
@@ -140,7 +143,7 @@ export class SemanticEngine {
           }
         `;
 
-        const response = await llmClient.call([
+        const response = await model.call([
           new SystemMessage("Extract structured semantic intelligence strictly as JSON."),
           new HumanMessage(extractionPrompt),
         ]);
