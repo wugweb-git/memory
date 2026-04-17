@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { getDb } from '@/lib/memory/mongoClient';
 import { SemanticEngine } from '@/lib/processing/semantic';
 import { randomUUID } from 'crypto';
 
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
 
 /**
  * LAYER 2.5: DIAGNOSTIC AUDIT SUITE
@@ -36,7 +35,13 @@ export async function POST(req: NextRequest) {
         metadata: {},
         event_time: new Date(),
         test_run_id: auditId,
-        hash: 'iso-1-hash'
+        hash: 'iso-1-hash',
+        trace: {
+          origin: 'audit',
+          ingestion_path: ['/api/admin/semantic-diagnose'],
+          parent_origin_id: null,
+          retry_count: 0
+        }
       }
     });
     results.push({ name: 'Write Isolation', status: 'PASS' });

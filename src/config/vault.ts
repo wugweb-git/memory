@@ -6,8 +6,9 @@
 
 const isProduction = process.env.NODE_ENV === 'production';
 const resolvedAuthSecret = (process.env.AUTH_SECRET || '').trim();
+const isNextBuildPhase = process.env.NEXT_PHASE === 'phase-production-build';
 
-if (isProduction && !resolvedAuthSecret) {
+if (isProduction && !isNextBuildPhase && !resolvedAuthSecret) {
   throw new Error('CRITICAL: Missing AUTH_SECRET in production. System breach risk – halting.');
 }
 
