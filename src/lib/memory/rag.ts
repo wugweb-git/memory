@@ -218,18 +218,17 @@ export async function retrieve(query: string, filters: any = {}) {
   const results = await collection.aggregate(pipeline).toArray();
 
   // 5. CONTEXT ASSEMBLY (Group by packet_id)
-  const grouped = reRanked.reduce((acc: any, curr: any) => {
+  const grouped = results.reduce((acc: any, curr: any) => {
     if (!acc[curr.packet_id]) {
       acc[curr.packet_id] = {
         packet_id: curr.packet_id,
-        context: [curr.chunk],
+        context: [curr.text_chunk],
         score: curr.score,
-        source: curr.source,
-        timestamp: curr.timestamp
+        source: curr.metadata?.source,
+        timestamp: curr.metadata?.timestamp
       };
     } else {
-      acc[curr.packet_id].context.push(curr.chunk);
-      // Average or max score? Let's take the max.
+      acc[curr.packet_id].context.push(curr.text_chunk);
       acc[curr.packet_id].score = Math.max(acc[curr.packet_id].score, curr.score);
     }
     return acc;
