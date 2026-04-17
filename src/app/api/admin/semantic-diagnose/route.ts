@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
     const visible = await prisma.entity.findMany({
       where: { test_run_id: auditId, processing_state: 'complete' }
     });
-    const leak = visible.find(e => e.name === 'Ghost Entity');
+    const leak = visible.find((e: { name: string }) => e.name === 'Ghost Entity');
     if (!leak) {
       results.push({ name: 'Read Isolation (Atomic State)', status: 'PASS' });
     } else {

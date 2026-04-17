@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Brain, User, Terminal, Plus, Search, 
   Bell, Command, Settings, Power, RefreshCcw, X, 
-  Activity, ShieldCheck, Database, Zap
+  Activity, ShieldCheck, Database, Zap, Sparkles
 } from 'lucide-react';
 import { useChat } from 'ai/react';
 import { ToastContainer, toast } from 'react-toastify';

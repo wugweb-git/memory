@@ -87,3 +87,100 @@ export async function cleanupExpiredBlobItems() {
 
   return result.count;
 }
+
+export async function Mark_Reviewed(id: string) {
+  const item = await prisma.blobItem.update({
+    where: { id },
+    data: { state: 'reviewed' }
+  });
+
+  await prisma.blobEvent.create({
+    data: {
+      blob_id: id,
+      event_type: 'MARK_REVIEWED',
+      payload: {}
+    }
+  });
+
+  return item;
+}
+
+export async function Mark_Promotable(id: string) {
+  const item = await prisma.blobItem.update({
+    where: { id },
+    data: { state: 'promotable' }
+  });
+
+  await prisma.blobEvent.create({
+    data: {
+      blob_id: id,
+      event_type: 'MARK_PROMOTABLE',
+      payload: {}
+    }
+  });
+
+  return item;
+}
+
+export async function Reject_Blob_Item(id: string, reason?: string) {
+  const item = await prisma.blobItem.update({
+    where: { id },
+    data: { state: 'rejected' }
+  });
+
+  await prisma.blobEvent.create({
+    data: {
+      blob_id: id,
+      event_type: 'REJECT',
+      payload: { reason: reason || 'unspecified' }
+    }
+  });
+
+  return item;
+}
+
+export async function Promote_To_Memory(id: string) {
+  const item = await prisma.blobItem.update({
+    where: { id },
+    data: { state: 'promoted' }
+  });
+
+  await prisma.blobEvent.create({
+    data: {
+      blob_id: id,
+      event_type: 'PROMOTE',
+      payload: {}
+    }
+  });
+
+  return item;
+}
+
+export async function bulkBlobAction({ ids, action }: { ids: string[]; action: string }) {
+  const actionMap: Record<string, string> = {
+    review: 'reviewed',
+    promotable: 'promotable',
+    reject: 'rejected',
+    promote: 'promoted'
+  };
+
+  const nextState = actionMap[action];
+  if (!nextState) {
+    throw new Error(`Unsupported bulk action: ${action}`);
+  }
+
+  const result = await prisma.blobItem.updateMany({
+    where: { id: { in: ids } },
+    data: { state: nextState }
+  });
+
+  await prisma.blobEvent.createMany({
+    data: ids.map((blobId) => ({
+      blob_id: blobId,
+      event_type: `BULK_${action.toUpperCase()}`,
+      payload: {}
+    }))
+  });
+
+  return result.count;
+}

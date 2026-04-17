@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Activity, AlertTriangle, Database, FileLock2, Folder, HardDrive, Home, RefreshCcw, Server, ShieldAlert } from 'lucide-react';
 
 type MonitorState = {
@@ -56,7 +56,7 @@ export default function MemoryControlSurface() {
   const [activityFilter, setActivityFilter] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const fetchMonitor = async () => {
+  const fetchMonitor = useCallback(async () => {
     setLoading(true);
     try {
       const [monitorRes, packetRes] = await Promise.all([
@@ -68,15 +68,17 @@ export default function MemoryControlSurface() {
       const packetJson = await packetRes.json();
       setMonitor(monitorJson);
       setPackets(packetJson.rows || []);
-      if (packetJson.rows?.length && !selectedPacket) setSelectedPacket(packetJson.rows[0]);
+      if (packetJson.rows?.length) {
+        setSelectedPacket((current: any) => current ?? packetJson.rows[0]);
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [sourceFilter, statusFilter]);
 
   useEffect(() => {
     fetchMonitor();
-  }, [statusFilter, sourceFilter]);
+  }, [fetchMonitor]);
 
   const thresholds = useMemo(() => {
     if (!monitor) return [];

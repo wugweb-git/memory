@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { PieChart, RefreshCw, AlertCircle, CheckCircle2, Clock, PlayCircle, Zap } from 'lucide-react';
 
@@ -19,7 +19,7 @@ export default function EmbeddingMonitor({ testRunId = 'PROD' }: EmbeddingMonito
   const [stats, setStats] = useState<Stats>({ pending: 0, processing: 0, embedded: 0, failed: 0 });
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     setIsRefreshing(true);
     try {
       const response = await fetch(`/api/memory/stats?test_run_id=${testRunId}`);
@@ -30,13 +30,13 @@ export default function EmbeddingMonitor({ testRunId = 'PROD' }: EmbeddingMonito
     } finally {
       setIsRefreshing(false);
     }
-  };
+  }, [testRunId]);
 
   useEffect(() => {
     fetchStats();
     const interval = setInterval(fetchStats, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchStats]);
 
   return (
     <div className="bg-[#0a0a0a] rounded-xl border border-white/10 p-6 flex flex-col gap-6">

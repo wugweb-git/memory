@@ -1,6 +1,6 @@
 "use client";
 import React from 'react';
-import { BookOpen, Layers, Share2, Sparkles, ArrowUpRight, Globe, Substack, Linkedin } from 'lucide-react';
+import { BookOpen, Share2, Sparkles, ArrowUpRight, Globe } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const MOCK_WORKS = [
