@@ -60,14 +60,14 @@ cron.schedule('*/1 * * * *', async () => {
       status: 'active',
       is_embeddable: true,
       OR: [
-        { retry_count: 0 },
-        { next_retry_at: { lte: now }, retry_count: { lt: 2 } }
+        { attempt_count: 0 },
+        { next_retry_at: { lte: now }, attempt_count: { lt: 2 } }
       ]
     },
     orderBy: [
       { priority: 'desc' },
       { ingestion_time: 'desc' }, // High Priority: Fresh items
-      { retry_count: 'asc' }
+      { attempt_count: 'asc' }
     ],
     take: 20
   });
@@ -86,7 +86,7 @@ cron.schedule('*/1 * * * *', async () => {
           retry_classification: type,
           attempt_count: { increment: 1 },
           next_retry_at: isPermanent ? null : getNextRetryAt(packet.attempt_count),
-          last_attempt_at: new Date()
+          last_retried_at: new Date()
         }
       });
     }
@@ -104,8 +104,8 @@ cron.schedule('*/2 * * * *', async () => {
       processing_status: 'pending',
       status: 'active',
       OR: [
-        { retry_count: 0 },
-        { next_retry_at: { lte: now }, retry_count: { lt: 2 } }
+        { attempt_count: 0 },
+        { next_retry_at: { lte: now }, attempt_count: { lt: 2 } }
       ]
     },
     orderBy: [
@@ -125,7 +125,7 @@ cron.schedule('*/2 * * * *', async () => {
       if (result.success) {
         await prisma.memoryPacket.update({ 
           where: { id: packet.id }, 
-          data: { processing_status: 'completed', attempt_count: 0 } 
+          data: { processing_status: 'complete', attempt_count: 0 } 
         });
       }
     } catch (err: any) {
@@ -138,7 +138,7 @@ cron.schedule('*/2 * * * *', async () => {
           retry_classification: type,
           attempt_count: { increment: 1 },
           next_retry_at: isPermanent ? null : getNextRetryAt(packet.attempt_count),
-          last_attempt_at: new Date()
+          last_retried_at: new Date()
         }
       });
     }
@@ -149,7 +149,7 @@ cron.schedule('*/2 * * * *', async () => {
 
   const l25Targets = await prisma.memoryPacket.findMany({
     where: {
-      processing_status: 'completed',
+      processing_status: 'complete',
       semantic_status: { in: ['pending', 'failed'] },
       status: 'active',
       OR: [
@@ -172,7 +172,7 @@ cron.schedule('*/2 * * * *', async () => {
       await prisma.memoryPacket.update({
         where: { id: packet.id },
         data: { 
-          semantic_status: result.fallback ? 'partial' : 'completed',
+          semantic_status: result.fallback ? 'partial' : 'complete',
           attempt_count: 0,
           retry_classification: null
         }
@@ -188,7 +188,7 @@ cron.schedule('*/2 * * * *', async () => {
           retry_classification: type,
           attempt_count: { increment: 1 },
           next_retry_at: isPermanent ? null : getNextRetryAt(packet.attempt_count),
-          last_attempt_at: new Date()
+          last_retried_at: new Date()
         }
       });
     }

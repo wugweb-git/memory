@@ -124,6 +124,7 @@ export function extractSignals(packet: MemoryPacket): Signal[] {
         ...sig,
         intensity_relative: sig.intensity_absolute || 0.5, // Initial normalization
         signal_hash: generateSignalHash(packetId, type, RULE_VERSION, testRunId),
+        timestamp: packet.event_time, // FLATTENED
         metadata: {
           ...sig.metadata,
           is_primary: idx === 0,

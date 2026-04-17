@@ -10,6 +10,7 @@ declare global {
 
 const prisma = globalThis.prismaGlobal ?? prismaClientSingleton();
 
+export { Prisma };
 export default prisma;
 
 /**

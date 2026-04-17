@@ -33,11 +33,9 @@ export interface MemoryPacket {
   content: any;
   metadata: Record<string, any>;
 
-  timestamps: {
-    event_time: string;
-    ingestion_time: string;
-    last_updated: string;
-  };
+  event_time: string;
+  ingestion_time: string;
+  last_updated: string;
 
   ownership: string;
   sensitivity: Sensitivity;
@@ -52,12 +50,12 @@ export interface MemoryPacket {
   
   embedding_status: EmbeddingStatus;
   processing_status: ProcessingStatus;
-  semantic_status: 'pending' | 'processing' | 'completed' | 'partial' | 'failed';
+  semantic_status: 'pending' | 'processing' | 'complete' | 'partial' | 'failed';
   
-  retry_count: number;
+  attempt_count: number;
   max_retries: number;
   next_retry_at?: string;
-  last_attempt_at?: string;
+  last_retried_at?: string;
   error_type?: 'transient' | 'permanent' | 'llm_unavailable';
 
   is_embeddable: boolean;

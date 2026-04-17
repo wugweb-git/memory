@@ -8,19 +8,25 @@ export class IntelligenceEngine {
    * Recalculates relative intensity for signals based on a 30-day baseline.
    * Also applies time-based decay to signal weights.
    */
-  static async scoringEngine() {
+  static async scoringEngine(testRunId: string = 'PROD') {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    // 1. Calculate Baseline (Average Intensity)
+    // 1. Calculate Baseline (Average Intensity) scoped by test_run_id
     const stats = await prisma.signal.aggregate({
-      where: { timestamp: { gte: thirtyDaysAgo } },
+      where: { 
+        timestamp: { gte: thirtyDaysAgo },
+        test_run_id: testRunId
+      },
       _avg: { intensity_absolute: true }
     });
     
     const baseline = Math.max(0.3, stats._avg.intensity_absolute || 0.5);
     const recentSignals = await prisma.signal.findMany({ 
-      where: { timestamp: { gte: thirtyDaysAgo } } 
+      where: { 
+        timestamp: { gte: thirtyDaysAgo },
+        test_run_id: testRunId
+      } 
     });
 
     const now = new Date();
@@ -53,7 +59,7 @@ export class IntelligenceEngine {
   /**
    * Detects behavioral trends (patterns) across 7d, 30d, and all-time windows.
    */
-  static async detectPatterns() {
+  static async detectPatterns(testRunId: string = 'PROD') {
     const windows: WindowType[] = ['7d', '30d', 'all'];
     const now = new Date();
 
@@ -64,7 +70,10 @@ export class IntelligenceEngine {
       else gte.setFullYear(2020); // Beginning of time
 
       const signals = await prisma.signal.findMany({ 
-        where: { timestamp: { gte } } 
+        where: { 
+          timestamp: { gte },
+          test_run_id: testRunId
+        } 
       });
 
       if (signals.length < 10) continue; // Noise floor
@@ -82,9 +91,13 @@ export class IntelligenceEngine {
       const peak = Object.entries(hourCounts).sort((a,b) => b[1] - a[1])[0];
 
       if (peak) {
-        // Upsert pattern (one per type per window)
+        // Upsert pattern (one per type per window per test_run_id)
         const existing = await prisma.pattern.findFirst({
-          where: { type: 'peak_activity_time', window_type: windowType }
+          where: { 
+            type: 'peak_activity_time', 
+            window_type: windowType,
+            test_run_id: testRunId
+          }
         });
 
         const data = {
@@ -94,6 +107,7 @@ export class IntelligenceEngine {
           signal_count: signals.length,
           consistency_score: Math.min(1.0, hours.size / 12),
           last_detected: now,
+          test_run_id: testRunId,
           metadata: { hour: peak[0], count: peak[1] }
         };
 

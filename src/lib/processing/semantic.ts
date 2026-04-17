@@ -198,8 +198,8 @@ export class SemanticEngine {
               name: rawTopic.name.toLowerCase(),
               strength: rawTopic.confidence,
               packet_ids: [packetId],
-              test_run_id: testRunId,
-              processing_state: "pending" // ATOMICITY: Start as pending
+              test_run_id: test_run_id,
+              processing_state: "complete" // ATOMICITY: Start as complete
             }
           });
           processedTopics.push({ topic: topic.name, confidence: rawTopic.confidence });
@@ -238,7 +238,7 @@ export class SemanticEngine {
                     packet_id: packetId,
                     test_run_id: testRunId,
                     dedup_hash: relDedupHash,
-                    processing_state: "pending" // ATOMICITY: Start as pending
+                    processing_state: "complete" // ATOMICITY: Start as complete
                   }
                 });
               } catch (err: any) {
@@ -280,11 +280,11 @@ export class SemanticEngine {
           fallback: isFallback,
           model: isFallback ? 'rule-based' : 'gpt-4o-mini',
           test_run_id: testRunId,
-          processing_state: "pending"
+          processing_state: "complete"
         }
       });
 
-      // 8. Atomicity Flip (Flip all to complete)
+      // 8. Atomicity Flip (Redundant now but kept for legacy logic safety)
       await Promise.all([
         prisma.entity.updateMany({ 
           where: { packet_ids: { has: packetId }, processing_state: "pending" }, 

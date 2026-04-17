@@ -22,8 +22,8 @@ export async function GET(req: NextRequest) {
       prisma.document.findMany({ where: { test_run_id }, take: 100 })
     ]);
 
-    const holdPackets = packets.filter(p => p.status === 'hold');
-    const failedPackets = packets.filter(p => p.status === 'failed' || p.status === 'archived');
+    const holdPackets = packets.filter(p => (p as any).processing_status === 'pending');
+    const failedPackets = packets.filter(p => (p as any).processing_status === 'failed' || p.status === 'archived');
     
     // Calculate storage stats (simplified)
     const usedBytes = packets.reduce((acc, p) => acc + (typeof p.content === 'string' ? p.content.length : JSON.stringify(p.content).length), 0);
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
       activity,
       documents,
       review_queue: {
-        hold: holdPackets,
+        pending: holdPackets,
         failed: failedPackets,
         correction: []
       }
