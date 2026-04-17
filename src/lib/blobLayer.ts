@@ -175,25 +175,27 @@ export async function bulkBlobAction({ ids, action }: { ids: string[]; action: s
   }
 
   return prisma.$transaction(async (tx) => {
-    const updatedIds: string[] = [];
+    const itemsToUpdate = await tx.blobItem.findMany({
+      where: {
+        id: { in: uniqueIds },
+        state: { not: nextState }
+      },
+      select: { id: true }
+    });
 
-    for (const id of uniqueIds) {
-      const result = await tx.blobItem.updateMany({
-        where: {
-          id,
-          state: { not: nextState }
-        },
-        data: { state: nextState }
-      });
-
-      if (result.count > 0) {
-        updatedIds.push(id);
-      }
-    }
+    const updatedIds = itemsToUpdate.map((item) => item.id);
 
     if (updatedIds.length === 0) {
       return 0;
     }
+
+    await tx.blobItem.updateMany({
+      where: {
+        id: { in: updatedIds },
+        state: { not: nextState }
+      },
+      data: { state: nextState }
+    });
 
     await tx.blobEvent.createMany({
       data: updatedIds.map((blobId) => ({
