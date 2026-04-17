@@ -13,7 +13,7 @@ export interface TraceSchema {
   origin: string;
   ingestion_path: string[];
   parent_origin_id: string | null;
-  retry_count: number;
+  attempt_count: number;
   error_reason?: string;
 }
 

@@ -95,7 +95,7 @@ export function normalize(raw: any, userId: string): MemoryPacket {
     attempt_count: 0,
     max_retries: 2,
     is_embeddable: isEmbeddable,
-    schema_version: 1,
+    schema_version: 2,
     processing_errors: []
   };
 

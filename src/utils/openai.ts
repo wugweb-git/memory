@@ -17,7 +17,7 @@ function getClient() {
   return client;
 }
 
-const namespace = 'chatter.training_data';
+const namespace = 'identity-prism.embeddings';
 const [dbName, collectionName] = namespace.split('.');
 
 function getCollection() {
@@ -26,7 +26,10 @@ function getCollection() {
 
 export function getEmbeddingsTransformer(): OpenAIEmbeddings {
   if (!embeddingsInstance) {
-    embeddingsInstance = new OpenAIEmbeddings({ openAIApiKey: config.openaiApiKey });
+    embeddingsInstance = new OpenAIEmbeddings({ 
+      apiKey: config.openaiApiKey,
+      modelName: 'text-embedding-3-small'
+    });
   }
   return embeddingsInstance;
 }
@@ -39,7 +42,7 @@ export function searchArgs(): MongoDBAtlasVectorSearchLibArgs {
   return {
     collection: getCollection(),
     indexName: 'vector_index',
-    textKey: 'text',
-    embeddingKey: 'text_embedding',
+    textKey: 'text_chunk',
+    embeddingKey: 'embedding',
   };
 }
