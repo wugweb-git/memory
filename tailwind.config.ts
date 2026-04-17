@@ -24,6 +24,17 @@ const config: Config = {
           tertiary: "var(--text-tertiary)",
           disabled: "var(--text-disabled)",
         },
+        border: {
+          primary: "var(--border-primary)",
+          secondary: "var(--border-secondary)",
+          active: "var(--border-active)",
+        },
+        bg: {
+          primary: "var(--bg-primary)",
+          secondary: "var(--bg-secondary)",
+          tertiary: "var(--bg-tertiary)",
+          elevated: "var(--bg-elevated)",
+        }
       },
       fontSize: {
         xs: "var(--font-xs)",
