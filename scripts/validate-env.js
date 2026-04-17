@@ -5,28 +5,52 @@
 
 import { INTERNAL_VAULT } from '../lib/internal-vault.js';
 
-const REQUIRED_VARS = [
-  'AUTH_SECRET'
-];
-
+const REQUIRED_VARS = ['AUTH_SECRET'];
 const MONGO_ALIASES = ['MONGODB_URI', 'MONGO_URI', 'STORAGE_URL'];
+const MONGODB_URI_PATTERN = /^mongodb(\+srv)?:\/\//;
+
+function readValue(value) {
+  if (typeof value !== 'string') {
+    return '';
+  }
+  return value.trim();
+}
+
+function resolveRequiredValue(key) {
+  return readValue(process.env[key]) || readValue(INTERNAL_VAULT[key]);
+}
+
+function resolveMongoUri() {
+  const envUri = MONGO_ALIASES
+    .map((key) => readValue(process.env[key]))
+    .find(Boolean);
+
+  return envUri || readValue(INTERNAL_VAULT.MONGODB_URI);
+}
 
 function validate() {
   console.log('--- SYSTEM_GUARDRAIL: ENVIRONMENT_AUDIT ---');
-  let missing = [];
+  const missing = [];
 
-  // Check required vars (Env or Vault)
-  REQUIRED_VARS.forEach(v => {
-    if (!process.env[v] && !INTERNAL_VAULT[v]) {
-      missing.push(v);
+  REQUIRED_VARS.forEach((key) => {
+    if (!resolveRequiredValue(key)) {
+      missing.push(key);
     }
   });
 
+  const mongoUri = resolveMongoUri();
+  if (!mongoUri) {
+    missing.push('MONGODB_URI (or MONGO_URI/STORAGE_URL alias)');
+  }
+
   if (missing.length > 0) {
     console.error('ERROR: Missing required configuration in both Environment and System Vault:');
-    missing.forEach(m => console.error(` - ${m}`));
+    missing.forEach((key) => console.error(` - ${key}`));
     if (missing.includes('AUTH_SECRET')) {
       console.error('TIP: Add AUTH_SECRET to your Vercel/Netlify project environment variables.');
+    }
+    if (missing.includes('MONGODB_URI (or MONGO_URI/STORAGE_URL alias)')) {
+      console.error('TIP: Add MONGODB_URI (or MONGO_URI/STORAGE_URL) so /api/chat RAG can initialize Mongo retrievers.');
     }
     console.error('System initialization aborted.');
     process.exit(1);

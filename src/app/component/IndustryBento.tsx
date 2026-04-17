@@ -5,6 +5,7 @@ import {
   Terminal, Zap, Database, TrendingUp, Layers, Brain, 
   Coffee, Plus, X
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export const INDUSTRIES = [
   { id: '1', name: 'Systems Architect', icon: Cpu, count: 42 },
@@ -29,81 +30,97 @@ export const IndustryBento = ({
   onSelect: (id: string | null) => void 
 }) => {
   return (
-    <section aria-label="Industry vectors">
-      <div className="flex items-center justify-between px-1 mb-4">
-        <h3 className="text-xs font-bold tracking-widest text-text-tertiary uppercase flex items-center gap-2">
-          <Layers size={13} className="text-accent" aria-hidden="true" /> Active Vectors — {INDUSTRIES.length} Clusters
-        </h3>
+    <section aria-label="Industry vectors" className="w-full">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-2 mb-8">
+        <div className="kinetic-text">
+          <h3 className="text-xl md:text-2xl font-black text-text-primary tracking-tighter uppercase italic flex items-center gap-3">
+             <Layers size={22} className="text-accent" /> Matrix_Clusters
+          </h3>
+          <p className="text-[10px] text-text-tertiary font-bold mt-1 uppercase tracking-[0.3em] opacity-60">Active Capacity — {INDUSTRIES.length} Neural Sectors</p>
+        </div>
         {selected && (
-          <button 
+          <motion.button 
+            initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
             onClick={() => onSelect(null)}
-            className="text-xs font-semibold text-danger/70 hover:text-danger transition-colors uppercase flex items-center gap-1.5 bg-danger/5 px-3 py-1.5 rounded-lg border border-danger/10 focus-ring"
+            className="text-[10px] font-black text-danger uppercase tracking-widest flex items-center gap-2 bg-danger/5 px-5 py-2.5 rounded-full border border-danger/20 hover:bg-danger/10 transition-all active:scale-95"
             aria-label="Clear filter"
           >
-            Clear Filter <X size={11} aria-hidden="true" />
-          </button>
+            Reset_Matrix <X size={12} strokeWidth={3} />
+          </motion.button>
         )}
       </div>
       
       <div
         role="listbox"
         aria-label="Select an industry to filter"
-        aria-multiselectable="false"
-        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3"
+        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
       >
-        {INDUSTRIES.map((industry) => {
+        {INDUSTRIES.map((industry, idx) => {
           const isSelected = selected === industry.name;
           return (
-            <button
+            <motion.button
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
               type="button"
               key={industry.id}
               role="option"
               aria-selected={isSelected}
               onClick={() => onSelect(industry.name)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(industry.name); } }}
-              className={`group p-5 rounded-2xl border transition-all duration-300 cursor-pointer relative overflow-hidden focus-ring ${
-                isSelected 
-                  ? 'bg-accent/10 border-accent/30 ring-1 ring-accent/20' 
-                  : 'glass-card border-primary hover:border-primary hover:bg-secondary'
-              }`}
+              className={`
+                group p-6 rounded-[2rem] border transition-all duration-700 cursor-pointer relative overflow-hidden shadow-sm
+                ${isSelected 
+                  ? 'bg-accent text-bg-primary border-accent shadow-2xl shadow-accent/40 scale-105' 
+                  : 'glass-panel border-border-secondary hover:border-border-primary hover:shadow-xl'}
+              `}
             >
-              <div className="flex items-center justify-between mb-5">
-                <div className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-colors ${
-                  isSelected ? 'bg-accent/10 border-accent/30 text-accent' : 'bg-secondary border-primary text-text-tertiary group-hover:border-primary group-hover:text-text-secondary'
-                }`}>
-                  <industry.icon size={16} aria-hidden="true" />
+              {/* Highlight decoration */}
+              <div className={`absolute top-0 right-0 w-16 h-16 blur-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity ${isSelected ? 'bg-white/20' : 'bg-accent/10'}`} />
+
+              <div className="flex items-center justify-between mb-8">
+                <div className={`
+                  w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-700 shadow-inner group-hover:rotate-6
+                  ${isSelected ? 'bg-white/20 text-bg-primary border-white/20' : 'bg-bg-secondary border-border-primary text-text-tertiary'}
+                `}>
+                  <industry.icon size={22} aria-hidden="true" />
                 </div>
-                <span className="text-[10px] font-mono text-text-disabled">{industry.id.padStart(2, '0')}</span>
+                <span className={`text-[10px] font-black font-mono transition-opacity duration-700 ${isSelected ? 'text-bg-primary/40' : 'text-text-disabled opacity-40'}`}>
+                  {industry.id.padStart(2, '0')}
+                </span>
               </div>
               
-              <div className="space-y-3">
-                <h4 className={`text-xs font-semibold uppercase tracking-wide leading-tight transition-colors ${
-                  isSelected ? 'text-accent' : 'text-text-primary'
+              <div className="space-y-4">
+                <h4 className={`text-xs font-black uppercase tracking-widest leading-none kinetic-text ${
+                  isSelected ? 'text-bg-primary' : 'text-text-primary'
                 }`}>{industry.name}</h4>
-                <div className="flex items-center gap-2">
-                  <div className="h-0.5 flex-1 bg-primary rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full transition-all duration-700 ${isSelected ? 'bg-accent' : 'bg-text-tertiary'} opacity-50`} 
-                      style={{ width: `${(industry.count / 42) * 100}%` }} 
+                <div className="space-y-2">
+                  <div className={`h-1.5 w-full rounded-full overflow-hidden p-[1px] border shadow-inner ${
+                    isSelected ? 'bg-white/10 border-white/20' : 'bg-secondary border-border-primary'
+                  }`}>
+                    <motion.div 
+                      initial={{ width: 0 }} 
+                      animate={{ width: `${(industry.count / 42) * 100}%` }} 
+                      transition={{ duration: 1, delay: idx * 0.1 }}
+                      className={`h-full rounded-full ${isSelected ? 'bg-bg-primary' : 'bg-accent opacity-60'}`} 
                     />
                   </div>
-                  <span className={`text-[10px] font-mono font-bold ${isSelected ? 'text-accent' : 'text-text-tertiary'}`}>{industry.count}</span>
+                  <div className="flex justify-between items-center text-[9px] font-black font-mono tracking-widest italic">
+                     <span className={`uppercase ${isSelected ? 'text-bg-primary/60' : 'text-text-disabled'}`}>Density</span>
+                     <span className={isSelected ? 'text-bg-primary' : 'text-accent'}>{industry.count}</span>
+                  </div>
                 </div>
               </div>
-            </button>
+            </motion.button>
           );
         })}
         
-        {/* Add new */}
+        {/* Add vector: tactile action */}
         <button
-          className="p-5 rounded-2xl border-2 border-dashed border-primary bg-secondary/30 flex flex-col items-center justify-center text-center group hover:border-accent/30 transition-all duration-500 cursor-pointer min-h-[120px] focus-ring"
+          className="p-6 rounded-[2rem] border-2 border-dashed border-border-secondary bg-secondary/20 flex flex-col items-center justify-center text-center group hover:border-accent hover:bg-bg-primary hover:shadow-2xl transition-all duration-700 cursor-pointer min-h-[160px]"
           aria-label="Add new industry vector"
-          onClick={() => {}}
         >
-          <div className="w-9 h-9 rounded-xl bg-secondary border border-primary flex items-center justify-center text-text-disabled group-hover:text-accent group-hover:rotate-90 transition-all duration-500 mb-3">
-            <Plus size={18} aria-hidden="true" />
+          <div className="w-12 h-12 rounded-2xl bg-bg-secondary border border-border-secondary flex items-center justify-center text-text-disabled group-hover:text-accent group-hover:rotate-90 transition-all duration-700 mb-4 shadow-sm group-hover:shadow-accent/10">
+            <Plus size={22} strokeWidth={3} />
           </div>
-          <span className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest group-hover:text-text-secondary transition-colors">Add Vector</span>
+          <span className="text-[10px] font-black text-text-tertiary uppercase tracking-[0.3em] group-hover:text-accent transition-colors italic">Attach_Sector</span>
         </button>
       </div>
     </section>

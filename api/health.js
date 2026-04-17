@@ -1,16 +1,11 @@
-import { connectDB } from '../lib/db.js';
-import Item from '../models/Item.js';
+import { checkHealth } from '../lib/health.js';
+import { sendError } from '../lib/errors.js';
 
 export default async function handler(req, res) {
-  await connectDB();
-
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  try {
+    const result = await checkHealth(req);
+    return res.status(result.code).json(result.body);
+  } catch (error) {
+    return sendError(res, error);
   }
-
-  const broken = await Item.find({ 'sync.link_status': 'broken' })
-    .sort({ 'origin.created_at': -1 })
-    .limit(50);
-
-  return res.status(200).json(broken);
-};
+}

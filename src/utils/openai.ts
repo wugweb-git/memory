@@ -1,7 +1,7 @@
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { MongoDBAtlasVectorSearch, MongoDBAtlasVectorSearchLibArgs } from '@langchain/community/vectorstores/mongodb_atlas';
 import { MongoClient } from 'mongodb';
-import { config } from '../../config/config.js';
+import { config } from '../config';
 
 let embeddingsInstance: OpenAIEmbeddings | null = null;
 let client: MongoClient | null = null;
@@ -17,7 +17,7 @@ function getClient() {
   return client;
 }
 
-const namespace = 'chatter.training_data';
+const namespace = 'identity-prism.embeddings';
 const [dbName, collectionName] = namespace.split('.');
 
 function getCollection() {
@@ -26,7 +26,10 @@ function getCollection() {
 
 export function getEmbeddingsTransformer(): OpenAIEmbeddings {
   if (!embeddingsInstance) {
-    embeddingsInstance = new OpenAIEmbeddings({ openAIApiKey: config.openaiApiKey });
+    embeddingsInstance = new OpenAIEmbeddings({ 
+      apiKey: config.openaiApiKey,
+      modelName: 'text-embedding-3-small'
+    });
   }
   return embeddingsInstance;
 }
@@ -39,7 +42,7 @@ export function searchArgs(): MongoDBAtlasVectorSearchLibArgs {
   return {
     collection: getCollection(),
     indexName: 'vector_index',
-    textKey: 'text',
-    embeddingKey: 'text_embedding',
+    textKey: 'text_chunk',
+    embeddingKey: 'embedding',
   };
 }

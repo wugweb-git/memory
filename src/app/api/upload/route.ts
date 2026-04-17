@@ -1,70 +1,74 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
 import pdf from "pdf-parse";
-
-import { getEmbeddingsTransformer, searchArgs } from '@/utils/openai';
-import { MongoDBAtlasVectorSearch } from '@langchain/community/vectorstores/mongodb_atlas';
-import { CharacterTextSplitter } from 'langchain/text_splitter';
-
+import { MemoryService } from '@/lib/memory/service';
 
 export async function POST(req: NextRequest) {
   try {
     const formData: FormData = await req.formData();
     const uploadedFiles = formData.getAll('filepond');
-    let fileName = '';
-    let parsedText = '';
 
-    if (uploadedFiles && uploadedFiles.length > 0) {
-      // Parse the data from uploaded file 
-      const uploadedFile = uploadedFiles[0];
-      console.log('Uploaded file:', uploadedFile);
-
-      if (uploadedFile instanceof File) {
-        fileName = uploadedFile.name.toLowerCase();
-        const fileContent = await uploadedFile.arrayBuffer();
-
-        if (fileName.endsWith('.pdf')) {
-          const data = await pdf(Buffer.from(fileContent));
-          parsedText = data.text;
-        } else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) {
-          const text = new TextDecoder().decode(fileContent);
-          parsedText = text.replace(/<[^>]*>?/gm, ''); // Basic HTML strip
-        } else {
-          parsedText = new TextDecoder().decode(fileContent); // Default to Text
-        }
-
-        if (parsedText.trim().length > 0) {
-          const chunks = await new CharacterTextSplitter({
-            separator: "\n", chunkSize: 1000, chunkOverlap: 100
-          }).splitText(parsedText);
-
-          await MongoDBAtlasVectorSearch.fromTexts(
-            chunks, 
-            chunks.map(() => ({ fileName })), 
-            getEmbeddingsTransformer(),
-            searchArgs()
-          );
-
-          return NextResponse.json({ message: "Resourced anchored to MongoDB" }, { status: 200 });
-        } else {
-           return NextResponse.json({ message: "No text extracted" }, { status: 400 });
-        }
-      } else {
-        console.log('Uploaded file is not in the expected format.');
-        return NextResponse.json({ message: 'Uploaded file is not in the expected format' }, { status: 500 });
-      }
-    } else {
-      console.log('No files found.');
-      return NextResponse.json({ message: 'No files found' }, { status: 500 });
-
+    if (!uploadedFiles || uploadedFiles.length === 0) {
+      return NextResponse.json({ message: 'No files found' }, { status: 400 });
     }
 
-  } catch (error) {
-    console.error('Error processing request:', error);
-    // Handle the error accordingly, for example, return an error response.
-    return new NextResponse("An error occurred during processing.", { status: 500 });
+    const uploadedFile = uploadedFiles[0];
+
+    if (!(uploadedFile instanceof File)) {
+      return NextResponse.json({ message: 'Uploaded file is not in the expected format' }, { status: 400 });
+    }
+
+    const fileName = uploadedFile.name.toLowerCase();
+    const fileContent = await uploadedFile.arrayBuffer();
+    let parsedText = '';
+
+    // 1. Parse File Content
+    if (fileName.endsWith('.pdf')) {
+      const data = await pdf(Buffer.from(fileContent));
+      parsedText = data.text;
+    } else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) {
+      const text = new TextDecoder().decode(fileContent);
+      parsedText = text.replace(/<[^>]*>?/gm, ''); // Basic HTML strip
+    } else {
+      parsedText = new TextDecoder().decode(fileContent); // Default to Text
+    }
+
+    if (!parsedText.trim()) {
+      return NextResponse.json({ message: "No text extracted from file" }, { status: 400 });
+    }
+
+    // 2. CONSOLIDATED INGESTION: Pass to MemoryService
+    // This handles Gating, Normalization, Noise Filtering, and Persistence
+    const result = await MemoryService.ingest({
+      source: 'manual',
+      source_id: `file_${Date.now()}`,
+      type: 'document',
+      content: parsedText,
+      metadata: {
+        file_name: fileName,
+        file_size: uploadedFile.size,
+        file_type: uploadedFile.type,
+        ingestion_path: 'api/upload/consolidated_v1'
+      },
+      trace: {
+        origin: 'user_upload',
+        ingestion_path: ['browser', 'api/upload', 'MemoryService']
+      }
+    }, 'system_user'); // TODO: Pass real user ID from auth
+
+    if (result.status !== 'ACCEPTED') {
+      return NextResponse.json({ 
+        message: 'File processing stalled by Ingestion Gate', 
+        reason: result.reason 
+      }, { status: 202 });
+    }
+
+    return NextResponse.json({ 
+      message: "Resource anchored to Memory Store", 
+      packetId: result.packet_id 
+    }, { status: 200 });
+
+  } catch (error: any) {
+    console.error('Error processing upload:', error);
+    return NextResponse.json({ error: error.message || "An error occurred during processing." }, { status: 500 });
   }
-
 }
-
-

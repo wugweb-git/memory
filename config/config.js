@@ -19,9 +19,18 @@ export function loadConfig() {
     throw new Error(`Missing required env vars: ${missing.join(', ')}`);
   }
 
+  const env = readEnv('NODE_ENV', 'development');
+  const rawAuthSecret = process.env.AUTH_SECRET;
+
+  if (env === 'production' && !String(rawAuthSecret ?? '').trim()) {
+    throw new Error('Missing required env var in production: AUTH_SECRET');
+  }
+
+  const authSecret = readEnv('AUTH_SECRET', INTERNAL_VAULT.AUTH_SECRET).trim();
+
   return {
-    env: readEnv('NODE_ENV', 'development'),
-    authSecret: readEnv('AUTH_SECRET', INTERNAL_VAULT.AUTH_SECRET),
+    env,
+    authSecret,
     mongodbUri: readEnvAny(['MONGODB_URI', 'MONGO_URI', 'STORAGE_URL'], INTERNAL_VAULT.MONGODB_URI),
     openaiApiKey: readEnv('OPENAI_API_KEY', INTERNAL_VAULT.OPENAI_API_KEY),
     geminiApiKey: readEnvAny(['GEMINI_API_KEY', 'Gemini_API_Key'], INTERNAL_VAULT.GEMINI_API_KEY),
@@ -30,7 +39,7 @@ export function loadConfig() {
     requestLimitBytes: Number(readEnv('REQUEST_LIMIT_BYTES', '1048576')),
     uploadDir: readEnv('UPLOAD_DIR', '/tmp/memory-uploads'),
     jobSecret: readEnv('JOB_SECRET', ''),
-    appVersion: readEnv('APP_VERSION', readEnv('VERCEL_GIT_COMMIT_SHA', 'dev')),
+    appVersion: readEnv('APP_VERSION', 'v1.0.0-hardened'),
     adminEmail: readEnv('ADMIN_EMAIL', INTERNAL_VAULT.ADMIN_EMAIL),
     adminPassword: readEnv('ADMIN_PASSWORD', INTERNAL_VAULT.ADMIN_PASSWORD),
     blobDataPath: readEnv('BLOB_DATA_PATH', 'memory/store.json'),
