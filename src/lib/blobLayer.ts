@@ -1,5 +1,6 @@
 import prisma from './prisma';
 import crypto from 'crypto';
+import { MemoryService } from './memory/service';
 // Note: recursive import fixed below with a mock or internal logic if needed,
 // but for this audit we ensure stability.
 
@@ -140,20 +141,65 @@ export async function Reject_Blob_Item(id: string, reason?: string) {
 }
 
 export async function Promote_To_Memory(id: string) {
-  const item = await prisma.blobItem.update({
-    where: { id },
-    data: { state: 'promoted' }
+  const blobItem = await prisma.blobItem.findUnique({
+    where: { id }
   });
+
+  if (!blobItem) {
+    throw new Error('BLOB_NOT_FOUND');
+  }
+
+  const ingestResult = await MemoryService.ingest({
+    type: blobItem.type || 'unknown',
+    source: blobItem.source || 'blob',
+    source_id: blobItem.source_id || `blob:${blobItem.id}`,
+    content: blobItem.raw_payload,
+    metadata: {
+      promoted_from_blob_id: blobItem.id,
+      file_ref: blobItem.file_ref,
+      blob_size: blobItem.size,
+      blob_state: blobItem.state
+    },
+    event_time: blobItem.created_at.toISOString(),
+    trace: {
+      ...(blobItem.trace_json as any),
+      ingestion_path: ['api/blob/promote', 'MemoryService'],
+      promoted_at: new Date().toISOString(),
+      promotion_path: 'api/blob/promote'
+    },
+    test_run_id: blobItem.test_run_id
+  }, 'blob-promoter');
+
+  if (ingestResult.status !== 'ACCEPTED' && ingestResult.status !== 'IGNORE') {
+    throw new Error(`PROMOTION_INGESTION_FAILED:${ingestResult.reason || ingestResult.status}`);
+  }
+
+  const createdMemoryPacket = ingestResult.status === 'ACCEPTED';
+  const memoryPacketId = ingestResult.packet_id;
+
+  const promotedBlobItem = blobItem.state === 'promoted'
+    ? blobItem
+    : await prisma.blobItem.update({
+        where: { id },
+        data: { state: 'promoted' }
+      });
 
   await prisma.blobEvent.create({
     data: {
       blob_id: id,
       event_type: 'PROMOTE',
-      payload: {}
+      payload: {
+        memory_packet_id: memoryPacketId,
+        created_memory_packet: createdMemoryPacket
+      }
     }
   });
 
-  return item;
+  return {
+    ...promotedBlobItem,
+    memory_packet_id: memoryPacketId,
+    created_memory_packet: createdMemoryPacket
+  };
 }
 
 export async function bulkBlobAction({ ids, action }: { ids: string[]; action: string }) {
@@ -194,5 +240,5 @@ export async function bulkBlobAction({ ids, action }: { ids: string[]; action: s
     });
   }
 
-  return result.count;
+  return updatedCount;
 }
