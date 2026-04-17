@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Database, Filter, Eye, ChevronLeft, ChevronRight, Hash, Shield, Tag } from 'lucide-react';
 
@@ -27,7 +27,7 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
   const [filterType, setFilterType] = useState('');
   const [selectedPacketId, setSelectedPacketId] = useState<string | null>(null);
 
-  const fetchPackets = async () => {
+  const fetchPackets = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(`/api/memory/list?limit=10&test_run_id=${testRunId}${filterType ? `&type=${filterType}` : ''}`);
@@ -38,11 +38,11 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterType, testRunId]);
 
   useEffect(() => {
     fetchPackets();
-  }, [filterType]);
+  }, [fetchPackets]);
 
   return (
     <div className="bg-[#0a0a0a] rounded-xl border border-white/10 overflow-hidden relative">

@@ -1,5 +1,6 @@
 import prisma from './prisma';
 import crypto from 'crypto';
+import type { Prisma } from '@prisma/client';
 // Note: recursive import fixed below with a mock or internal logic if needed,
 // but for this audit we ensure stability.
 
@@ -14,6 +15,57 @@ function computeHash(content: any) {
 
 function sizeOf(content: any) {
   return Buffer.byteLength(typeof content === 'string' ? content : JSON.stringify(content), 'utf8');
+}
+
+async function upsertMemoryPacketFromBlob(
+  tx: Prisma.TransactionClient,
+  item: {
+    id: string;
+    type: string;
+    source: string;
+    source_id: string | null;
+    raw_payload: any;
+    hash: string;
+    trace_json: any;
+    created_at: Date;
+    test_run_id: string;
+  }
+) {
+  const promotedSourceId = item.source_id || item.id;
+
+  const existing = await tx.memoryPacket.findFirst({
+    where: {
+      hash: item.hash,
+      source: item.source || 'unknown',
+      source_id: promotedSourceId
+    },
+    select: { id: true }
+  });
+
+  if (existing) {
+    return existing;
+  }
+
+  return tx.memoryPacket.create({
+    data: {
+      type: item.type || 'unknown',
+      source: item.source || 'unknown',
+      source_id: promotedSourceId,
+      content: item.raw_payload || {},
+      metadata: {
+        promoted_from_blob_id: item.id,
+        blob_hash: item.hash,
+        promotion_path: 'api/blob/promote'
+      },
+      event_time: item.created_at,
+      hash: item.hash,
+      trace: item.trace_json || {
+        origin: item.source || 'unknown',
+        ingestion_path: 'blob/promote'
+      },
+      test_run_id: item.test_run_id || 'PROD'
+    }
+  });
 }
 
 export async function Push_To_Blob(packet: any) {
@@ -86,4 +138,144 @@ export async function cleanupExpiredBlobItems() {
   });
 
   return result.count;
+}
+
+export async function Mark_Reviewed(id: string) {
+  const item = await prisma.blobItem.update({
+    where: { id },
+    data: { state: 'reviewed' }
+  });
+
+  await prisma.blobEvent.create({
+    data: {
+      blob_id: id,
+      event_type: 'MARK_REVIEWED',
+      payload: {}
+    }
+  });
+
+  return item;
+}
+
+export async function Mark_Promotable(id: string) {
+  const item = await prisma.blobItem.update({
+    where: { id },
+    data: { state: 'promotable' }
+  });
+
+  await prisma.blobEvent.create({
+    data: {
+      blob_id: id,
+      event_type: 'MARK_PROMOTABLE',
+      payload: {}
+    }
+  });
+
+  return item;
+}
+
+export async function Reject_Blob_Item(id: string, reason?: string) {
+  const item = await prisma.blobItem.update({
+    where: { id },
+    data: { state: 'rejected' }
+  });
+
+  await prisma.blobEvent.create({
+    data: {
+      blob_id: id,
+      event_type: 'REJECT',
+      payload: { reason: reason || 'unspecified' }
+    }
+  });
+
+  return item;
+}
+
+export async function Promote_To_Memory(id: string) {
+  return prisma.$transaction(async (tx) => {
+    const existingItem = await tx.blobItem.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        type: true,
+        source: true,
+        source_id: true,
+        raw_payload: true,
+        hash: true,
+        trace_json: true,
+        created_at: true,
+        test_run_id: true
+      }
+    });
+
+    if (!existingItem) {
+      throw new Error(`Blob item not found: ${id}`);
+    }
+
+    const memoryPacket = await upsertMemoryPacketFromBlob(tx, existingItem);
+
+    const item = await tx.blobItem.update({
+      where: { id },
+      data: { state: 'promoted' }
+    });
+
+    await tx.blobEvent.create({
+      data: {
+        blob_id: id,
+        event_type: 'PROMOTE',
+        payload: { memory_packet_id: memoryPacket.id }
+      }
+    });
+
+    return item;
+  });
+}
+
+export async function bulkBlobAction({ ids, action }: { ids: string[]; action: string }) {
+  if (action === 'promote') {
+    let promotedCount = 0;
+    for (const id of ids) {
+      await Promote_To_Memory(id);
+      promotedCount += 1;
+    }
+    return promotedCount;
+  }
+
+  const actionMap: Record<string, string> = {
+    review: 'reviewed',
+    promotable: 'promotable',
+    reject: 'rejected'
+  };
+
+  const nextState = actionMap[action];
+  if (!nextState) {
+    throw new Error(`Unsupported bulk action: ${action}`);
+  }
+
+  const idsToUpdate = await prisma.blobItem.findMany({
+    where: {
+      id: { in: ids },
+      NOT: { state: nextState }
+    },
+    select: { id: true }
+  });
+
+  const result = await prisma.blobItem.updateMany({
+    where: {
+      id: { in: idsToUpdate.map((item) => item.id) }
+    },
+    data: { state: nextState }
+  });
+
+  if (idsToUpdate.length > 0) {
+    await prisma.blobEvent.createMany({
+      data: idsToUpdate.map(({ id }) => ({
+        blob_id: id,
+        event_type: `BULK_${action.toUpperCase()}`,
+        payload: {}
+      }))
+    });
+  }
+
+  return updatedCount;
 }

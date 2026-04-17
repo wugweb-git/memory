@@ -1,5 +1,5 @@
 import { OpenAIEmbeddings } from '@langchain/openai';
-import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
+import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 import { PrismaClient } from '@prisma/client';
 import { addProcessingError } from './gate';
 import { EmbeddingStatus, ProcessingError } from './types';

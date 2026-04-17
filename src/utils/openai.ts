@@ -1,5 +1,5 @@
 import { OpenAIEmbeddings } from '@langchain/openai';
-import { MongoDBAtlasVectorSearch, MongoDBAtlasVectorSearchLibArgs } from '@langchain/community/vectorstores/mongodb_atlas';
+import { MongoDBAtlasVectorSearch, MongoDBAtlasVectorSearchLibArgs } from '@langchain/mongodb';
 import { MongoClient } from 'mongodb';
 import { config } from '../config';
 

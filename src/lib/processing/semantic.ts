@@ -153,7 +153,7 @@ export class SemanticEngine {
       }
 
       // 4. Normalize and Store Entities
-      const processedEntities = [];
+      const processedEntities: any[] = [];
       for (const rawEntity of (data.entities || []).slice(0, ENTITY_LIMIT)) {
         if (rawEntity.confidence < CONFIDENCE_THRESHOLD && !isFallback) continue;
 
@@ -177,7 +177,7 @@ export class SemanticEngine {
       }
 
       // 5. Store Topics (Skip if fallback OR unverified)
-      const processedTopics = [];
+      const processedTopics: any[] = [];
       if (!isFallback) {
         for (const rawTopic of (data.topics || []).slice(0, TOPIC_LIMIT)) {
           if (rawTopic.confidence < CONFIDENCE_THRESHOLD) continue;

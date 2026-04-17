@@ -1,9 +1,9 @@
 import { StreamingTextResponse, LangChainStream, Message } from 'ai';
 import { ChatOpenAI } from '@langchain/openai';
-import { ConversationalRetrievalQAChain } from 'langchain/chains';
+import { ConversationalRetrievalQAChain } from '@langchain/classic/chains';
 import { vectorStore } from '@/utils/openai';
 import { NextResponse } from 'next/server';
-import { BufferMemory } from "langchain/memory";
+import { BufferMemory } from "@langchain/classic/memory";
 
 /**
  * IDENTITY PRISM: NEURAL RAG CORE (v4.2)
