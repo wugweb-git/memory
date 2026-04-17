@@ -50,8 +50,10 @@ export async function GET() {
       status = 'DEGRADED';
     }
 
+    const settingsValue = systemSettings?.value as any || {};
+
     // Force broken if system explicitly locked or disabled
-    if (systemSettings && systemSettings.system_status === 'maintenance') {
+    if (settingsValue.system_status === 'maintenance') {
       status = 'BROKEN';
     }
 
@@ -71,8 +73,8 @@ export async function GET() {
         fail_rate: Number(failRate.toFixed(4))
       },
       governance: {
-        semantic_enabled: systemSettings?.semantic_enabled ?? true,
-        rag_enabled: systemSettings?.rag_enabled ?? true,
+        semantic_enabled: settingsValue.semantic_enabled ?? true,
+        rag_enabled: settingsValue.rag_enabled ?? true,
         version: 'v1.1.0-hardened-distributed'
       },
       timestamp: new Date().toISOString()

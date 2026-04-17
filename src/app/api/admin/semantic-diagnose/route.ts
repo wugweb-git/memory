@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { getDb } from '@/lib/memory/mongoClient';
-import { processSemantic } from '@/lib/processing/semantic';
+import { SemanticEngine } from '@/lib/processing/semantic';
 import { randomUUID } from 'crypto';
 
 const prisma = new PrismaClient();
@@ -76,8 +76,8 @@ export async function POST(req: NextRequest) {
     const mockPacket = await prisma.memoryPacket.findFirst({ where: { test_run_id: auditId } });
     if (mockPacket) {
       const entityPromises = [
-        processSemantic(mockPacket.id, { test_run_id: auditId }), // Direct execution
-        processSemantic(mockPacket.id, { test_run_id: auditId })  // Simultaneous retry
+        SemanticEngine.processSemantic(mockPacket.id, { testRunId: auditId }), // Direct execution
+        SemanticEngine.processSemantic(mockPacket.id, { testRunId: auditId })  // Simultaneous retry
       ];
       await Promise.allSettled(entityPromises);
       

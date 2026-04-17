@@ -97,12 +97,11 @@ export class SemanticEngine {
         return { success: false, entityCount: 0, fallback: false };
       }
 
-      try {
-        await Promise.all([
-          prisma.semanticObject.deleteMany({ where: { packet_id: packetId, test_run_id: testRunId } }),
-          prisma.relationship.deleteMany({ where: { packet_id: packetId, test_run_id: testRunId } }),
-          prisma.pendingEdge.deleteMany({ where: { packet_id: packetId, test_run_id: testRunId } }),
-        ]);
+      await Promise.all([
+        prisma.semanticObject.deleteMany({ where: { packet_id: packetId, test_run_id: testRunId } }),
+        prisma.relationship.deleteMany({ where: { packet_id: packetId, test_run_id: testRunId } }),
+        prisma.pendingEdge.deleteMany({ where: { packet_id: packetId, test_run_id: testRunId } }),
+      ]);
 
       const contentStr = typeof packet.content === 'string' 
         ? packet.content 
