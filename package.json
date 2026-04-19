@@ -27,7 +27,7 @@
     "@vercel/functions": "^3.4.3",
     "@vercel/sandbox": "latest",
     "@web-std/file": "^3.0.3",
-    "ai": "^3.4.33",
+    "ai": "^5.0.52",
     "axios": "^1.6.7",
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.4.5",
