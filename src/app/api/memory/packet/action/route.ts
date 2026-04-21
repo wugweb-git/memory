@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { mongo as prisma } from '@/lib/db/mongo';
 
-const prisma = new PrismaClient();
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,7 +14,6 @@ export async function POST(req: NextRequest) {
     if (action === 'delete') {
       await prisma.memoryPacket.delete({ where: { id: packet_id } });
     } else if (action === 'move_to_blob') {
-      // Logic for moving to blob could be added here
       await prisma.memoryPacket.update({
         where: { id: packet_id },
         data: { status: 'archived' }

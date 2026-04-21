@@ -1,24 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { mongo as prisma } from '@/lib/db/mongo';
 
 export const dynamic = 'force-dynamic';
 
-/**
- * GET /api/processing/topics
- * Returns a distribution of thematic topics across the memory store.
- */
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const test_run_id = searchParams.get('test_run_id') || 'PROD';
 
     const topics = await prisma.topic.findMany({
-      where: { 
-        test_run_id,
-        processing_state: 'complete'
-      },
+      where: { test_run_id, processing_state: 'complete' },
       orderBy: { strength: 'desc' },
       take: 50
     });

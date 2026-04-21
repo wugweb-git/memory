@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { postgres } from "@/lib/db/postgres";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/cognitive/history
  * Fetches the persistent decision log for the user.

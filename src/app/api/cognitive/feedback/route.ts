@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { postgres } from "@/lib/db/postgres";
 import { waitUntil } from "@vercel/functions";

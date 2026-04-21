@@ -1,25 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { mongo as prisma } from '@/lib/db/mongo';
 import { IntelligenceEngine } from '@/lib/processing/intelligence';
-
-const prisma = new PrismaClient();
 
 export const dynamic = 'force-dynamic';
 
-/**
- * GET /api/processing/intelligence
- * Returns behavioral patterns and descriptive insights.
- */
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const test_run_id = searchParams.get('test_run_id') || 'PROD';
 
     const patterns = await prisma.pattern.findMany({
-      where: {
-        test_run_id,
-        processing_state: 'complete'
-      },
+      where: { test_run_id, processing_state: 'complete' },
       orderBy: { last_detected: 'desc' }
     });
 
@@ -35,15 +26,10 @@ export async function GET(req: NextRequest) {
   }
 }
 
-/**
- * POST /api/processing/intelligence
- * Triggers a manual refresh of the pattern detection engine.
- */
 export async function POST(req: NextRequest) {
   try {
     await IntelligenceEngine.scoringEngine();
     await IntelligenceEngine.detectPatterns();
-    
     return NextResponse.json({ status: 'Intelligence refresh completed' });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

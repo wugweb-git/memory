@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import pdf from "pdf-parse";
 import { MemoryService } from '@/lib/memory/service';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const formData: FormData = await req.formData();

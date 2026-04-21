@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { retrieve } from '@/lib/memory/rag';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const { query, filters, test_run_id } = await req.json();

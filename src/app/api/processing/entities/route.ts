@@ -1,24 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { mongo as prisma } from '@/lib/db/mongo';
 
 export const dynamic = 'force-dynamic';
 
-/**
- * GET /api/processing/entities
- * Returns a list of normalized entities across the system.
- */
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const testRunId = searchParams.get('test_run_id') || 'PROD';
 
     const entities = await prisma.entity.findMany({
-      where: {
-        processing_state: 'complete',
-        test_run_id: testRunId
-      },
+      where: { processing_state: 'complete', test_run_id: testRunId },
       orderBy: { occurrences: 'desc' },
       take: 100
     });

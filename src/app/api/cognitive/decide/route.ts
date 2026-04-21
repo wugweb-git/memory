@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { processDecision } from "@/lib/cognitive";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/cognitive/decide
  * Unified endpoint for the Layer 3 Cognitive Engine.

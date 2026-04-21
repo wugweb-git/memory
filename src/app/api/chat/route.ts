@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { StreamingTextResponse, LangChainStream, Message } from 'ai';
 import { ChatOpenAI } from '@langchain/openai';
 import { ConversationalRetrievalQAChain } from '@langchain/classic/chains';

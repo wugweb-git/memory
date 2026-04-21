@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { mongo as prisma } from '@/lib/db/mongo';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(
   req: NextRequest,
@@ -32,14 +34,8 @@ export async function POST(
 
     const profile = await (prisma as any).profile.upsert({
       where: { username },
-      update: {
-        ...data,
-        updated_at: new Date(),
-      },
-      create: {
-        username,
-        ...data,
-      },
+      update: { ...data, updated_at: new Date() },
+      create: { username, ...data },
     });
 
     return NextResponse.json(profile);

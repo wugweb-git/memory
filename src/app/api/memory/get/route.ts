@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mongo } from '@/lib/db/mongo';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/memory/get?id=...
  * Fetches full details of a specific MemoryPacket, including its associated
