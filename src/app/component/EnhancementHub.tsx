@@ -144,7 +144,7 @@ export const EnhancementHub = () => {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-10 right-10 z-[60] bg-black text-white px-8 py-4 rounded-full font-black text-xs uppercase tracking-widest shadow-2xl flex items-center gap-3 overflow-hidden group border border-white/10"
+        className="fixed bottom-6 right-4 md:bottom-10 md:right-10 z-[60] bg-black text-white px-5 md:px-8 py-3 md:py-4 rounded-full font-black text-[10px] md:text-xs uppercase tracking-widest shadow-2xl flex items-center gap-3 overflow-hidden group border border-white/10"
       >
         <div className="absolute inset-0 bg-accent translate-y-full group-hover:translate-y-0 transition-transform duration-300 opacity-20" />
         <span className="relative z-10 flex items-center gap-3">

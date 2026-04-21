@@ -119,7 +119,7 @@ export default function IdentityPrismWorkspace() {
       />
 
       <div className="flex-1 flex overflow-hidden relative z-10">
-        <main className="flex-1 overflow-y-auto custom-scrollbar relative flex flex-col pt-8" role="main">
+          <main className="flex-1 overflow-y-auto custom-scrollbar relative flex flex-col pt-6 md:pt-8" role="main">
           <div className="max-w-[1400px] mx-auto w-full px-[var(--space-page)] space-y-[var(--space-2xl)] pb-40">
             <AnimatePresence mode="wait">
               {/* L0: GENESIS — Intake Layer */}
@@ -391,11 +391,11 @@ export default function IdentityPrismWorkspace() {
             {currentView === 'L3' && (
               <motion.section 
                 initial={{ y: 200, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 200, opacity: 0 }}
-                className="fixed bottom-0 left-0 right-0 p-12 bg-gradient-to-t from-bg-primary via-bg-primary/95 to-transparent z-[55] pointer-events-none"
+                className="fixed bottom-0 left-0 right-0 p-4 md:p-12 bg-gradient-to-t from-bg-primary via-bg-primary/95 to-transparent z-[55] pointer-events-none safe-navbar"
               >
               <div className="max-w-4xl mx-auto pointer-events-auto">
                 <form onSubmit={sendQuery} className="group relative glass-panel rounded-radius-2xl border-white/5 focus-within:border-accent/50 transition-all duration-700 shadow-3xl">
-                  <div className="flex items-center px-10 py-4 border-b border-border-secondary bg-white/[0.02]">
+                   <div className="hidden md:flex items-center px-10 py-4 border-b border-border-secondary bg-white/[0.02]">
                     <div className="flex items-center gap-8 text-[10px] font-black text-text-tertiary tracking-[0.3em] uppercase kinetic-text">
                       <span className="flex items-center gap-2"><RefreshCcw size={14} className="animate-spin text-accent" /> Uplink: Quantum_Stable</span>
                       <span className="flex items-center gap-2 border-l border-border-secondary pl-8">Core: Neural_Prism_v4 // MMR_Sync</span>
@@ -403,7 +403,7 @@ export default function IdentityPrismWorkspace() {
                   </div>
 
                   <div className="p-6">
-                    <div className="rounded-radius-xl border border-border-secondary bg-bg-primary/40 px-8 py-6 flex items-start gap-6 shadow-inner transition-all focus-within:bg-bg-primary/60">
+                    <div className="rounded-radius-xl border border-border-secondary bg-bg-primary/40 px-4 md:px-8 py-4 md:py-6 flex items-start gap-4 md:gap-6 shadow-inner transition-all focus-within:bg-bg-primary/60">
                       <Search size={26} className="mt-4 text-text-disabled shrink-0" aria-hidden="true" />
                       <textarea 
                         id="query-input"
@@ -416,12 +416,12 @@ export default function IdentityPrismWorkspace() {
                           }
                         }}
                         placeholder="Pose a cognitive query to the Digital Twin..."
-                        className="w-full h-28 p-2 bg-transparent text-xl font-bold text-text-primary placeholder:text-text-disabled placeholder:italic focus:outline-none resize-none scrollbar-hide kinetic-text"
+                        className="w-full h-24 md:h-28 p-2 bg-transparent text-base md:text-xl font-bold text-text-primary placeholder:text-text-disabled placeholder:italic focus:outline-none resize-none scrollbar-hide kinetic-text"
                       />
                     </div>
                   </div>
 
-                  <div className="px-10 py-8 flex items-center justify-between border-t border-border-secondary bg-white/[0.02]">
+                  <div className="px-4 md:px-10 py-4 md:py-8 flex items-center justify-between border-t border-border-secondary bg-white/[0.02]">
                     <div className="flex gap-6">
                        <button type="button" className="p-4 rounded-2xl bg-bg-elevated border border-border-secondary text-text-tertiary hover:text-accent transition-all group hover:scale-110">
                           <Plus size={22} className="group-hover:rotate-90 transition-transform duration-500" />
@@ -430,7 +430,7 @@ export default function IdentityPrismWorkspace() {
                     <button 
                       type="submit"
                       disabled={isLoading || input.trim() === ''}
-                      className="px-12 py-4 rounded-2xl font-black text-xs tracking-[0.2em] uppercase transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-accent text-bg-primary hover:bg-accent-high hover:scale-105 active:scale-95 shadow-2xl shadow-accent/40 kinetic-text"
+                      className="px-5 md:px-12 py-3 md:py-4 rounded-2xl font-black text-[10px] md:text-xs tracking-[0.2em] uppercase transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-accent text-bg-primary hover:bg-accent-high hover:scale-105 active:scale-95 shadow-2xl shadow-accent/40 kinetic-text"
                     >
                       {isLoading ? 'EXECUTING_SYNC...' : 'INITIATE_NEURAL_SYNAPSE'}
                     </button>
@@ -468,24 +468,29 @@ export default function IdentityPrismWorkspace() {
                        <RefreshCcw size={32} className="text-accent animate-spin" />
                        <span className="text-sm font-medium text-text-tertiary tracking-wide">Scanning layers...</span>
                     </div>
-                  ) : (
+                   ) : (
                     <div className="space-y-3">
-                       {Object.entries(auditReport.report.sectors).map(([sector, data]: [string, any]) => (
-                         <div key={sector} className="p-4 rounded-xl bg-secondary border border-primary flex items-center justify-between">
+                        {(auditReport.results || []).slice(0, 8).map((item: any, idx: number) => (
+                          <div key={`${item.name}-${idx}`} className="p-4 rounded-xl bg-secondary border border-primary flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                               <ShieldCheck size={18} className={data.status === 'ONLINE' || data.status === 'SYNCHRONIZED' ? 'text-success' : 'text-danger'} />
-                               <div className="text-left">
-                                  <h4 className="text-sm font-semibold text-text-primary tracking-wide">{sector.replace('_', ' ')}</h4>
-                                  <p className="text-xs text-text-tertiary font-medium">{data.note || 'Core Layer'}</p>
-                               </div>
+                              <ShieldCheck size={18} className={item.status === 'PASS' ? 'text-success' : 'text-danger'} />
+                              <div className="text-left">
+                                <h4 className="text-sm font-semibold text-text-primary tracking-wide">{item.name}</h4>
+                                <p className="text-xs text-text-tertiary font-medium">{item.message || 'Diagnostic check'}</p>
+                              </div>
                             </div>
-                            <span className={`text-xs font-semibold tracking-wide ${data.status === 'ONLINE' || data.status === 'SYNCHRONIZED' ? 'text-success' : 'text-danger'}`}>
-                               {data.status}
+                            <span className={`text-xs font-semibold tracking-wide ${item.status === 'PASS' ? 'text-success' : 'text-danger'}`}>
+                              {item.status}
                             </span>
-                         </div>
-                       ))}
+                          </div>
+                        ))}
+                        {!auditReport.results?.length && (
+                          <div className="p-4 rounded-xl bg-secondary border border-primary text-sm text-text-tertiary">
+                            Audit finished, but no detailed sector report was returned.
+                          </div>
+                        )}
                        <div className="pt-6 mt-6 border-t border-primary flex items-center justify-between">
-                          <span className="text-xs font-mono text-text-disabled">ID: {Math.random().toString(36).substring(7).toUpperCase()}</span>
+                          <span className="text-xs font-mono text-text-disabled">ID: {auditReport.audit_id || 'N/A'}</span>
                           <button onClick={performAudit} className="text-xs font-semibold text-accent hover:underline tracking-wide focus-ring">Re-run diagnostics</button>
                        </div>
                     </div>

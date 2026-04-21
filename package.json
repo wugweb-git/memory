@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run prisma:generate && next build",
     "start": "next start",
-    "lint": "next lint src",
+    "lint": "eslint ./src --ext .js,.ts,.tsx",
     "postinstall": "npm run prisma:generate",
     "prisma:generate:mongo": "prisma generate --schema=prisma/mongo/schema.prisma",
     "prisma:generate:pg": "prisma generate --schema=prisma/postgres/schema.prisma",

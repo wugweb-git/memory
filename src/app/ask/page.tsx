@@ -1,20 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Brain, User, Search, 
-  RefreshCcw, Sparkles, Send,
-  Activity, ShieldCheck, Zap, Plus, ArrowUpRight
-} from 'lucide-react';
+import { Brain, User, Search, RefreshCcw, Sparkles, Plus, ArrowUpRight } from 'lucide-react';
 import { useChat } from 'ai/react';
 import NavBar from '../component/navbar';
-
-const SYSTEM_STATS = [
-  { label: 'UPLINK_FLUX', value: '98.4%', icon: Zap, color: 'text-accent' },
-  { label: 'NEURAL_DENSITY', value: '4.2k Nodes', icon: Brain, color: 'text-warning' },
-  { label: 'MATRIX_INTEGRITY', value: 'NOMINAL', icon: ShieldCheck, color: 'text-success' },
-];
 
 export default function AskNeuralInterface() {
   const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat();
@@ -45,7 +35,7 @@ export default function AskNeuralInterface() {
         <div className="scanline" />
       </div>
 
-      <main className="flex-1 flex flex-col pt-20 pb-48 relative z-10">
+      <main className="flex-1 flex flex-col pt-20 pb-40 md:pb-48 relative z-10">
         <div className="max-w-5xl mx-auto w-full px-6 space-y-16">
           
           {/* Header Section */}
@@ -54,7 +44,7 @@ export default function AskNeuralInterface() {
                 <Brain size={24} className="animate-pulse" />
                 <span className="text-[11px] font-black uppercase tracking-[0.5em]">LAYER_3 // IDENTITY_SYNC</span>
              </div>
-             <h1 className="text-6xl font-black italic tracking-tighter uppercase leading-[0.85] text-text-primary kinetic-text">
+             <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter uppercase leading-[0.85] text-text-primary kinetic-text break-words">
                 Neural_Sync_Interface
              </h1>
              <p className="max-w-2xl text-lg font-medium text-text-tertiary italic leading-relaxed">
@@ -63,7 +53,7 @@ export default function AskNeuralInterface() {
           </section>
 
           {/* Chat Container */}
-          <div className="glass-panel rounded-[3rem] min-h-[60vh] flex flex-col p-12 relative overflow-hidden group border-white/5 shadow-3xl">
+          <div className="glass-panel rounded-[2rem] md:rounded-[3rem] min-h-[60vh] flex flex-col p-4 md:p-12 relative overflow-hidden group border-white/5 shadow-3xl">
              <AnimatePresence mode="popLayout">
                {messages.length === 0 ? (
                  <motion.div 
@@ -133,20 +123,20 @@ export default function AskNeuralInterface() {
       {/* Neural Command Dock */}
       <motion.section 
         initial={{ y: 200, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-        className="fixed bottom-0 left-0 right-0 p-12 bg-gradient-to-t from-bg-primary via-bg-primary/95 to-transparent z-[55]"
+        className="fixed bottom-0 left-0 right-0 p-3 md:p-12 bg-gradient-to-t from-bg-primary via-bg-primary/95 to-transparent z-[55] safe-navbar"
       >
       <div className="max-w-4xl mx-auto">
         <form onSubmit={(e) => { e.preventDefault(); handleSubmit(e); }} className="group relative glass-panel rounded-[2.5rem] border-white/5 focus-within:border-accent/50 transition-all duration-700 shadow-3xl overflow-hidden">
-          <div className="flex items-center px-10 py-5 border-b border-border-secondary bg-white/[0.02]">
+          <div className="hidden md:flex items-center px-10 py-5 border-b border-border-secondary bg-white/[0.02]">
             <div className="flex items-center gap-8 text-[10px] font-black text-text-tertiary tracking-[0.3em] uppercase">
               <span className="flex items-center gap-2"><RefreshCcw size={14} className="animate-spin text-accent" /> Uplink: Quantum_Stable</span>
               <span className="flex items-center gap-2 border-l border-border-secondary pl-8">Core: Neural_Prism_v4</span>
             </div>
           </div>
 
-          <div className="p-8">
-            <div className="rounded-[1.5rem] border border-border-secondary bg-bg-primary/40 px-10 py-8 flex items-start gap-8 shadow-inner transition-all focus-within:bg-bg-primary/60">
-              <Search size={30} className="mt-4 text-text-disabled shrink-0" />
+          <div className="p-4 md:p-8">
+            <div className="rounded-[1.25rem] md:rounded-[1.5rem] border border-border-secondary bg-bg-primary/40 px-4 md:px-10 py-4 md:py-8 flex items-start gap-4 md:gap-8 shadow-inner transition-all focus-within:bg-bg-primary/60">
+              <Search size={24} className="mt-3 text-text-disabled shrink-0" />
               <textarea 
                 value={input}
                 onChange={handleInputChange}
@@ -157,24 +147,24 @@ export default function AskNeuralInterface() {
                   }
                 }}
                 placeholder="Pose a cognitive query..."
-                className="w-full h-32 p-2 bg-transparent text-2xl font-bold text-text-primary placeholder:text-text-disabled placeholder:italic focus:outline-none resize-none scrollbar-hide kinetic-text"
+                className="w-full h-24 md:h-32 p-2 bg-transparent text-base md:text-2xl font-bold text-text-primary placeholder:text-text-disabled placeholder:italic focus:outline-none resize-none scrollbar-hide kinetic-text"
               />
             </div>
           </div>
 
-          <div className="px-10 py-10 flex items-center justify-between border-t border-border-secondary bg-white/[0.02]">
+          <div className="px-4 md:px-10 py-4 md:py-10 flex items-center justify-between border-t border-border-secondary bg-white/[0.02]">
             <div className="flex gap-6">
-               <button type="button" onClick={() => setMessages([])} className="p-5 rounded-2xl bg-bg-elevated border border-border-secondary text-text-tertiary hover:text-danger transition-all group hover:scale-110">
-                  <RefreshCcw size={24} className="group-hover:rotate-180 transition-transform duration-500" />
+               <button type="button" onClick={() => setMessages([])} className="p-3 md:p-5 rounded-2xl bg-bg-elevated border border-border-secondary text-text-tertiary hover:text-danger transition-all group hover:scale-110">
+                  <RefreshCcw size={20} className="group-hover:rotate-180 transition-transform duration-500" />
                </button>
-               <button type="button" className="p-5 rounded-2xl bg-bg-elevated border border-border-secondary text-text-tertiary hover:text-accent transition-all group hover:scale-110">
-                  <Plus size={24} className="group-hover:rotate-90 transition-transform duration-500" />
+               <button type="button" className="p-3 md:p-5 rounded-2xl bg-bg-elevated border border-border-secondary text-text-tertiary hover:text-accent transition-all group hover:scale-110">
+                  <Plus size={20} className="group-hover:rotate-90 transition-transform duration-500" />
                </button>
             </div>
             <button 
               type="submit"
               disabled={isLoading || input.trim() === ''}
-              className="px-16 py-5 rounded-[1.5rem] font-black text-xs tracking-[0.3em] uppercase transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-accent text-bg-primary hover:bg-accent-high hover:scale-105 active:scale-95 shadow-2xl shadow-accent/40 flex items-center gap-4 group"
+              className="px-5 md:px-16 py-3 md:py-5 rounded-[1.25rem] md:rounded-[1.5rem] font-black text-[10px] md:text-xs tracking-[0.2em] md:tracking-[0.3em] uppercase transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-accent text-bg-primary hover:bg-accent-high hover:scale-105 active:scale-95 shadow-2xl shadow-accent/40 flex items-center gap-2 md:gap-4 group"
             >
               <span className="relative z-10">{isLoading ? 'EXECUTING_SYNC...' : 'INITIATE_SYNAPSE'}</span>
               <ArrowUpRight size={20} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />

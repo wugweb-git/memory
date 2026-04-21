@@ -9,7 +9,7 @@ const options: MongoClientOptions = {
 };
 
 let client: MongoClient;
-let clientPromise: Promise<MongoClient>;
+let clientPromise: Promise<MongoClient> | undefined;
 
 if (process.env.NODE_ENV === 'development') {
     // In development mode, use a global variable so that the value
@@ -22,16 +22,12 @@ if (process.env.NODE_ENV === 'development') {
         client = new MongoClient(uri, options);
         globalWithMongo._mongoClientPromise = client.connect();
     }
-    clientPromise =
-        globalWithMongo._mongoClientPromise ??
-        Promise.reject(new Error('Please add your Mongo URI to .env'));
+    clientPromise = globalWithMongo._mongoClientPromise;
 } else {
     // In production mode, it's best to not use a global variable.
     if (uri) {
         client = new MongoClient(uri, options);
         clientPromise = client.connect();
-    } else {
-        clientPromise = Promise.reject(new Error('Please add your Mongo URI to .env'));
     }
 }
 
@@ -43,6 +39,10 @@ export async function getDb() {
     if (!uri) {
         throw new Error('Please add your Mongo URI to .env');
     }
-    const client = await clientPromise;
-    return client.db();
+    if (!clientPromise) {
+        client = new MongoClient(uri, options);
+        clientPromise = client.connect();
+    }
+    const dbClient = await clientPromise;
+    return dbClient.db();
 }

@@ -1,8 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&display=swap');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 
 :root {
   /* LIGHT (2026 Neo-Minimalist / Earthy) */
@@ -37,9 +37,24 @@
   --font-2xl: clamp(2.5rem, 2rem + 2vw, 4rem);
 
   /* Spacing */
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
   --space-page: clamp(1.5rem, 4vw, 4rem);
   --radius-xl: 2rem;
   --radius-2xl: 2.5rem;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  overflow-x: hidden;
 }
 
 @layer components {
@@ -49,7 +64,8 @@
     box-shadow: 
       0 20px 60px rgba(0, 0, 0, 0.04),
       inset 0 1px 0 rgba(255, 255, 255, 1);
-    @apply backdrop-blur-3xl;
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
   }
   
   .glass-card {
@@ -58,7 +74,16 @@
     box-shadow: 
       0 4px 12px rgba(0, 0, 0, 0.02),
       inset 0 1px 1px rgba(255, 255, 255, 1);
-    @apply transition-all duration-700 hover:border-accent/40 hover:bg-white hover:-translate-y-2 hover:shadow-2xl;
+    transition: all 700ms ease;
+  }
+
+  .glass-card:hover {
+    border-color: rgb(var(--accent) / 0.4);
+    background: #ffffff;
+    transform: translateY(-0.5rem);
+    box-shadow:
+      0 25px 50px -12px rgb(0 0 0 / 0.25),
+      inset 0 1px 1px rgba(255, 255, 255, 1);
   }
 
   .bento-grid {
@@ -68,12 +93,23 @@
   }
 
   .kinetic-text {
-    @apply transition-all duration-500 hover:scale-[1.01] hover:tracking-tighter;
+    transition: all 500ms ease;
+  }
+
+  .kinetic-text:hover {
+    transform: scale(1.01);
+    letter-spacing: -0.01em;
   }
 }
 
 .scanline {
-  @apply fixed inset-x-0 w-full h-[2px] opacity-5 pointer-events-none z-50;
+  position: fixed;
+  inset-inline: 0;
+  width: 100%;
+  height: 2px;
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: 50;
   background: linear-gradient(90deg, transparent, var(--accent), transparent);
   animation: scanline 15s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
@@ -83,4 +119,52 @@
     linear-gradient(var(--border-secondary) 1px, transparent 1px),
     linear-gradient(90deg, var(--border-secondary) 1px, transparent 1px);
   background-size: 80px 80px;
+}
+
+@layer utilities {
+  .shadow-3xl {
+    box-shadow:
+      0 24px 48px rgba(0, 0, 0, 0.08),
+      0 8px 24px rgba(0, 0, 0, 0.06);
+  }
+
+  .rounded-radius-xl {
+    border-radius: var(--radius-xl);
+  }
+
+  .rounded-radius-2xl {
+    border-radius: var(--radius-2xl);
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #d7d7d2 transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #d7d7d2;
+    border-radius: 9999px;
+  }
+
+  .safe-navbar {
+    padding-bottom: calc(max(env(safe-area-inset-bottom), 12px));
+  }
+
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
 }

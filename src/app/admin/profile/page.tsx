@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 import { 
   ArrowLeft, Upload, Edit3, Settings, 
   ExternalLink, Copy, Share2, Eye,
@@ -25,9 +26,9 @@ export default function AdminProfilePage() {
       <header className="border-b border-[#F0F0EE] bg-white sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button className="p-2 hover:bg-[#F5F5F3] rounded-full transition-colors">
+            <Link href="/admin" className="p-2 hover:bg-[#F5F5F3] rounded-full transition-colors" aria-label="Back to admin">
               <ArrowLeft size={20} />
-            </button>
+            </Link>
             <h1 className="text-lg font-black tracking-tight uppercase italic">Edit Profile</h1>
           </div>
           
@@ -242,8 +243,8 @@ export default function AdminProfilePage() {
       </main>
 
       {/* Persistence Bar */}
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[60]">
-         <div className="bg-white/80 backdrop-blur-3xl border border-[#E0E0DE] rounded-full px-1 py-1 flex items-center gap-1 shadow-2xl">
+      <div className="fixed bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 z-[60] w-[calc(100%-1rem)] md:w-auto">
+         <div className="bg-white/80 backdrop-blur-3xl border border-[#E0E0DE] rounded-2xl md:rounded-full px-1 py-1 flex items-center justify-between md:justify-start gap-1 shadow-2xl">
             {[
                { icon: <Palette size={18} />, label: 'Theme' },
                { icon: <ImageIcon size={18} />, label: 'Images' },

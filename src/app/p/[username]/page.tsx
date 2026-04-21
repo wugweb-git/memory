@@ -45,7 +45,16 @@ const TESTIMONIALS = [
 export default function PublicProfilePage() {
   const params = useParams();
   const username = params.username as string;
-  const [activeTab, setActiveTab] = useState('All');
+  const tabs = ['All_Nodes', '1:1_Neural_Sync', 'Priority_Uplink', 'Digital_Twin'] as const;
+  const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>('All_Nodes');
+
+  const filteredServices = SERVICES.filter((service) => {
+    if (activeTab === 'All_Nodes') return true;
+    if (activeTab === '1:1_Neural_Sync') return service.title.includes('Review');
+    if (activeTab === 'Priority_Uplink') return service.title.includes('Priority');
+    if (activeTab === 'Digital_Twin') return service.title.includes('Cognitive');
+    return true;
+  });
 
   return (
     <div className="min-h-screen bg-bg-primary text-text-primary flex flex-col selection:bg-accent/30 transition-colors duration-1000">
@@ -59,7 +68,7 @@ export default function PublicProfilePage() {
         <div className="scanline" />
       </div>
 
-      <div className="relative z-10 max-w-[1400px] mx-auto w-full px-[var(--space-page)] py-20 space-y-32">
+      <div className="relative z-10 max-w-[1400px] mx-auto w-full px-[var(--space-page)] py-10 md:py-20 space-y-20 md:space-y-32">
         
         {/* Profile Genesis Section */}
         <div className="flex flex-col xl:flex-row gap-20 xl:gap-32">
@@ -107,9 +116,9 @@ export default function PublicProfilePage() {
                  
                  <div className="flex items-center justify-between px-4 border-t border-border-primary pt-10">
                     <div className="flex gap-6">
-                       <Linkedin className="text-text-disabled hover:text-accent transition-all hover:scale-120 cursor-pointer" size={22} />
-                       <Twitter className="text-text-disabled hover:text-text-primary transition-all hover:scale-120 cursor-pointer" size={22} />
-                       <Globe className="text-text-disabled hover:text-success transition-all hover:scale-120 cursor-pointer" size={22} />
+                       <Linkedin className="text-text-disabled hover:text-accent transition-all hover:scale-110 cursor-pointer" size={22} />
+                       <Twitter className="text-text-disabled hover:text-text-primary transition-all hover:scale-110 cursor-pointer" size={22} />
+                       <Globe className="text-text-disabled hover:text-success transition-all hover:scale-110 cursor-pointer" size={22} />
                     </div>
                     <div className="flex flex-col items-end">
                        <span className="text-[9px] font-black uppercase tracking-[0.3em] text-text-tertiary opacity-40">UPLINK_STATUS</span>
@@ -168,7 +177,7 @@ export default function PublicProfilePage() {
 
                  {/* Filter Tabs */}
                  <div className="flex flex-wrap gap-4 px-2">
-                    {['All_Nodes', '1:1_Neural_Sync', 'Priority_Uplink', 'Digital_Twin'].map((tab, i) => (
+                    {tabs.map((tab) => (
                       <button 
                        key={tab}
                        onClick={() => setActiveTab(tab)}
@@ -185,7 +194,7 @@ export default function PublicProfilePage() {
 
                  {/* Services Grid */}
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 px-2">
-                    {SERVICES.map((service, i) => (
+                    {filteredServices.map((service, i) => (
                       <motion.div 
                        initial={{ opacity: 0, x: i % 2 === 0 ? -20 : 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 + i * 0.1 }}
                        key={service.title}
@@ -267,11 +276,11 @@ export default function PublicProfilePage() {
       {/* Persistent Call to Action */}
       <motion.div 
         initial={{ y: 200 }} animate={{ y: 0 }}
-        className="fixed bottom-12 right-12 z-[100]"
+        className="fixed bottom-6 right-4 md:bottom-12 md:right-12 z-[100]"
       >
          <div className="relative group">
             <div className="absolute -inset-6 bg-accent/20 rounded-full blur-3xl group-hover:bg-accent/40 transition-all duration-500" />
-            <button className="relative px-12 py-6 bg-text-primary text-bg-primary rounded-[2rem] text-xs font-black uppercase tracking-[0.3em] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-6 hover:bg-accent hover:scale-105 active:scale-95 transition-all duration-500">
+            <button className="relative px-6 md:px-12 py-4 md:py-6 bg-text-primary text-bg-primary rounded-[1.25rem] md:rounded-[2rem] text-[10px] md:text-xs font-black uppercase tracking-[0.2em] md:tracking-[0.3em] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-3 md:gap-6 hover:bg-accent hover:scale-105 active:scale-95 transition-all duration-500">
                Build Your Prism
                <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center border border-white/20">
                   <ArrowUpRight size={20} />

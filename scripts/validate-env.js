@@ -56,15 +56,6 @@ function validate() {
     process.exit(1);
   }
 
-  const mongoUri = MONGO_ALIASES.map(key => process.env[key]).find(Boolean) || INTERNAL_VAULT.MONGODB_URI;
-  if (!mongoUri) {
-    console.error('ERROR: Missing Mongo configuration.');
-    console.error(`Set one of the following environment variables: ${MONGO_ALIASES.join(', ')}`);
-    console.error('TIP: /api/chat depends on Mongo-backed vector search and will fail without a URI.');
-    console.error('System initialization aborted.');
-    process.exit(1);
-  }
-
   const isVaulted = !REQUIRED_VARS.every(v => process.env[v]);
   if (isVaulted) {
     console.log('STATUS: Operating in UNILATERAL_VAULT mode (Zero-Config Enabled).');
@@ -73,7 +64,7 @@ function validate() {
   console.log('SUCCESS: All mandatory environment variables are present.');
   
   // Optional format validation for URI when Mongo is set
-  if (!mongoUri.startsWith('mongodb')) {
+  if (!MONGODB_URI_PATTERN.test(mongoUri)) {
     console.error('ERROR: Invalid MONGODB_URI format. Must start with "mongodb://" or "mongodb+srv://".');
     process.exit(1);
   }

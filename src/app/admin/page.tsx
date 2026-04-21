@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   ShieldCheck, Database, Save, FileEdit, Settings, 
   RefreshCcw, ChevronLeft, LayoutDashboard, Zap, 
@@ -10,7 +10,7 @@ import {
   Calendar, Video, Folder, File, Grid, List,
   ArrowUpRight, ExternalLink, MoreVertical,
   Terminal, Sliders, Fingerprint, Sparkles,
-  Command, Power, Bell, User, Edit3, Brain, ArrowRight, MessageSquare
+  Command, Power, Bell, User, Edit3, Brain, ArrowRight, MessageSquare, Menu
 } from 'lucide-react';
 import { JetBrains_Mono, Inter } from 'next/font/google';
 import Link from 'next/link';
@@ -23,6 +23,7 @@ export default function AdminConsole() {
   const [targetBlock, setTargetBlock] = useState('Prism Overview');
   const [isAuditing, setIsAuditing] = useState(false);
   const [auditResults, setAuditResults] = useState<any>(null);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   
   const [checklist, setChecklist] = useState([
      { id: 1, text: 'Add calendar & meeting link', completed: true },
@@ -69,7 +70,7 @@ export default function AdminConsole() {
 
   return (
     <div className={`min-h-screen bg-[#FDFDFB] text-[#1A1A1A] flex flex-col ${inter.className}`}>
-      <header className="h-20 border-b border-[#F0F0EE] bg-white/80 backdrop-blur-3xl flex items-center justify-between px-10 shrink-0 z-50 sticky top-0">
+      <header className="h-20 border-b border-[#F0F0EE] bg-white/80 backdrop-blur-3xl flex items-center justify-between px-4 md:px-10 shrink-0 z-50 sticky top-0">
          <div className="flex items-center gap-8">
             <Link href="/" className="group flex items-center gap-3">
                <div className="w-10 h-10 rounded-2xl bg-black flex items-center justify-center text-white shadow-xl group-hover:scale-110 transition-transform">
@@ -82,11 +83,18 @@ export default function AdminConsole() {
             </Link>
          </div>
          
-         <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 md:gap-6">
+             <button
+               onClick={() => setMobileNavOpen((v) => !v)}
+               className="lg:hidden p-2 hover:bg-[#F5F5F3] rounded-xl transition-all"
+               aria-label="Toggle admin navigation"
+             >
+               <Menu size={20} className="text-[#666664]" />
+             </button>
             <div className={`flex items-center gap-2 px-4 py-2 rounded-full border text-[10px] font-black tracking-widest uppercase italic transition-all ${auditResults ? 'bg-success/5 border-success/20 text-success' : 'bg-[#F5F5F3] border-[#E0E0DE] text-[#1A1A1A]'}`}>
                <ShieldCheck size={12} /> {auditResults ? 'Matrix_Aligned' : 'System_Secure'}
             </div>
-            <div className="w-px h-8 bg-[#E0E0DE]" />
+             <div className="w-px h-8 bg-[#E0E0DE] hidden md:block" />
             <button className="p-2 hover:bg-[#F5F5F3] rounded-xl transition-all relative">
                <Bell size={20} className="text-[#888886]" />
                <div className="absolute top-2 right-2 w-2 h-2 bg-accent rounded-full border-2 border-white" />
@@ -101,7 +109,7 @@ export default function AdminConsole() {
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-         <aside className="w-80 border-r border-[#F0F0EE] bg-white p-10 flex flex-col gap-12 overflow-y-auto">
+         <aside className={`${mobileNavOpen ? 'flex' : 'hidden'} lg:flex w-full lg:w-80 border-r border-[#F0F0EE] bg-white p-6 lg:p-10 flex-col gap-8 lg:gap-12 overflow-y-auto absolute lg:static inset-0 z-40 lg:z-auto`}>
             <button onClick={runAudit} disabled={isAuditing} className="w-full py-4 bg-accent text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3">
                {isAuditing ? <RefreshCcw size={16} className="animate-spin" /> : <Sparkles size={16} />} 
                Run System Audit
@@ -120,7 +128,7 @@ export default function AdminConsole() {
                                 {item.icon} {item.label}
                              </Link>
                            ) : (
-                             <button onClick={() => setTargetBlock(item.id)} className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-[11px] font-black tracking-widest uppercase transition-all ${isActive ? 'bg-[#F2F2ED] text-[#1A1A1A]' : 'text-[#666664] hover:bg-[#FBFBFA] hover:text-[#1A1A1A]'}`}>
+                              <button onClick={() => { setTargetBlock(item.id); setMobileNavOpen(false); }} className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-[11px] font-black tracking-widest uppercase transition-all ${isActive ? 'bg-[#F2F2ED] text-[#1A1A1A]' : 'text-[#666664] hover:bg-[#FBFBFA] hover:text-[#1A1A1A]'}`}>
                                 {item.icon} {item.label}
                              </button>
                            )}
@@ -133,7 +141,7 @@ export default function AdminConsole() {
          </aside>
 
          <main className="flex-1 overflow-y-auto bg-[#FBFBFA]">
-            <div className="max-w-[1200px] mx-auto p-12 lg:p-20 space-y-16 pb-40">
+            <div className="max-w-[1200px] mx-auto p-5 md:p-12 lg:p-20 space-y-12 md:space-y-16 pb-32 md:pb-40">
                <header className="flex flex-col md:flex-row md:items-end justify-between gap-8">
                   <div className="space-y-2">
                      <div className="flex items-center gap-3 text-accent mb-2">
