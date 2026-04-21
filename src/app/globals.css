@@ -1,0 +1,86 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* LIGHT (2026 Neo-Minimalist / Earthy) */
+  --bg-primary: #F5F5F0;      /* Off-white porcelain */
+  --bg-secondary: #EDEDE8;    /* Warm stone */
+  --bg-tertiary: #E0E0DB;     /* Basalt clay */
+  --bg-elevated: #FFFFFF;     /* Pure bone */
+  
+  --border-primary: rgba(0, 0, 0, 0.08);
+  --border-secondary: rgba(0, 0, 0, 0.04);
+  --border-active: rgba(0, 170, 255, 0.4);
+
+  --text-primary: #0A0A0A;     /* Deep obsidian */
+  --text-secondary: #2D2D2A;   /* Warm charcoal */
+  --text-tertiary: #6B6B65;    /* Muted stone */
+  --text-disabled: #A1A19A;    /* Dark pebble */
+  
+  --accent: 0 170 255;           /* Electric Cyan */
+  --accent-high: #000000;      /* High contrast spark */
+  --accent-muted: rgba(0, 170, 255, 0.08);
+  
+  --success: #059669;
+  --danger: #E11D48;
+  --warning: #D97706;
+
+  /* Fluid typography scale (Kinetic) */
+  --font-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.8125rem);
+  --font-sm: clamp(0.8125rem, 0.75rem + 0.3vw, 0.875rem);
+  --font-base: clamp(0.875rem, 0.8rem + 0.4vw, 1rem);
+  --font-lg: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
+  --font-xl: clamp(1.75rem, 1.5rem + 1.2vw, 2.5rem);
+  --font-2xl: clamp(2.5rem, 2rem + 2vw, 4rem);
+
+  /* Spacing */
+  --space-page: clamp(1.5rem, 4vw, 4rem);
+  --radius-xl: 2rem;
+  --radius-2xl: 2.5rem;
+}
+
+@layer components {
+  .glass-panel {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(253, 253, 251, 0.95) 100%);
+    border: 1px solid var(--border-secondary);
+    box-shadow: 
+      0 20px 60px rgba(0, 0, 0, 0.04),
+      inset 0 1px 0 rgba(255, 255, 255, 1);
+    @apply backdrop-blur-3xl;
+  }
+  
+  .glass-card {
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid var(--border-secondary);
+    box-shadow: 
+      0 4px 12px rgba(0, 0, 0, 0.02),
+      inset 0 1px 1px rgba(255, 255, 255, 1);
+    @apply transition-all duration-700 hover:border-accent/40 hover:bg-white hover:-translate-y-2 hover:shadow-2xl;
+  }
+
+  .bento-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 1.5rem;
+  }
+
+  .kinetic-text {
+    @apply transition-all duration-500 hover:scale-[1.01] hover:tracking-tighter;
+  }
+}
+
+.scanline {
+  @apply fixed inset-x-0 w-full h-[2px] opacity-5 pointer-events-none z-50;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  animation: scanline 15s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.grid-bg {
+  background-image: 
+    linear-gradient(var(--border-secondary) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-secondary) 1px, transparent 1px);
+  background-size: 80px 80px;
+}

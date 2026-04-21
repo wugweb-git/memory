@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../src/generated/postgres"
+  binaryTargets = ["native", "rhel-openssl-1.0.x", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model DecisionLog {
+  id           String   @id @default(uuid())
+  userId       String
+  mode         String   // architect | founder | operator
+
+  contextJson  Json
+  outputJson   Json
+
+  confidence   Float
+  createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("decision_logs")
+}
+
+model FeedbackLog {
+  id           String   @id @default(uuid())
+  decisionId   String
+  userId       String
+  feedbackType String   // accepted | ignored | rejected
+  comment      String?
+  createdAt    DateTime @default(now())
+
+  @@index([decisionId])
+  @@index([userId])
+  @@map("feedback_logs")
+}
+
+model BehaviorModel {
+  id          String   @id @default(uuid())
+  userId      String
+  modelType   String   // decision_model | habit_model | attention_model
+  key         String
+  value       Json
+  confidence  Float    @default(0.5)
+  occurrences Int      @default(1)
+  sourceIds   String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, modelType, key])
+  @@map("behavior_models")
+}
+
+model TraitScore {
+  id          String   @id @default(uuid())
+  userId      String
+  trait       String   // analytical | reactive | structured | etc.
+  score       Float
+  confidence  Float    @default(0.5)
+  occurrences Int      @default(1)
+  sourceIds   String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, trait])
+  @@map("trait_scores")
+}
+
+model Preference {
+  id          String   @id @default(uuid())
+  userId      String
+  category    String   // communication | work | content | scheduling
+  key         String
+  value       Json
+  explicit    Boolean  @default(false)
+  confidence  Float    @default(0.6)
+  occurrences Int      @default(1)
+  sourceIds   String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, category, key])
+  @@map("preferences")
+}
+
+model StylePattern {
+  id         String   @id @default(uuid())
+  userId     String
+  pattern    String   // e.g. "removes passive voice"
+  frequency  Int      @default(1)
+  confidence Float    @default(0.5)
+  lastSeen   DateTime @default(now())
+
+  @@unique([userId, pattern])
+  @@map("style_patterns")
+}
+
+model PersonaProfile {
+  id                 String   @id @default(uuid())
+  userId             String
+  publicTraits       String[]
+  positioningKeywords String[]
+  bioSummary         String
+  updatedAt          DateTime @updatedAt
+
+  @@unique([userId])
+  @@map("persona_profiles")
+}
+
+model OutputLog {
+  id              String   @id @default(uuid())
+  userId          String
+  decisionId      String?  // Link to L3 decision
+  platform        String   // linkedin | blog | memo | other
+  content         String
+  status          String   @default("draft") // draft | pushed 
+  personaSnapshot Json?    // Snapshot of L4 traits used for this generation
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@index([decisionId])
+  @@map("output_logs")
+}
