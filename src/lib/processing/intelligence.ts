@@ -1,7 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import { mongo as prisma } from '@/lib/db/mongo';
 import { WindowType } from '../memory/types';
 
-const prisma = new PrismaClient();
 
 export class IntelligenceEngine {
   /**

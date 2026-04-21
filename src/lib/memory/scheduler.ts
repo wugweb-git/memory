@@ -1,5 +1,5 @@
 import { processEmbedding } from './rag';
-import { PrismaClient } from '@prisma/client';
+import { mongo as prisma } from '@/lib/db/mongo';
 // @ts-ignore - node-cron types may be missing in restricted envs
 import cron from 'node-cron';
 import { SettingsController } from './settings';
@@ -7,7 +7,6 @@ import { ProcessingEngine } from '../processing/engine';
 import { IntelligenceEngine } from '../processing/intelligence';
 import { SemanticEngine } from '../processing/semantic';
 
-const prisma = new PrismaClient();
 
 /**
  * Classifies an error into retryable categories.

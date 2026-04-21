@@ -1,8 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import { mongo as prisma } from '@/lib/db/mongo';
 import { extractSignals } from './signals';
 import { MemoryPacket } from '../memory/types';
 
-const prisma = new PrismaClient();
 
 export class ProcessingEngine {
   /**
