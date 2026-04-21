@@ -1,20 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { mongo as prisma } from '@/lib/db/mongo';
 
-const prisma = new PrismaClient();
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const test_run_id = searchParams.get('test_run_id') || 'PROD';
 
-    const [
-      packets,
-      retries,
-      sources,
-      activity,
-      documents
-    ] = await Promise.all([
+    const [packets, retries, sources, activity, documents] = await Promise.all([
       prisma.memoryPacket.findMany({ where: { status: { not: 'rejected' }, test_run_id } }),
       prisma.retryQueue.findMany({ where: { test_run_id } }),
       prisma.source.findMany({}),
@@ -24,13 +18,13 @@ export async function GET(req: NextRequest) {
 
     const holdPackets = packets.filter((p: any) => p.processing_status === 'pending');
     const failedPackets = packets.filter((p: any) => p.processing_status === 'failed' || p.status === 'archived');
-    
-    // Calculate storage stats (simplified)
-    const usedBytes = packets.reduce((acc: number, p: any) => acc + (typeof p.content === 'string' ? p.content.length : JSON.stringify(p.content).length), 0);
-    const totalBytes = 250 * 1024 * 1024; // 250 MB
+
+    const usedBytes = packets.reduce((acc: number, p: any) => 
+      acc + (typeof p.content === 'string' ? p.content.length : JSON.stringify(p.content).length), 0);
+    const totalBytes = 250 * 1024 * 1024;
     const usagePercent = Math.min(100, (usedBytes / totalBytes) * 100);
 
-    const body = {
+    return NextResponse.json({
       stats: {
         packet_count: packets.length,
         hold_count: holdPackets.length,
@@ -38,8 +32,8 @@ export async function GET(req: NextRequest) {
         retry_queue_count: retries.length,
         source_count: sources.length,
         item_count: packets.length,
-        growth_rate_per_day: 0, // Placeholder
-        ingestion_logs: [] // Placeholder
+        growth_rate_per_day: 0,
+        ingestion_logs: []
       },
       storage: {
         used_bytes: usedBytes,
@@ -58,9 +52,7 @@ export async function GET(req: NextRequest) {
         failed: failedPackets,
         correction: []
       }
-    };
-
-    return NextResponse.json(body);
+    });
   } catch (error: any) {
     console.error('Monitor API Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

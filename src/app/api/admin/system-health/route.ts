@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { mongo as prisma } from '@/lib/db/mongo';
 
-const prisma = new PrismaClient();
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
@@ -23,7 +23,7 @@ export async function GET() {
       prisma.memoryPacket.count({ 
         where: { 
           processing_lock: true, 
-          locked_at: { lt: new Date(Date.now() - 10 * 60 * 1000) } // > 10 mins
+          locked_at: { lt: new Date(Date.now() - 10 * 60 * 1000) }
         } 
       }),
       prisma.semanticObject.count({ where: { fallback: true } }),
@@ -38,9 +38,7 @@ export async function GET() {
       prisma.systemSettings.findFirst()
     ]);
 
-    // Hardened Status Contract
     let status: 'LOCKED' | 'DEGRADED' | 'BROKEN' = 'LOCKED';
-    
     const failRate = totalPackets > 0 ? (failedJobs / totalPackets) : 0;
     const lockPressure = activeLocks > 5 ? 'high' : 'normal';
 
@@ -51,11 +49,7 @@ export async function GET() {
     }
 
     const settingsValue = systemSettings?.value as any || {};
-
-    // Force broken if system explicitly locked or disabled
-    if (settingsValue.system_status === 'maintenance') {
-      status = 'BROKEN';
-    }
+    if (settingsValue.system_status === 'maintenance') status = 'BROKEN';
 
     return NextResponse.json({
       status,

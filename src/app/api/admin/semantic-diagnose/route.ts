@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SemanticEngine } from '@/lib/processing/semantic';
 import { randomUUID } from 'crypto';
-
 import { mongo as prisma } from '@/lib/db/mongo';
+
+export const dynamic = 'force-dynamic';
 
 /**
  * LAYER 2.5: DIAGNOSTIC AUDIT SUITE

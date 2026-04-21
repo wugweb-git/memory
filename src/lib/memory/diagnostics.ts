@@ -1,9 +1,7 @@
 import { MemoryService } from './service';
 import { processEmbedding } from './rag';
-import { PrismaClient } from '@prisma/client';
+import { mongo as prisma } from '@/lib/db/mongo';
 import { ingestionGate } from './gate';
-
-const prisma = new PrismaClient();
 
 export interface TestResult {
   name: string;

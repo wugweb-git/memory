@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { runL1ValidationSuite } from '@/lib/memory/diagnostics';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * IDENTITY PRISM: L1 DIAGNOSTIC BRIDGE
  * -----------------------------------

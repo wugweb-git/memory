@@ -1,17 +1,9 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { mongo } from './db/mongo';
+import type { Prisma } from '../generated/mongo';
 
-const prismaClientSingleton = () => {
-  return new PrismaClient();
-};
-
-declare global {
-  var prismaGlobal: undefined | ReturnType<typeof prismaClientSingleton>;
-}
-
-const prisma = globalThis.prismaGlobal ?? prismaClientSingleton();
-
+// Re-export the singleton so legacy imports still work
+export default mongo;
 export { Prisma };
-export default prisma;
 
 /**
  * Checks if a thrown error is a Prisma Unique Constraint violation (P2002).
@@ -19,5 +11,3 @@ export default prisma;
 export function isUniqueError(error: any): boolean {
   return Boolean(error && typeof error === 'object' && (error as any).code === 'P2002');
 }
-
-if (process.env.NODE_ENV !== 'production') globalThis.prismaGlobal = prisma;

@@ -1,10 +1,8 @@
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
-import { PrismaClient } from '@prisma/client';
+import { mongo as prisma } from '@/lib/db/mongo';
 import { addProcessingError } from './gate';
 import { EmbeddingStatus, ProcessingError } from './types';
-
-const prisma = new PrismaClient();
 
 const EMBEDDING_MODEL = 'text-embedding-3-small';
 const EMBEDDING_VERSION = 1;

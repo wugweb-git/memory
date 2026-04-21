@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { mongo as prisma } from '@/lib/db/mongo';
 
-const prisma = new PrismaClient();
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,8 +11,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'packet_id is required' }, { status: 400 });
     }
 
-    // Logic for replay could be added here
-    // For now, we'll just update the status
     await prisma.memoryPacket.update({
       where: { id: packet_id },
       data: { status: 'accepted', ingestion_time: new Date() }

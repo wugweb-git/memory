@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { mongo as prisma } from '@/lib/db/mongo';
 
 const CACHE_TTL = 60 * 1000; // 60 seconds
 
