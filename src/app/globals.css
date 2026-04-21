@@ -93,12 +93,12 @@ body {
   }
 
   .kinetic-text {
-    transition: all 500ms ease;
+    transition: none;
   }
 
   .kinetic-text:hover {
-    transform: scale(1.01);
-    letter-spacing: -0.01em;
+    transform: none;
+    letter-spacing: inherit;
   }
 }
 
