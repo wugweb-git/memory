@@ -1,220 +1,245 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, Bell, Upload, Plus, X, Command,
   LayoutDashboard, User, Brain, Eye, Database, Archive,
   Activity, Cpu, Sparkles, Link2, Settings, ChevronRight,
-  FileText, Globe, Zap
+  Globe, Zap, Menu
 } from 'lucide-react';
 import { Section } from './Sidebar';
 
-/* ── section label map ─────────────────────────────────────── */
 const SECTION_META: Record<Section, { label: string; icon: any; desc: string }> = {
-  overview:  { label: 'Dashboard',       icon: LayoutDashboard, desc: 'System overview' },
-  profile:   { label: 'Profile',         icon: User,            desc: 'Identity & works' },
-  twin:      { label: 'Digital Twin',    icon: Brain,           desc: 'RAG chat interface' },
-  showcase:  { label: 'Public Showcase', icon: Eye,             desc: 'Identity surfaces' },
-  memory:    { label: 'Memory Vault',    icon: Database,        desc: 'L1 indexed packets' },
-  buffer:    { label: 'Buffer Queue',    icon: Archive,         desc: 'L0 intake review' },
-  activity:  { label: 'Activity',        icon: Activity,        desc: 'Signals & feed' },
-  cognitive: { label: 'Cognitive Engine',icon: Cpu,             desc: 'L4 decisions' },
-  persona:   { label: 'Persona',         icon: Sparkles,        desc: 'Behavioral profile' },
-  syncs:     { label: 'Integrations',    icon: Link2,           desc: 'External connections' },
-  settings:  { label: 'Settings',        icon: Settings,        desc: 'Preferences & config' },
+  overview:  { label: 'Dashboard',        icon: LayoutDashboard, desc: 'System overview' },
+  profile:   { label: 'Profile',          icon: User,            desc: 'Identity & works' },
+  twin:      { label: 'Digital Twin',     icon: Brain,           desc: 'RAG chat interface' },
+  showcase:  { label: 'Public Showcase',  icon: Eye,             desc: 'Identity surfaces' },
+  memory:    { label: 'Memory Vault',     icon: Database,        desc: 'L1 indexed packets' },
+  buffer:    { label: 'Buffer Queue',     icon: Archive,         desc: 'L0 intake review' },
+  activity:  { label: 'Activity',         icon: Activity,        desc: 'Signals & feed' },
+  cognitive: { label: 'Cognitive Engine', icon: Cpu,             desc: 'L4 decisions' },
+  persona:   { label: 'Persona',          icon: Sparkles,        desc: 'Behavioral profile' },
+  syncs:     { label: 'Integrations',     icon: Link2,           desc: 'External connections' },
+  settings:  { label: 'Settings',         icon: Settings,        desc: 'Preferences & config' },
 };
 
-/* ── quick-add command palette ─────────────────────────────── */
 const QUICK_ACTIONS = [
-  { label: 'Upload document to memory', icon: Upload,   hint: '⌘U', action: 'upload' },
-  { label: 'New voice ingestion',       icon: Zap,      hint: '⌘V', action: 'voice' },
-  { label: 'Add knowledge link',        icon: Globe,    hint: '⌘L', action: 'link' },
-  { label: 'Open Digital Twin',         icon: Brain,    hint: '⌘T', action: 'twin' },
-  { label: 'Cognitive Decision Sync',   icon: Cpu,      hint: '⌘D', action: 'cognitive' },
+  { label: 'Upload document to memory', icon: Upload,  hint: '⌘U', action: 'upload' },
+  { label: 'New voice ingestion',       icon: Zap,     hint: '⌘V', action: 'voice' },
+  { label: 'Add knowledge link',        icon: Globe,   hint: '⌘L', action: 'link' },
+  { label: 'Open Digital Twin',         icon: Brain,   hint: '⌘T', action: 'twin' },
+  { label: 'Cognitive Decision Sync',   icon: Cpu,     hint: '⌘D', action: 'cognitive' },
 ];
 
 interface TopNavProps {
   current: Section;
   onChange: (s: Section) => void;
+  onMenuToggle?: () => void;
 }
 
-export const TopNav: React.FC<TopNavProps> = ({ current, onChange }) => {
-  const [searchOpen, setSearchOpen]     = useState(false);
-  const [paletteOpen, setPaletteOpen]   = useState(false);
-  const [query, setQuery]               = useState('');
-  const [notifications, setNotifications] = useState(3);
+export const TopNav: React.FC<TopNavProps> = ({ current, onChange, onMenuToggle }) => {
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const notifications = 3;
+
+  /* ⌘K global shortcut */
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setPaletteOpen(v => !v);
+      }
+      if (e.key === 'Escape') setPaletteOpen(false);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   const meta = SECTION_META[current];
   const Icon = meta.icon;
 
-  /* filter actions by query */
-  const filtered = QUICK_ACTIONS.filter(a =>
-    a.label.toLowerCase().includes(query.toLowerCase())
+  const filtered = [
+    ...Object.entries(SECTION_META).map(([id, m]) => ({
+      type: 'nav' as const, id: id as Section, ...m,
+    })),
+    ...QUICK_ACTIONS.map(a => ({ type: 'action' as const, ...a })),
+  ].filter(item =>
+    !query ||
+    ('label' in item && item.label.toLowerCase().includes(query.toLowerCase()))
   );
 
-  const handleAction = (action: string) => {
-    setPaletteOpen(false);
-    setQuery('');
-    if (action === 'twin')      onChange('twin');
-    if (action === 'cognitive') onChange('cognitive');
-    if (action === 'upload')    onChange('memory');
+  const close = () => { setPaletteOpen(false); setQuery(''); };
+
+  const handleItem = (item: any) => {
+    if (item.type === 'nav') onChange(item.id);
+    else {
+      if (item.action === 'upload' || item.action === 'voice') onChange('memory');
+      if (item.action === 'twin') onChange('twin');
+      if (item.action === 'cognitive') onChange('cognitive');
+    }
+    close();
   };
 
   return (
     <>
-      {/* ── Top bar ──────────────────────────────────────────────── */}
-      <header className="fixed top-0 left-60 right-0 h-14 z-40 bg-white/80 backdrop-blur-xl border-b border-[#EBEBEB] flex items-center justify-between px-6">
-        {/* breadcrumb */}
+      {/* ── Top bar ───────────────────────────────────────────── */}
+      <header
+        className="
+          fixed top-0 right-0 h-14 z-40
+          left-0 md:left-60
+          glass-panel border-b border-border-secondary
+          flex items-center justify-between px-4 md:px-6
+        "
+      >
+        {/* Left: mobile menu + breadcrumb */}
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-7 h-7 rounded-lg bg-[#F0F0F0] flex items-center justify-center shrink-0">
-            <Icon size={15} className="text-[#555]" />
+          {/* hamburger — mobile only */}
+          <button
+            onClick={onMenuToggle}
+            className="md:hidden p-2 -ml-1 rounded-xl hover:bg-secondary transition-colors text-text-tertiary"
+            aria-label="Open menu"
+          >
+            <Menu size={20} />
+          </button>
+
+          <div className="w-7 h-7 rounded-xl bg-secondary border border-border-primary flex items-center justify-center shrink-0">
+            <Icon size={14} className="text-text-tertiary" />
           </div>
           <div className="min-w-0">
-            <span className="text-[13px] font-semibold text-[#1A1A1A] block truncate leading-tight">
+            <span className="text-[13px] font-bold text-text-primary block truncate leading-tight">
               {meta.label}
             </span>
-            <span className="text-[10px] text-[#999] hidden sm:block leading-tight">
+            <span className="text-[10px] text-text-tertiary hidden sm:block leading-tight font-mono">
               {meta.desc}
             </span>
           </div>
         </div>
 
-        {/* centre — search trigger */}
+        {/* Centre: search — desktop */}
         <button
-          onClick={() => setSearchOpen(true)}
-          className="hidden md:flex items-center gap-3 px-4 py-2 bg-[#F7F7F7] border border-[#EBEBEB] rounded-xl text-[12px] text-[#BBB] hover:border-[#CDCDCD] hover:bg-[#F0F0F0] transition-all w-56 lg:w-72"
+          onClick={() => setPaletteOpen(true)}
+          className="hidden md:flex items-center gap-3 px-4 py-2 bg-secondary/60 border border-border-secondary rounded-2xl text-[12px] text-text-disabled hover:border-border-primary hover:bg-secondary transition-all w-56 lg:w-72"
         >
           <Search size={14} className="shrink-0" />
           <span className="flex-1 text-left">Search or jump to…</span>
-          <kbd className="text-[10px] bg-[#E8E8E8] px-1.5 py-0.5 rounded font-mono">⌘K</kbd>
+          <kbd className="text-[9px] bg-tertiary px-1.5 py-0.5 rounded font-mono text-text-disabled">⌘K</kbd>
         </button>
 
-        {/* right actions */}
-        <div className="flex items-center gap-2">
-          {/* mobile search */}
+        {/* Right: actions */}
+        <div className="flex items-center gap-1.5">
+          {/* search icon — mobile */}
           <button
-            onClick={() => setSearchOpen(true)}
-            className="md:hidden p-2 rounded-xl hover:bg-[#F5F5F5] transition-colors text-[#666]"
+            onClick={() => setPaletteOpen(true)}
+            className="md:hidden p-2 rounded-xl hover:bg-secondary transition-colors text-text-tertiary"
           >
             <Search size={18} />
           </button>
 
-          {/* quick add */}
+          {/* New */}
           <button
             onClick={() => setPaletteOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1A1A1A] text-white rounded-xl text-[11px] font-semibold hover:bg-black transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-text-primary text-bg-primary rounded-xl text-[11px] font-bold hover:bg-accent-high transition-colors shadow-sm"
           >
             <Plus size={14} />
             <span className="hidden sm:block">New</span>
           </button>
 
           {/* notifications */}
-          <button className="relative p-2 rounded-xl hover:bg-[#F5F5F5] transition-colors text-[#666]">
-            <Bell size={18} />
+          <button className="relative p-2 rounded-xl hover:bg-secondary transition-colors text-text-tertiary">
+            <Bell size={17} />
             {notifications > 0 && (
-              <span className="absolute top-1 right-1 w-4 h-4 bg-blue-500 rounded-full text-[9px] font-bold text-white flex items-center justify-center">
+              <span className="absolute top-1 right-1 w-3.5 h-3.5 bg-accent rounded-full text-[8px] font-bold text-white flex items-center justify-center">
                 {notifications}
               </span>
             )}
           </button>
 
           {/* user */}
-          <button className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-xl hover:bg-[#F5F5F5] transition-colors">
+          <button className="flex items-center gap-2 pl-1.5 pr-1 py-1 rounded-xl hover:bg-secondary transition-colors">
             <img
               src="https://ui-avatars.com/api/?name=VS&size=64&background=E8E8E8&color=1A1A1A&bold=true"
-              alt="User"
-              className="w-7 h-7 rounded-full"
+              alt="User avatar"
+              className="w-7 h-7 rounded-full border border-border-primary"
             />
           </button>
         </div>
       </header>
 
-      {/* ── Search / Command palette ──────────────────────────────── */}
+      {/* ── Command palette ────────────────────────────────────── */}
       <AnimatePresence>
-        {(searchOpen || paletteOpen) && (
+        {paletteOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[80] flex items-start justify-center pt-[15vh] px-4"
-            onClick={() => { setSearchOpen(false); setPaletteOpen(false); setQuery(''); }}
+            className="fixed inset-0 z-[80] flex items-start justify-center pt-[12vh] px-4"
+            onClick={close}
           >
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+            <div className="absolute inset-0 bg-text-primary/20 backdrop-blur-sm" />
             <motion.div
-              initial={{ scale: 0.96, y: -8 }}
+              initial={{ scale: 0.96, y: -10 }}
               animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.96, y: -8 }}
-              className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden border border-[#EBEBEB]"
-              onClick={(e) => e.stopPropagation()}
+              exit={{ scale: 0.96, y: -10 }}
+              className="relative w-full max-w-lg glass-panel rounded-[2rem] shadow-3xl overflow-hidden border border-border-secondary"
+              onClick={e => e.stopPropagation()}
             >
-              {/* search input */}
-              <div className="flex items-center gap-3 px-5 py-4 border-b border-[#F5F5F5]">
-                <Search size={18} className="text-[#999] shrink-0" />
+              {/* Input */}
+              <div className="flex items-center gap-3 px-5 py-4 border-b border-border-secondary">
+                <Search size={17} className="text-text-tertiary shrink-0" />
                 <input
                   autoFocus
                   value={query}
-                  onChange={(e) => setQuery(e.target.value)}
+                  onChange={e => setQuery(e.target.value)}
                   placeholder="Search sections, actions, memory…"
-                  className="flex-1 text-[14px] text-[#1A1A1A] placeholder:text-[#CCC] focus:outline-none"
+                  className="flex-1 text-sm text-text-primary placeholder:text-text-disabled bg-transparent focus:outline-none"
                 />
                 {query && (
-                  <button onClick={() => setQuery('')} className="text-[#CCC] hover:text-[#999]">
-                    <X size={16} />
+                  <button onClick={() => setQuery('')} className="text-text-disabled hover:text-text-tertiary">
+                    <X size={15} />
                   </button>
                 )}
               </div>
 
-              {/* actions list */}
-              <div className="py-2 max-h-80 overflow-y-auto">
-                {/* navigate sections */}
+              {/* Results */}
+              <div className="py-2 max-h-[55vh] overflow-y-auto custom-scrollbar">
                 {!query && (
-                  <div className="px-4 pb-1">
-                    <p className="text-[10px] font-semibold text-[#BBB] uppercase tracking-widest mb-1.5 px-1">Navigate</p>
-                    {(Object.entries(SECTION_META) as [Section, typeof SECTION_META[Section]][]).map(([id, m]) => {
-                      const SIcon = m.icon;
-                      return (
-                        <button
-                          key={id}
-                          onClick={() => { onChange(id); setSearchOpen(false); setPaletteOpen(false); setQuery(''); }}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#F7F7F7] transition-colors text-left"
-                        >
-                          <div className="w-7 h-7 rounded-lg bg-[#F0F0F0] flex items-center justify-center shrink-0">
-                            <SIcon size={14} className="text-[#666]" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-[13px] font-medium text-[#1A1A1A]">{m.label}</p>
-                            <p className="text-[11px] text-[#999]">{m.desc}</p>
-                          </div>
-                          <ChevronRight size={14} className="text-[#CCC]" />
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <p className="text-[10px] font-black text-text-disabled uppercase tracking-[0.3em] px-5 py-2">
+                    Navigate & Actions
+                  </p>
                 )}
-
-                {/* quick actions */}
-                <div className="px-4 pt-2 pb-2">
-                  {!query && <p className="text-[10px] font-semibold text-[#BBB] uppercase tracking-widest mb-1.5 px-1">Quick Actions</p>}
-                  {filtered.map((a) => (
-                    <button
-                      key={a.action}
-                      onClick={() => handleAction(a.action)}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#F7F7F7] transition-colors text-left"
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-[#F0F0F0] flex items-center justify-center shrink-0">
-                        <a.icon size={14} className="text-[#666]" />
-                      </div>
-                      <span className="flex-1 text-[13px] font-medium text-[#1A1A1A]">{a.label}</span>
-                      <kbd className="text-[10px] bg-[#F0F0F0] px-1.5 py-0.5 rounded font-mono text-[#888]">{a.hint}</kbd>
-                    </button>
-                  ))}
-                  {query && filtered.length === 0 && (
-                    <p className="text-[13px] text-[#BBB] text-center py-6">No results for "{query}"</p>
-                  )}
-                </div>
+                {filtered.length === 0 ? (
+                  <p className="text-sm text-text-tertiary text-center py-8">No results for "{query}"</p>
+                ) : (
+                  filtered.map((item, i) => {
+                    const ItemIcon = item.icon;
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => handleItem(item)}
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary transition-colors text-left"
+                      >
+                        <div className="w-8 h-8 rounded-xl bg-secondary border border-border-primary flex items-center justify-center shrink-0">
+                          <ItemIcon size={15} className="text-text-tertiary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-text-primary truncate">{item.label}</p>
+                          {'desc' in item && (
+                            <p className="text-[11px] text-text-tertiary truncate">{item.desc}</p>
+                          )}
+                        </div>
+                        {'hint' in item && (
+                          <kbd className="text-[9px] bg-secondary px-1.5 py-0.5 rounded font-mono text-text-disabled shrink-0">
+                            {item.hint}
+                          </kbd>
+                        )}
+                        <ChevronRight size={13} className="text-text-disabled shrink-0" />
+                      </button>
+                    );
+                  })
+                )}
               </div>
 
-              <div className="px-5 py-2.5 border-t border-[#F5F5F5] flex items-center gap-4 text-[10px] text-[#CCC]">
+              <div className="px-5 py-2.5 border-t border-border-secondary flex items-center gap-4 text-[10px] text-text-disabled font-mono">
                 <span>↑↓ navigate</span>
                 <span>⏎ select</span>
                 <span>esc close</span>
