@@ -25,17 +25,17 @@ export function runCritic(output: any, context: any): CriticReport {
     ...(context.signals  || []).map((s: any) => s.type?.toLowerCase()),
   ].filter(Boolean);
 
-  // 1. Grounding check
+  // 1. Grounding check — recommendations must reference real context terms
   const ungrounded = (output.recommendations || []).filter((rec: string) => {
     const lower = rec.toLowerCase();
-    return contextTerms.length > 0 && !contextTerms.some(t => lower.includes(t));
+    return contextTerms.length > 0 && !contextTerms.some((t: string) => lower.includes(t));
   });
   if (ungrounded.length > 2) {
     issues.push(`${ungrounded.length} recommendations not grounded in context`);
     penalty += 0.2;
   }
 
-  // 2. Generic advice
+  // 2. Generic advice patterns
   const generic = (output.recommendations || []).filter((rec: string) =>
     GENERIC_PHRASES.some(g => rec.toLowerCase().includes(g))
   );
@@ -44,7 +44,7 @@ export function runCritic(output: any, context: any): CriticReport {
     penalty += 0.15;
   }
 
-  // 3. Overconfidence with thin data
+  // 3. Overconfidence with thin signal data
   if (output.confidence > 0.8 && (context.signals || []).length < 3) {
     issues.push('Overconfident given thin signal data');
     penalty += 0.1;

@@ -4,12 +4,13 @@
  * Pipeline: Context → Prompt → LLM → Sanitize → Dedup → Critic → Log → Return
  */
 import { buildContext } from "./contextBuilder";
-import { buildPrompt } from "./prompt";
+import { buildPrompt } from "./prompt/builder";
 import { runLLM } from "./llm";
 import { sanitize } from "./sanitize";
 import { dedup } from "./dedup";
 import { logDecisionNeon } from "./logging/neon";
 import { runCritic } from "./output/critic";
+import { getModeInstruction } from "./mode/mode";
 import langfuse from "../observability/langfuse";
 
 export async function processDecision(params: {
@@ -29,44 +30,44 @@ export async function processDecision(params: {
     // 1. Build context from L1-L2.5
     const context = await buildContext(userId);
 
-    trace.event({ name: "context_assembled", input: {
-      entities: context.entities.length,
-      signals:  context.signals.length
-    }});
+    trace.event({
+      name: "context_assembled",
+      input: { entities: context.entities.length, signals: context.signals.length }
+    });
 
+    // Guard: insufficient data
     if (context.entities.length === 0 && context.signals.length === 0) {
       return {
         status: "insufficient_data",
-        message: "Not enough memory data. Ingest more packets first."
+        message: "Not enough memory data to generate a decision. Ingest more packets first."
       };
     }
 
-    // 2. Build mode instruction
-    const modeInstructions: Record<string, string> = {
-      architect: "Focus on systems, dependencies, structure, and long-term technical decisions.",
-      founder:   "Focus on business outcomes, market fit, resource allocation, and venture leverage.",
-      operator:  "Focus on execution, immediate next actions, blockers, and daily momentum."
-    };
-
-    // 3. Build prompt
+    // 2. Build prompt with mode instruction + history
     const prompt = buildPrompt({
       context,
       history: context.recent_decisions,
       mode,
       external_input: external_input ?? undefined,
-      modeInstruction: modeInstructions[mode] || modeInstructions.architect
+      modeInstruction: getModeInstruction(mode)
     });
 
-    // 4. LLM call
-    const generation = trace.generation({ name: "reasoning_pass", model: "gpt-4o-mini", input: prompt });
+    // 3. LLM call
+    const generation = trace.generation({
+      name: "reasoning_pass",
+      model: "gpt-4o-mini",
+      input: prompt
+    });
     const rawOutput = await runLLM(prompt);
     generation.end({ output: rawOutput });
 
-    // 5. Sanitize + Dedup
+    // 4. Sanitize
     const sanitized = sanitize(rawOutput);
-    const deduped   = dedup(sanitized, context.recent_decisions);
 
-    // 6. Critic (Phase 2 gate)
+    // 5. Dedup against recent decisions
+    const deduped = dedup(sanitized, context.recent_decisions);
+
+    // 6. Critic gate (Phase 2)
     const criticReport = runCritic(deduped, context);
     if (!criticReport.approved) {
       deduped.confidence = Math.max(0.1, deduped.confidence - criticReport.confidence_penalty);
@@ -76,11 +77,11 @@ export async function processDecision(params: {
     if (deduped.recommendations.length === 0) {
       return {
         status: "insufficient_data",
-        message: "Suggestions were redundant or context was too thin."
+        message: "Suggestions were redundant or context was too thin to generate new recommendations."
       };
     }
 
-    // 7. Log to Postgres
+    // 7. Log to Postgres (Neon)
     const logId = await logDecisionNeon({ userId, mode, context, output: deduped });
     trace.update({ output: deduped });
 
