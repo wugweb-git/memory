@@ -171,7 +171,6 @@ cron.schedule('*/2 * * * *', async () => {
 
   for (const packet of l25Targets) {
     try {
-      // Logic inside processSemantic handles its own locking
       const result = await SemanticEngine.processSemantic(packet.id, { testRunId: 'PROD' });
       
       await prisma.memoryPacket.update({
@@ -200,14 +199,14 @@ cron.schedule('*/2 * * * *', async () => {
   }
 });
 
-// 3. Periodic Intelligence & Pattern Maintenance
+// 3. Periodic Intelligence & Pattern Maintenance (daily at midnight)
 cron.schedule('0 0 * * *', async () => {
   console.log('[Scheduler] Running deep analysis cycle...');
   try {
     await IntelligenceEngine.scoringEngine();
     await IntelligenceEngine.detectPatterns();
     
-    // Cleanup orphans
+    // Cleanup orphan embeddings
     const allEmbeddings = await prisma.embedding.findMany({ select: { packet_id: true } });
     const uniqueIds = Array.from(new Set(allEmbeddings.map(e => e.packet_id)));
     for (const pid of uniqueIds) {
@@ -219,4 +218,63 @@ cron.schedule('0 0 * * *', async () => {
   }
 });
 
-console.log('[Scheduler] Brutal Governance Tier initialized (L1, L2, L2.5 adaptive).');
+// ─── L3 Cognitive Engine — Scheduled Invocations ─────────────────────────────
+// Spec: L3.8 Invocation System — scheduled mode (Phase 3 of the L3 build plan)
+// Runs AFTER L1/L2/L2.5 are stable so they always operate on fresh context.
+
+// 4. Weekly Direction Reset — architect mode (every Monday at 8:00 AM UTC)
+//    Gives every active user a "what to focus on this week" strategic decision.
+cron.schedule('0 8 * * 1', async () => {
+  console.log('[Scheduler/L3] Running weekly cognitive direction reset (architect mode)...');
+  try {
+    const { processDecision } = await import('../cognitive');
+    const { postgres } = await import('../db/postgres');
+
+    // All users who have ever made a decision — they have context worth reasoning on
+    const users = await postgres.decisionLog.findMany({
+      distinct: ['userId'],
+      select: { userId: true }
+    });
+
+    for (const { userId } of users) {
+      try {
+        await processDecision({ userId, mode: 'architect', external_input: null });
+        console.log(`[Scheduler/L3] Weekly direction generated for user ${userId}`);
+      } catch (err) {
+        // Per-user failure must not stop the batch
+        console.error(`[Scheduler/L3] Weekly failed for user ${userId}:`, err);
+      }
+    }
+  } catch (err) {
+    console.error('[Scheduler/L3] Weekly cognitive run failed entirely:', err);
+  }
+});
+
+// 5. Daily Momentum Check — operator mode (every day at 9:00 AM UTC)
+//    Lightweight daily summary. Only runs for users active in the last 7 days.
+cron.schedule('0 9 * * *', async () => {
+  console.log('[Scheduler/L3] Running daily cognitive summary (operator mode)...');
+  try {
+    const { processDecision } = await import('../cognitive');
+    const { postgres } = await import('../db/postgres');
+
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const activeUsers = await postgres.decisionLog.findMany({
+      distinct: ['userId'],
+      where: { createdAt: { gte: sevenDaysAgo } },
+      select: { userId: true }
+    });
+
+    for (const { userId } of activeUsers) {
+      try {
+        await processDecision({ userId, mode: 'operator', external_input: null });
+      } catch (err) {
+        console.error(`[Scheduler/L3] Daily failed for user ${userId}:`, err);
+      }
+    }
+  } catch (err) {
+    console.error('[Scheduler/L3] Daily cognitive run failed entirely:', err);
+  }
+});
+
+console.log('[Scheduler] Brutal Governance Tier initialized (L1, L2, L2.5 adaptive, L3 cognitive weekly + daily).');

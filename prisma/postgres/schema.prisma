@@ -37,6 +37,20 @@ model FeedbackLog {
   @@map("feedback_logs")
 }
 
+// L3 Opportunity Engine — stores every /cognitive/evaluate run
+model OpportunityEvaluation {
+  id             String   @id @default(uuid())
+  userId         String
+  inputText      String   // the JD, brief, or idea text submitted
+  evaluationJson Json     // full output: fit_score, verdict, why_yes, why_no, action_items
+  fitScore       Float    @default(0.0)
+  mode           String   @default("architect")
+  createdAt      DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("opportunity_evaluations")
+}
+
 model BehaviorModel {
   id          String   @id @default(uuid())
   userId      String
@@ -98,12 +112,12 @@ model StylePattern {
 }
 
 model PersonaProfile {
-  id                 String   @id @default(uuid())
-  userId             String
-  publicTraits       String[]
+  id                  String   @id @default(uuid())
+  userId              String
+  publicTraits        String[]
   positioningKeywords String[]
-  bioSummary         String
-  updatedAt          DateTime @updatedAt
+  bioSummary          String
+  updatedAt           DateTime @updatedAt
 
   @@unique([userId])
   @@map("persona_profiles")
@@ -115,7 +129,7 @@ model OutputLog {
   decisionId      String?  // Link to L3 decision
   platform        String   // linkedin | blog | memo | other
   content         String
-  status          String   @default("draft") // draft | pushed 
+  status          String   @default("draft") // draft | pushed
   personaSnapshot Json?    // Snapshot of L4 traits used for this generation
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
