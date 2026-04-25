@@ -2,16 +2,27 @@ import { mongo } from "../db/mongo";
 import { postgres } from "../db/postgres";
 
 /**
- * Builds the bounded context for the Cognitive Engine.
- * Pulls from L1-L2.5 (Mongo) and previous decisions (Postgres).
- * Rule: Only include verified, high-confidence data.
+ * Context Builder (L3.0)
+ * ----------------------
+ * Assembles bounded, clean context from all lower layers for the Cognitive Engine.
+ * Reads from: L1 (mongo memory), L2 (mongo signals), L2.5 (mongo entities/relationships), L4 (postgres intelligence).
+ * Writes to: nothing. Strictly read-only.
+ *
+ * Rules:
+ *   - Only verified entities (never unverified)
+ *   - Scoped to PROD test_run_id to prevent test data leaking into decisions
+ *   - Max 20 entities, 30 relationships, 20 signals
+ *   - Last 3 decisions for deduplication
+ *   - Falls back to mock data if DB is unavailable (local dev / CI)
  */
 export async function buildContext(userId: string) {
   try {
-    const [entities, relationships, signals, recentDecisions] = await Promise.all([
-      // 1. Fetch Verified Entities (L2.5)
+    // All 5 queries run in parallel — never sequential
+    const [entities, relationships, signals, recentDecisions, intelligence] = await Promise.all([
+
+      // 1. Verified entities from L2.5 semantic graph
       mongo.entity.findMany({
-        where: { 
+        where: {
           verified: true,
           processing_state: "complete",
           test_run_id: "PROD"
@@ -28,9 +39,9 @@ export async function buildContext(userId: string) {
         }
       }),
 
-      // 2. Fetch Relationships (L2.5)
+      // 2. Verified relationships from L2.5
       mongo.relationship.findMany({
-        where: { 
+        where: {
           verified: true,
           test_run_id: "PROD"
         },
@@ -44,7 +55,7 @@ export async function buildContext(userId: string) {
         }
       }),
 
-      // 3. Fetch Recent Signals (L2) — scoped to PROD to avoid test data leaking into decisions
+      // 3. Recent signals from L2 — PROD only to prevent test data in decisions
       mongo.signal.findMany({
         where: { test_run_id: "PROD" },
         take: 20,
@@ -57,18 +68,18 @@ export async function buildContext(userId: string) {
         }
       }),
 
-      // 4. Fetch Recent Decisions (L3 History) for Deduplication
+      // 4. Last 3 L3 decisions for deduplication in dedup.ts
       postgres.decisionLog.findMany({
         where: { userId },
         take: 3,
         orderBy: { createdAt: "desc" },
-        select: {
-          outputJson: true
-        }
+        select: { outputJson: true }
       }),
-      
-      // 5. Fetch Persona Intelligence (L4)
-      import("../intelligence/resolver").then(m => m.PersonaResolver.resolve(userId))
+
+      // 5. L4 Persona Intelligence — traits, preferences, style weights
+      import("../intelligence/resolver")
+        .then(m => m.PersonaResolver.resolve(userId))
+        .catch(() => ({ traits: [], preferences: [], persona: {} })) // graceful fallback if L4 not ready
     ]);
 
     return {
@@ -78,17 +89,22 @@ export async function buildContext(userId: string) {
       recent_decisions: recentDecisions.map(d => d.outputJson),
       intelligence
     };
+
   } catch (err) {
     console.warn("[Cognitive/ContextBuilder] Database unavailable, using diagnostic fallback.");
-    // Fallback Mock Data for local development / CI
+
+    // Fallback mock data for local development and CI — never used in production
     return {
       entities: [
-        { name: "Identity Prism", type: "system", confidence: 1.0 },
-        { name: "Neural OS", type: "architecture", confidence: 0.95 }
+        { name: "Identity Prism", type: "system",       confidence: 1.0,  occurrences: 12 },
+        { name: "Neural OS",      type: "architecture", confidence: 0.95, occurrences: 8  }
       ],
       relationships: [],
-      signals: [{ type: "system_heartbeat", intensity: 1.0, metadata: { status: "fallback" } }],
-      recent_decisions: []
+      signals: [
+        { type: "system_heartbeat", category: "technical", intensity_absolute: 1.0, metadata: { status: "fallback" } }
+      ],
+      recent_decisions: [],
+      intelligence: { traits: [], preferences: [], persona: {} }
     };
   }
 }

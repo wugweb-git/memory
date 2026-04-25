@@ -1,41 +1,220 @@
 # Layer 3: Cognitive Engine
 
-The Cognitive Engine is the centralized reasoning core of the Identity Prism OS. It transforms raw signals (L2) and semantic models (L2.5) into actionable strategic decisions (L3), tuned by persistent persona intelligence (L4).
+The Cognitive Engine is the reasoning and decision core of Identity Prism OS. It converts memory (L1), signals (L2), and semantic meaning (L2.5) into structured decisions, grounded in the user's persona intelligence (L4). It reads from all lower layers. It never mutates them.
 
-## 1. Orchestration Pipeline
+## Core Principle
 
-The engine follows a strict deterministic pipeline defined in `src/lib/cognitive/orchestrator.ts`:
-
-1.  **Stimulus Input**: Accepts an optional `external_input` (snake_case) alongside the selected operating mode.
-2.  **Context Assembly**:
-    *   Fetches verified entities and relationships from MongoDB.
-    *   Fetches high-intensity signals from the L2 buffer.
-    *   Aggregates L4 Persona Intelligence (Traits, Styles, Weights) from Postgres.
-3.  **Prompt Engineering**: Constructs a structured prompt grounding the LLM in factual context while enforcing the user's specific persona voice ("no fluff, punchy").
-4.  **Reasoning Pass**: Executes via `gpt-4o-mini` with strict JSON output schemas.
-5.  **Post-Processing**:
-    *   **Sanitization**: Values are validated and formatted.
-    *   **Deduplication**: Recommendations are checked against recent L3 history to prevent repetitive advice.
-6.  **Persistence**: Logs the decision to Neon (Postgres) for the long-term registry.
-
-## 2. Operating Modes
-
-- **Architect**: Focuses on structural durability and systems thinking.
-- **Founder**: Focuses on leverage, capital efficiency, and market momentum.
-- **Operator**: Focuses on execution velocity and high-impact next steps.
-
-## 3. L4 Persona Integration
-
-The engine is not a generic assistant. It utilizes the `PersonaResolver` to fetch:
-- **Traits**: Quantitative behavioral markers (e.g., "Momentum", "Systematic").
-- **Style Weights**: Specific linguistic preferences (e.g., "Avoid generic openings").
-- **Positioning**: Key keywords that define the user's professional aperture.
-
-## 4. Automation Bridge
-
-Decisions can be "deployed" as artifacts (LinkedIn posts, Memos, etc.) via the `ArtifactGenerator`. These are then pushed to the n8n automation layer through a standardized webhook bridge.
+Layer 3 = Logic Synthesizer + Decision Engine + Direction System.
+Not a chatbot. Not a summariser. A decision proxy.
 
 ---
 
-> [!NOTE]
-> All cognitive logs are stored in the `decision_logs` table in Postgres, enabling retro-active performance audits and L4 model evolution.
+## Pipeline
+
+Defined in `src/lib/cognitive/orchestrator.ts`:
+
+```
+Context Builder (L3.0)
+  ↓
+Prompt Builder
+  ↓
+LLM Reasoning Pass (gpt-4o-mini via LangChain)
+  ↓
+Sanitize (schema enforcement + output limits)
+  ↓
+Dedup (against last 3 decisions)
+  ↓
+Critic Gate (hallucination + generic advice + overconfidence checks)
+  ↓
+Log to Neon (decision_logs)
+  ↓
+Return to UI
+```
+
+---
+
+## Context Builder (L3.0)
+
+File: `src/lib/cognitive/contextBuilder.ts`
+
+Pulls from all lower layers in a single parallel `Promise.all`:
+
+| Source | Data | Layer |
+|---|---|---|
+| `mongo.entity` | Verified entities, occurrences, confidence | L2.5 |
+| `mongo.relationship` | Verified entity relationships | L2.5 |
+| `mongo.signal` | Recent signals, intensity, category | L2 |
+| `postgres.decisionLog` | Last 3 decisions for dedup | L3 history |
+| `PersonaResolver.resolve()` | Traits, preferences, style weights | L4 |
+
+Rules: PROD-scoped only. Verified entities only. Graceful fallback if DB unavailable.
+
+---
+
+## Operating Modes
+
+| Mode | Focus |
+|---|---|
+| `architect` | Systems, structure, long-term technical decisions |
+| `founder` | Business outcomes, market fit, resource allocation |
+| `operator` | Execution, immediate actions, blockers, daily momentum |
+
+Mode is injected into the prompt via `src/lib/cognitive/mode/mode.ts`.
+
+---
+
+## API Endpoints
+
+All endpoints are `force-dynamic`, strictly read-only on L1/L2/L2.5.
+
+| Method | Path | Purpose | Input |
+|---|---|---|---|
+| POST | `/api/cognitive/decide` | Get direction (Flow 1) | `{ user_id, mode, external_input? }` |
+| POST | `/api/cognitive/evaluate` | Evaluate JD/brief/idea (Flow 2) | `{ user_id, input_text, mode }` |
+| POST | `/api/cognitive/gaps` | Gap analysis — deterministic (Flow 3) | `{ user_id }` |
+| POST | `/api/cognitive/prioritize` | Rank items by signal alignment | `{ user_id, items: string[], mode }` |
+| POST | `/api/cognitive/feedback` | Capture user feedback → L4 evolution | `{ decisionId, userId, feedbackType }` |
+| GET  | `/api/cognitive/history` | Fetch decision registry with feedback | `?userId=&limit=` |
+
+---
+
+## Output Contracts
+
+### `/decide`
+```json
+{
+  "decision_id": "uuid",
+  "recommendations": ["max 5, grounded in context"],
+  "priorities": ["High: ...", "Medium: ...", "Low: ..."],
+  "gaps": ["missing signal or entity"],
+  "opportunities": ["cross-domain leverage"],
+  "confidence": 0.0-1.0,
+  "reasoning": "one sentence"
+}
+```
+
+### `/evaluate`
+```json
+{
+  "fit_score": 0.0-1.0,
+  "verdict": "Strong Fit | Moderate Fit | Poor Fit",
+  "why_yes": ["specific entity/signal overlap"],
+  "why_no": ["specific gap"],
+  "action_items": ["max 3 concrete steps"],
+  "confidence": 0.0-1.0,
+  "reasoning": "one sentence"
+}
+```
+
+### `/gaps` (deterministic — no LLM)
+```json
+{
+  "coverage_score": 0.0-1.0,
+  "missing_domains": ["technical", "leadership", ...],
+  "weak_entities": [{ "name": "...", "type": "...", "occurrences": 1 }],
+  "missing_entity_types": ["person", "company", ...],
+  "weak_signals": [{ "type": "...", "category": "...", "intensity": 0.1 }],
+  "summary": "human-readable summary"
+}
+```
+
+### `/prioritize`
+```json
+{
+  "ranked": [
+    { "item": "...", "rank": 1, "reason": "...", "signal_match": "entity/signal name" }
+  ],
+  "confidence": 0.0-1.0,
+  "reasoning": "one sentence"
+}
+```
+
+---
+
+## Critic Gate (L3.6 — Phase 2)
+
+File: `src/lib/cognitive/output/critic.ts`
+
+Checks run in code before any output is returned:
+
+| Check | Penalty | Blocks if |
+|---|---|---|
+| Ungrounded recommendations (>2 not tied to context) | −0.20 | issues ≥ 3 or confidence < 0.35 |
+| Generic advice detected | −0.15 | same |
+| Overconfident with thin signal data | −0.10 | same |
+
+If critic does not approve, confidence is penalised and issues are prepended to `reasoning`. Output is still returned but clearly flagged.
+
+---
+
+## Deduplication
+
+File: `src/lib/cognitive/dedup.ts`
+
+Normalises all recommendations to lowercase and filters out any that exactly match a recommendation from the last 3 decision logs. Prevents the engine from giving the same advice twice.
+
+---
+
+## Sanitization
+
+File: `src/lib/cognitive/sanitize.ts`
+
+- Strips markdown fences from LLM output
+- Enforces schema: all fields are arrays, confidence is `0–1`, max 5 items per list
+- Throws `SCHEMA_VIOLATION` if JSON is unparseable
+
+---
+
+## Database Schema (Postgres / Neon)
+
+Tables written to by L3:
+
+| Table | Purpose |
+|---|---|
+| `decision_logs` | Every `/decide`, `/evaluate`, `/prioritize` run |
+| `feedback_logs` | User accept/ignore/reject actions |
+| `opportunity_evaluations` | Every `/evaluate` run (separate record) |
+
+L3 never writes to: `memory_packets`, `entities`, `relationships`, `signals`, `patterns`, `topics`.
+
+---
+
+## Scheduled Invocations (L3.8)
+
+Defined in `src/lib/memory/scheduler.ts`:
+
+| Job | Schedule | Mode | Scope |
+|---|---|---|---|
+| Weekly direction reset | Monday 08:00 UTC | `architect` | All users with decision history |
+| Daily momentum check | Daily 09:00 UTC | `operator` | Users active in last 7 days |
+
+---
+
+## L4 Integration
+
+Every decision run includes the user's persona intelligence (traits, preferences, style weights) via `PersonaResolver.resolve()`. This shapes prompt tone and recommendation framing without being exposed in the output JSON.
+
+Feedback submitted to `/api/cognitive/feedback` triggers `EvolutionEngine.evolve()` asynchronously via `waitUntil`, updating L4 models without blocking the response.
+
+---
+
+## Guardrails (Enforced in Code)
+
+- L3 never writes to L1, L2, or L2.5
+- All outputs are scoped to PROD — no test data in decisions
+- Max 5 recommendations per run
+- No generic advice (`be consistent`, `stay focused`, etc.) — detected and penalised by critic
+- No unverified entities in context
+- Confidence < 0.35 flags output as suspect
+- Memory safety: `buildContext` is read-only in every code path
+
+---
+
+## Phase Status
+
+| Phase | Status | Scope |
+|---|---|---|
+| Phase 1 — Core | ✅ Complete | Context builder, single LLM, sanitize, dedup, logging, `/decide` |
+| Phase 2 — Harden | ✅ Complete | Critic gate, confidence penalty, langfuse tracing, feedback API |
+| Phase 3 — Expand | ✅ Complete | `/evaluate`, `/gaps`, `/prioritize`, `opportunity_evaluations` table, scheduled crons |
+| Phase 4 — Scale | 🕒 Pending | Multi-agent split, n8n orchestration, event-triggered decisions |
