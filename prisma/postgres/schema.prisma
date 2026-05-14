@@ -227,6 +227,110 @@ model AdaptiveUxProfile {
   @@map("adaptive_ux_profiles")
 }
 
+model PublishingQueue {
+  id          String   @id @default(uuid())
+  userId      String
+  outputId    String
+  platform    String
+  status      String   @default("pending")
+  scheduledAt DateTime?
+  publishedAt DateTime?
+  retryCount  Int      @default(0)
+  lastError   String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId, status])
+  @@map("publishing_queue")
+}
+
+model PublishedOutput {
+  id               String   @id @default(uuid())
+  userId           String
+  outputId         String
+  platform         String?
+  externalId       String?
+  externalUrl      String?
+  publishedContent Json?
+  analytics        Json?
+  createdAt        DateTime @default(now())
+
+  @@index([userId, platform])
+  @@map("published_outputs")
+}
+
+model WorkflowLog {
+  id           String   @id @default(uuid())
+  workflowName String?
+  status       String?
+  payload      Json?
+  error        String?
+  createdAt    DateTime @default(now())
+
+  @@index([workflowName, createdAt])
+  @@map("workflow_logs")
+}
+
+model ExternalFeedback {
+  id             String   @id @default(uuid())
+  userId         String
+  platform       String?
+  externalPostId String?
+  feedbackType   String?
+  payload        Json?
+  createdAt      DateTime @default(now())
+
+  @@index([userId, platform])
+  @@map("external_feedback")
+}
+
+model AutomationRule {
+  id          String   @id @default(uuid())
+  userId      String
+  triggerType String?
+  conditions  Json?
+  action      Json?
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@index([userId, enabled])
+  @@map("automation_rules")
+}
+
+model SchedulerState {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     Json?
+  updatedAt DateTime @updatedAt
+
+  @@map("scheduler_state")
+}
+
+model RetryQueue {
+  id          String   @id @default(uuid())
+  queueType   String
+  refId       String
+  status      String   @default("pending")
+  retryCount  Int      @default(0)
+  nextRetryAt DateTime?
+  lastError   String?
+  createdAt   DateTime @default(now())
+
+  @@index([queueType, status])
+  @@map("retry_queue")
+}
+
+model ExecutionAuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  eventType String
+  payload   Json?
+  status    String?
+  createdAt DateTime @default(now())
+
+  @@index([eventType, createdAt])
+  @@map("execution_audit_logs")
+}
+
 model OutputLog {
   id              String   @id @default(uuid())
   userId          String
