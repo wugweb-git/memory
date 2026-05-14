@@ -1,6 +1,8 @@
 import { runTextLLM } from "../cognitive/llm";
 import { resolvePersona } from "./persona";
 import { postgres } from "../db/postgres";
+import { enforcePersonaStyle } from "@/lib/persona/style";
+import { persistFingerprint } from "@/lib/persona/fingerprint";
 
 export type OutputPlatform = "linkedin" | "blog" | "memo" | "other";
 
@@ -54,7 +56,14 @@ export async function generateArtifact(params: {
   `;
 
   // 3. Execute LLM (text mode — prose output, not JSON)
-  const content = await runTextLLM(prompt);
+  const rawContent = await runTextLLM(prompt);
+  const styled = enforcePersonaStyle({
+    content: rawContent,
+    confidence: 0.75,
+    style: { verbosity: platform === "memo" ? "short" : "medium", structure: platform === "memo" ? "bulleted" : "hybrid" },
+  });
+  const content = styled.content;
+  const fingerprint = await persistFingerprint({ userId, text: content, sourceType: "output", sourceId: decisionId });
 
   // 4. Store in Postgres (Neon)
   const log = await postgres.outputLog.create({
@@ -64,7 +73,7 @@ export async function generateArtifact(params: {
       platform,
       content: content,
       status: "draft",
-      personaSnapshot: { timestamp: new Date(), source: "L4_active" } as any
+      personaSnapshot: { timestamp: new Date(), source: "L4_active", fingerprint } as any
     }
   });
 

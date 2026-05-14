@@ -5,10 +5,10 @@ import { postgres } from "../db/postgres";
  * Combines traits, positioning, and style patterns into a prompt fragment.
  */
 export async function resolvePersona(userId: string) {
-  const [profile, styles, traits] = await Promise.all([
-    postgres.personaProfile.findUnique({ where: { userId } }),
-    postgres.stylePattern.findMany({ where: { userId }, take: 10 }),
-    postgres.traitScore.findMany({ where: { userId }, orderBy: { confidence: 'desc' }, take: 5 })
+  const [profile, patterns, traits] = await Promise.all([
+    (postgres as any).personaProfile.findUnique({ where: { userId } }),
+    (postgres as any).communicationPattern.findMany({ where: { userId }, take: 10 }),
+    (postgres as any).behavioralTrait.findMany({ where: { userId }, orderBy: { confidence: 'desc' }, take: 6 })
   ]);
 
   // Default "Digital Twin" base if no L4 data exists
@@ -18,7 +18,7 @@ export async function resolvePersona(userId: string) {
     banned_concepts: ["generic motivational quotes", "passive voice", "corporate buzzwords"]
   };
 
-  if (!profile && styles.length === 0 && traits.length === 0) {
+  if (!profile && patterns.length === 0 && traits.length === 0) {
     return `
       BASE PERSONALITY:
       Tone: ${basePersona.tone}
@@ -29,14 +29,16 @@ export async function resolvePersona(userId: string) {
 
   return `
     DIGITAL TWIN PROFILE:
-    Bio/Context: ${profile?.bioSummary || "N/A"}
-    Positioning: ${profile?.positioningKeywords?.join(", ") || "N/A"}
+    Display Name: ${profile?.displayName || "N/A"}
+    Communication Style: ${JSON.stringify(profile?.communicationStyle || {})}
+    Writing Style: ${JSON.stringify(profile?.writingStyle || {})}
+    Decision Style: ${JSON.stringify(profile?.decisionStyle || {})}
     
     WRITING STYLE PATTERNS:
-    ${styles.map(s => `- ${s.pattern}`).join("\n")}
+    ${patterns.map((s: any) => `- ${s.patternType}: ${JSON.stringify(s.patternValue || {})}`).join("\n")}
     
     CORE TRAITS:
-    ${traits.map(t => `- ${t.trait} (Confidence: ${t.confidence})`).join("\n")}
+    ${traits.map((t: any) => `- ${t.traitName}: ${t.traitValue} (Confidence: ${t.confidence})`).join("\n")}
     
     ENFORCEMENT RULES:
     1. Adopt the style patterns above as primary linguistic markers.

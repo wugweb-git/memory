@@ -112,15 +112,119 @@ model StylePattern {
 }
 
 model PersonaProfile {
-  id                  String   @id @default(uuid())
-  userId              String
-  publicTraits        String[]
-  positioningKeywords String[]
-  bioSummary          String
-  updatedAt           DateTime @updatedAt
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  displayName        String?
+  communicationStyle Json?
+  writingStyle       Json?
+  decisionStyle      Json?
+  confidenceScore    Float    @default(0.5)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  @@unique([userId])
   @@map("persona_profiles")
+}
+
+model BehavioralTrait {
+  id            String   @id @default(uuid())
+  userId        String
+  traitName     String
+  traitValue    Float    @default(0.5)
+  confidence    Float    @default(0.5)
+  evidenceCount Int      @default(0)
+  sourceLayer   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([userId, traitName])
+  @@index([userId])
+  @@map("behavioral_traits")
+}
+
+model CommunicationPattern {
+  id           String   @id @default(uuid())
+  userId       String
+  patternType  String?
+  patternValue Json?
+  confidence   Float    @default(0.5)
+  sampleCount  Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  @@index([userId, patternType])
+  @@map("communication_patterns")
+}
+
+model PreferenceMemory {
+  id         String   @id @default(uuid())
+  userId     String
+  category   String?
+  key        String?
+  value      Json?
+  confidence Float    @default(0.5)
+  source     String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, category, key])
+  @@map("preference_memory")
+}
+
+model OutputFingerprint {
+  id               String   @id @default(uuid())
+  userId           String
+  sourceType       String?
+  sourceId         String?
+  styleVector      Json?
+  aiProbability    Float    @default(0)
+  humanProbability Float    @default(1)
+  verifiedHuman    Boolean  @default(false)
+  createdAt        DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, sourceType, sourceId])
+  @@map("output_fingerprints")
+}
+
+model PersonaEvolutionLog {
+  id              String   @id @default(uuid())
+  userId          String
+  changedField    String?
+  oldValue        Json?
+  newValue        Json?
+  reason          String?
+  confidenceDelta Float?
+  createdAt       DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("persona_evolution_logs")
+}
+
+model FeedbackMemory {
+  id           String   @id @default(uuid())
+  userId       String
+  targetType   String?
+  targetId     String?
+  feedbackType String?
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, targetType, targetId])
+  @@map("feedback_memory")
+}
+
+model AdaptiveUxProfile {
+  id                       String   @id @default(uuid())
+  userId                   String   @unique
+  uiDensity                String   @default("minimal")
+  preferredMode            String?
+  preferredOutputLength    String?
+  preferredNavigationStyle String?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  @@map("adaptive_ux_profiles")
 }
 
 model OutputLog {
