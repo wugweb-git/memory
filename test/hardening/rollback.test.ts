@@ -1,5 +1,5 @@
-describe("rollback-test placeholder", () => {
-  it("defines rollback guarantees", () => {
-    expect(true).toBe(true);
-  });
-});
+export const rollbackTestPlan = {
+    contract: 
+      status: "pending-runner");
+};
+

@@ -1,10 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAdaptiveUiProfile } from "@/lib/persona/adaptive-ui";
+import { getAdaptiveUiProfile, updateAdaptiveUiProfile } from "@/lib/persona/adaptive-ui";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get("userId") || "system_user";
-  const profile = await getAdaptiveUiProfile(userId);
-  return NextResponse.json(profile);
+  try {
+    const userId = req.nextUrl.searchParams.get("userId") || "system_user";
+    const profile = await getAdaptiveUiProfile(userId);
+    return NextResponse.json(profile);
+  } catch (err) {
+    console.error("[L4] adaptive-ui GET error:", err);
+    return NextResponse.json({ error: "internal_error" }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const userId = req.nextUrl.searchParams.get("userId") || "system_user";
+    const body = (await req.json()) as Partial<{
+      uiDensity: string;
+      preferredMode: string;
+      preferredOutputLength: string;
+      preferredNavigationStyle: string;
+    }>;
+
+    const updated = await updateAdaptiveUiProfile(userId, body);
+    return NextResponse.json(updated);
+  } catch (err) {
+    console.error("[L4] adaptive-ui PATCH error:", err);
+    return NextResponse.json({ error: "internal_error" }, { status: 500 });
+  }
 }
