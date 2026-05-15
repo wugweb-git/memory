@@ -6,7 +6,7 @@ import {
   Brain, User, Search, RefreshCcw, Sparkles, Plus, ArrowUpRight,
   Activity, ShieldCheck, Database, Zap, Lock,
   Link2, Settings, Eye, Archive, Cpu, LayoutDashboard,
-  TrendingUp, GitBranch, Globe, ChevronRight, Loader2
+  TrendingUp, GitBranch, Globe, ChevronRight
 } from 'lucide-react';
 import { useChat } from 'ai/react';
 import { ToastContainer, toast } from 'react-toastify';
@@ -14,7 +14,6 @@ import 'react-toastify/dist/ReactToastify.css';
 
 import { Sidebar, Section }         from './component/Sidebar';
 import { TopNav }                   from './component/TopNav';
-import { MobileNav }                from './component/MobileNav';
 import { ProfileHeader }            from './component/ProfileHeader';
 import { IdentityPillars }          from './component/IdentityPillars';
 import { IndustryBento }            from './component/IndustryBento';
@@ -33,24 +32,7 @@ import { IntegrationMatrix }        from './component/IntegrationMatrix';
 import { EnhancementHub }           from './component/EnhancementHub';
 import CognitiveConsole             from './cognitive/page';
 
-/* ─── Design tokens used everywhere ───────────────────────────────
-   Matches globals.css + existing component styles exactly:
-   bg-bg-primary  (#F5F5F0)  — page background
-   bg-bg-elevated (#FFFFFF)  — pure white surface
-   bg-secondary   (#EDEDE8)  — warm stone chips
-   glass-panel    — white gradient + blur + subtle shadow
-   border-border-secondary  — rgba(0,0,0,0.04)
-   text-text-primary/secondary/tertiary/disabled
-   text-accent / text-success / text-warning / text-danger
-   ─────────────────────────────────────────────────────────────── */
-
-/* ── Shared layout shell ──────────────────────────────────────── */
-
-/**
- * Standard page wrapper.
- * Adds consistent max-width, horizontal padding, vertical rhythm.
- * All child sections MUST use this instead of raw divs.
- */
+/* ── PageShell ─────────────────────────────────────────────────── */
 const PageShell: React.FC<{
   title: string;
   subtitle?: string;
@@ -61,7 +43,6 @@ const PageShell: React.FC<{
   children: React.ReactNode;
 }> = ({ title, subtitle, icon: Icon, badge, readOnly, action, children }) => (
   <div className="w-full max-w-4xl mx-auto px-4 md:px-8 py-8 space-y-8">
-    {/* page header */}
     <header className="flex items-start justify-between gap-4">
       <div className="flex items-start gap-3 min-w-0">
         <div className="mt-0.5 w-9 h-9 rounded-2xl bg-secondary border border-border-secondary flex items-center justify-center shrink-0">
@@ -90,14 +71,12 @@ const PageShell: React.FC<{
   </div>
 );
 
-/** Small uppercase group label — matches existing component styles */
 const Label: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <h2 className="text-[10px] font-black text-text-tertiary uppercase tracking-[0.3em] mb-3 px-1">
     {children}
   </h2>
 );
 
-/** Glass stat card matching porcelain design */
 const StatCard: React.FC<{
   label: string; value: string; sub?: string;
   color?: string; icon: React.ReactNode;
@@ -114,10 +93,10 @@ const StatCard: React.FC<{
   </div>
 );
 
-/* ─── Dashboard ─────────────────────────────────────────────────── */
+/* ── Dashboard ────────────────────────────────────────────────── */
 const Overview: React.FC<{ onNav: (s: Section) => void }> = ({ onNav }) => {
   const QUICK: Array<{ id: Section; label: string; icon: any; desc: string }> = [
-    { id: 'twin',      label: 'Chat with Digital Twin',  icon: Brain,   desc: 'Ask anything grounded in your memory' },
+    { id: 'twin',      label: 'Chat with Digital Twin',  icon: Brain,    desc: 'Ask anything grounded in your memory' },
     { id: 'memory',    label: 'Memory Vault',            icon: Database, desc: '4 packets · Upload documents' },
     { id: 'buffer',    label: 'Buffer Queue',            icon: Archive,  desc: '3 items awaiting review' },
     { id: 'cognitive', label: 'Decision Engine',         icon: Cpu,      desc: 'Architect · Founder · Operator' },
@@ -141,25 +120,20 @@ const Overview: React.FC<{ onNav: (s: Section) => void }> = ({ onNav }) => {
 
   return (
     <PageShell title="Dashboard" subtitle="Identity Prism at a glance" icon={LayoutDashboard}>
-      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Memory Packets" value="4.2k" sub="Total indexed"         icon={<Database    size={18} className="text-accent" />} />
+        <StatCard label="Memory Packets" value="4.2k"  sub="Total indexed"        icon={<Database    size={18} className="text-accent"   />} />
         <StatCard label="Sync Status"    value="Active" sub="All layers nominal"  color="text-success" icon={<ShieldCheck size={18} className="text-success" />} />
-        <StatCard label="Buffer Queue"   value="3"     sub="Pending review"        icon={<Archive     size={18} className="text-warning" />} />
-        <StatCard label="Uplink"         value="98.4%" sub="Last 24h"             icon={<Zap         size={18} className="text-accent" />} />
+        <StatCard label="Buffer Queue"   value="3"     sub="Pending review"        icon={<Archive     size={18} className="text-warning"  />} />
+        <StatCard label="Uplink"         value="98.4%" sub="Last 24h"             icon={<Zap         size={18} className="text-accent"   />} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Quick access */}
         <div>
           <Label>Quick Access</Label>
           <div className="space-y-2">
             {QUICK.map(({ id, label, icon: Icon, desc }) => (
-              <button
-                key={id}
-                onClick={() => onNav(id)}
-                className="glass-panel w-full flex items-center gap-4 p-4 rounded-[1.5rem] border border-border-secondary hover:border-border-primary hover:shadow-2xl transition-all group text-left"
-              >
+              <button key={id} onClick={() => onNav(id)}
+                className="glass-panel w-full flex items-center gap-4 p-4 rounded-[1.5rem] border border-border-secondary hover:border-border-primary hover:shadow-2xl transition-all group text-left">
                 <div className="w-10 h-10 rounded-2xl bg-secondary border border-border-primary flex items-center justify-center shrink-0 group-hover:border-accent/30 transition-colors">
                   <Icon size={18} className="text-text-tertiary group-hover:text-accent transition-colors" />
                 </div>
@@ -173,7 +147,6 @@ const Overview: React.FC<{ onNav: (s: Section) => void }> = ({ onNav }) => {
           </div>
         </div>
 
-        {/* Recent activity */}
         <div>
           <Label>Recent Activity</Label>
           <div className="glass-panel rounded-[2rem] border border-border-secondary divide-y divide-border-secondary/60 overflow-hidden shadow-2xl">
@@ -188,7 +161,6 @@ const Overview: React.FC<{ onNav: (s: Section) => void }> = ({ onNav }) => {
         </div>
       </div>
 
-      {/* System layers */}
       <div>
         <Label>System Layers</Label>
         <div className="grid grid-cols-5 gap-3">
@@ -207,7 +179,7 @@ const Overview: React.FC<{ onNav: (s: Section) => void }> = ({ onNav }) => {
   );
 };
 
-/* ─── Profile ───────────────────────────────────────────────────── */
+/* ── Profile ──────────────────────────────────────────────────── */
 const ProfileSection: React.FC<{
   selectedIndustry: string | null;
   onSelectIndustry: (s: string | null) => void;
@@ -229,7 +201,7 @@ const ProfileSection: React.FC<{
   </PageShell>
 );
 
-/* ─── Digital Twin ──────────────────────────────────────────────── */
+/* ── Digital Twin ─────────────────────────────────────────────── */
 const DigitalTwinSection: React.FC = () => {
   const endRef = useRef<HTMLDivElement>(null);
   const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat({
@@ -272,7 +244,6 @@ const DigitalTwinSection: React.FC = () => {
         )}
       </header>
 
-      {/* chat window */}
       <div className="glass-panel rounded-[2rem] border border-border-secondary min-h-[380px] md:min-h-[440px] max-h-[520px] overflow-y-auto custom-scrollbar p-5 md:p-6 space-y-4 shadow-3xl">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center py-16 gap-4">
@@ -289,9 +260,7 @@ const DigitalTwinSection: React.FC = () => {
             {messages.map(m => (
               <div key={m.id} className={`flex gap-3 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border ${
-                  m.role === 'user'
-                    ? 'bg-text-primary text-bg-primary border-transparent'
-                    : 'bg-accent/10 text-accent border-accent/20'
+                  m.role === 'user' ? 'bg-text-primary text-bg-primary border-transparent' : 'bg-accent/10 text-accent border-accent/20'
                 }`}>
                   {m.role === 'user' ? <User size={14} /> : <Brain size={14} />}
                 </div>
@@ -314,9 +283,7 @@ const DigitalTwinSection: React.FC = () => {
                 </div>
                 <div className="bg-secondary border border-border-secondary rounded-2xl rounded-tl-sm px-4 py-3">
                   <div className="flex gap-1">
-                    {[0,1,2].map(i => (
-                      <div key={i} className="w-1.5 h-1.5 bg-text-tertiary rounded-full animate-bounce" style={{ animationDelay: `${i*150}ms` }} />
-                    ))}
+                    {[0,1,2].map(i => <div key={i} className="w-1.5 h-1.5 bg-text-tertiary rounded-full animate-bounce" style={{ animationDelay: `${i*150}ms` }} />)}
                   </div>
                 </div>
               </div>
@@ -326,16 +293,13 @@ const DigitalTwinSection: React.FC = () => {
         )}
       </div>
 
-      {/* inline input */}
       <form onSubmit={send} className="glass-panel rounded-[2rem] border border-border-secondary overflow-hidden shadow-2xl">
         <div className="flex items-start gap-3 px-4 py-3">
           <Search size={17} className="mt-1 text-text-disabled shrink-0" />
           <textarea
             value={input}
             onChange={handleInputChange}
-            onKeyDown={e => {
-              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!isLoading && input.trim()) send(e as any); }
-            }}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!isLoading && input.trim()) send(e as any); } }}
             placeholder="Pose a cognitive query to the Digital Twin…"
             rows={2}
             className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-disabled placeholder:italic focus:outline-none resize-none"
@@ -354,7 +318,7 @@ const DigitalTwinSection: React.FC = () => {
   );
 };
 
-/* ─── Public Showcase ───────────────────────────────────────────── */
+/* ── Public Showcase ──────────────────────────────────────────── */
 const ShowcaseSection: React.FC = () => (
   <div className="w-full max-w-5xl mx-auto px-4 md:px-8 py-8 space-y-8">
     <header className="flex items-start gap-3">
@@ -370,25 +334,21 @@ const ShowcaseSection: React.FC = () => (
   </div>
 );
 
-/* ─── Memory ────────────────────────────────────────────────────── */
+/* ── Memory ───────────────────────────────────────────────────── */
 const MemorySection: React.FC = () => (
-  <PageShell
-    title="Memory Vault"
-    subtitle="Indexed knowledge packets — upload, search and manage"
-    icon={Database}
-  >
+  <PageShell title="Memory Vault" subtitle="Indexed knowledge packets — upload, search and manage" icon={Database}>
     <MemoryVaultWithUpload />
   </PageShell>
 );
 
-/* ─── Buffer ────────────────────────────────────────────────────── */
+/* ── Buffer ───────────────────────────────────────────────────── */
 const BufferSection: React.FC = () => (
   <PageShell title="Buffer Queue" subtitle="L0 intake — review and promote raw signals" icon={Archive}>
     <BlobBuffer />
   </PageShell>
 );
 
-/* ─── Activity ──────────────────────────────────────────────────── */
+/* ── Activity ─────────────────────────────────────────────────── */
 const ActivitySection: React.FC = () => (
   <PageShell title="Activity" subtitle="Signals, voice ingestion and inspiration feed" icon={Activity}>
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -409,7 +369,7 @@ const ActivitySection: React.FC = () => (
   </PageShell>
 );
 
-/* ─── Cognitive ─────────────────────────────────────────────────── */
+/* ── Cognitive ────────────────────────────────────────────────── */
 const CognitiveSection: React.FC = () => (
   <div className="w-full max-w-5xl mx-auto px-4 md:px-8 py-8 space-y-6">
     <header className="flex items-start gap-3">
@@ -425,7 +385,7 @@ const CognitiveSection: React.FC = () => (
   </div>
 );
 
-/* ─── Persona ───────────────────────────────────────────────────── */
+/* ── Persona ──────────────────────────────────────────────────── */
 const PersonaSection: React.FC = () => {
   const TRAITS = [
     { name: 'Analytical Depth',    score: 0.91, desc: 'Reasons from first principles before acting.' },
@@ -435,7 +395,6 @@ const PersonaSection: React.FC = () => {
     { name: 'Communication Style', score: 0.70, desc: 'Structured, layered explanations with precision.' },
     { name: 'Risk Tolerance',      score: 0.65, desc: 'Moderate — prefers calculated bets.' },
   ];
-
   const KW = ['Systems Architect','RAG Engineer','Digital Twin Builder','Venture Strategist','AI Product Designer'];
 
   return (
@@ -447,12 +406,9 @@ const PersonaSection: React.FC = () => {
             A systems architect and founder building at the intersection of human identity and machine intelligence.
             Specialises in RAG-grounded cognitive infrastructure, venture mapping, and AI-native product design.
           </p>
-          <button className="mt-3 text-[11px] font-black text-accent uppercase tracking-widest hover:underline">
-            Regenerate with LLM →
-          </button>
+          <button className="mt-3 text-[11px] font-black text-accent uppercase tracking-widest hover:underline">Regenerate with LLM →</button>
         </div>
       </div>
-
       <div>
         <Label>Trait Scores</Label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -463,29 +419,22 @@ const PersonaSection: React.FC = () => {
                 <span className="text-sm font-black text-text-primary font-mono">{Math.round(t.score * 100)}%</span>
               </div>
               <div className="h-1.5 bg-secondary rounded-full overflow-hidden border border-border-primary">
-                <motion.div
-                  initial={{ width: 0 }} animate={{ width: `${t.score * 100}%` }}
-                  transition={{ duration: 1, ease: 'easeOut' }}
-                  className="h-full bg-accent-high rounded-full"
-                />
+                <motion.div initial={{ width: 0 }} animate={{ width: `${t.score * 100}%` }}
+                  transition={{ duration: 1, ease: 'easeOut' }} className="h-full bg-accent-high rounded-full" />
               </div>
               <p className="text-[11px] text-text-tertiary">{t.desc}</p>
             </div>
           ))}
         </div>
       </div>
-
       <div>
         <Label>Positioning Keywords</Label>
         <div className="glass-panel rounded-[2rem] border border-border-secondary p-5 shadow-xl flex flex-wrap gap-2">
           {KW.map(k => (
-            <span key={k} className="px-3 py-1.5 bg-secondary border border-border-primary rounded-xl text-[12px] font-bold text-text-secondary uppercase tracking-wide">
-              {k}
-            </span>
+            <span key={k} className="px-3 py-1.5 bg-secondary border border-border-primary rounded-xl text-[12px] font-bold text-text-secondary uppercase tracking-wide">{k}</span>
           ))}
         </div>
       </div>
-
       <div>
         <Label>Communication Style Patterns</Label>
         <div className="space-y-2">
@@ -498,9 +447,7 @@ const PersonaSection: React.FC = () => {
             <div key={i} className="glass-panel flex items-center gap-4 rounded-[1.5rem] border border-border-secondary px-4 py-3 shadow-xl">
               <p className="flex-1 text-sm text-text-secondary">{p.pattern}</p>
               <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border uppercase tracking-widest ${
-                p.freq === 'High'
-                  ? 'bg-success/10 text-success border-success/20'
-                  : 'bg-secondary text-text-tertiary border-border-secondary'
+                p.freq === 'High' ? 'bg-success/10 text-success border-success/20' : 'bg-secondary text-text-tertiary border-border-secondary'
               }`}>{p.freq}</span>
             </div>
           ))}
@@ -510,19 +457,18 @@ const PersonaSection: React.FC = () => {
   );
 };
 
-/* ─── Syncs ─────────────────────────────────────────────────────── */
+/* ── Syncs ────────────────────────────────────────────────────── */
 const SyncsSection: React.FC = () => {
   const SYNCS = [
-    { name: 'Google Calendar', detail: '2 accounts · synced 5m ago',       dot: 'bg-success', badge: 'bg-success/10 text-success border-success/20', status: 'Connected' },
-    { name: 'GitHub',          detail: 'wugweb-git · 14 repos tracked',    dot: 'bg-success', badge: 'bg-success/10 text-success border-success/20', status: 'Active' },
-    { name: 'LinkedIn',        detail: '98% cohesion · v1.4.2',            dot: 'bg-accent',  badge: 'bg-accent/10 text-accent border-accent/20',     status: 'Optimised' },
-    { name: 'Twitter/X',       detail: '72% cohesion · syncing',           dot: 'bg-warning animate-pulse', badge: 'bg-warning/10 text-warning border-warning/20', status: 'Syncing' },
-    { name: 'Google Meet',     detail: 'Primary meeting tool',             dot: 'bg-success', badge: 'bg-success/10 text-success border-success/20', status: 'Enabled' },
-    { name: 'Gmail',           detail: 'Signal extraction ON',             dot: 'bg-success', badge: 'bg-success/10 text-success border-success/20', status: 'Active' },
-    { name: 'Notion',          detail: 'Not configured',                   dot: 'bg-border-primary', badge: 'bg-secondary text-text-tertiary border-border-secondary', status: 'Pending' },
-    { name: 'Zoom Pro',        detail: 'Toggle to enable',                 dot: 'bg-border-primary', badge: 'bg-secondary text-text-tertiary border-border-secondary', status: 'Off' },
+    { name: 'Google Calendar', detail: '2 accounts · synced 5m ago',    dot: 'bg-success',              badge: 'bg-success/10 text-success border-success/20',             status: 'Connected' },
+    { name: 'GitHub',          detail: 'wugweb-git · 14 repos',         dot: 'bg-success',              badge: 'bg-success/10 text-success border-success/20',             status: 'Active' },
+    { name: 'LinkedIn',        detail: '98% cohesion · v1.4.2',         dot: 'bg-accent',               badge: 'bg-accent/10 text-accent border-accent/20',               status: 'Optimised' },
+    { name: 'Twitter/X',       detail: '72% cohesion · syncing',        dot: 'bg-warning animate-pulse', badge: 'bg-warning/10 text-warning border-warning/20',           status: 'Syncing' },
+    { name: 'Google Meet',     detail: 'Primary meeting tool',          dot: 'bg-success',              badge: 'bg-success/10 text-success border-success/20',             status: 'Enabled' },
+    { name: 'Gmail',           detail: 'Signal extraction ON',          dot: 'bg-success',              badge: 'bg-success/10 text-success border-success/20',             status: 'Active' },
+    { name: 'Notion',          detail: 'Not configured',                dot: 'bg-border-primary',       badge: 'bg-secondary text-text-tertiary border-border-secondary',  status: 'Pending' },
+    { name: 'Zoom Pro',        detail: 'Toggle to enable',              dot: 'bg-border-primary',       badge: 'bg-secondary text-text-tertiary border-border-secondary',  status: 'Off' },
   ];
-
   const EXT = [
     { label: 'Portfolio',  url: 'wugweb.com',               icon: Globe },
     { label: 'GitHub',     url: 'github.com/wugweb-git',    icon: GitBranch },
@@ -533,7 +479,6 @@ const SyncsSection: React.FC = () => {
   return (
     <PageShell title="Integrations & Syncs" subtitle="All external connections and their live status" icon={Link2}>
       <IntegrationMatrix />
-
       <div>
         <Label>All Sync Statuses</Label>
         <div className="glass-panel rounded-[2rem] border border-border-secondary divide-y divide-border-secondary/60 overflow-hidden shadow-2xl">
@@ -544,14 +489,11 @@ const SyncsSection: React.FC = () => {
                 <p className="text-sm font-bold text-text-primary">{s.name}</p>
                 <p className="text-[11px] text-text-tertiary truncate">{s.detail}</p>
               </div>
-              <span className={`text-[9px] font-black px-2.5 py-1 rounded-full border uppercase tracking-widest ${s.badge}`}>
-                {s.status}
-              </span>
+              <span className={`text-[9px] font-black px-2.5 py-1 rounded-full border uppercase tracking-widest ${s.badge}`}>{s.status}</span>
             </div>
           ))}
         </div>
       </div>
-
       <div>
         <Label>External Links</Label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -574,17 +516,17 @@ const SyncsSection: React.FC = () => {
   );
 };
 
-/* ─── Settings ──────────────────────────────────────────────────── */
+/* ── Settings ─────────────────────────────────────────────────── */
 const SettingsSection: React.FC = () => {
   const L3 = [
-    { key: 'RAG Mode',       value: 'MMR' },
-    { key: 'Fetch K',        value: '15' },
-    { key: 'Lambda',         value: '0.3' },
-    { key: 'Temperature',    value: '0.75' },
-    { key: 'Model',          value: 'gpt-4-turbo-preview' },
-    { key: 'Embedding',      value: 'text-embedding-3-small' },
-    { key: 'Chunk Size',     value: '800 tokens' },
-    { key: 'Chunk Overlap',  value: '100 tokens' },
+    { key: 'RAG Mode',      value: 'MMR' },
+    { key: 'Fetch K',       value: '15' },
+    { key: 'Lambda',        value: '0.3' },
+    { key: 'Temperature',   value: '0.75' },
+    { key: 'Model',         value: 'gpt-4-turbo-preview' },
+    { key: 'Embedding',     value: 'text-embedding-3-small' },
+    { key: 'Chunk Size',    value: '800 tokens' },
+    { key: 'Chunk Overlap', value: '100 tokens' },
   ];
 
   return (
@@ -613,10 +555,10 @@ const SettingsSection: React.FC = () => {
         <Label>Notifications</Label>
         <div className="glass-panel rounded-[2rem] border border-border-secondary divide-y divide-border-secondary/60 overflow-hidden shadow-2xl">
           {[
-            { label: 'Memory sync alerts', on: true },
-            { label: 'Cognitive decisions', on: true },
-            { label: 'Buffer queue full', on: true },
-            { label: 'New connections synced', on: false },
+            { label: 'Memory sync alerts',      on: true  },
+            { label: 'Cognitive decisions',     on: true  },
+            { label: 'Buffer queue full',       on: true  },
+            { label: 'New connections synced',  on: false },
           ].map(r => (
             <div key={r.label} className="flex items-center justify-between px-5 py-4 hover:bg-secondary/30 transition-colors">
               <span className="text-sm text-text-secondary font-medium">{r.label}</span>
@@ -648,7 +590,7 @@ const SettingsSection: React.FC = () => {
         <Label>Danger Zone</Label>
         <div className="glass-panel rounded-[2rem] border border-danger/20 divide-y divide-danger/10 overflow-hidden shadow-2xl">
           {[
-            { label: 'Clear all memory',  desc: 'Permanently delete all indexed packets' },
+            { label: 'Clear all memory',   desc: 'Permanently delete all indexed packets' },
             { label: 'Reset Digital Twin', desc: 'Wipe chat history and re-anchor' },
           ].map(r => (
             <div key={r.label} className="flex items-center justify-between px-5 py-4 hover:bg-danger/5 transition-colors">
@@ -667,9 +609,9 @@ const SettingsSection: React.FC = () => {
   );
 };
 
-/* ─── Root ──────────────────────────────────────────────────────── */
+/* ── Root ─────────────────────────────────────────────────────── */
 export default function IdentityPrismWorkspace() {
-  const [section, setSection] = useState<Section>('overview');
+  const [section, setSection]           = useState<Section>('overview');
   const [selectedIndustry, setIndustry] = useState<string | null>(null);
 
   const render = () => {
@@ -689,24 +631,20 @@ export default function IdentityPrismWorkspace() {
   };
 
   return (
-    /* bg-bg-primary = #F5F5F0 porcelain — matches original design */
     <div className="flex h-screen bg-bg-primary overflow-hidden">
       <ToastContainer
         position="bottom-right"
         toastClassName="!bg-bg-elevated !border !border-border-secondary !rounded-[2rem] !shadow-3xl !text-text-primary !text-sm"
       />
 
-      {/* Desktop sidebar */}
+      {/* Sidebar — fixed left, always visible */}
       <Sidebar current={section} onChange={setSection} />
 
-      {/* Top nav — responsive left offset */}
+      {/* Top nav — fixed, starts right of sidebar */}
       <TopNav current={section} onChange={setSection} />
 
-      {/* Scrollable content
-          mt-14  = below TopNav
-          md:ml-60 = right of desktop sidebar
-          pb-24 md:pb-0 = clear mobile bottom dock */}
-      <main className="flex-1 mt-14 md:ml-60 overflow-y-auto custom-scrollbar bg-bg-primary pb-24 md:pb-0">
+      {/* Main content — offset by sidebar (ml-60) and top nav (mt-14) */}
+      <main className="flex-1 ml-60 mt-14 overflow-y-auto custom-scrollbar bg-bg-primary">
         <AnimatePresence mode="wait">
           <motion.div
             key={section}
@@ -720,10 +658,6 @@ export default function IdentityPrismWorkspace() {
         </AnimatePresence>
       </main>
 
-      {/* Mobile bottom dock */}
-      <MobileNav current={section} onChange={setSection} />
-
-      {/* Enhancement hub floating CTA */}
       <EnhancementHub />
     </div>
   );

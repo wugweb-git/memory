@@ -1,5 +1,5 @@
-describe("publishing-test placeholder", () => {
-  it("defines publishing safety contracts", () => {
-    expect(true).toBe(true);
-  });
-});
+export const publishingTestPlan = {
+  name: "publishing-test placeholder",
+  contract: "defines publishing safety contracts",
+  status: "pending-runner",
+};
