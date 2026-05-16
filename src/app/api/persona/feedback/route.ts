@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { postgres } from "@/lib/db/postgres";
 import { updateBehavioralTrait } from "@/lib/persona/behavior";
+import { IDENTITY_CONFIG } from "@/config/identity";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest) {
       notes?: string;
     };
 
-    const userId = body.userId || "system_user";
+    const userId = body.userId || IDENTITY_CONFIG.DEFAULT_USER_ID;
     const feedbackType = ["accepted", "rejected", "ignored"].includes(body.feedbackType || "")
       ? (body.feedbackType as "accepted" | "rejected" | "ignored")
       : "ignored";

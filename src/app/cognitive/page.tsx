@@ -8,6 +8,7 @@ import {
   ArrowUpRight, TrendingDown, AlertTriangle, BarChart2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { resolveUserId } from '@/config/identity';
 
 /* ─── types ──────────────────────────────────────────────── */
 type Mode   = 'architect' | 'founder' | 'operator';
@@ -54,12 +55,13 @@ const ConfidenceBar: React.FC<{ value: number }> = ({ value }) => (
 
 const FeedbackBar: React.FC<{ decisionId: string }> = ({ decisionId }) => {
   const [sent, setSent] = useState(false);
+  const { userId } = resolveUserId();
 
   async function submit(type: string) {
     await fetch('/api/cognitive/feedback', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ decisionId, userId: 'system_user', feedbackType: type })
+      body: JSON.stringify({ decisionId, userId, feedbackType: type })
     });
     setSent(true);
   }
@@ -100,11 +102,12 @@ const DecideTab: React.FC<{ mode: Mode }> = ({ mode }) => {
   async function run() {
     setLoading(true);
     setError(null);
+    const { userId } = resolveUserId();
     try {
       const res = await fetch('/api/cognitive/decide', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: 'system_user', mode, external_input: pastedInput || undefined })
+        body: JSON.stringify({ user_id: userId, mode, external_input: pastedInput || undefined })
       });
       const data = await res.json();
       if (data.status === 'insufficient_data' || data.error) {
@@ -255,11 +258,12 @@ const EvaluateTab: React.FC<{ mode: Mode }> = ({ mode }) => {
     if (!input.trim()) return;
     setLoading(true);
     setError(null);
+    const { userId } = resolveUserId();
     try {
       const res = await fetch('/api/cognitive/evaluate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: 'system_user', input_text: input, mode })
+        body: JSON.stringify({ user_id: userId, input_text: input, mode })
       });
       const data = await res.json();
       if (data.error) { setError(data.error); setResult(null); }
@@ -379,11 +383,12 @@ const GapsTab: React.FC = () => {
   async function run() {
     setLoading(true);
     setError(null);
+    const { userId } = resolveUserId();
     try {
       const res = await fetch('/api/cognitive/gaps', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: 'system_user' })
+        body: JSON.stringify({ user_id: userId })
       });
       const data = await res.json();
       if (data.error) { setError(data.error); setResult(null); }
@@ -490,7 +495,8 @@ const HistoryTab: React.FC = () => {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/cognitive/history?userId=system_user')
+    const { userId } = resolveUserId();
+    fetch(`/api/cognitive/history?userId=${userId}`)
       .then(r => r.json())
       .then(d => setHistory(Array.isArray(d) ? d : []))
       .catch(() => setHistory([]))

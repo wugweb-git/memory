@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { extractPersonaEvidence } from "@/lib/persona/extractor";
 import { evolvePersonaField } from "@/lib/persona/evolution";
 import { isVerifiedHuman } from "@/lib/persona/fingerprint";
+import { IDENTITY_CONFIG } from "@/config/identity";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as { userId?: string; outputText?: string };
-    const userId = body.userId || "system_user";
+    const userId = body.userId || IDENTITY_CONFIG.DEFAULT_USER_ID;
     const text = body.outputText || "";
 
     // Guard: only evolve from verified-human content

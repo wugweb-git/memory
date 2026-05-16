@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { IDENTITY_CONFIG, resolveUserId } from '@/config/identity';
 
 type Trait = { id: string; traitName: string; traitValue: number; confidence: number; evidenceCount: number };
 type EvolutionLog = { id: string; changedField: string | null; reason: string | null; confidenceDelta: number | null; createdAt: string };
@@ -16,18 +17,23 @@ export default function PersonaIntelligencePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [userId, setUserId] = useState<string>('');
 
-  const userId = 'system_user';
+  useEffect(() => {
+    const { userId: resolved } = resolveUserId();
+    setUserId(resolved);
+  }, []);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (uid: string) => {
+    if (!uid) return;
     try {
       setLoading(true);
       setError(null);
       const [p, t, a, d] = await Promise.all([
-        fetch(`/api/persona/profile?userId=${userId}`).then((r) => r.json()),
-        fetch(`/api/persona/traits?userId=${userId}`).then((r) => r.json()),
-        fetch(`/api/persona/adaptive-ui?userId=${userId}`).then((r) => r.json()),
-        fetch(`/api/persona/drift?userId=${userId}`).then((r) => r.json()),
+        fetch(`/api/persona/profile?userId=${uid}`).then((r) => r.json()),
+        fetch(`/api/persona/traits?userId=${uid}`).then((r) => r.json()),
+        fetch(`/api/persona/adaptive-ui?userId=${uid}`).then((r) => r.json()),
+        fetch(`/api/persona/drift?userId=${uid}`).then((r) => r.json()),
       ]);
       setProfile(p);
       setTraits(Array.isArray(t) ? t : []);
@@ -41,8 +47,8 @@ export default function PersonaIntelligencePage() {
   }, []);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (userId) fetchData(userId);
+  }, [userId, fetchData]);
 
   async function sendFeedback() {
     setSaving(true);
@@ -52,7 +58,7 @@ export default function PersonaIntelligencePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, feedbackType, targetType: 'persona' }),
       });
-      await fetchData();
+      await fetchData(userId);
     } finally {
       setSaving(false);
     }
@@ -66,7 +72,7 @@ export default function PersonaIntelligencePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [field]: value }),
       });
-      await fetchData();
+      await fetchData(userId);
     } finally {
       setSaving(false);
     }
@@ -85,7 +91,7 @@ export default function PersonaIntelligencePage() {
       <div className="w-full min-h-screen flex items-center justify-center px-4">
         <div className="text-center space-y-2">
           <p className="text-sm text-red-500">{error}</p>
-          <button onClick={fetchData} className="px-4 py-2 rounded-xl bg-text-primary text-bg-primary text-xs font-bold uppercase">Retry</button>
+          <button onClick={() => fetchData(userId)} className="px-4 py-2 rounded-xl bg-text-primary text-bg-primary text-xs font-bold uppercase">Retry</button>
         </div>
       </div>
     );

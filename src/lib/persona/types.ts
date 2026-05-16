@@ -1,4 +1,4 @@
-/**
+w/**
  * Layer 4 — Persona + Behavioral Intelligence Engine
  * Shared types and contracts for derived intelligence (NOT raw memory).
  */
