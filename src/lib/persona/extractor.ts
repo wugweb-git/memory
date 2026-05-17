@@ -8,6 +8,7 @@
  */
 
 import { postgres } from "@/lib/db/postgres";
+import type { Prisma } from "@/generated/postgres";
 import type { PersonaEvidenceInput, ExtractedEvidence, ToneAnalysis, WritingStructure, BehavioralMarkers } from "./types";
 
 const clamp = (n: number, min = 0, max = 1) => Math.max(min, Math.min(max, n));

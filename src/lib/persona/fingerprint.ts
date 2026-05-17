@@ -59,16 +59,22 @@ export function scoreAiContamination(text: string): FingerprintResult {
   );
   const humanProbability = Math.max(0.02, 1 - aiProbability);
 
+  const styleVector = {
+    length: text.length,
+    punctuationDensity: text.length > 0 ? (text.match(/[,:;.!?]/g) || []).length / text.length : 0,
+    avgWordLength: Number(avgWordLength.toFixed(2)),
+  };
+
   return {
     aiProbability,
     humanProbability,
     verifiedHuman: humanProbability >= 0.72,
-    styleVector: {
-      length: text.length,
-      punctuationDensity: text.length > 0 ? (text.match(/[,:;.!?]/g) || []).length / text.length : 0,
-      avgWordLength: Number(avgWordLength.toFixed(2)),
-    },
+    styleVector,
   };
+}
+
+export interface FingerprintWithMetadata extends FingerprintResult {
+  id: string;
 }
 
 export async function persistFingerprint(params: {
@@ -76,10 +82,10 @@ export async function persistFingerprint(params: {
   text: string;
   sourceType?: string;
   sourceId?: string;
-}): Promise<void> {
+}): Promise<FingerprintWithMetadata> {
   const { aiProbability, humanProbability, verifiedHuman, styleVector } = scoreAiContamination(params.text);
 
-  await postgres.outputFingerprint.create({
+  const created = await postgres.outputFingerprint.create({
     data: {
       userId: params.userId,
       sourceType: params.sourceType,
@@ -90,6 +96,14 @@ export async function persistFingerprint(params: {
       verifiedHuman,
     },
   });
+
+  return {
+    id: created.id,
+    aiProbability,
+    humanProbability,
+    verifiedHuman,
+    styleVector,
+  };
 }
 
 export async function isVerifiedHuman(params: { userId: string; text: string }): Promise<boolean> {
