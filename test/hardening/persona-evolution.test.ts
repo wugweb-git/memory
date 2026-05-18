@@ -1,5 +1,6 @@
 export const personaEvolutionTestPlan = {
-    contract: 
-      status: "pending-runner");
+  contract: {
+    status: "pending-runner",
+  },
 };
 

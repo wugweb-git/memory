@@ -75,12 +75,14 @@ export class EvolutionEngine {
     // Basic logic to increase system confidence in the model as more data arrives
     await postgres.personaProfile.upsert({
       where: { userId },
-      update: { updatedAt: new Date() },
+      update: { confidenceScore: { increment: 0.01 }, updatedAt: new Date() },
       create: { 
         userId, 
-        bioSummary: "Identity model initialized via first feedback loop.",
-        publicTraits: [],
-        positioningKeywords: []
+        displayName: "Identity Model",
+        communicationStyle: { tone: "strategic", style: "structured" },
+        writingStyle: { default: "concise" },
+        decisionStyle: { mode: "adaptive" },
+        confidenceScore: 0.55,
       }
     });
   }

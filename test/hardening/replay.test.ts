@@ -1,5 +1,6 @@
 export const replayTestPlan = {
-    contract: 
-      status: "pending-runner");
+  contract: {
+    status: "pending-runner",
+  },
 };
 

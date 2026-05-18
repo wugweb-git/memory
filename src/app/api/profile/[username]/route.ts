@@ -3,12 +3,14 @@ import { mongo as prisma } from '@/lib/db/mongo';
 
 export const dynamic = 'force-dynamic';
 
+type RouteContext = { params: Promise<{ username: string }> };
+
 export async function GET(
   req: NextRequest,
-  { params }: { params: { username: string } }
+  { params }: RouteContext
 ) {
   try {
-    const { username } = params;
+    const { username } = await params;
     const profile = await (prisma as any).profile.findUnique({
       where: { username },
     });
@@ -26,10 +28,10 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { username: string } }
+  { params }: RouteContext
 ) {
   try {
-    const { username } = params;
+    const { username } = await params;
     const data = await req.json();
 
     const profile = await (prisma as any).profile.upsert({

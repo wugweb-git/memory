@@ -17,15 +17,24 @@ export async function updatePersona(params: PersonaUpdate) {
   return postgres.personaProfile.upsert({
     where: { userId },
     update: {
-      ...(publicTraits && { publicTraits }),
-      ...(positioningKeywords && { positioningKeywords }),
-      ...(bioSummary && { bioSummary }),
+      ...(bioSummary && { displayName: bioSummary.slice(0, 64) }),
+      ...(publicTraits && {
+        communicationStyle: {
+          traits: publicTraits,
+        },
+      }),
+      ...(positioningKeywords && {
+        decisionStyle: {
+          positioningKeywords,
+        },
+      }),
     },
     create: {
       userId,
-      publicTraits: publicTraits || [],
-      positioningKeywords: positioningKeywords || [],
-      bioSummary: bioSummary || "No bio set.",
+      displayName: bioSummary?.slice(0, 64) || "Identity Model",
+      communicationStyle: { traits: publicTraits || [] },
+      writingStyle: { bioSummary: bioSummary || "No bio set." },
+      decisionStyle: { positioningKeywords: positioningKeywords || [] },
     },
   })
 }

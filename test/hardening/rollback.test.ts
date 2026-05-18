@@ -1,5 +1,6 @@
 export const rollbackTestPlan = {
-    contract: 
-      status: "pending-runner");
+  contract: {
+    status: "pending-runner",
+  },
 };
 

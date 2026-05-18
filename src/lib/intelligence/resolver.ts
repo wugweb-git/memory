@@ -26,11 +26,11 @@ export class PersonaResolver {
       const style = preferences.find(p => p.category === "voice" && p.key === "style")?.value || "no fluff, punchy, strategic";
 
       return {
-        bio_summary: profile?.bioSummary || "Identity model in early training phase.",
+        bio_summary: (profile?.writingStyle as any)?.bioSummary || profile?.displayName || "Identity model in early training phase.",
         traits: traits.map(t => ({ trait: t.trait, score: t.score })),
         style_weights: {
           voice: style,
-          perspective: profile?.positioningKeywords || ["executive", "founder"]
+          perspective: (profile?.decisionStyle as any)?.positioningKeywords || ["executive", "founder"]
         },
         decisions_accepted: profile?.updatedAt || new Date() // Metadata placeholder
       };

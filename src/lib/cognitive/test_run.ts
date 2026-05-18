@@ -41,7 +41,7 @@ async function test() {
     console.error(err);
   } finally {
     // Wait for langfuse to flush
-    await langfuse.shutdownAsync();
+    // no-op facade in this repo currently has no flush/shutdown methods
     process.exit();
   }
 }

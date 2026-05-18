@@ -16,7 +16,7 @@ export async function fetchL4Intelligence(userId: string) {
     return {
       traits: traits.map(t => ({ trait: t.trait, score: t.score, confidence: t.confidence })),
       preferences: preferences.map(p => ({ category: p.category, key: p.key, value: p.value })),
-      persona: persona || { bioSummary: "Standard Identity Model Activated." },
+      persona: persona || { displayName: "Standard Identity Model Activated." },
       behaviors: behaviors.filter(b => b.confidence > 0.7).map(b => ({ key: b.key, value: b.value }))
     };
   } catch (err) {
@@ -24,7 +24,7 @@ export async function fetchL4Intelligence(userId: string) {
     return {
       traits: [],
       preferences: [],
-      persona: { bioSummary: "Identity model currently training." },
+      persona: { displayName: "Identity model currently training." },
       behaviors: []
     };
   }
