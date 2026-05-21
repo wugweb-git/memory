@@ -1,14 +1,27 @@
 "use client";
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Brain, User, Search, RefreshCcw, Sparkles, Plus, ArrowUpRight } from 'lucide-react';
-import { useChat } from 'ai/react';
+import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
+import type { UIMessage } from 'ai';
 import NavBar from '../component/navbar';
 
+function messageText(message: UIMessage): string {
+  return message.parts
+    .filter((part): part is { type: 'text'; text: string } => part.type === 'text')
+    .map((part) => part.text)
+    .join('');
+}
+
 export default function AskNeuralInterface() {
-  const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat();
+  const [input, setInput] = useState('');
+  const { messages, sendMessage, status, setMessages } = useChat({
+    transport: new DefaultChatTransport({ api: '/api/chat' }),
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isLoading = status === 'submitted' || status === 'streaming';
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -22,6 +35,14 @@ export default function AskNeuralInterface() {
         ? <span key={i} className="text-accent font-bold">{part}</span> 
         : part
     );
+  };
+
+  const handleSend = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const text = input.trim();
+    if (!text || isLoading) return;
+    sendMessage({ text });
+    setInput('');
   };
 
   return (
@@ -68,7 +89,9 @@ export default function AskNeuralInterface() {
                  </motion.div>
                ) : (
                  <div className="space-y-16 relative z-10">
-                   {messages.map((m) => (
+                   {messages.map((m) => {
+                     const text = messageText(m);
+                     return (
                      <motion.div 
                        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                        key={m.id}
@@ -88,7 +111,7 @@ export default function AskNeuralInterface() {
                            : 'bg-bg-elevated border-2 border-border-primary text-text-primary rounded-tl-none backdrop-blur-3xl'
                          }`}>
                            <div className="kinetic-text">
-                             {m.role !== 'user' ? highlightKeywords(m.content) : m.content}
+                             {m.role !== 'user' ? highlightKeywords(text) : text}
                            </div>
                          </div>
                          <span className="text-[10px] mt-6 font-black font-mono text-text-disabled uppercase tracking-[0.25em] opacity-50">
@@ -96,7 +119,7 @@ export default function AskNeuralInterface() {
                          </span>
                        </div>
                      </motion.div>
-                   ))}
+                   );})}
                    {isLoading && (
                      <div className="flex gap-10 animate-pulse">
                        <div className="w-14 h-14 rounded-3xl bg-bg-secondary border-2 border-border-primary flex items-center justify-center">
@@ -126,7 +149,7 @@ export default function AskNeuralInterface() {
         className="fixed bottom-0 left-0 right-0 p-3 md:p-12 bg-gradient-to-t from-bg-primary via-bg-primary/95 to-transparent z-[55] safe-navbar"
       >
       <div className="max-w-4xl mx-auto">
-        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(e); }} className="group relative glass-panel rounded-[2.5rem] border-white/5 focus-within:border-accent/50 transition-all duration-700 shadow-3xl overflow-hidden">
+        <form onSubmit={handleSend} className="group relative glass-panel rounded-[2.5rem] border-white/5 focus-within:border-accent/50 transition-all duration-700 shadow-3xl overflow-hidden">
           <div className="hidden md:flex items-center px-10 py-5 border-b border-border-secondary bg-white/[0.02]">
             <div className="flex items-center gap-8 text-[10px] font-black text-text-tertiary tracking-[0.3em] uppercase">
               <span className="flex items-center gap-2"><RefreshCcw size={14} className="animate-spin text-accent" /> Uplink: Quantum_Stable</span>
@@ -139,11 +162,11 @@ export default function AskNeuralInterface() {
               <Search size={24} className="mt-3 text-text-disabled shrink-0" />
               <textarea 
                 value={input}
-                onChange={handleInputChange}
+                onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    if (!isLoading && input.trim() !== '') handleSubmit(e as any);
+                    handleSend();
                   }
                 }}
                 placeholder="Pose a cognitive query..."

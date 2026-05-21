@@ -66,8 +66,8 @@ const DropZone: React.FC<{ onUploaded: (item: MemoryItem) => void }> = ({ onUplo
     const form = new FormData();
     form.append('filepond', file); // matches the field name the API expects
 
+    const tick = setInterval(() => setProgress(p => Math.min(p + 12, 85)), 300);
     try {
-      const tick = setInterval(() => setProgress(p => Math.min(p + 12, 85)), 300);
       const res  = await fetch('/api/upload', { method: 'POST', body: form });
       clearInterval(tick);
       setProgress(100);
@@ -94,6 +94,7 @@ const DropZone: React.FC<{ onUploaded: (item: MemoryItem) => void }> = ({ onUplo
       });
       setTimeout(() => { setState('idle'); setProgress(0); }, 3000);
     } catch (e: any) {
+      clearInterval(tick);
       setMessage(e.message || 'Upload failed');
       setState('error');
       setTimeout(() => { setState('idle'); setProgress(0); }, 4000);

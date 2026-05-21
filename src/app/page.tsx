@@ -8,7 +8,9 @@ import {
   Link2, Settings, Eye, Archive, Cpu, LayoutDashboard,
   TrendingUp, GitBranch, Globe, ChevronRight
 } from 'lucide-react';
-import { useChat } from 'ai/react';
+import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
+import type { UIMessage } from 'ai';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -221,17 +223,29 @@ const ProfileSection: React.FC<{
   </PageShell>
 );
 
+function chatMessageText(message: UIMessage): string {
+  return message.parts
+    .filter((part): part is { type: 'text'; text: string } => part.type === 'text')
+    .map((part) => part.text)
+    .join('');
+}
+
 /* ── Digital Twin ─────────────────────────────────────────────── */
 const DigitalTwinSection: React.FC = () => {
   const endRef = useRef<HTMLDivElement>(null);
-  const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat({
+  const [input, setInput] = useState('');
+  const { messages, sendMessage, status, setMessages } = useChat({
+    transport: new DefaultChatTransport({ api: '/api/chat' }),
     onError: (e) => toast.error('Link failure: ' + (e.message || 'Check connection.')),
   });
+  const isLoading = status === 'submitted' || status === 'streaming';
 
   const send = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!input.trim()) return;
-    handleSubmit(e);
+    const text = input.trim();
+    if (!text || isLoading) return;
+    sendMessage({ text });
+    setInput('');
     setTimeout(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
   };
 
@@ -277,7 +291,9 @@ const DigitalTwinSection: React.FC = () => {
           </div>
         ) : (
           <>
-            {messages.map(m => (
+            {messages.map(m => {
+              const text = chatMessageText(m);
+              return (
               <div key={m.id} className={`flex gap-3 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border ${
                   m.role === 'user' ? 'bg-text-primary text-bg-primary border-transparent' : 'bg-accent/10 text-accent border-accent/20'
@@ -290,12 +306,12 @@ const DigitalTwinSection: React.FC = () => {
                       ? 'bg-text-primary text-bg-primary rounded-tr-sm'
                       : 'bg-secondary border border-border-secondary text-text-primary rounded-tl-sm'
                   }`}>
-                    {m.role !== 'user' ? highlight(m.content) : m.content}
+                    {m.role !== 'user' ? highlight(text) : text}
                   </div>
                   <span className="text-[10px] font-mono text-text-disabled mt-1 px-1">{new Date().toLocaleTimeString()}</span>
                 </div>
               </div>
-            ))}
+            );})}
             {isLoading && (
               <div className="flex gap-3">
                 <div className="w-8 h-8 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center">
@@ -318,7 +334,7 @@ const DigitalTwinSection: React.FC = () => {
           <Search size={17} className="mt-1 text-text-disabled shrink-0" />
           <textarea
             value={input}
-            onChange={handleInputChange}
+            onChange={(e) => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!isLoading && input.trim()) send(e as any); } }}
             placeholder="Pose a cognitive query to the Digital Twin…"
             rows={2}

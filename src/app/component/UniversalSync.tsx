@@ -1,39 +1,65 @@
 "use client";
-import React, { useState } from 'react';
-import { Link as LinkIcon, Globe, Linkedin, Chrome, Send, CheckCircle2, RefreshCw } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Link as LinkIcon, Globe, Linkedin, Send, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { IDENTITY_CONFIG } from '@/config/identity';
 
+function siteHost(): string {
+  try {
+    return new URL(IDENTITY_CONFIG.SITE_URL).host;
+  } catch {
+    return IDENTITY_CONFIG.SITE_URL.replace(/^https?:\/\//, '').split('/')[0];
+  }
+}
+
+function parseBridgeUrl(raw: string): URL {
+  const trimmed = raw.trim();
+  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  return new URL(withProtocol);
+}
+
 export const UniversalSync = () => {
   const [url, setUrl] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [syncedItems, setSyncedItems] = useState([
     { id: '1', type: 'LinkedIn', title: `${IDENTITY_CONFIG.DISPLAY_NAME} // ${IDENTITY_CONFIG.ROLE}`, status: 'Bridged', lastSync: '2m ago' },
-    { id: '2', type: 'External', title: `${new URL(IDENTITY_CONFIG.SITE_URL).host}/neural-papers`, status: 'Bridged', lastSync: '1h ago' },
+    { id: '2', type: 'External', title: `${siteHost()}/neural-papers`, status: 'Bridged', lastSync: '1h ago' },
   ]);
 
+  useEffect(() => {
+    return () => {
+      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    };
+  }, []);
+
   const handleSync = () => {
-    if (!url.trim()) return;
+    if (!url.trim() || isSyncing) return;
     setIsSyncing(true);
-    
-    setTimeout(() => {
+
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    syncTimerRef.current = setTimeout(() => {
+      syncTimerRef.current = null;
       setIsSyncing(false);
       try {
-        const host = new URL(url).hostname;
+        const parsed = parseBridgeUrl(url);
+        const host = parsed.hostname;
         const type = host.includes('linkedin') ? 'LinkedIn' : 'External';
-        
+        const pathLabel = parsed.pathname && parsed.pathname !== '/' ? parsed.pathname : '';
+        const title = `${host}${pathLabel} // Core Fragment`;
+
         setSyncedItems(prev => [{
-          id: Math.random().toString(),
+          id: crypto.randomUUID(),
           type,
-          title: url.replace(/^https?:\/\//, '').split('/')[0] + ' // Core Fragment',
+          title,
           status: 'Bridged',
           lastSync: 'Just now'
         }, ...prev]);
-        
+
         toast.success(`Fragment bridged to Genesis stream.`);
         setUrl('');
-      } catch (e) {
+      } catch {
         toast.error("Bridge failure: URL syntax error.");
       }
     }, 2400);
@@ -58,7 +84,7 @@ export const UniversalSync = () => {
           <div className="flex -space-x-3">
              {[1, 2, 3].map(i => (
                <div key={i} className="w-8 h-8 rounded-full border-2 border-bg-primary bg-bg-secondary flex items-center justify-center text-[8px] font-black text-text-tertiary shadow-lg overflow-hidden">
-                 <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${i}`} alt="bridge" className="opacity-60" />
+                 <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${i}`} alt="" className="opacity-60" />
                </div>
              ))}
           </div>
@@ -79,7 +105,7 @@ export const UniversalSync = () => {
            </div>
            <button 
              onClick={handleSync}
-             disabled={isSyncing || !url}
+             disabled={isSyncing || !url.trim()}
              className="px-8 rounded-2xl bg-text-primary text-bg-primary hover:bg-accent transition-all disabled:opacity-20 flex items-center justify-center shadow-2xl relative overflow-hidden group/btn"
            >
              <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover/btn:translate-x-0 transition-transform duration-500" />

@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { resolveUserId } from "@/config/identity";
-
 export interface DashboardProfile {
   displayName: string;
   handle: string;
@@ -50,10 +48,9 @@ export function useDashboardData(): DashboardData {
     async function fetchData() {
       try {
         // Fetch from existing admin health endpoints
-        const [memRes, sysRes, personaRes, profileRes] = await Promise.allSettled([
+        const [memRes, sysRes, personaRes] = await Promise.allSettled([
           fetch("/api/memory/stats"),
           fetch("/api/admin/system-health"),
-          fetch("/api/persona/profile"),
           fetch("/api/persona/profile"),
         ]);
 
@@ -76,19 +73,22 @@ export function useDashboardData(): DashboardData {
           bufferQueue = String(sysJson.metrics?.stale_locks ?? "—");
         }
 
+        let profile = DEFAULTS.profile;
         if (personaRes.status === "fulfilled" && personaRes.value.ok) {
-          const pJson = await personaRes.value.json();
-          // persona health endpoint returns counts
-          bufferQueue = pJson.counts?.activeProfiles?.toString() || bufferQueue;
-        }
-
-        if (profileRes.status === "fulfilled" && profileRes.value.ok) {
-          const profJson = await profileRes.value.json();
-          // profile could have displayName etc.
+          const profJson = await personaRes.value.json();
+          if (profJson.counts?.activeProfiles != null) {
+            bufferQueue = String(profJson.counts.activeProfiles);
+          }
+          profile = {
+            displayName: profJson.displayName || profJson.name || DEFAULTS.profile.displayName,
+            handle: profJson.handle ? `@${String(profJson.handle).replace(/^@/, "")}` : DEFAULTS.profile.handle,
+            email: profJson.email || DEFAULTS.profile.email,
+            timezone: profJson.timezone || DEFAULTS.profile.timezone,
+          };
         }
 
         setData({
-          profile: DEFAULTS.profile,
+          profile,
           stats: { memoryPackets, syncStatus, bufferQueue, uplink },
           loading: false,
           error: null,

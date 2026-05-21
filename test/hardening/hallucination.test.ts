@@ -1,7 +1,6 @@
-/// <reference types="jest" />
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
 
-describe("hallucination-test placeholder", () => {
-  it("defines hallucination guard checks", () => {
-    expect(true).toBe(true);
-  });
+test('hallucination guard placeholder is defined', () => {
+  assert.equal(true, true);
 });
