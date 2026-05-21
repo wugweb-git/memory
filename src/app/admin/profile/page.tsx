@@ -10,9 +10,12 @@ import {
   Palette, Shield
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { IDENTITY_CONFIG } from '@/config/identity';
 
 export default function AdminProfilePage() {
   const [activeTab, setActiveTab] = useState<'Basic' | 'Design' | 'Advanced'>('Design');
+  const displayName = IDENTITY_CONFIG.DISPLAY_NAME;
+  const role = IDENTITY_CONFIG.ROLE;
 
   const tabs = [
     { id: 'Basic', label: 'Basic Details' },
@@ -194,8 +197,8 @@ export default function AdminProfilePage() {
                              <img src="https://ui-avatars.com/api/?name=VS&size=200&background=F5F5F0&color=1A1A1A&bold=true" alt="User" />
                           </div>
                           <div>
-                            <h2 className="text-2xl font-black italic tracking-tighter uppercase">Vedanshu Srivastava</h2>
-                            <p className="text-xs font-bold text-[#888886] uppercase tracking-widest mt-1">Systems Architect</p>
+                            <h2 className="text-2xl font-black italic tracking-tighter uppercase">{displayName}</h2>
+                            <p className="text-xs font-bold text-[#888886] uppercase tracking-widest mt-1">{role}</p>
                           </div>
                        </div>
 

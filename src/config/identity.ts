@@ -13,6 +13,21 @@ export const IDENTITY_CONFIG = {
   
   /** URL query parameter name for passing userId */
   QUERY_PARAM_USER_ID: 'userId',
+
+  /** Display metadata used by UI surfaces */
+  DISPLAY_NAME: 'System User',
+  HANDLE: 'system_user',
+  EMAIL: 'system@identity-prism.local',
+  ROLE: 'Systems Architect',
+  AVATAR_SEED: 'system-user',
+
+  SITE_URL: 'https://wugweb.com',
+  SITE_NAME: 'Identity Prism',
+  X_HANDLE: '@vedanshus',
+  LINKEDIN_URL: 'https://linkedin.com/in/vedanshu-srivastava',
+  GITHUB_URL: 'https://github.com/wugweb-git',
+  TWITTER_URL: 'https://twitter.com/wugweb',
+  PORTFOLIO_URL: 'https://wugweb.com',
 } as const;
 
 export type IdentityResolver = {

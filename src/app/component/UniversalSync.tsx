@@ -3,13 +3,14 @@ import React, { useState } from 'react';
 import { Link as LinkIcon, Globe, Linkedin, Chrome, Send, CheckCircle2, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
+import { IDENTITY_CONFIG } from '@/config/identity';
 
 export const UniversalSync = () => {
   const [url, setUrl] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncedItems, setSyncedItems] = useState([
-    { id: '1', type: 'LinkedIn', title: 'Vedanshu Srivastava // Lead Architect', status: 'Bridged', lastSync: '2m ago' },
-    { id: '2', type: 'External', title: 'wugweb.com/neural-papers', status: 'Bridged', lastSync: '1h ago' },
+    { id: '1', type: 'LinkedIn', title: `${IDENTITY_CONFIG.DISPLAY_NAME} // ${IDENTITY_CONFIG.ROLE}`, status: 'Bridged', lastSync: '2m ago' },
+    { id: '2', type: 'External', title: `${new URL(IDENTITY_CONFIG.SITE_URL).host}/neural-papers`, status: 'Bridged', lastSync: '1h ago' },
   ]);
 
   const handleSync = () => {

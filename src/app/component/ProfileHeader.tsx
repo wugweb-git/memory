@@ -4,6 +4,7 @@ import {
   ShieldCheck, MapPin, Globe, Twitter, Github, Linkedin, ExternalLink, Zap, Star
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { IDENTITY_CONFIG } from '@/config/identity';
 
 export const ProfileHeader = () => {
   const [liveStats, setLiveStats] = useState<{ packets: number; stability: number } | null>(null);
@@ -26,10 +27,10 @@ export const ProfileHeader = () => {
 
   /* Real external URLs */
   const socials = [
-    { label: 'LinkedIn',  icon: Linkedin,     href: 'https://linkedin.com/in/vedanshu-srivastava', ariaLabel: 'Visit LinkedIn profile' },
-    { label: 'GitHub',    icon: Github,       href: 'https://github.com/wugweb-git',               ariaLabel: 'Visit GitHub profile' },
-    { label: 'Twitter',   icon: Twitter,      href: 'https://twitter.com/wugweb',                  ariaLabel: 'Visit Twitter/X profile' },
-    { label: 'Portfolio', icon: ExternalLink, href: 'https://wugweb.com',                          ariaLabel: 'Visit portfolio website' },
+    { label: 'LinkedIn',  icon: Linkedin,     href: IDENTITY_CONFIG.LINKEDIN_URL, ariaLabel: 'Visit LinkedIn profile' },
+    { label: 'GitHub',    icon: Github,       href: IDENTITY_CONFIG.GITHUB_URL,   ariaLabel: 'Visit GitHub profile' },
+    { label: 'Twitter',   icon: Twitter,      href: IDENTITY_CONFIG.TWITTER_URL,  ariaLabel: 'Visit Twitter/X profile' },
+    { label: 'Portfolio', icon: ExternalLink, href: IDENTITY_CONFIG.PORTFOLIO_URL, ariaLabel: 'Visit portfolio website' },
   ];
 
   const stats = [
@@ -56,7 +57,7 @@ export const ProfileHeader = () => {
             >
               <img
                 src="/user.png"
-                alt="Vedanshu Srivastava – Systems Architect & Founder"
+                alt={`${IDENTITY_CONFIG.DISPLAY_NAME} – ${IDENTITY_CONFIG.ROLE}`}
                 className="w-full h-full object-cover rounded-[1.5rem]"
                 onError={e => (e.currentTarget.src = 'https://ui-avatars.com/api/?name=VS&size=512&background=F5F5F0&color=00AAFF&bold=true')}
               />
@@ -71,7 +72,7 @@ export const ProfileHeader = () => {
             <div className="space-y-4">
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 mb-1 kinetic-text">
                 <h1 className="text-3xl md:text-5xl font-black text-text-primary tracking-tighter uppercase italic">
-                  Vedanshu Srivastava
+                  {IDENTITY_CONFIG.DISPLAY_NAME}
                 </h1>
                 <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-[10px] font-black text-bg-primary tracking-[0.2em] uppercase shadow-lg shadow-accent/20">
                   <Star size={10} fill="currentColor" /> Master_Prism
@@ -90,10 +91,10 @@ export const ProfileHeader = () => {
                 <MapPin size={14} className="text-accent" />
                 <span className="text-[10px] font-black font-mono uppercase tracking-[0.2em] text-text-tertiary">Global_Matrix_Deploy</span>
               </div>
-              <a href="https://wugweb.com" target="_blank" rel="noopener noreferrer"
+              <a href={IDENTITY_CONFIG.PORTFOLIO_URL} target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-3 px-4 py-2 rounded-xl bg-bg-secondary/50 border border-border-secondary group hover:border-accent/40 transition-colors">
                 <Globe size={14} className="text-text-tertiary group-hover:rotate-12 transition-transform" />
-                <span className="text-[10px] font-black font-mono uppercase tracking-[0.2em] text-text-tertiary">wugweb.com</span>
+                <span className="text-[10px] font-black font-mono uppercase tracking-[0.2em] text-text-tertiary">{new URL(IDENTITY_CONFIG.PORTFOLIO_URL).host}</span>
               </a>
               <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-success/5 border border-success/20">
                 <div className="w-1.5 h-1.5 bg-success rounded-full animate-pulse" />

@@ -5,6 +5,7 @@ import {
   Activity, Cpu, Sparkles, Link2, Settings, ChevronRight,
   Zap, ShieldCheck, Command, Bell
 } from 'lucide-react';
+import { IDENTITY_CONFIG } from '@/config/identity';
 
 export type Section =
   | 'overview' | 'profile' | 'twin' | 'showcase'
@@ -129,7 +130,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ current, onChange }) => {
             className="w-8 h-8 rounded-full border border-border-primary"
           />
           <div className="flex-1 min-w-0">
-            <p className="text-[12px] font-bold text-text-primary truncate">Vedanshu S.</p>
+            <p className="text-[12px] font-bold text-text-primary truncate">{IDENTITY_CONFIG.DISPLAY_NAME}</p>
             <p className="text-[10px] text-text-tertiary truncate">Master Prism</p>
           </div>
           <button className="p-1 text-text-disabled hover:text-accent transition-colors">

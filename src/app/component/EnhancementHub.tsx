@@ -113,7 +113,7 @@ export const EnhancementHub = () => {
       description: 'Sync your professional background to ground the Digital Twin in your career achievements.',
       icon: <Linkedin size={18} />,
       cta: 'Connect LinkedIn',
-      action: () => window.open('https://linkedin.com/in/vedanshu-srivastava', '_blank'),
+      action: () => window.open('https://linkedin.com/in/', '_blank'),
     },
     {
       id: '4',
@@ -185,7 +185,7 @@ export const EnhancementHub = () => {
       description: 'Connect your codebase to expose your technical graph and contribution history.',
       icon: <Github size={18} />,
       cta: 'Uplink',
-      action: () => window.open('https://github.com/wugweb-git', '_blank'),
+      action: () => window.open('https://github.com/', '_blank'),
     },
     {
       id: '13',
@@ -201,7 +201,7 @@ export const EnhancementHub = () => {
       description: 'Verify parity between the administrative core and your public profile mirror.',
       icon: <ExternalLink size={18} />,
       cta: 'Verify',
-      action: () => window.open('https://wugweb.com/nexus', '_blank'),
+      action: () => window.open('/', '_blank'),
     },
   ];
 

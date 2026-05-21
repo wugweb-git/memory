@@ -15,6 +15,7 @@ import {
 import { JetBrains_Mono, Inter } from 'next/font/google';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { IDENTITY_CONFIG } from '@/config/identity';
 
 const jetBrains = JetBrains_Mono({ subsets: ['latin'] });
 const inter = Inter({ subsets: ['latin'] });
@@ -103,7 +104,7 @@ export default function AdminConsole() {
                <div className="w-8 h-8 rounded-xl bg-[#F5F5F3] overflow-hidden border border-[#E0E0DE]">
                   <img src="https://ui-avatars.com/api/?name=VS&background=F5F5F0&color=1A1A1A&bold=true" alt="User" />
                </div>
-               <span className="text-[11px] font-black uppercase tracking-widest hidden md:block">Vedanshu</span>
+               <span className="text-[11px] font-black uppercase tracking-widest hidden md:block">{IDENTITY_CONFIG.DISPLAY_NAME}</span>
             </button>
          </div>
       </header>

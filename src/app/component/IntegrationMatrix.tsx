@@ -25,8 +25,8 @@ interface MeetingTool {
 }
 
 const ACCOUNTS: IntegrationAccount[] = [
-  { id: '1', provider: 'Google calendar', email: 'vedanshu.srivastava@gmail.com', isPrimary: true, icon: 'google' },
-  { id: '2', provider: 'Google calendar', email: 'vedanshu.srivastava@gmail.com', isPrimary: false, icon: 'google' },
+  { id: '1', provider: 'Google calendar', email: 'primary@example.com', isPrimary: true, icon: 'google' },
+  { id: '2', provider: 'Google calendar', email: 'secondary@example.com', isPrimary: false, icon: 'google' },
 ];
 
 const TOOLS: MeetingTool[] = [

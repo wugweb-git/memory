@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { IDENTITY_CONFIG } from '@/config/identity';
 
 const SERVICES = [
   {
@@ -36,7 +37,7 @@ const TESTIMONIALS = [
     avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=d"
   },
   {
-    content: "Vedanshu's insights into systems architecture are unparalleled. The Digital Twin integration is a game-changer.",
+    content: "The architect's insights into systems architecture are unparalleled. The Digital Twin integration is a game-changer.",
     author: "swz // developer",
     avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=swz"
   }
@@ -90,7 +91,7 @@ export default function PublicProfilePage() {
                       className="glass-panel p-8 rounded-[2.5rem] border-white/20 backdrop-blur-3xl shadow-3xl"
                     >
                        <h1 className="text-5xl font-black italic tracking-[calc(-0.05em)] uppercase leading-[0.85] text-text-primary kinetic-text">
-                          {username === 'vedanshu' ? 'Vedanshu Srivastava' : username}
+                           {username === IDENTITY_CONFIG.HANDLE ? IDENTITY_CONFIG.DISPLAY_NAME : username}
                        </h1>
                        <div className="mt-6 flex items-center gap-3">
                           <div className="w-2 h-2 rounded-full bg-success animate-pulse" />

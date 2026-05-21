@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "./component/ThemeProvider";
 import { Analytics } from "@vercel/analytics/next";
+import { IDENTITY_CONFIG } from "@/config/identity";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -18,23 +19,23 @@ const jetbrains = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "Identity Prism | Neural OS",
-  metadataBase: new URL("https://wugweb.com"),
+  metadataBase: new URL(IDENTITY_CONFIG.SITE_URL),
   description: "High-fidelity Personal Operating System & Neural RAG Matrix. A professional-grade OS for semantic memory and venture mapping.",
   keywords: ["Neural OS", "Identity Prism", "RAG", "Personal AI", "Venture Mapping", "Systems Architecture"],
-  authors: [{ name: "Vedanshu Srivastava" }],
-  creator: "Vedanshu Srivastava",
-  publisher: "Vedanshu Srivastava",
+  authors: [{ name: IDENTITY_CONFIG.DISPLAY_NAME }],
+  creator: IDENTITY_CONFIG.DISPLAY_NAME,
+  publisher: IDENTITY_CONFIG.DISPLAY_NAME,
   robots: "index, follow",
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://wugweb.com",
-    siteName: "Identity Prism",
+    url: IDENTITY_CONFIG.SITE_URL,
+    siteName: IDENTITY_CONFIG.SITE_NAME,
     title: "Identity Prism | Neural OS",
     description: "High-fidelity Personal Operating System & Neural RAG Matrix. A professional-grade OS for semantic memory and venture mapping.",
     images: [
       {
-        url: "https://wugweb.com/og-image.png",
+        url: `${IDENTITY_CONFIG.SITE_URL}/og-image.png`,
         width: 1200,
         height: 630,
         alt: "Identity Prism OS Dashboard Preview",
@@ -45,8 +46,8 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Identity Prism | Neural OS",
     description: "High-fidelity Personal Operating System & Neural RAG Matrix. A professional-grade OS for semantic memory and venture mapping.",
-    images: ["https://wugweb.com/og-image.png"],
-    creator: "@vedanshus",
+    images: [`${IDENTITY_CONFIG.SITE_URL}/og-image.png`],
+    creator: IDENTITY_CONFIG.X_HANDLE,
   },
   icons: {
     icon: "/favicon.ico",
