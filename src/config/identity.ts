@@ -28,7 +28,33 @@ export const IDENTITY_CONFIG = {
   GITHUB_URL: 'https://github.com/wugweb-git',
   TWITTER_URL: 'https://twitter.com/wugweb',
   PORTFOLIO_URL: 'https://wugweb.com',
+  YOUTUBE_URL: 'https://youtube.com',
+  BEHANCE_URL: 'https://behance.net',
+  DRIBBBLE_URL: 'https://dribbble.com',
+  LINKEDIN_JOBS_URL: 'https://linkedin.com/jobs',
 } as const;
+
+/** Canonical external links for UI surfaces */
+export function getExternalLinks() {
+  const host = (() => {
+    try {
+      return new URL(IDENTITY_CONFIG.SITE_URL).host;
+    } catch {
+      return IDENTITY_CONFIG.SITE_URL.replace(/^https?:\/\//, '').split('/')[0];
+    }
+  })();
+  return [
+    { label: 'Portfolio', url: IDENTITY_CONFIG.PORTFOLIO_URL, placeholder: `${host}` },
+    { label: 'GitHub', url: IDENTITY_CONFIG.GITHUB_URL, placeholder: 'github.com/username' },
+    { label: 'LinkedIn', url: IDENTITY_CONFIG.LINKEDIN_URL, placeholder: 'linkedin.com/in/username' },
+    { label: 'Site Extension', url: `${IDENTITY_CONFIG.SITE_URL}/extension`, placeholder: `${host}/extension` },
+  ] as const;
+}
+
+export function avatarFallbackUrl(size = 512): string {
+  const name = encodeURIComponent(IDENTITY_CONFIG.DISPLAY_NAME.replace(/\s+/g, '+'));
+  return `https://ui-avatars.com/api/?name=${name}&size=${size}&background=F5F5F0&color=00AAFF&bold=true`;
+}
 
 export type IdentityResolver = {
   /** Resolved user identifier */

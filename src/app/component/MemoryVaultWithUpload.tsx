@@ -208,6 +208,12 @@ export const MemoryVaultWithUpload: React.FC = () => {
 
   /* Load real memory packets from the API */
   useEffect(() => {
+    const openUpload = () => setShowUpload(true);
+    window.addEventListener('prism:open-upload', openUpload);
+    return () => window.removeEventListener('prism:open-upload', openUpload);
+  }, []);
+
+  useEffect(() => {
     async function load() {
       setLoading(true);
       try {
@@ -240,11 +246,12 @@ export const MemoryVaultWithUpload: React.FC = () => {
 
         if (statsRes.ok) {
           const s = await statsRes.json();
+          const embedded = s.embedding_stats?.embedded ?? s.embedded ?? 0;
           setStats({
-            total_packets: s.total ?? 0,
-            mapped:        s.embedded ?? 0,
-            used_gb:       +(s.storage_gb ?? 0).toFixed(1),
-            limit_gb:      10,
+            total_packets: s.total_packets ?? s.total ?? 0,
+            mapped: embedded,
+            used_gb: +(s.storage_gb ?? 0).toFixed(1),
+            limit_gb: 10,
           });
         }
       } catch {
@@ -265,6 +272,7 @@ export const MemoryVaultWithUpload: React.FC = () => {
     setItems(prev => [item, ...prev]);
     setShowUpload(false);
     if (stats) setStats(s => s ? { ...s, total_packets: s.total_packets + 1 } : s);
+    window.dispatchEvent(new CustomEvent('prism:memory-refresh'));
   };
 
   const removeItem = async (id: string) => {

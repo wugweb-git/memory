@@ -5,11 +5,12 @@ import { FilePond, registerPlugin } from 'react-filepond';
 import 'filepond/dist/filepond.min.css';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
+import { IDENTITY_CONFIG } from '@/config/identity';
 
 export const KnowledgeSource = () => {
   const [sources, setSources] = useState([
     { id: '1', name: 'Identity_Prism_Core.pdf', type: 'document', status: 'anchored' },
-    { id: '2', name: 'wugweb.com/architecture', type: 'link', status: 'anchored' },
+    { id: '2', name: `${new URL(IDENTITY_CONFIG.SITE_URL).host}/architecture`, type: 'link', status: 'anchored' },
   ]);
 
   const onProcessFile = (err: any, file: any) => {

@@ -4,26 +4,30 @@ import {
   ShieldCheck, MapPin, Globe, Twitter, Github, Linkedin, ExternalLink, Zap, Star
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { IDENTITY_CONFIG } from '@/config/identity';
+import { IDENTITY_CONFIG, avatarFallbackUrl } from '@/config/identity';
 
 export const ProfileHeader = () => {
-  const [liveStats, setLiveStats] = useState<{ packets: number; stability: number } | null>(null);
+  const [liveStats, setLiveStats] = useState<{ packets: number; stability: number | null } | null>(null);
 
   useEffect(() => {
     Promise.all([
       fetch('/api/memory/stats').then(r => r.ok ? r.json() : null).catch(() => null),
-      fetch('/api/admin/system-health').then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch('/api/health/system').then(r => r.ok ? r.json() : null).catch(() => null),
     ]).then(([memStats, health]) => {
+      const packets = memStats?.total_packets ?? memStats?.total ?? 0;
+      const stability = health?.metrics?.logic_stability_pct ?? null;
       setLiveStats({
-        packets:   memStats?.total ?? 4200,
-        stability: health?.metrics?.logic_stability_pct ?? 98,
+        packets,
+        stability: stability ?? (health?.core_integrity === 'PASSED' ? 100 : null),
       });
     });
   }, []);
 
-  const packetDisplay = liveStats
-    ? liveStats.packets >= 1000 ? `${(liveStats.packets / 1000).toFixed(1)}k Nodes` : `${liveStats.packets} Nodes`
-    : '… Nodes';
+  const packetDisplay = liveStats == null
+    ? '… Nodes'
+    : liveStats.packets >= 1000
+      ? `${(liveStats.packets / 1000).toFixed(1)}k Nodes`
+      : `${liveStats.packets} Nodes`;
 
   /* Real external URLs */
   const socials = [
@@ -34,9 +38,9 @@ export const ProfileHeader = () => {
   ];
 
   const stats = [
-    { label: 'Neural_Density',    val: packetDisplay, pct: Math.min(100, Math.round(((liveStats?.packets ?? 4200) / 6000) * 100)) },
-    { label: 'Logic_Stability',   val: `${liveStats?.stability ?? '…'}%`, pct: liveStats?.stability ?? 98 },
-    { label: 'Experience_Matrix', val: 'Level_4', pct: 75 },
+    { label: 'Neural_Density', val: packetDisplay, pct: liveStats ? Math.min(100, Math.round((liveStats.packets / Math.max(liveStats.packets, 1)) * 100)) : 0 },
+    { label: 'Logic_Stability', val: liveStats?.stability != null ? `${liveStats.stability}%` : '…', pct: liveStats?.stability ?? 0 },
+    { label: 'Sync_Density', val: liveStats ? 'Live' : '…', pct: liveStats?.stability ?? 0 },
   ];
 
   const skills = ['Systems Arch', 'RAG Neural', 'Venture Mapping', 'Digital Twin'];
@@ -59,7 +63,7 @@ export const ProfileHeader = () => {
                 src="/user.png"
                 alt={`${IDENTITY_CONFIG.DISPLAY_NAME} – ${IDENTITY_CONFIG.ROLE}`}
                 className="w-full h-full object-cover rounded-[1.5rem]"
-                onError={e => (e.currentTarget.src = 'https://ui-avatars.com/api/?name=VS&size=512&background=F5F5F0&color=00AAFF&bold=true')}
+                onError={e => (e.currentTarget.src = avatarFallbackUrl(512))}
               />
             </motion.div>
             <div className="absolute -bottom-3 -right-3 w-12 h-12 rounded-2xl bg-accent-high text-bg-primary border border-white flex items-center justify-center shadow-xl" aria-label="Verified identity">

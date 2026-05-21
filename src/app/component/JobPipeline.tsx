@@ -4,6 +4,8 @@ import {
   Briefcase, Mail, Chrome, ArrowRight, Loader2, RefreshCcw, AlertCircle, Plus
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { IDENTITY_CONFIG } from '@/config/identity';
+import { parseBlobItems } from '@/lib/ui/blob';
 
 interface Application {
   id: string;
@@ -54,8 +56,9 @@ export const JobPipeline = () => {
       const res = await fetch('/api/blob?type=job_application');
       if (!res.ok) throw new Error();
       const data = await res.json();
+      const rows = parseBlobItems(data);
 
-      const apiApps: Application[] = (data || []).map((b: any) => ({
+      const apiApps: Application[] = rows.map((b: Record<string, unknown>) => ({
         id:      b.id,
         role:    b.metadata?.role    || b.raw_payload?.slice(0, 50) || 'Untitled Role',
         company: b.metadata?.company || 'Unknown',
@@ -183,7 +186,7 @@ export const JobPipeline = () => {
 
           {/* Add entry */}
           <button
-            onClick={() => window.open('https://linkedin.com/jobs', '_blank')}
+            onClick={() => window.open(IDENTITY_CONFIG.LINKEDIN_JOBS_URL, '_blank')}
             className="w-full glass-panel rounded-[2rem] p-6 border-2 border-dashed border-border-secondary hover:border-accent/40 hover:shadow-xl transition-all flex items-center justify-center gap-3 text-text-disabled hover:text-accent group"
           >
             <Plus size={18} className="group-hover:rotate-90 transition-transform" />

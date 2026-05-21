@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pdf from "pdf-parse";
 import { MemoryService } from '@/lib/memory/service';
+import { getRequestUserId } from '@/lib/identity/request';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
         origin: 'user_upload',
         ingestion_path: ['browser', 'api/upload', 'MemoryService']
       }
-    }, 'system_user'); // TODO: Pass real user ID from auth
+    }, getRequestUserId(req));
 
     if (result.status !== 'ACCEPTED') {
       return NextResponse.json({ 

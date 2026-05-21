@@ -21,6 +21,8 @@ import { IdentityPillars }          from './component/IdentityPillars';
 import { IndustryBento }            from './component/IndustryBento';
 import { IdentityShowcase }         from './component/IdentityShowcase';
 import { MemoryVaultWithUpload }    from './component/MemoryVaultWithUpload';
+import { MemoryVault }              from './component/MemoryVault';
+import { JobSearchAgent }           from './component/JobSearchAgent';
 import { BlobBuffer }               from './component/BlobBuffer';
 import { ActivityLog }              from './component/ActivityLog';
 import { VoiceIngestion }           from './component/VoiceIngestion';
@@ -31,10 +33,13 @@ import { VentureVault }             from './component/VentureVault';
 import { ExperienceMatrix }         from './component/ExperienceMatrix';
 import { NeuralConnections }        from './component/NeuralConnections';
 import { IntegrationMatrix }        from './component/IntegrationMatrix';
+import { UniversalSync }            from './component/UniversalSync';
+import { getExternalLinks } from '@/config/identity';
 import { EnhancementHub }           from './component/EnhancementHub';
 import CognitiveConsole             from './cognitive/page';
 import { useDashboardData, usePersonaTraits } from './hooks/useDashboardData';
 import { IDENTITY_CONFIG } from '@/config/identity';
+import { AuthPanel } from './component/AuthPanel';
 
 /* ── ErrorBoundary ───────────────────────────────────────────── */
 class SectionErrorBoundary extends React.Component<
@@ -214,6 +219,7 @@ const ProfileSection: React.FC<{
     </div>
     <div><Label>Published Works</Label><PublishedWorks /></div>
     <div><Label>Job Pipeline</Label><JobPipeline /></div>
+    <div><Label>Opportunity Agent</Label><JobSearchAgent /></div>
     <div><Label>Venture Vault</Label>
       <VentureVault selectedIndustry={selectedIndustry || undefined} />
     </div>
@@ -373,7 +379,8 @@ const ShowcaseSection: React.FC = () => (
 /* ── Memory ───────────────────────────────────────────────────── */
 const MemorySection: React.FC = () => (
   <PageShell title="Memory Vault" subtitle="Indexed knowledge packets — upload, search and manage" icon={Database}>
-    <MemoryVaultWithUpload />
+    <div><Label>Upload &amp; Ingest</Label><MemoryVaultWithUpload /></div>
+    <div><Label>Fragment Browser</Label><MemoryVault /></div>
   </PageShell>
 );
 
@@ -498,30 +505,40 @@ const PersonaSection: React.FC = () => {
 
 /* ── Syncs ────────────────────────────────────────────────────── */
 const SyncsSection: React.FC = () => {
-  const EXT = [
-    { label: 'Portfolio',  url: '',                icon: Globe,     placeholder: 'Your portfolio URL' },
-    { label: 'GitHub',     url: '',                icon: GitBranch, placeholder: 'github.com/username' },
-    { label: 'LinkedIn',   url: '',                icon: Link2,     placeholder: 'linkedin.com/in/username' },
-    { label: 'Vercel',     url: '',                icon: TrendingUp, placeholder: 'vercel.com/username/project' },
-  ];
+  const links = getExternalLinks();
+  const linkIcons: Record<string, typeof Globe> = {
+    Portfolio: Globe,
+    GitHub: GitBranch,
+    LinkedIn: Link2,
+    'Site Extension': TrendingUp,
+  };
 
   return (
     <PageShell title="Integrations & Syncs" subtitle="All external connections and their live status" icon={Link2}>
+      <UniversalSync />
       <IntegrationMatrix />
       <div>
         <Label>External Links</Label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {EXT.map(e => (
-            <div key={e.label} className="glass-panel flex items-center gap-3 rounded-[1.5rem] border border-border-secondary px-4 py-4 shadow-xl">
+          {links.map((e) => {
+            const Icon = linkIcons[e.label] ?? Globe;
+            return (
+            <a
+              key={e.label}
+              href={e.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="glass-panel flex items-center gap-3 rounded-[1.5rem] border border-border-secondary px-4 py-4 shadow-xl hover:border-accent/30 transition-colors"
+            >
               <div className="w-10 h-10 rounded-2xl bg-secondary border border-border-primary flex items-center justify-center shrink-0">
-                <e.icon size={17} className="text-text-disabled" />
+                <Icon size={17} className="text-text-disabled" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-text-primary">{e.label}</p>
                 <p className="text-[11px] font-mono text-text-tertiary truncate italic">{e.placeholder}</p>
               </div>
-            </div>
-          ))}
+            </a>
+          );})}
         </div>
       </div>
     </PageShell>
@@ -537,6 +554,10 @@ const SettingsSection: React.FC = () => {
   };
   return (
     <PageShell title="Settings" subtitle="Account preferences and layer configuration" icon={Settings}>
+      <div>
+        <Label>Account</Label>
+        <AuthPanel />
+      </div>
       <div>
         <Label>Profile Metadata</Label>
         <div className="glass-panel rounded-[2rem] border border-border-secondary divide-y divide-border-secondary/60 overflow-hidden shadow-2xl">

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mongo as prisma } from '@/lib/db/mongo';
+import { degradedMemoryStats, isPrismaConfigError } from '@/lib/db/degraded';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,8 +35,12 @@ export async function GET(req: NextRequest) {
       source_count: sourceCount,
       recent_ingestion_logs: recentLogs
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    if (isPrismaConfigError(error)) {
+      return NextResponse.json(degradedMemoryStats());
+    }
+    const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Stats API Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

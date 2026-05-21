@@ -121,7 +121,7 @@ export default function AdminProfilePage() {
                              <div className="space-y-1">
                                 <div className="flex items-center gap-2">
                                   <h4 className="font-bold text-sm">Payment Button Label</h4>
-                                  <a href="#" className="text-[10px] text-accent font-bold hover:underline">Learn more</a>
+                                  <a href="/admin" className="text-[10px] text-accent font-bold hover:underline">Learn more</a>
                                 </div>
                                 <p className="text-[10px] text-[#A0A09E] font-medium">Current: Default</p>
                              </div>
@@ -134,7 +134,7 @@ export default function AdminProfilePage() {
                              <div className="space-y-1">
                                 <div className="flex items-center gap-2">
                                   <h4 className="font-bold text-sm">Service Label</h4>
-                                  <a href="#" className="text-[10px] text-accent font-bold hover:underline">Learn more</a>
+                                  <a href="/admin" className="text-[10px] text-accent font-bold hover:underline">Learn more</a>
                                 </div>
                                 <p className="text-[10px] text-[#A0A09E] font-medium">Current: Default</p>
                              </div>

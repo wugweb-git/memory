@@ -7,6 +7,7 @@ import {
   Twitter, Github, Youtube, Database, Brain, ShieldCheck,
   User, Grid, ExternalLink, Loader2
 } from 'lucide-react';
+import { IDENTITY_CONFIG, resolveUserId } from '@/config/identity';
 
 /* ── Navigation helper ─────────────────────────────────────────
    EnhancementHub doesn't have access to page.tsx setSection.
@@ -66,7 +67,7 @@ export const EnhancementHub = () => {
       const res = await fetch('/api/cognitive/decide', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: 'system_user', mode: 'architect' }),
+        body: JSON.stringify({ user_id: resolveUserId().userId, mode: 'architect' }),
       });
       if (res.ok) {
         markDone('6');
@@ -113,7 +114,7 @@ export const EnhancementHub = () => {
       description: 'Sync your professional background to ground the Digital Twin in your career achievements.',
       icon: <Linkedin size={18} />,
       cta: 'Connect LinkedIn',
-      action: () => window.open('https://linkedin.com/in/', '_blank'),
+      action: () => window.open(IDENTITY_CONFIG.LINKEDIN_URL, '_blank'),
     },
     {
       id: '4',
@@ -185,7 +186,7 @@ export const EnhancementHub = () => {
       description: 'Connect your codebase to expose your technical graph and contribution history.',
       icon: <Github size={18} />,
       cta: 'Uplink',
-      action: () => window.open('https://github.com/', '_blank'),
+      action: () => window.open(IDENTITY_CONFIG.GITHUB_URL, '_blank'),
     },
     {
       id: '13',
@@ -193,7 +194,7 @@ export const EnhancementHub = () => {
       description: 'Display your creative video output as a primary identity facet.',
       icon: <Youtube size={18} />,
       cta: 'Feed Sync',
-      action: () => window.open('https://youtube.com', '_blank'),
+      action: () => window.open(IDENTITY_CONFIG.YOUTUBE_URL, '_blank'),
     },
     {
       id: '14',

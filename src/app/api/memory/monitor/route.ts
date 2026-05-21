@@ -24,6 +24,16 @@ export async function GET(req: NextRequest) {
     const totalBytes = 250 * 1024 * 1024;
     const usagePercent = Math.min(100, (usedBytes / totalBytes) * 100);
 
+    const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const recentPacketCount = packets.filter(
+      (p: { ingestion_time?: Date }) => p.ingestion_time && new Date(p.ingestion_time) >= dayAgo,
+    ).length;
+    const ingestionLogs = await prisma.ingestionLog.findMany({
+      where: { test_run_id },
+      orderBy: { timestamp: 'desc' },
+      take: 10,
+    });
+
     return NextResponse.json({
       stats: {
         packet_count: packets.length,
@@ -32,8 +42,8 @@ export async function GET(req: NextRequest) {
         retry_queue_count: retries.length,
         source_count: sources.length,
         item_count: packets.length,
-        growth_rate_per_day: 0,
-        ingestion_logs: []
+        growth_rate_per_day: recentPacketCount,
+        ingestion_logs: ingestionLogs,
       },
       storage: {
         used_bytes: usedBytes,

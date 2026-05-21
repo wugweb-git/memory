@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { IDENTITY_CONFIG } from "@/config/identity";
 export interface DashboardProfile {
   displayName: string;
   handle: string;
@@ -24,9 +25,9 @@ export interface DashboardData {
 
 const DEFAULTS: DashboardData = {
   profile: {
-    displayName: "User",
-    handle: "@user",
-    email: "",
+    displayName: IDENTITY_CONFIG.DISPLAY_NAME,
+    handle: `@${IDENTITY_CONFIG.HANDLE}`,
+    email: IDENTITY_CONFIG.EMAIL,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   },
   stats: {
@@ -50,7 +51,7 @@ export function useDashboardData(): DashboardData {
         // Fetch from existing admin health endpoints
         const [memRes, sysRes, personaRes] = await Promise.allSettled([
           fetch("/api/memory/stats"),
-          fetch("/api/admin/system-health"),
+          fetch("/api/health/system"),
           fetch("/api/persona/profile"),
         ]);
 
@@ -69,7 +70,13 @@ export function useDashboardData(): DashboardData {
         if (sysRes.status === "fulfilled" && sysRes.value.ok) {
           const sysJson = await sysRes.value.json();
           syncStatus = sysJson.status || DEFAULTS.stats.syncStatus;
-          uplink = sysJson.core_integrity === "PASSED" ? "98.4%" : DEFAULTS.stats.uplink;
+          const stability = sysJson.metrics?.logic_stability_pct;
+          uplink =
+            stability != null
+              ? `${stability}%`
+              : sysJson.core_integrity === "PASSED"
+                ? "100%"
+                : DEFAULTS.stats.uplink;
           bufferQueue = String(sysJson.metrics?.stale_locks ?? "—");
         }
 

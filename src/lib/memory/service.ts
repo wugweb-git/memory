@@ -30,8 +30,25 @@ export class MemoryService {
         });
       }
 
-      // 2. Storage Check
-      const storageUsage = 10; // TODO: Implement real usage monitor
+      // 2. Storage Check (approximate % of 250MB budget from active packets)
+      const [packetCount, sources] = await Promise.all([
+        prisma.memoryPacket.count({ where: { status: { not: 'rejected' } } }),
+        prisma.memoryPacket.findMany({
+          where: { status: { not: 'rejected' } },
+          select: { content: true },
+          take: 500,
+          orderBy: { ingestion_time: 'desc' },
+        }),
+      ]);
+      const sampleBytes = sources.reduce(
+        (acc, p) =>
+          acc + (typeof p.content === 'string' ? p.content.length : JSON.stringify(p.content).length),
+        0,
+      );
+      const estimatedBytes = packetCount > sources.length && sources.length > 0
+        ? Math.round((sampleBytes / sources.length) * packetCount)
+        : sampleBytes;
+      const storageUsage = Math.min(100, Math.round((estimatedBytes / (250 * 1024 * 1024)) * 100));
 
       // 3. Ingestion Gate (Loop Prevention + Schema + Trust)
       const gateReport = await ingestionGate(raw, source as any, storageUsage);

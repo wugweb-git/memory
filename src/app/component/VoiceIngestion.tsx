@@ -3,6 +3,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { Mic, MicOff, CheckCircle2, X, Waves, Brain, Loader2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
+import { resolveUserId } from '@/config/identity';
 
 type Stage = 'idle' | 'recording' | 'processing' | 'review' | 'anchoring' | 'error';
 
@@ -94,7 +95,7 @@ export const VoiceIngestion = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          user_id: 'system_user',
+          user_id: resolveUserId().userId,
           input_text: text,
           mode: 'operator',
         }),

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { postgres } from "@/lib/db/postgres";
+import { getRequestUserId } from "@/lib/identity/request";
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +11,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId') || 'system_user';
+    const userId = getRequestUserId(req);
     const limit = parseInt(searchParams.get('limit') || '20');
 
     const history = await postgres.decisionLog.findMany({

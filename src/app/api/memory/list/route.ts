@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mongo as prisma } from '@/lib/db/mongo';
+import { DB_SETUP_HINT, isPrismaConfigError } from '@/lib/db/degraded';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,8 +25,12 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({ packets });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    if (isPrismaConfigError(error)) {
+      return NextResponse.json({ packets: [], warning: DB_SETUP_HINT });
+    }
+    const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Memory List API Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -6,6 +6,7 @@ import {
   AlertTriangle, Loader2, Link
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { IDENTITY_CONFIG } from '@/config/identity';
 
 type SyncStatus = 'Synced' | 'Indexing' | 'Idle' | 'Error';
 
@@ -22,12 +23,12 @@ interface ConnectionNode {
 
 /* Real external URLs — no more href:'#' */
 const BASE_NODES: ConnectionNode[] = [
-  { id: '1', platform: 'GitHub',          category: 'Tech',     status: 'Synced',   lastActivity: '—', metric: '—',             icon: Github,  url: 'https://github.com/wugweb-git' },
-  { id: '2', platform: 'YouTube',         category: 'Thought',  status: 'Indexing', lastActivity: '—', metric: '—',             icon: Youtube, url: 'https://youtube.com' },
-  { id: '3', platform: 'Behance',         category: 'Creative', status: 'Synced',   lastActivity: '—', metric: '—',             icon: Layout,  url: 'https://behance.net' },
-  { id: '4', platform: 'Dribbble',        category: 'Creative', status: 'Idle',     lastActivity: '—', metric: '—',             icon: Palette, url: 'https://dribbble.com' },
-  { id: '5', platform: 'Google Workspace',category: 'Identity', status: 'Synced',   lastActivity: '—', metric: 'Profile Active', icon: Globe2,  url: 'https://workspace.google.com' },
-  { id: '6', platform: 'LinkedIn',        category: 'Identity', status: 'Synced',   lastActivity: '—', metric: '—',             icon: Linkedin,url: 'https://linkedin.com/in/vedanshu-srivastava' },
+  { id: '1', platform: 'GitHub',           category: 'Tech',     status: 'Synced',   lastActivity: '—', metric: '—', icon: Github,   url: IDENTITY_CONFIG.GITHUB_URL },
+  { id: '2', platform: 'YouTube',          category: 'Thought',  status: 'Indexing', lastActivity: '—', metric: '—', icon: Youtube,  url: IDENTITY_CONFIG.YOUTUBE_URL },
+  { id: '3', platform: 'Behance',          category: 'Creative', status: 'Synced',   lastActivity: '—', metric: '—', icon: Layout,   url: IDENTITY_CONFIG.BEHANCE_URL },
+  { id: '4', platform: 'Dribbble',         category: 'Creative', status: 'Idle',     lastActivity: '—', metric: '—', icon: Palette,  url: IDENTITY_CONFIG.DRIBBBLE_URL },
+  { id: '5', platform: 'Portfolio',        category: 'Identity', status: 'Synced',   lastActivity: '—', metric: 'Live', icon: Globe2,   url: IDENTITY_CONFIG.PORTFOLIO_URL },
+  { id: '6', platform: 'LinkedIn',         category: 'Identity', status: 'Synced',   lastActivity: '—', metric: '—', icon: Linkedin, url: IDENTITY_CONFIG.LINKEDIN_URL },
 ];
 
 const STATUS_COLORS: Record<SyncStatus, string> = {
@@ -56,7 +57,7 @@ export const NeuralConnections = () => {
 
   /* Fetch live sync status from system-health */
   useEffect(() => {
-    fetch('/api/admin/system-health')
+    fetch('/api/health/system')
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!data) return;
@@ -76,7 +77,7 @@ export const NeuralConnections = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  const displayDensity = syncDensity ?? 72;
+  const displayDensity = syncDensity ?? 0;
 
   return (
     <section className="space-y-10 w-full" aria-label="Neural connections status">

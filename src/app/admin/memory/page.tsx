@@ -93,9 +93,9 @@ function AdminMemoryContent() {
       <footer className="mt-20 py-8 border-t border-white/5 flex items-center justify-between text-[10px] text-gray-600 uppercase tracking-[0.2em] font-bold">
         <span>Identity Prism OS • Combined Operations Center</span>
         <div className="flex gap-8">
-          <a href="#" className="hover:text-white transition-colors">Documentation</a>
-          <a href="#" className="hover:text-white transition-colors">Security Audit</a>
-          <a href="#" className="hover:text-white transition-colors">System Health JSON</a>
+          <a href="/admin" className="hover:text-white transition-colors">Documentation</a>
+          <a href="/admin/memory" className="hover:text-white transition-colors">Security Audit</a>
+          <a href="/api/health/system" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">System Health JSON</a>
         </div>
       </footer>
     </div>

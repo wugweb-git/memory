@@ -2,10 +2,11 @@ export const UI_API = {
   outputGenerate: "/api/output/generate",
   outputSchedule: "/api/output/schedule",
   outputHistory: "/api/output/history",
-  healthSystem: "/api/admin/system-health",
-  healthPersona: "/api/admin/persona-health",
-  healthOutput: "/api/admin/output-health",
-  healthRecommendation: "/api/admin/recommendation-health",
+  healthSystem: "/api/health/system",
+  healthSystemAdmin: "/api/admin/system-health",
+  healthPersona: "/api/health/persona",
+  healthOutput: "/api/health/output",
+  healthRecommendation: "/api/health/recommendation",
   automationRules: "/api/automation/rules",
 } as const;
 

@@ -8,6 +8,8 @@
     "build": "npm run prisma:generate && next build",
     "start": "next start",
     "lint": "eslint ./src --ext .js,.ts,.tsx",
+    "test": "node --test test/hardening/*.test.ts",
+    "seed:profile": "tsx scripts/run-seed.ts",
     "postinstall": "npm run prisma:generate",
     "prisma:generate:mongo": "prisma generate --schema=prisma/mongo/schema.prisma",
     "prisma:generate:pg": "prisma generate --schema=prisma/postgres/schema.prisma",
@@ -73,10 +75,11 @@
     "@typescript-eslint/parser": "^8.59.4",
     "autoprefixer": "^10.0.1",
     "eslint": "^8.57.1",
-    "eslint-config-next": "^16.2.6",
+    "eslint-config-next": "15.2.4",
     "postcss": "^8",
     "supertest": "^7.2.2",
     "tailwindcss": "^3.3.0",
+    "tsx": "^4.19.4",
     "typescript": "^5"
   },
   "overrides": {

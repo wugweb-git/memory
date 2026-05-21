@@ -2,6 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import { Heart, Sparkles, ExternalLink, Globe, MousePointer2, Bookmark, Loader2, RefreshCcw } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { IDENTITY_CONFIG } from '@/config/identity';
+import { parseBlobItems } from '@/lib/ui/blob';
 
 interface InspirationItem {
   id: string;
@@ -51,10 +53,11 @@ export const InspirationHub = () => {
       const res = await fetch('/api/blob?type=inspiration&status=reviewed');
       if (!res.ok) throw new Error();
       const data = await res.json();
+      const rows = parseBlobItems(data);
 
-      const apiItems: InspirationItem[] = (data || [])
+      const apiItems: InspirationItem[] = rows
         .slice(0, 6)
-        .map((b: any) => ({
+        .map((b: Record<string, unknown>) => ({
           id:        b.id,
           title:     b.metadata?.title || b.raw_payload?.slice(0, 60) || 'Untitled',
           platform:  b.source_origin || 'External',
@@ -167,7 +170,7 @@ export const InspirationHub = () => {
         {/* Collector extension node */}
         <li role="listitem">
           <div className="glass-panel rounded-[2.5rem] p-8 border-2 border-dashed border-border-secondary flex flex-col items-center justify-center text-center min-h-[320px] hover:border-danger/30 hover:shadow-2xl transition-all duration-700 group cursor-pointer"
-            onClick={() => window.open('https://wugweb.com/extension', '_blank')}>
+            onClick={() => window.open(`${IDENTITY_CONFIG.SITE_URL}/extension`, '_blank')}>
             <motion.div
               animate={{ y: [0, -8, 0] }} transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut' }}
               className="w-16 h-16 rounded-2xl bg-bg-secondary border border-border-secondary flex items-center justify-center mb-6 text-text-disabled shadow-inner group-hover:bg-bg-primary group-hover:border-danger/30 transition-all overflow-hidden">
