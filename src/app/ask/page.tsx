@@ -3,10 +3,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Brain, User, Search, RefreshCcw, Sparkles, Plus, ArrowUpRight } from 'lucide-react';
-import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport } from 'ai';
 import type { UIMessage } from 'ai';
-import NavBar from '../component/navbar';
+import { usePrismChat } from '@/hooks/usePrismChat';
+import { AppShell } from '../component/AppShell';
+import { UI_API } from '@/lib/api/endpoints';
+import { CHAT_HIGHLIGHT_KEYWORDS } from '@/config/ui-content';
 
 function messageText(message: UIMessage): string {
   return message.parts
@@ -17,9 +18,7 @@ function messageText(message: UIMessage): string {
 
 export default function AskNeuralInterface() {
   const [input, setInput] = useState('');
-  const { messages, sendMessage, status, setMessages } = useChat({
-    transport: new DefaultChatTransport({ api: '/api/chat' }),
-  });
+  const { messages, sendMessage, status, setMessages } = usePrismChat(UI_API.chat);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isLoading = status === 'submitted' || status === 'streaming';
 
@@ -28,7 +27,7 @@ export default function AskNeuralInterface() {
   }, [messages]);
 
   const highlightKeywords = (text: string) => {
-    const keywords = ['AI', 'Fintech', 'Identity', 'UX', 'Spirit', 'Architecture', 'Prism', 'RAG', 'Vector'];
+    const keywords = [...CHAT_HIGHLIGHT_KEYWORDS];
     const parts = text.split(new RegExp(`(${keywords.join('|')})`, 'gi'));
     return parts.map((part, i) => 
       keywords.some(k => k.toLowerCase() === part.toLowerCase()) 
@@ -46,9 +45,8 @@ export default function AskNeuralInterface() {
   };
 
   return (
-    <div className="min-h-screen bg-bg-primary text-text-primary flex flex-col selection:bg-accent/30 transition-colors duration-1000">
-      <NavBar />
-      
+    <AppShell bottomDock>
+      <div className="min-h-[calc(100vh-4rem)] bg-bg-primary text-text-primary flex flex-col selection:bg-accent/30 transition-colors duration-1000 relative">
       {/* Background Interactivity */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
         <div className="absolute inset-0 grid-bg opacity-10" />
@@ -56,7 +54,7 @@ export default function AskNeuralInterface() {
         <div className="scanline" />
       </div>
 
-      <main className="flex-1 flex flex-col pt-20 pb-40 md:pb-48 relative z-10">
+      <main className="flex-1 flex flex-col relative z-10">
         <div className="max-w-5xl mx-auto w-full px-6 space-y-16">
           
           {/* Header Section */}
@@ -90,7 +88,7 @@ export default function AskNeuralInterface() {
                ) : (
                  <div className="space-y-16 relative z-10">
                    {messages.map((m) => {
-                     const text = messageText(m);
+                     const text = messageText(m as UIMessage);
                      return (
                      <motion.div 
                        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
@@ -196,6 +194,7 @@ export default function AskNeuralInterface() {
         </form>
       </div>
       </motion.section>
-    </div>
+      </div>
+    </AppShell>
   );
 }

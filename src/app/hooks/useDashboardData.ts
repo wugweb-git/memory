@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { IDENTITY_CONFIG } from "@/config/identity";
+import { IDENTITY_CONFIG, resolveUserId } from "@/config/identity";
 export interface DashboardProfile {
   displayName: string;
   handle: string;
@@ -121,15 +121,24 @@ export function useDashboardData(): DashboardData {
 export function usePersonaTraits() {
   const [traits, setTraits] = useState<Array<{ name: string; score: number; desc: string }>>([]);
   const [loading, setLoading] = useState(true);
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
 
-    fetch("/api/persona/traits")
+    const uid = resolveUserId().userId;
+    fetch(`/api/persona/traits?userId=${encodeURIComponent(uid)}`)
       .then(r => r.ok ? r.json() : [])
       .then(traitList => {
         if (!cancelled) {
-          setTraits(Array.isArray(traitList) ? traitList : traitList.traits || []);
+          const raw = Array.isArray(traitList) ? traitList : traitList?.traits || [];
+          setTraits(
+            raw.map((t: Record<string, unknown>) => ({
+              name: String(t.traitName ?? t.name ?? 'Trait'),
+              score: Number(t.traitValue ?? t.score ?? 0.5),
+              desc: String(t.reason ?? t.desc ?? ''),
+            })),
+          );
           setLoading(false);
         }
       })
@@ -138,7 +147,9 @@ export function usePersonaTraits() {
       });
 
     return () => { cancelled = true; };
-  }, []);
+  }, [tick]);
 
-  return { traits, loading };
+  const refetch = () => setTick((n) => n + 1);
+
+  return { traits, loading, refetch };
 }

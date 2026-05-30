@@ -16,30 +16,6 @@ interface InspirationItem {
   url?: string;
 }
 
-/* Fallback seed — shown when API returns no data */
-const SEED: InspirationItem[] = [
-  {
-    id: 'seed-1',
-    title: 'The Semantic Web Overhaul 2026',
-    platform: 'Mirror',
-    whyLiked: 'Essential for my Digital Identity cluster. Bridges the gap between user spirit and machine-readable logic.',
-    industry: 'Digital Identity',
-    tags: ['Web3', 'AI', 'Ontology'],
-    date: '—',
-    url: undefined,
-  },
-  {
-    id: 'seed-2',
-    title: 'Next-Gen Vector Database Benchmarks',
-    platform: 'Substack',
-    whyLiked: 'Crucial for the AI Engineering workspace. Explains why Atlas Vector Search performs on RAG tasks.',
-    industry: 'AI Engineering',
-    tags: ['Database', 'RAG', 'Perf'],
-    date: '—',
-    url: undefined,
-  },
-];
-
 export const InspirationHub = () => {
   const [items, setItems]   = useState<InspirationItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,21 +33,25 @@ export const InspirationHub = () => {
 
       const apiItems: InspirationItem[] = rows
         .slice(0, 6)
-        .map((b: Record<string, unknown>) => ({
-          id:        b.id,
-          title:     b.metadata?.title || b.raw_payload?.slice(0, 60) || 'Untitled',
-          platform:  b.source_origin || 'External',
-          whyLiked:  b.metadata?.why || b.raw_payload?.slice(0, 120) || '—',
-          industry:  b.type_tag || 'General',
-          tags:      b.metadata?.tags || [],
-          date:      b.created_at ? new Date(b.created_at).toLocaleDateString() : '—',
-          url:       b.metadata?.url,
-        }));
+        .map((b: Record<string, unknown>) => {
+          const meta = (b.metadata && typeof b.metadata === 'object' ? b.metadata : {}) as Record<string, unknown>;
+          const raw = typeof b.raw_payload === 'string' ? b.raw_payload : '';
+          return {
+            id: String(b.id ?? ''),
+            title: String(meta.title ?? (raw.slice(0, 60) || 'Untitled')),
+            platform: String(b.source_origin ?? 'External'),
+            whyLiked: String(meta.why ?? (raw.slice(0, 120) || '—')),
+            industry: String(b.type_tag ?? 'General'),
+            tags: Array.isArray(meta.tags) ? (meta.tags as string[]) : [],
+            date: b.created_at ? new Date(String(b.created_at)).toLocaleDateString() : '—',
+            url: meta.url ? String(meta.url) : undefined,
+          };
+        });
 
-      setItems(apiItems.length > 0 ? apiItems : SEED);
+      setItems(apiItems);
     } catch {
       setError(true);
-      setItems(SEED); // fallback
+      setItems([]);
     } finally {
       setLoading(false);
     }
@@ -110,6 +90,10 @@ export const InspirationHub = () => {
           <li className="col-span-full flex items-center justify-center py-20 gap-3 text-text-disabled">
             <Loader2 size={24} className="animate-spin text-accent" />
             <span className="text-sm font-medium">Loading inspirations…</span>
+          </li>
+        ) : items.length === 0 ? (
+          <li className="col-span-full text-sm text-text-tertiary italic py-12 px-2">
+            No inspiration items yet. Save links to the buffer with type <code className="text-accent">inspiration</code> and mark them reviewed.
           </li>
         ) : (
           items.map((item, idx) => (

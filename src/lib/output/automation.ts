@@ -1,59 +1,105 @@
-import { postgres } from "../db/postgres";
+import { postgres } from '../db/postgres';
+import { publishContentToProfile } from '@/lib/profile/store';
+import { IDENTITY_CONFIG } from '@/config/identity';
+
+export type AutomationMode = 'webhook' | 'profile_only' | 'skipped';
+
+export type AutomationPushResult = {
+  mode: AutomationMode;
+  outputId: string;
+  payload: {
+    event: string;
+    system: string;
+    data: {
+      id: string;
+      platform: string;
+      content: string;
+      user_id: string;
+      timestamp: string;
+    };
+  };
+  webhookOk?: boolean;
+  profilePublished?: boolean;
+  profileUsername?: string;
+};
 
 /**
- * Pushes a generated artifact to the Automation Layer (n8n).
+ * Pushes a generated artifact to n8n when configured; otherwise syncs to the public profile.
  */
-export async function pushToAutomation(outputId: string) {
+export async function pushToAutomation(
+  outputId: string,
+  options?: { profileUsername?: string },
+): Promise<AutomationPushResult> {
   const webhookUrl = process.env.N8N_WEBHOOK_URL;
-  
-  if (!webhookUrl) {
-    console.warn("[Automation] No N8N_WEBHOOK_URL configured. Payload logged to console.");
-  }
+  const profileUsername = options?.profileUsername ?? IDENTITY_CONFIG.HANDLE;
 
-  // 1. Fetch Output
   const output = await postgres.outputLog.findUnique({
-    where: { id: outputId }
+    where: { id: outputId },
   });
 
   if (!output) {
-    throw new Error("Output not found: " + outputId);
+    throw new Error('Output not found: ' + outputId);
   }
 
-  const payload = {
-    event: "artifact_ready",
-    system: "Identity Prism OS",
+  const payload: AutomationPushResult['payload'] = {
+    event: 'artifact_ready',
+    system: 'Identity Prism OS',
     data: {
       id: output.id,
       platform: output.platform,
-      content: output.content,
+      content: String(output.content ?? ''),
       user_id: output.userId,
-      timestamp: new Date().toISOString()
-    }
+      timestamp: new Date().toISOString(),
+    },
   };
 
-  // 2. Transmit to n8n
+  let mode: AutomationMode = 'skipped';
+  let webhookOk: boolean | undefined;
+  let profilePublished = false;
+
   if (webhookUrl) {
+    mode = 'webhook';
     try {
       const res = await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
-
+      webhookOk = res.ok;
       if (!res.ok) {
-        throw new Error(`Automation failure: ${res.statusText}`);
+        console.error('[Automation] Webhook failed:', res.status, res.statusText);
       }
-    } catch (err: any) {
-      console.error("[Automation] Network error:", err);
-      // We don't throw here to avoid crashing the UI, but we log it.
+    } catch (err) {
+      webhookOk = false;
+      console.error('[Automation] Network error:', err);
+    }
+  } else {
+    console.warn('[Automation] N8N_WEBHOOK_URL not set — publishing to profile instead.');
+    try {
+      await publishContentToProfile({
+        username: profileUsername,
+        userId: output.userId,
+        outputId,
+      });
+      profilePublished = true;
+      mode = 'profile_only';
+    } catch (err) {
+      console.error('[Automation] Profile publish fallback failed:', err);
+      mode = 'skipped';
     }
   }
 
-  // 3. Update Status
   await postgres.outputLog.update({
     where: { id: outputId },
-    data: { status: "pushed" }
+    data: { status: mode === 'skipped' ? 'ready' : 'pushed' },
   });
 
-  return payload;
+  return {
+    mode,
+    outputId,
+    payload,
+    webhookOk,
+    profilePublished,
+    profileUsername: profilePublished ? profileUsername : undefined,
+  };
 }

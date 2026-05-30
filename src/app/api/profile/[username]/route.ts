@@ -26,6 +26,29 @@ export async function GET(
   }
 }
 
+export async function PATCH(
+  req: NextRequest,
+  { params }: RouteContext,
+) {
+  try {
+    const { username } = await params;
+    const data = await req.json();
+    const profile = await (prisma as any).profile.upsert({
+      where: { username },
+      update: { ...data, updated_at: new Date() },
+      create: {
+        username,
+        displayName: data.displayName ?? username,
+        ...data,
+      },
+    });
+    return NextResponse.json(profile);
+  } catch (error) {
+    console.error('Profile PATCH error:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
 export async function POST(
   req: NextRequest,
   { params }: RouteContext
@@ -37,7 +60,7 @@ export async function POST(
     const profile = await (prisma as any).profile.upsert({
       where: { username },
       update: { ...data, updated_at: new Date() },
-      create: { username, ...data },
+      create: { username, displayName: data.displayName ?? username, ...data },
     });
 
     return NextResponse.json(profile);

@@ -3,12 +3,15 @@
   "version": "1.0.0-hardened",
   "description": "Unified Identity Prism OS: RAG Intelligence + Digital Twin Memory (Hardened v1.0)",
   "type": "module",
+  "imports": {
+    "@/*": "./src/*"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "npm run prisma:generate && next build",
     "start": "next start",
     "lint": "eslint ./src --ext .js,.ts,.tsx",
-    "test": "node --test test/hardening/*.test.ts",
+    "test": "tsx --test test/hardening/*.test.ts test/user-flows/*.test.ts",
     "seed:profile": "tsx scripts/run-seed.ts",
     "postinstall": "npm run prisma:generate",
     "prisma:generate:mongo": "prisma generate --schema=prisma/mongo/schema.prisma",

@@ -2,6 +2,10 @@
 
 Base path: `/api`. All routes use App Router unless noted.
 
+**Source of truth (code):** `src/lib/api/endpoints.ts` — validated by `test/user-flows/api-map.test.ts` against every `src/app/api/**/route.ts` file.
+
+**UI client:** `src/lib/api/client.ts` — typed fetch helpers for dashboard flows.
+
 ## Auth
 
 | Method | Path | Purpose |

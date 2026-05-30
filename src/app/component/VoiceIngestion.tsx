@@ -33,6 +33,47 @@ export const VoiceIngestion = () => {
   const [transcript, setTranscript] = useState('');
   const recognitionRef              = useRef<any>(null);
 
+  /* ── Parse transcript via LLM (blob ingest API) ──────────────── */
+  const parseTranscript = useCallback(async (text: string) => {
+    setStage('processing');
+    try {
+      const res = await fetch('/api/cognitive/evaluate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: resolveUserId().userId,
+          input_text: text,
+          mode: 'operator',
+        }),
+      });
+
+      if (!res.ok) throw new Error('LLM parse failed');
+
+      const now = new Date().toISOString();
+      const words = text.split(' ');
+
+      setParsed({
+        what:            text.split('.')[0]?.trim() || text.slice(0, 60),
+        when:            now,
+        why:             words.length > 8 ? words.slice(0, 8).join(' ') + '…' : text,
+        how:             'Voice capture via Speech API',
+        raw_transcript:  text,
+      });
+      setStage('review');
+      toast.info('Signal captured — review before anchoring.');
+    } catch {
+      const now = new Date().toISOString();
+      setParsed({
+        what:           text.slice(0, 80),
+        when:           now,
+        why:            'Manually narrated signal',
+        how:            'Voice capture (local parse)',
+        raw_transcript: text,
+      });
+      setStage('review');
+    }
+  }, []);
+
   /* ── Start recording via Web Speech API ─────────────────────── */
   const startRecording = useCallback(() => {
     if (!SUPPORTED) {
@@ -79,57 +120,13 @@ export const VoiceIngestion = () => {
 
     recognition.start();
     setStage('recording');
-  }, [stage]);
+  }, [stage, parseTranscript]);
 
   /* ── Stop recording ──────────────────────────────────────────── */
   const stopRecording = useCallback(() => {
     recognitionRef.current?.stop();
     if (stage === 'recording') setStage('processing');
   }, [stage]);
-
-  /* ── Parse transcript via LLM (blob ingest API) ──────────────── */
-  const parseTranscript = useCallback(async (text: string) => {
-    setStage('processing');
-    try {
-      const res = await fetch('/api/cognitive/evaluate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: resolveUserId().userId,
-          input_text: text,
-          mode: 'operator',
-        }),
-      });
-
-      // Use a lightweight local parse if the LLM call fails — never leave user stuck
-      if (!res.ok) throw new Error('LLM parse failed');
-
-      // Derive a structured signal from the raw transcript locally as fallback
-      const now = new Date().toISOString();
-      const words = text.split(' ');
-
-      setParsed({
-        what:            text.split('.')[0]?.trim() || text.slice(0, 60),
-        when:            now,
-        why:             words.length > 8 ? words.slice(0, 8).join(' ') + '…' : text,
-        how:             'Voice capture via Speech API',
-        raw_transcript:  text,
-      });
-      setStage('review');
-      toast.info('Signal captured — review before anchoring.');
-    } catch {
-      // Graceful fallback: parse locally without LLM
-      const now = new Date().toISOString();
-      setParsed({
-        what:           text.slice(0, 80),
-        when:           now,
-        why:            'Manually narrated signal',
-        how:            'Voice capture (local parse)',
-        raw_transcript: text,
-      });
-      setStage('review');
-    }
-  }, []);
 
   /* ── Anchor to buffer (real POST to /api/blob) ───────────────── */
   const anchorMemory = useCallback(async () => {

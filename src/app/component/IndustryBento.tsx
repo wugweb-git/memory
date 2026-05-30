@@ -6,21 +6,19 @@ import {
   Coffee, Plus, X
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { INDUSTRIES as INDUSTRY_DATA } from '@/config/ui-content';
+import type { LucideIcon } from 'lucide-react';
 
-export const INDUSTRIES = [
-  { id: '1', name: 'Systems Architect', icon: Cpu, count: 42 },
-  { id: '2', name: 'Fintech', icon: TrendingUp, count: 18 },
-  { id: '3', name: 'UX/Product', icon: Layout, count: 25 },
-  { id: '4', name: 'AI Engineering', icon: Brain, count: 33 },
-  { id: '5', name: 'Life Coaching', icon: HeartPulse, count: 12 },
-  { id: '6', name: 'Marketing', icon: Globe, count: 15 },
-  { id: '7', name: 'F&B Strategy', icon: Coffee, count: 9 },
-  { id: '8', name: 'Product Delivery', icon: Layers, count: 21 },
-  { id: '9', name: '0→1 Thinking', icon: Shield, count: 14 },
-  { id: '10', name: 'Tech/DevOps', icon: Terminal, count: 28 },
-  { id: '11', name: 'Digital Identity', icon: Database, count: 7 },
-  { id: '12', name: 'Salesforce CRM', icon: Zap, count: 14 },
-];
+const INDUSTRY_ICONS: Record<string, LucideIcon> = {
+  '1': Cpu, '2': TrendingUp, '3': Layout, '4': Brain, '5': HeartPulse,
+  '6': Globe, '7': Coffee, '8': Layers, '9': Shield, '10': Terminal,
+  '11': Database, '12': Zap,
+};
+
+export const INDUSTRIES = INDUSTRY_DATA.map((row) => ({
+  ...row,
+  icon: INDUSTRY_ICONS[row.id] ?? Cpu,
+}));
 
 export const IndustryBento = ({ 
   selected, 

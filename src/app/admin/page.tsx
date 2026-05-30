@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import type { AdminChecklistItem } from '@/lib/admin/checklist';
 import { 
   ShieldCheck, Database, Save, FileEdit, Settings, 
   RefreshCcw, ChevronLeft, LayoutDashboard, Zap, 
@@ -15,7 +16,9 @@ import {
 import { JetBrains_Mono, Inter } from 'next/font/google';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IDENTITY_CONFIG } from '@/config/identity';
+import { IDENTITY_CONFIG, avatarFallbackUrl } from '@/config/identity';
+import { ADMIN_ONBOARDING_CHECKLIST } from '@/config/ui-content';
+import { API_ENDPOINTS } from '@/lib/api/endpoints';
 
 const jetBrains = JetBrains_Mono({ subsets: ['latin'] });
 const inter = Inter({ subsets: ['latin'] });
@@ -26,27 +29,47 @@ export default function AdminConsole() {
   const [auditResults, setAuditResults] = useState<any>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   
-  const [checklist, setChecklist] = useState([
-     { id: 1, text: 'Add calendar & meeting link', completed: true },
-     { id: 2, text: 'Let followers support your work', completed: false },
-     { id: 3, text: 'Add position on LinkedIn', completed: false },
-     { id: 4, text: 'Enable dynamic pricing nodes', completed: false },
-     { id: 5, text: 'Initialize Neural Avatar', completed: false },
-     { id: 6, text: 'Calibrate Semantic Bio', completed: false },
-     { id: 7, text: 'Bridge Twitter Sync', completed: false },
-     { id: 8, text: 'Deploy Service Lattice', completed: false },
-     { id: 9, text: 'Audit Memory Quarantine', completed: false },
-     { id: 10, text: 'Test Neural Chat reflex', completed: false },
-     { id: 11, text: 'Harden L4 Logic Gates', completed: false },
-     { id: 12, text: 'Sync GitHub Repository', completed: false },
-     { id: 13, text: 'Broadcast YouTube Feed', completed: false },
-     { id: 14, text: 'Achieve Matrix Alignment', completed: false },
-  ]);
+  const [checklist, setChecklist] = useState<AdminChecklistItem[]>(
+    ADMIN_ONBOARDING_CHECKLIST.map((item) => ({
+      id: item.id,
+      text: item.text,
+      completed: Boolean(item.completed),
+    })),
+  );
+
+  useEffect(() => {
+    fetch('/api/admin/checklist')
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data.items) && data.items.length) setChecklist(data.items);
+      })
+      .catch(() => undefined);
+  }, []);
+
+  const persistChecklist = useCallback(async (items: AdminChecklistItem[]) => {
+    try {
+      await fetch('/api/admin/checklist', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items }),
+      });
+    } catch {
+      /* local state remains authoritative in UI */
+    }
+  }, []);
+
+  const toggleChecklistItem = (id: number) => {
+    setChecklist((prev) => {
+      const next = prev.map((c) => (c.id === id ? { ...c, completed: !c.completed } : c));
+      void persistChecklist(next);
+      return next;
+    });
+  };
 
   const runAudit = async () => {
     setIsAuditing(true);
     try {
-      const res = await fetch('/api/admin/semantic-diagnose', { method: 'POST' });
+      const res = await fetch(API_ENDPOINTS.admin.semanticDiagnose.path, { method: 'POST' });
       const data = await res.json();
       setAuditResults(data);
     } catch (e) {
@@ -102,7 +125,7 @@ export default function AdminConsole() {
             </button>
             <button className="flex items-center gap-3 pl-2 pr-4 py-2 rounded-2xl bg-white border border-[#E0E0DE] hover:border-[#1A1A1A] transition-all group">
                <div className="w-8 h-8 rounded-xl bg-[#F5F5F3] overflow-hidden border border-[#E0E0DE]">
-                  <img src="https://ui-avatars.com/api/?name=VS&background=F5F5F0&color=1A1A1A&bold=true" alt="User" />
+                  <img src={avatarFallbackUrl()} alt={IDENTITY_CONFIG.DISPLAY_NAME} />
                </div>
                <span className="text-[11px] font-black uppercase tracking-widest hidden md:block">{IDENTITY_CONFIG.DISPLAY_NAME}</span>
             </button>
@@ -173,7 +196,7 @@ export default function AdminConsole() {
                                  {checklist.map(item => (
                                     <button
                                        key={item.id}
-                                       onClick={() => setChecklist(prev => prev.map(c => c.id === item.id ? { ...c, completed: !c.completed } : c))}
+                                       onClick={() => toggleChecklistItem(item.id)}
                                        className="p-6 rounded-[1.5rem] bg-[#FDFDFB] border border-[#E0E0DE] flex items-center justify-between group/item hover:border-[#1A1A1A] transition-all text-left w-full">
                                        <div className="flex items-center gap-5">
                                           <div className={`w-8 h-8 rounded-xl flex items-center justify-center border transition-all ${item.completed ? 'bg-success/10 border-success/40 text-success' : 'bg-white border-[#E0E0DE] text-[#E0E0DE]'}`}>

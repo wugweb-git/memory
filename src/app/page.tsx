@@ -8,14 +8,15 @@ import {
   Link2, Settings, Eye, Archive, Cpu, LayoutDashboard,
   TrendingUp, GitBranch, Globe, ChevronRight
 } from 'lucide-react';
-import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport } from 'ai';
 import type { UIMessage } from 'ai';
+import { usePrismChat } from '@/hooks/usePrismChat';
+import { resolveUserId } from '@/config/identity';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import { Sidebar, Section }         from './component/Sidebar';
 import { TopNav }                   from './component/TopNav';
+import { MobileNav }                from './component/MobileNav';
 import { ProfileHeader }            from './component/ProfileHeader';
 import { IdentityPillars }          from './component/IdentityPillars';
 import { IndustryBento }            from './component/IndustryBento';
@@ -38,7 +39,10 @@ import { getExternalLinks } from '@/config/identity';
 import { EnhancementHub }           from './component/EnhancementHub';
 import CognitiveConsole             from './cognitive/page';
 import { useDashboardData, usePersonaTraits } from './hooks/useDashboardData';
+import { useProfileData } from '@/hooks/useProfileData';
+import Link from 'next/link';
 import { IDENTITY_CONFIG } from '@/config/identity';
+import { UI_API } from '@/lib/api/endpoints';
 import { AuthPanel } from './component/AuthPanel';
 
 /* ── ErrorBoundary ───────────────────────────────────────────── */
@@ -240,10 +244,7 @@ function chatMessageText(message: UIMessage): string {
 const DigitalTwinSection: React.FC = () => {
   const endRef = useRef<HTMLDivElement>(null);
   const [input, setInput] = useState('');
-  const { messages, sendMessage, status, setMessages } = useChat({
-    transport: new DefaultChatTransport({ api: '/api/chat' }),
-    onError: (e) => toast.error('Link failure: ' + (e.message || 'Check connection.')),
-  });
+  const { messages, sendMessage, status, setMessages } = usePrismChat(UI_API.chat);
   const isLoading = status === 'submitted' || status === 'streaming';
 
   const send = (e: React.FormEvent<HTMLFormElement>) => {
@@ -297,8 +298,8 @@ const DigitalTwinSection: React.FC = () => {
           </div>
         ) : (
           <>
-            {messages.map(m => {
-              const text = chatMessageText(m);
+            {messages.map((m) => {
+              const text = chatMessageText(m as UIMessage);
               return (
               <div key={m.id} className={`flex gap-3 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border ${
@@ -430,18 +431,43 @@ const CognitiveSection: React.FC = () => (
 
 /* ── Persona ──────────────────────────────────────────────────── */
 const PersonaSection: React.FC = () => {
-  const { traits, loading } = usePersonaTraits();
-  const DEFAULT_TRAITS = [
-    { name: 'Analytical Depth',    score: 0.91, desc: 'Reasons from first principles before acting.' },
-    { name: 'Execution Focus',     score: 0.78, desc: 'Bias toward shipping over prolonged planning.' },
-    { name: 'Systems Thinking',    score: 0.95, desc: 'High capacity for complex interdependencies.' },
-    { name: 'Creative Synthesis',  score: 0.84, desc: 'Connects disparate domains into novel frameworks.' },
-    { name: 'Communication Style', score: 0.70, desc: 'Structured, layered explanations with precision.' },
-    { name: 'Risk Tolerance',      score: 0.65, desc: 'Moderate — prefers calculated bets.' },
-  ];
-  const KW = ['Systems Architect','RAG Engineer','Digital Twin Builder','Venture Strategist','AI Product Designer'];
+  const { traits, loading, refetch: refetchTraits } = usePersonaTraits();
+  const { profile, refetch: refetchProfile } = useProfileData();
+  const [rebuilding, setRebuilding] = useState(false);
+  const [rebuildNote, setRebuildNote] = useState<string | null>(null);
 
-  const displayTraits = traits.length > 0 ? traits : DEFAULT_TRAITS;
+  const regeneratePersona = async () => {
+    const { userId } = resolveUserId();
+    setRebuilding(true);
+    setRebuildNote(null);
+    try {
+      const res = await fetch('/api/persona/rebuild', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, useProfileSource: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setRebuildNote(data.reason === 'ai_contamination_detected'
+          ? 'Rebuild blocked: source text looks AI-generated. Edit your profile bio first.'
+          : data.reason ?? 'Rebuild failed');
+        return;
+      }
+      setRebuildNote('Persona rebuilt from profile sources.');
+      await Promise.all([refetchTraits(), refetchProfile()]);
+    } catch {
+      setRebuildNote('Rebuild request failed.');
+    } finally {
+      setRebuilding(false);
+    }
+  };
+  const ventureTags = profile?.sections
+    ?.filter((s) => s.type === 'venture')
+    .flatMap((s) => {
+      const c = (s.content ?? {}) as Record<string, unknown>;
+      return Array.isArray(c.tags) ? (c.tags as string[]) : [];
+    }) ?? [];
+  const keywords = ventureTags.length > 0 ? [...new Set(ventureTags)].slice(0, 8) : [];
 
   return (
     <PageShell title="Persona" subtitle="AI-synthesized behavioral profile and positioning" icon={Sparkles}>
@@ -449,16 +475,35 @@ const PersonaSection: React.FC = () => {
         <Label>Synthesized Bio</Label>
         <div className="glass-panel rounded-[2rem] border border-border-secondary p-6 shadow-2xl">
           <p className="text-sm text-text-secondary leading-relaxed">
-            A systems architect and founder building at the intersection of human identity and machine intelligence.
-            Specialises in RAG-grounded cognitive infrastructure, venture mapping, and AI-native product design.
+            {profile?.bio ?? 'Connect persona APIs and seed profile data to populate this section.'}
           </p>
-          <button className="mt-3 text-[11px] font-black text-accent uppercase tracking-widest hover:underline">Regenerate with LLM →</button>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={regeneratePersona}
+              disabled={rebuilding}
+              className="px-4 py-2 rounded-xl bg-text-primary text-bg-primary text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
+            >
+              {rebuilding ? 'Regenerating…' : 'Regenerate with LLM'}
+            </button>
+            <Link href="/persona" className="text-[11px] font-black text-accent uppercase tracking-widest hover:underline">
+              Full persona console →
+            </Link>
+          </div>
+          {rebuildNote && (
+            <p className="mt-2 text-[11px] text-text-tertiary">{rebuildNote}</p>
+          )}
         </div>
       </div>
       <div>
         <Label>Trait Scores</Label>
+        {loading ? (
+          <p className="text-sm text-text-tertiary italic px-2">Loading traits…</p>
+        ) : traits.length === 0 ? (
+          <p className="text-sm text-text-tertiary italic px-2">No persona traits yet. Use the persona console to provide feedback and rebuild.</p>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {displayTraits.map((t: any) => (
+          {traits.map((t: { name: string; score: number; desc?: string }) => (
             <div key={t.name} className="glass-panel rounded-[2rem] border border-border-secondary p-5 space-y-3 shadow-xl">
               <div className="flex justify-between">
                 <span className="text-sm font-bold text-text-primary">{t.name}</span>
@@ -468,37 +513,22 @@ const PersonaSection: React.FC = () => {
                 <motion.div initial={{ width: 0 }} animate={{ width: `${(t.score || 0) * 100}%` }}
                   transition={{ duration: 1, ease: 'easeOut' }} className="h-full bg-accent-high rounded-full" />
               </div>
-              <p className="text-[11px] text-text-tertiary">{t.desc}</p>
+              <p className="text-[11px] text-text-tertiary">{t.desc ?? ''}</p>
             </div>
           ))}
         </div>
+        )}
       </div>
+      {keywords.length > 0 && (
       <div>
         <Label>Positioning Keywords</Label>
         <div className="glass-panel rounded-[2rem] border border-border-secondary p-5 shadow-xl flex flex-wrap gap-2">
-          {KW.map(k => (
+          {keywords.map((k) => (
             <span key={k} className="px-3 py-1.5 bg-secondary border border-border-primary rounded-xl text-[12px] font-bold text-text-secondary uppercase tracking-wide">{k}</span>
           ))}
         </div>
       </div>
-      <div>
-        <Label>Communication Style Patterns</Label>
-        <div className="space-y-2">
-          {[
-            { pattern: 'Uses layered analogies for complex systems', freq: 'High' },
-            { pattern: 'Prefers numbered frameworks over prose',     freq: 'Medium' },
-            { pattern: 'Writes in present tense with active voice',  freq: 'High' },
-            { pattern: 'Removes passive voice in final drafts',      freq: 'Medium' },
-          ].map((p, i) => (
-            <div key={i} className="glass-panel flex items-center gap-4 rounded-[1.5rem] border border-border-secondary px-4 py-3 shadow-xl">
-              <p className="flex-1 text-sm text-text-secondary">{p.pattern}</p>
-              <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border uppercase tracking-widest ${
-                p.freq === 'High' ? 'bg-success/10 text-success border-success/20' : 'bg-secondary text-text-tertiary border-border-secondary'
-              }`}>{p.freq}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+      )}
     </PageShell>
   );
 };
@@ -618,6 +648,7 @@ const SettingsSection: React.FC = () => {
 export default function IdentityPrismWorkspace() {
   const [section, setSection]           = useState<Section>('overview');
   const [selectedIndustry, setIndustry] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const render = () => {
     switch (section) {
@@ -641,9 +672,19 @@ export default function IdentityPrismWorkspace() {
         position="bottom-right"
         toastClassName="!bg-bg-elevated !border !border-border-secondary !rounded-[2rem] !shadow-3xl !text-text-primary !text-sm"
       />
-      <Sidebar current={section} onChange={setSection} />
-      <TopNav current={section} onChange={setSection} />
-      <main className="flex-1 ml-60 mt-14 overflow-y-auto custom-scrollbar bg-bg-primary">
+      <Sidebar
+        current={section}
+        onChange={setSection}
+        mobileOpen={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+      />
+      <TopNav
+        current={section}
+        onChange={setSection}
+        onMenuToggle={() => setMobileMenuOpen((v) => !v)}
+      />
+      <MobileNav current={section} onChange={setSection} />
+      <main className="flex-1 md:ml-60 mt-14 pb-20 md:pb-0 overflow-y-auto custom-scrollbar bg-bg-primary">
         <AnimatePresence mode="wait">
           <motion.div
             key={section}

@@ -4,14 +4,22 @@ import { postgres } from "../db/postgres";
 import { enforcePersonaStyle } from "@/lib/persona/style";
 import { persistFingerprint } from "@/lib/persona/fingerprint";
 
-export type OutputPlatform = "linkedin" | "blog" | "memo" | "other";
+export type OutputPlatform = "linkedin" | "blog" | "memo" | "medium" | "portfolio" | "other";
 
 const PLATFORM_CONSTRAINTS: Record<OutputPlatform, string> = {
   linkedin: "Punchy, use hooks, high signal-to-noise ratio, structured with line breaks, max 250 words.",
   blog: "In-depth, structured with headings, comprehensive, long-form narrative.",
   memo: "Compressed strategy notes, executive style, bulleted, focus on 'Next Actions'.",
-  other: "Professional and concise."
+  medium: "In-depth article with clear sections, thoughtful tone, suitable for Medium.",
+  portfolio: "Professional case-study style suitable for a portfolio or personal site.",
+  other: "Professional and concise.",
 };
+
+export function normalizeOutputPlatform(platform: string): OutputPlatform {
+  const p = platform.toLowerCase();
+  if (p in PLATFORM_CONSTRAINTS) return p as OutputPlatform;
+  return "other";
+}
 
 /**
  * Generates an external artifact from a decision using the Digital Twin persona.
@@ -23,7 +31,8 @@ export async function generateArtifact(params: {
   sourceContent: string;
   platform: OutputPlatform;
 }) {
-  const { userId, decisionId, sourceContent, platform } = params;
+  const { userId, decisionId, sourceContent } = params;
+  const platform = normalizeOutputPlatform(params.platform);
 
   if (!decisionId) {
     throw new Error("CORE RULE VIOLATION: NO content without decision_id");

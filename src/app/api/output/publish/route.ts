@@ -20,12 +20,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "outputId required" }, { status: 400 });
     }
 
-    const result = await pushToAutomation(outputId);
+    const result = await pushToAutomation(outputId, {
+      profileUsername: body.profileUsername,
+    });
 
-    return NextResponse.json({ 
-      status: "success", 
-      message: "Artifact pushed to automation layer",
-      payload: result
+    const messages: Record<string, string> = {
+      webhook: 'Artifact pushed to n8n automation',
+      profile_only: 'N8N not configured — artifact published to profile',
+      skipped: 'Automation skipped (configure N8N_WEBHOOK_URL or profile publish)',
+    };
+
+    return NextResponse.json({
+      status: 'success',
+      mode: result.mode,
+      message: messages[result.mode],
+      profilePublished: result.profilePublished,
+      payload: result.payload,
     });
 
   } catch (err: any) {

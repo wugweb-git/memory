@@ -8,6 +8,7 @@ import {
   Globe, Zap, Menu
 } from 'lucide-react';
 import { Section } from './Sidebar';
+import { avatarFallbackUrl } from '@/config/identity';
 
 const SECTION_META: Record<Section, { label: string; icon: any; desc: string }> = {
   overview:  { label: 'Dashboard',        icon: LayoutDashboard, desc: 'System overview' },
@@ -157,7 +158,7 @@ export const TopNav: React.FC<TopNavProps> = ({ current, onChange, onMenuToggle 
           {/* user */}
           <button className="flex items-center gap-2 pl-1.5 pr-1 py-1 rounded-xl hover:bg-secondary transition-colors">
             <img
-              src="https://ui-avatars.com/api/?name=VS&size=64&background=E8E8E8&color=1A1A1A&bold=true"
+              src={avatarFallbackUrl(64)}
               alt="User avatar"
               className="w-7 h-7 rounded-full border border-border-primary"
             />

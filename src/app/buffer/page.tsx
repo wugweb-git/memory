@@ -1,6 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { StandaloneNav } from '@/app/component/StandaloneNav';
+import { API_ENDPOINTS } from '@/lib/api/endpoints';
+import { postBlobAction } from '@/lib/ui/blob';
 import { 
   Database, 
   Trash2, 
@@ -47,7 +50,7 @@ export default function BufferControlSurface() {
   // Stats & Ingestion Monitoring
   const fetchStats = useCallback(async () => {
     try {
-      const res = await fetch('/api/blob/stats');
+      const res = await fetch(API_ENDPOINTS.blob.stats.path);
       const data = await res.json();
       setStats(data);
     } catch (err) {
@@ -59,7 +62,7 @@ export default function BufferControlSurface() {
     setLoading(true);
     try {
       const stateFilter = activeTab === 'all' ? '' : `&state=${activeTab}`;
-      const res = await fetch(`/api/blob?limit=50${stateFilter}`);
+      const res = await fetch(`${API_ENDPOINTS.blob.list.path}?limit=50${stateFilter}`);
       const data = await res.json();
       setItems(data.items || []);
     } catch (err) {
@@ -78,11 +81,7 @@ export default function BufferControlSurface() {
 
   const handleAction = async (id: string, action: string) => {
     try {
-      const res = await fetch(`/api/blob/${action}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id })
-      });
+      const res = await postBlobAction(action, id);
       if (res.ok) {
         fetchItems();
         fetchStats();
@@ -121,9 +120,10 @@ export default function BufferControlSurface() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-slate-300 font-sans selection:bg-indigo-500/30">
+    <div className="min-h-screen bg-[#050505] text-slate-300 font-sans selection:bg-indigo-500/30 pt-10">
+      <StandaloneNav />
       {/* 🔹 STORAGE STATUS STRIP */}
-      <div className="border-b border-white/5 bg-white/[0.02] backdrop-blur-xl sticky top-0 z-30">
+      <div className="border-b border-white/5 bg-white/[0.02] backdrop-blur-xl sticky top-10 z-30">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className={`w-3 h-3 rounded-full animate-pulse ${stats ? getStatusColor(stats.status) : 'bg-slate-500'}`} />

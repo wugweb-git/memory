@@ -62,7 +62,7 @@ export async function POST(req: Request) {
 
     const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const result = streamText({
-      model: openai('gpt-4-turbo'),
+      model: openai('gpt-4-turbo') as unknown as Parameters<typeof streamText>[0]['model'],
       temperature,
       system: `${SYSTEM_PROMPT}\n\nContext nodes:\n${context || '(no indexed clusters matched)'}`,
       messages: await convertToModelMessages(messages),

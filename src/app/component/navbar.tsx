@@ -1,56 +1,52 @@
 "use client";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Brain, Command, Database, Archive, Layers, Settings, ChevronRight } from 'lucide-react';
-
-const NAV_ITEMS = [
-  { href: '/', label: 'Neural OS', icon: Command },
-  { href: '/ask', label: 'Ask', icon: Brain },
-  { href: '/memory', label: 'Memory', icon: Database },
-  { href: '/buffer', label: 'Buffer', icon: Archive },
-  { href: '/cognitive', label: 'Cognitive', icon: Layers },
-];
+import { APP_BRAND, APP_NAV_ITEMS } from '@/config/ui-content';
 
 const NavBar: React.FC = () => {
   const pathname = usePathname();
+  const LogoIcon = APP_NAV_ITEMS[0].icon;
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-[60] h-16 bg-white/80 backdrop-blur-3xl border-b border-[#E0E0DE] flex items-center justify-between px-8 shadow-sm">
-      {/* Logo */}
-      <Link href="/" className="flex items-center gap-3 group">
-        <div className="w-9 h-9 rounded-xl bg-black flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-          <Command size={18} className="text-white" />
+    <nav
+      className="fixed top-0 left-0 right-0 z-[60] h-14 bg-bg-elevated/90 backdrop-blur-xl border-b border-border-secondary flex items-center justify-between px-4 md:px-8 shadow-sm"
+      aria-label="Primary"
+    >
+      <Link href="/" className="flex items-center gap-3 group shrink-0">
+        <div className="w-9 h-9 rounded-xl bg-text-primary flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+          <LogoIcon size={18} className="text-bg-primary" />
         </div>
-        <span className="text-[12px] font-black uppercase tracking-[0.2em] text-[#1A1A1A] italic hidden sm:block">
-          Identity Prism
+        <span className="text-[12px] font-black uppercase tracking-[0.2em] text-text-primary italic hidden sm:block">
+          {APP_BRAND.name}
         </span>
       </Link>
 
-      {/* Nav Links */}
-      <div className="flex items-center gap-1">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-          const isActive = pathname === href;
+      <div className="flex items-center gap-0.5 overflow-x-auto max-w-[min(100vw-8rem,52rem)] scrollbar-hide">
+        {APP_NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+          const isActive =
+            href === '/' ? pathname === '/' : pathname.startsWith(href);
           return (
             <Link
               key={href}
               href={href}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${
                 isActive
-                  ? 'bg-[#1A1A1A] text-white shadow-lg'
-                  : 'text-[#888886] hover:bg-[#F5F5F3] hover:text-[#1A1A1A]'
+                  ? 'bg-text-primary text-bg-primary shadow-md'
+                  : 'text-text-tertiary hover:bg-secondary hover:text-text-primary'
               }`}
             >
-              <Icon size={14} />
-              <span className="hidden md:block">{label}</span>
+              <Icon size={14} aria-hidden />
+              <span className="hidden lg:inline">{label}</span>
             </Link>
           );
         })}
       </div>
 
-      {/* Status */}
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#F5F5F3] border border-[#E0E0DE]">
-        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-        <span className="text-[9px] font-black uppercase tracking-widest text-[#888886] hidden sm:block">Active</span>
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary border border-border-secondary shrink-0">
+        <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" aria-hidden />
+        <span className="text-[9px] font-black uppercase tracking-widest text-text-tertiary hidden sm:block">
+          {APP_BRAND.statusLabel}
+        </span>
       </div>
     </nav>
   );

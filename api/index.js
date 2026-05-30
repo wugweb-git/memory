@@ -41,6 +41,8 @@ export default async function handler(req, res) {
     if (path === '/api' && req.method === 'GET') {
       return res.status(200).json({
         ok: true,
+        deprecated: true,
+        message: 'Legacy Express API — use Next.js App Router routes in src/app/api. See docs/legacy-api.md.',
         version: config.appVersion,
         endpoints: [
           '/api/test', '/api/test-db', '/api/test-storage', '/api/avatar/upload', '/api/avatar/view',

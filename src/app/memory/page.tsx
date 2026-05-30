@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { StandaloneNav } from '@/app/component/StandaloneNav';
+import { API_ENDPOINTS } from '@/lib/api/endpoints';
 import { Activity, AlertTriangle, Database, FileLock2, Folder, HardDrive, Home, RefreshCcw, Server, ShieldAlert } from 'lucide-react';
 
 type MonitorState = {
@@ -61,8 +63,8 @@ export default function MemoryControlSurface() {
     setLoading(true);
     try {
       const [monitorRes, packetRes] = await Promise.all([
-        fetch('/api/memory/monitor'),
-        fetch(`/api/memory/packets?limit=100&status=${encodeURIComponent(statusFilter)}&source=${encodeURIComponent(sourceFilter)}`)
+        fetch(API_ENDPOINTS.memory.monitor.path),
+        fetch(`${API_ENDPOINTS.memory.packets.path}?limit=100&status=${encodeURIComponent(statusFilter)}&source=${encodeURIComponent(sourceFilter)}`)
       ]);
       if (!monitorRes.ok || !packetRes.ok) return;
       const monitorJson = await monitorRes.json();
@@ -108,7 +110,8 @@ export default function MemoryControlSurface() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex overflow-hidden selection:bg-cyan-500/30">
+    <div className="min-h-screen bg-black text-white flex overflow-hidden selection:bg-cyan-500/30 pt-10">
+      <StandaloneNav />
       {/* Scanline Effect */}
       <div className="scanline" />
       <div className="fixed inset-0 grid-bg opacity-20 pointer-events-none" />

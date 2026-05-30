@@ -40,7 +40,7 @@ export const PublishedWorks = () => {
           date: h.createdAt ? new Date(String(h.createdAt)).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '—',
         }));
 
-        const fromProfile = byType('published').map((s, i) => {
+        const fromProfile = [...byType('published'), ...byType('blog'), ...byType('reference')].map((s, i) => {
           const c = (s.content ?? {}) as Record<string, unknown>;
           return {
             id: s.id ?? `profile-${i}`,

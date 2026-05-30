@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { IDENTITY_CONFIG, resolveUserId } from '@/config/identity';
+import { AppShell } from '@/app/component/AppShell';
 
 type Trait = { id: string; traitName: string; traitValue: number; confidence: number; evidenceCount: number };
 type EvolutionLog = { id: string; changedField: string | null; reason: string | null; confidenceDelta: number | null; createdAt: string };
@@ -50,6 +51,32 @@ export default function PersonaIntelligencePage() {
     if (userId) fetchData(userId);
   }, [userId, fetchData]);
 
+  async function rebuildPersona() {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/persona/rebuild', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, useProfileSource: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(
+          data.reason === 'ai_contamination_detected'
+            ? 'Rebuild blocked: profile text appears AI-generated.'
+            : data.reason ?? 'Rebuild failed',
+        );
+        return;
+      }
+      await fetchData(userId);
+    } catch {
+      setError('Persona rebuild failed');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function sendFeedback() {
     setSaving(true);
     try {
@@ -80,28 +107,43 @@ export default function PersonaIntelligencePage() {
 
   if (loading) {
     return (
-      <div className="w-full min-h-screen flex items-center justify-center px-4">
-        <p className="text-sm uppercase tracking-widest text-text-tertiary animate-pulse">Loading Digital Twin…</p>
-      </div>
+      <AppShell>
+        <div className="w-full min-h-[50vh] flex items-center justify-center px-4">
+          <p className="text-sm uppercase tracking-widest text-text-tertiary animate-pulse">Loading Digital Twin…</p>
+        </div>
+      </AppShell>
     );
   }
 
   if (error) {
     return (
-      <div className="w-full min-h-screen flex items-center justify-center px-4">
-        <div className="text-center space-y-2">
-          <p className="text-sm text-red-500">{error}</p>
-          <button onClick={() => fetchData(userId)} className="px-4 py-2 rounded-xl bg-text-primary text-bg-primary text-xs font-bold uppercase">Retry</button>
+      <AppShell>
+        <div className="w-full min-h-[50vh] flex items-center justify-center px-4">
+          <div className="text-center space-y-2">
+            <p className="text-sm text-red-500">{error}</p>
+            <button onClick={() => fetchData(userId)} className="px-4 py-2 rounded-xl bg-text-primary text-bg-primary text-xs font-bold uppercase">Retry</button>
+          </div>
         </div>
-      </div>
+      </AppShell>
     );
   }
 
   return (
+    <AppShell>
     <div className="w-full max-w-3xl mx-auto px-4 py-8 space-y-8">
-      <header className="space-y-1">
-        <h1 className="text-xl font-black uppercase italic">Persona Intelligence</h1>
-        <p className="text-xs text-text-tertiary uppercase tracking-widest">Layer 4 — Digital Twin Evolution</p>
+      <header className="space-y-3">
+        <div className="space-y-1">
+          <h1 className="text-xl font-black uppercase italic">Persona Intelligence</h1>
+          <p className="text-xs text-text-tertiary uppercase tracking-widest">Layer 4 — Digital Twin Evolution</p>
+        </div>
+        <button
+          type="button"
+          onClick={rebuildPersona}
+          disabled={saving}
+          className="px-4 py-2 rounded-xl bg-text-primary text-bg-primary text-xs font-bold uppercase disabled:opacity-50"
+        >
+          {saving ? 'Rebuilding…' : 'Regenerate with LLM'}
+        </button>
       </header>
 
       {/* Communication Profile */}
@@ -221,5 +263,6 @@ export default function PersonaIntelligencePage() {
         </button>
       </section>
     </div>
+    </AppShell>
   );
 }

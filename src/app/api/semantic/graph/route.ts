@@ -8,15 +8,16 @@ export async function GET() {
   const entities = await prisma.entity.findMany({
     where: { processing_state: "complete" },
     take: 200,
-    select: { id: true, name: true, type: true, packet_id: true },
+    select: { id: true, name: true, type: true, packet_ids: true },
   });
 
   const edges: Array<{ from: string; to: string }> = [];
   const byPacket = new Map<string, string[]>();
   for (const e of entities) {
-    const list = byPacket.get(e.packet_id) ?? [];
+    const packetKey = Array.isArray(e.packet_ids) && e.packet_ids[0] ? String(e.packet_ids[0]) : e.id;
+    const list = byPacket.get(packetKey) ?? [];
     list.push(e.id);
-    byPacket.set(e.packet_id, list);
+    byPacket.set(packetKey, list);
   }
   for (const ids of byPacket.values()) {
     for (let i = 1; i < ids.length; i++) {

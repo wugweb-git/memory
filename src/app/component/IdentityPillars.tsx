@@ -1,34 +1,15 @@
 "use client";
 import React from 'react';
-import { Compass, Scale, Terminal, Sparkles, Brain, Cpu } from 'lucide-react';
+import { Compass, Scale, Terminal, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { IDENTITY_PILLARS } from '@/config/ui-content';
 
-const PILLARS = [
-  {
-    id: 'origin',
-    label: 'Origin_Spirit',
-    title: 'Architecture & Logic',
-    content: 'My journey began in the physical world of architecture, where I learned that every structure is a materialized logic map. Today, I build digital ontologies that ingest complex signals and synthesize them into professional clarity.',
-    icon: Compass,
-    accent: 'text-accent'
-  },
-  {
-    id: 'philosophy',
-    label: 'Philosophy_Core',
-    title: 'Proof of Human Logic',
-    content: 'In an AI-saturated world, the ultimate advantage is Signature Logic. I build systems where AI serves as infrastructure while human spirit provides the vector.',
-    icon: Scale,
-    accent: 'text-success'
-  },
-  {
-    id: 'stack',
-    label: 'Neural_Stack',
-    title: 'RAG-Enabled Cognitive Mapping',
-    content: 'My stack is a living RAG implementation where every venture node is a vector. I use Neural Atlas Search to make 8 years of cross-industry experience instantly retrievable.',
-    icon: Terminal,
-    accent: 'text-warning'
-  },
-];
+const PILLAR_ICONS = { origin: Compass, philosophy: Scale, stack: Terminal } as const;
+
+const PILLARS = IDENTITY_PILLARS.map((p) => ({
+  ...p,
+  icon: PILLAR_ICONS[p.id as keyof typeof PILLAR_ICONS],
+}));
 
 export const IdentityPillars = () => {
   return (

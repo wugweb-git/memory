@@ -18,12 +18,6 @@ interface Application {
   url?: string;
 }
 
-const SEED: Application[] = [
-  { id: 's1', role: 'Principal Systems Architect', company: 'Solana Labs',  status: 'Applied',      source: 'Indeed',   via: 'Extension',  date: '—' },
-  { id: 's2', role: 'Staff UX Product Designer',   company: 'Revolut',      status: 'Interviewing', source: 'LinkedIn', via: 'Email Sync', date: '—' },
-  { id: 's3', role: 'AI Engineering Lead',          company: 'Anthropic',   status: 'Rejected',     source: 'Direct',   via: 'Manual',     date: '—' },
-];
-
 const STATUS_LABEL: Record<Application['status'], string> = {
   Applied:      'MATRIX_INGRESS',
   Interviewing: 'SYNC_ACTIVE',
@@ -58,21 +52,25 @@ export const JobPipeline = () => {
       const data = await res.json();
       const rows = parseBlobItems(data);
 
-      const apiApps: Application[] = rows.map((b: Record<string, unknown>) => ({
-        id:      b.id,
-        role:    b.metadata?.role    || b.raw_payload?.slice(0, 50) || 'Untitled Role',
-        company: b.metadata?.company || 'Unknown',
-        status:  b.metadata?.status  || 'Applied',
-        source:  b.source_origin     || 'Manual',
-        via:     b.metadata?.via     || 'Manual',
-        date:    b.created_at ? new Date(b.created_at).toLocaleDateString() : '—',
-        url:     b.metadata?.url,
-      }));
+      const apiApps: Application[] = rows.map((b: Record<string, unknown>) => {
+        const meta = (b.metadata && typeof b.metadata === 'object' ? b.metadata : {}) as Record<string, unknown>;
+        const raw = typeof b.raw_payload === 'string' ? b.raw_payload : '';
+        return {
+          id: String(b.id ?? ''),
+          role: String(meta.role ?? (raw.slice(0, 50) || 'Untitled Role')),
+          company: String(meta.company ?? 'Unknown'),
+          status: (String(meta.status ?? 'Applied') as Application['status']),
+          source: String(b.source_origin ?? 'Manual'),
+          via: String(meta.via ?? 'Manual'),
+          date: b.created_at ? new Date(String(b.created_at)).toLocaleDateString() : '—',
+          url: meta.url ? String(meta.url) : undefined,
+        };
+      });
 
-      setApps(apiApps.length > 0 ? apiApps : SEED);
+      setApps(apiApps);
     } catch {
       setError(true);
-      setApps(SEED);
+      setApps([]);
     } finally {
       setLoading(false);
     }
@@ -127,8 +125,14 @@ export const JobPipeline = () => {
         </div>
       )}
 
+      {!loading && !error && apps.length === 0 && (
+        <p className="text-sm text-text-tertiary italic px-2 py-8">
+          No job applications in the buffer yet. Add items with type <code className="text-accent">job_application</code> via Buffer or Universal Sync.
+        </p>
+      )}
+
       {/* Application list */}
-      {!loading && (
+      {!loading && apps.length > 0 && (
         <div className="space-y-4">
           {apps.map((app, idx) => (
             <motion.div

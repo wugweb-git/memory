@@ -1,5 +1,6 @@
 import { postgres } from "@/lib/db/postgres";
-import { Prisma } from "@/generated/postgres";
+import { publishContentToProfile } from "@/lib/profile/store";
+import { IDENTITY_CONFIG } from "@/config/identity";
 
 export async function runPublishingQueueJob() {
   const pending = await postgres.publishingQueue.findMany({
@@ -17,16 +18,11 @@ export async function runPublishingQueueJob() {
         where: { id: item.id },
         data: { status: "published", publishedAt: new Date(), lastError: null },
       });
-      await postgres.publishedOutput.create({
-        data: {
-          userId: item.userId,
-          outputId: item.outputId,
-          platform: item.platform,
-          externalId: null,
-          externalUrl: null,
-          publishedContent: Prisma.JsonNull,
-          analytics: Prisma.JsonNull,
-        },
+      await publishContentToProfile({
+        username: IDENTITY_CONFIG.HANDLE,
+        userId: item.userId,
+        outputId: item.outputId,
+        platform: item.platform ?? "portfolio",
       });
       published += 1;
     } catch (error: any) {

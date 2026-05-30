@@ -1,271 +1,271 @@
 "use client";
 
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { 
-  ArrowLeft, Upload, Edit3, Settings, 
-  ExternalLink, Copy, Share2, Eye,
-  ChevronRight, Sparkles, Image as ImageIcon,
-  Palette, Shield
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import {
+  ArrowLeft, Save, Eye, Plus, Trash2, BookOpen, ExternalLink, Loader2,
 } from 'lucide-react';
-import { toast } from 'react-toastify';
-import { IDENTITY_CONFIG } from '@/config/identity';
+import { IDENTITY_CONFIG, avatarFallbackUrl } from '@/config/identity';
+import { useProfileEditor } from '@/hooks/useProfileEditor';
+import type { ProfileSection } from '@/lib/profile/types';
 
 export default function AdminProfilePage() {
-  const [activeTab, setActiveTab] = useState<'Basic' | 'Design' | 'Advanced'>('Design');
-  const displayName = IDENTITY_CONFIG.DISPLAY_NAME;
-  const role = IDENTITY_CONFIG.ROLE;
+  const {
+    profile, sections, loading, saving, saveError,
+    saveProfile, addSection, removeSection, refresh,
+  } = useProfileEditor();
 
-  const tabs = [
-    { id: 'Basic', label: 'Basic Details' },
-    { id: 'Design', label: 'Design' },
-    { id: 'Advanced', label: 'Advanced' },
-  ];
+  const [displayName, setDisplayName] = useState('');
+  const [bio, setBio] = useState('');
+  const [isPublished, setIsPublished] = useState(true);
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [newTitle, setNewTitle] = useState('');
+  const [newBody, setNewBody] = useState('');
+  const [newType, setNewType] = useState<'blog' | 'published'>('blog');
+  const [activeTab, setActiveTab] = useState<'basic' | 'content'>('basic');
+
+  useEffect(() => {
+    if (!profile) return;
+    setDisplayName(profile.displayName ?? IDENTITY_CONFIG.DISPLAY_NAME);
+    setBio(profile.bio ?? '');
+    setIsPublished(profile.isPublished ?? true);
+    setAvatarUrl(profile.avatarUrl ?? '');
+  }, [profile]);
+
+  const contentSections = sections.filter((s) =>
+    ['blog', 'published'].includes(String(s.type).toLowerCase()),
+  );
+
+  async function handleSaveBasic() {
+    try {
+      await saveProfile({ displayName, bio, isPublished, avatarUrl: avatarUrl || null });
+      toast.success('Profile saved');
+      refresh();
+    } catch {
+      toast.error(saveError || 'Save failed');
+    }
+  }
+
+  async function handleAddPost() {
+    if (!newTitle.trim()) {
+      toast.error('Title required');
+      return;
+    }
+    try {
+      await addSection({
+        type: newType,
+        title: newTitle.trim(),
+        content: {
+          body: newBody,
+          summary: newBody.slice(0, 200),
+          source: newType === 'blog' ? 'Blog' : 'Portfolio',
+          url: `${IDENTITY_CONFIG.SITE_URL}/p/${IDENTITY_CONFIG.HANDLE}`,
+          date: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+          tags: [],
+        },
+      });
+      toast.success('Post added to profile');
+      setNewTitle('');
+      setNewBody('');
+      refresh();
+    } catch {
+      toast.error('Could not add post');
+    }
+  }
+
+  async function handleDeleteSection(id: string) {
+    try {
+      await removeSection(id);
+      toast.success('Removed');
+      refresh();
+    } catch {
+      toast.error('Delete failed');
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-[#FDFDFB] text-[#1A1A1A] font-sans">
-      {/* Top Header */}
-      <header className="border-b border-[#F0F0EE] bg-white sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/admin" className="p-2 hover:bg-[#F5F5F3] rounded-full transition-colors" aria-label="Back to admin">
-              <ArrowLeft size={20} />
-            </Link>
-            <h1 className="text-lg font-black tracking-tight uppercase italic">Edit Profile</h1>
-          </div>
-          
+    <div className="min-h-screen bg-bg-primary text-text-primary">
+      <ToastContainer position="bottom-right" theme="light" />
+      <header className="border-b border-border-secondary bg-bg-elevated sticky top-0 z-50">
+        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-             <div className="flex items-center gap-2 px-3 py-1.5 bg-[#F5F5F3] rounded-lg border border-[#E0E0DE]">
-                <Eye size={14} className="text-[#888886]" />
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#666664]">Hidden from profile</span>
-                <button className="ml-1">
-                   <ChevronRight size={14} className="rotate-90" />
-                </button>
-             </div>
-             <button className="p-2 hover:bg-[#F5F5F3] rounded-lg border border-[#E0E0DE] transition-colors">
-                <Copy size={18} />
-             </button>
-             <button className="p-2 hover:bg-[#F5F5F3] rounded-lg border border-[#E0E0DE] transition-colors">
-                <Share2 size={18} />
-             </button>
-             <button className="p-2 hover:bg-[#F5F5F3] rounded-lg border border-[#E0E0DE] transition-colors">
-                <ExternalLink size={18} />
-             </button>
+            <Link href="/admin" className="p-2 rounded-xl hover:bg-secondary" aria-label="Back">
+              <ArrowLeft size={18} />
+            </Link>
+            <h1 className="text-sm font-black uppercase italic tracking-tight">Profile Editor</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/p/${IDENTITY_CONFIG.HANDLE}`}
+              target="_blank"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border-secondary text-[10px] font-bold uppercase"
+            >
+              <Eye size={14} /> Preview
+            </Link>
+            <button
+              onClick={handleSaveBasic}
+              disabled={saving || loading}
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-text-primary text-bg-primary text-[10px] font-bold uppercase disabled:opacity-50"
+            >
+              {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+              Save
+            </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-10">
-        {/* Navigation Tabs */}
-        <div className="flex gap-2 mb-10">
-           {tabs.map(tab => (
-             <button 
-               key={tab.id}
-               onClick={() => setActiveTab(tab.id as any)}
-               className={`px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-wider transition-all border ${
-                 activeTab === tab.id 
-                 ? 'bg-[#1A1A1A] text-white border-[#1A1A1A]' 
-                 : 'bg-[#F5F5F3] text-[#666664] border-[#E0E0DE] hover:bg-[#EBEBE9]'
-               }`}
-             >
-               {tab.label}
-             </button>
-           ))}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-           {/* Form Section */}
-           <div className="lg:col-span-7 space-y-12">
-              <AnimatePresence mode="wait">
-                {activeTab === 'Design' && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                    className="space-y-12"
-                  >
-                    {/* Media Section */}
-                    <section className="space-y-6">
-                       <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[#888886]">Media</h3>
-                       
-                       <div className="space-y-4">
-                          <div className="bg-white border border-[#E0E0DE] rounded-2xl p-6 flex items-center justify-between group hover:border-[#1A1A1A] transition-all">
-                             <div className="space-y-1">
-                                <h4 className="font-bold text-sm">Cover Image(s)</h4>
-                                <p className="text-xs text-[#888886]">Visually uplift your service</p>
-                                <p className="text-[10px] text-[#A0A09E] mt-2 font-medium">Recommended size 1280×780px</p>
-                             </div>
-                             <button className="flex items-center gap-2 px-4 py-2 bg-white border border-[#E0E0DE] rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#F5F5F3] transition-all">
-                                <Upload size={14} /> Upload
-                             </button>
-                          </div>
-
-                          <div className="bg-white border border-[#E0E0DE] rounded-2xl p-6 flex items-center justify-between group hover:border-[#1A1A1A] transition-all">
-                             <div className="space-y-1">
-                                <h4 className="font-bold text-sm">Thumbnail</h4>
-                                <p className="text-xs text-[#888886]">Uplift the service presence in profile</p>
-                                <p className="text-[10px] text-[#A0A09E] mt-2 font-medium">Recommended size 600×600px</p>
-                             </div>
-                             <button className="flex items-center gap-2 px-4 py-2 bg-white border border-[#E0E0DE] rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#F5F5F3] transition-all">
-                                <Upload size={14} /> Upload
-                             </button>
-                          </div>
-                       </div>
-                    </section>
-
-                    {/* Service Display Section */}
-                    <section className="space-y-6">
-                       <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[#888886]">Service Display</h3>
-                       
-                       <div className="space-y-4">
-                          <div className="bg-white border border-[#E0E0DE] rounded-2xl p-6 flex items-center justify-between group hover:border-[#1A1A1A] transition-all">
-                             <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <h4 className="font-bold text-sm">Payment Button Label</h4>
-                                  <a href="/admin" className="text-[10px] text-accent font-bold hover:underline">Learn more</a>
-                                </div>
-                                <p className="text-[10px] text-[#A0A09E] font-medium">Current: Default</p>
-                             </div>
-                             <button className="flex items-center gap-2 px-4 py-2 bg-white border border-[#E0E0DE] rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#F5F5F3] transition-all">
-                                <Edit3 size={14} /> Edit
-                             </button>
-                          </div>
-
-                          <div className="bg-white border border-[#E0E0DE] rounded-2xl p-6 flex items-center justify-between group hover:border-[#1A1A1A] transition-all">
-                             <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <h4 className="font-bold text-sm">Service Label</h4>
-                                  <a href="/admin" className="text-[10px] text-accent font-bold hover:underline">Learn more</a>
-                                </div>
-                                <p className="text-[10px] text-[#A0A09E] font-medium">Current: Default</p>
-                             </div>
-                             <button className="flex items-center gap-2 px-4 py-2 bg-white border border-[#E0E0DE] rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#F5F5F3] transition-all">
-                                <Edit3 size={14} /> Edit
-                             </button>
-                          </div>
-
-                          <div className="bg-white border border-[#E0E0DE] rounded-2xl p-6 flex items-center justify-between group hover:border-[#1A1A1A] transition-all">
-                             <div className="space-y-1">
-                                <h4 className="font-bold text-sm">Showcase testimonials</h4>
-                                <p className="text-xs text-[#888886]">Select the best testimonials to be displayed on page</p>
-                                <p className="text-[10px] text-[#A0A09E] font-medium mt-1">Current: None selected</p>
-                             </div>
-                             <button className="flex items-center gap-2 px-4 py-2 bg-white border border-[#E0E0DE] rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#F5F5F3] transition-all">
-                                <Edit3 size={14} /> Edit
-                             </button>
-                          </div>
-                       </div>
-                    </section>
-
-                    {/* Configuration Section */}
-                    <section className="space-y-6">
-                        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[#888886]">Configurations</h3>
-                        <div className="bg-[#F5F5F3] border border-[#E0E0DE] rounded-2xl p-8 flex items-center gap-6">
-                           <div className="w-16 h-16 rounded-2xl bg-white border border-[#E0E0DE] flex items-center justify-center text-accent">
-                              <Shield size={32} />
-                           </div>
-                           <div className="flex-1 space-y-1">
-                              <h4 className="font-bold text-sm">Strict Neural Integration</h4>
-                              <p className="text-xs text-[#888886]">Ensure your profile accurately reflects your cognitive data patterns.</p>
-                           </div>
-                           <div className="px-3 py-1 bg-success/10 text-success text-[10px] font-black rounded-lg uppercase tracking-widest">
-                              Enabled
-                           </div>
-                        </div>
-                    </section>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-           </div>
-
-           {/* Preview Sidebar */}
-           <div className="lg:col-span-5 h-fit sticky top-28">
-              <section className="bg-white border border-[#E0E0DE] rounded-[2rem] overflow-hidden shadow-2xl">
-                 <div className="p-4 border-b border-[#F0F0EE] flex items-center justify-between bg-[#FAFAFA]">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-[#888886]">Live Preview</span>
-                    <div className="flex gap-1.5">
-                       <div className="w-2.5 h-2.5 rounded-full bg-[#FF5F57]" />
-                       <div className="w-2.5 h-2.5 rounded-full bg-[#FFBD2E]" />
-                       <div className="w-2.5 h-2.5 rounded-full bg-[#27C93F]" />
-                    </div>
-                 </div>
-                 
-                 <div className="aspect-[4/5] bg-[#FDFDFB] p-8 overflow-y-auto custom-scrollbar">
-                    {/* Visual Preview of the Profile */}
-                    <div className="space-y-8">
-                       <div className="flex flex-col items-center text-center space-y-4">
-                          <div className="w-24 h-24 rounded-full bg-[#E0E0DE] overflow-hidden border-2 border-white shadow-lg">
-                             <img src="https://ui-avatars.com/api/?name=VS&size=200&background=F5F5F0&color=1A1A1A&bold=true" alt="User" />
-                          </div>
-                          <div>
-                            <h2 className="text-2xl font-black italic tracking-tighter uppercase">{displayName}</h2>
-                            <p className="text-xs font-bold text-[#888886] uppercase tracking-widest mt-1">{role}</p>
-                          </div>
-                       </div>
-
-                       <div className="space-y-4">
-                          <div className="p-6 bg-white border border-[#F0F0EE] rounded-2xl shadow-sm">
-                             <div className="flex items-center justify-between mb-4">
-                                <h4 className="text-[10px] font-black uppercase tracking-widest">Service</h4>
-                                <Sparkles size={12} className="text-accent" />
-                             </div>
-                             <h3 className="text-lg font-black tracking-tight italic">Breaking into Design</h3>
-                             <div className="flex items-center justify-between mt-6">
-                                <span className="font-black text-sm">₹500</span>
-                                <button className="px-4 py-2 bg-[#1A1A1A] text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Book Now</button>
-                             </div>
-                          </div>
-
-                          <div className="p-6 bg-white border border-[#F0F0EE] rounded-2xl shadow-sm">
-                             <div className="flex items-center justify-between mb-4">
-                                <h4 className="text-[10px] font-black uppercase tracking-widest">Digital Twin</h4>
-                                <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                             </div>
-                             <p className="text-xs font-medium text-[#666664] leading-relaxed italic">"Access my cognitive patterns for architectural advice."</p>
-                             <button className="w-full mt-6 py-3 border border-[#F0F0EE] rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#F5F5F3]">Start Neural Chat</button>
-                          </div>
-                       </div>
-                    </div>
-                 </div>
-              </section>
-
-              {/* Sidebar Promo */}
-              <div className="mt-8 bg-black rounded-3xl p-8 relative overflow-hidden group">
-                 <div className="absolute -top-10 -right-10 w-40 h-40 bg-accent/20 rounded-full blur-[60px] group-hover:bg-accent/30 transition-all" />
-                 <div className="relative z-10 space-y-4">
-                    <span className="px-2 py-1 bg-accent text-bg-primary text-[8px] font-black rounded uppercase tracking-widest">Beta</span>
-                    <h3 className="text-white text-xl font-black italic tracking-tighter">Create service landing page</h3>
-                    <p className="text-[#888886] text-xs font-medium leading-relaxed">Optimized for conversion and a better, more detailed way to present a service.</p>
-                    <div className="flex flex-col gap-2 pt-2">
-                       <button className="w-full py-4 bg-white text-black rounded-xl text-xs font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all">Try Now</button>
-                       <button className="w-full py-4 bg-transparent text-white border border-white/20 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white/5 transition-all">Landing pages (1)</button>
-                    </div>
-                 </div>
-              </div>
-           </div>
-        </div>
-      </main>
-
-      {/* Persistence Bar */}
-      <div className="fixed bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 z-[60] w-[calc(100%-1rem)] md:w-auto">
-         <div className="bg-white/80 backdrop-blur-3xl border border-[#E0E0DE] rounded-2xl md:rounded-full px-1 py-1 flex items-center justify-between md:justify-start gap-1 shadow-2xl">
-            {[
-               { icon: <Palette size={18} />, label: 'Theme' },
-               { icon: <ImageIcon size={18} />, label: 'Images' },
-               { icon: <Settings size={18} />, label: 'Settings' },
-            ].map(item => (
-              <button key={item.label} className="p-3 hover:bg-[#F5F5F3] rounded-full transition-colors group relative">
-                 {item.icon}
-                 <span className="absolute -top-12 left-1/2 -translate-x-1/2 px-3 py-1 bg-black text-white text-[10px] font-black rounded uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                    {item.label}
-                 </span>
-              </button>
-            ))}
-            <div className="w-px h-8 bg-[#E0E0DE] mx-1" />
-            <button className="px-8 py-3 bg-[#1A1A1A] text-white rounded-full text-xs font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all">
-               Save Changes
+      <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+        <div className="flex gap-2">
+          {(['basic', 'content'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                activeTab === tab
+                  ? 'bg-text-primary text-bg-primary border-text-primary'
+                  : 'border-border-secondary text-text-tertiary'
+              }`}
+            >
+              {tab === 'basic' ? 'Basic' : 'Blog & Posts'}
             </button>
-         </div>
+          ))}
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <Loader2 className="animate-spin text-text-tertiary" size={32} />
+          </div>
+        ) : activeTab === 'basic' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <section className="glass-panel rounded-3xl border border-border-secondary p-6 space-y-4">
+              <h2 className="text-xs font-black uppercase tracking-widest text-text-tertiary">Identity</h2>
+              <label className="block text-[10px] font-bold uppercase text-text-tertiary">Display name</label>
+              <input
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                className="w-full rounded-2xl border border-border-secondary bg-bg-primary px-4 py-3 text-sm"
+              />
+              <label className="block text-[10px] font-bold uppercase text-text-tertiary">Bio</label>
+              <textarea
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                rows={4}
+                className="w-full rounded-2xl border border-border-secondary bg-bg-primary px-4 py-3 text-sm resize-none"
+              />
+              <label className="block text-[10px] font-bold uppercase text-text-tertiary">Avatar URL</label>
+              <input
+                value={avatarUrl}
+                onChange={(e) => setAvatarUrl(e.target.value)}
+                placeholder="https://..."
+                className="w-full rounded-2xl border border-border-secondary bg-bg-primary px-4 py-3 text-sm"
+              />
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={isPublished}
+                  onChange={(e) => setIsPublished(e.target.checked)}
+                />
+                <span>Public profile visible at /p/{IDENTITY_CONFIG.HANDLE}</span>
+              </label>
+            </section>
+
+            <section className="glass-panel rounded-3xl border border-border-secondary p-6 flex flex-col items-center text-center">
+              <img
+                src={avatarUrl || avatarFallbackUrl(200)}
+                alt={displayName}
+                className="w-32 h-32 rounded-full object-cover border-4 border-border-secondary mb-4"
+              />
+              <h2 className="text-2xl font-black italic uppercase">{displayName}</h2>
+              <p className="text-sm text-text-tertiary mt-2 max-w-sm">{bio || 'No bio yet.'}</p>
+              <p className="text-[10px] text-text-disabled mt-4 font-mono">
+                {sections.length} sections · {contentSections.length} posts
+              </p>
+            </section>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            <section className="glass-panel rounded-3xl border border-border-secondary p-6 space-y-4">
+              <h2 className="text-xs font-black uppercase tracking-widest text-text-tertiary flex items-center gap-2">
+                <Plus size={14} /> New post
+              </h2>
+              <p className="text-xs text-text-tertiary">
+                Posts appear on your public profile and in the workspace Published Works feed.
+              </p>
+              <select
+                value={newType}
+                onChange={(e) => setNewType(e.target.value as 'blog' | 'published')}
+                className="w-full rounded-2xl border border-border-secondary px-4 py-3 text-sm"
+              >
+                <option value="blog">Blog</option>
+                <option value="published">Published work</option>
+              </select>
+              <input
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="Title"
+                className="w-full rounded-2xl border border-border-secondary px-4 py-3 text-sm"
+              />
+              <textarea
+                value={newBody}
+                onChange={(e) => setNewBody(e.target.value)}
+                placeholder="Body / excerpt"
+                rows={6}
+                className="w-full rounded-2xl border border-border-secondary px-4 py-3 text-sm resize-none"
+              />
+              <button
+                onClick={handleAddPost}
+                disabled={saving}
+                className="px-6 py-3 rounded-xl bg-text-primary text-bg-primary text-xs font-black uppercase"
+              >
+                Add to profile
+              </button>
+            </section>
+
+            <section className="space-y-3">
+              <h2 className="text-xs font-black uppercase tracking-widest text-text-tertiary flex items-center gap-2">
+                <BookOpen size={14} /> On profile ({contentSections.length})
+              </h2>
+              {contentSections.length === 0 ? (
+                <p className="text-sm text-text-tertiary italic">No posts yet. Add one above or publish from Output Studio.</p>
+              ) : (
+                contentSections.map((s) => (
+                  <PostRow key={s.id} section={s} onDelete={() => handleDeleteSection(s.id)} />
+                ))
+              )}
+            </section>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+function PostRow({ section, onDelete }: { section: ProfileSection; onDelete: () => void }) {
+  const c = section.content ?? {};
+  const url = String(c.url ?? '');
+  return (
+    <div className="glass-panel rounded-2xl border border-border-secondary p-4 flex items-start justify-between gap-4">
+      <div className="min-w-0">
+        <span className="text-[9px] font-black uppercase text-accent">{section.type}</span>
+        <h3 className="font-bold text-text-primary truncate">{section.title}</h3>
+        <p className="text-xs text-text-tertiary line-clamp-2 mt-1">
+          {String(c.summary ?? c.body ?? '').slice(0, 120)}
+        </p>
+        {url && (
+          <a href={url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-accent flex items-center gap-1 mt-2">
+            <ExternalLink size={10} /> Link
+          </a>
+        )}
       </div>
+      <button
+        onClick={onDelete}
+        className="p-2 rounded-xl border border-danger/20 text-danger hover:bg-danger/5 shrink-0"
+        aria-label="Delete post"
+      >
+        <Trash2 size={16} />
+      </button>
     </div>
   );
 }

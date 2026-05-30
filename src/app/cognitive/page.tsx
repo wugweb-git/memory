@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { resolveUserId } from '@/config/identity';
+import { AppShell } from '@/app/component/AppShell';
 
 /* ─── types ──────────────────────────────────────────────── */
 type Mode   = 'architect' | 'founder' | 'operator';
@@ -606,6 +607,7 @@ export default function CognitivePage() {
   ];
 
   return (
+    <AppShell>
     <div className="w-full max-w-3xl mx-auto px-4 md:px-6 py-8 space-y-8">
 
       {/* Page header */}
@@ -695,5 +697,6 @@ export default function CognitivePage() {
       </AnimatePresence>
 
     </div>
+    </AppShell>
   );
 }
