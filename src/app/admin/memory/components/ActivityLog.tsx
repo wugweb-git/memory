@@ -49,12 +49,12 @@ export default function ActivityLog({ testRunId = 'PROD' }: ActivityLogProps) {
   return (
     <div className="bg-black border border-white/10 rounded-xl overflow-hidden h-[450px] flex flex-col shadow-2xl">
       <div className="py-4 px-6 border-b border-white/5 flex flex-row items-center justify-between shrink-0 bg-white/[0.02]">
-        <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-2 text-gray-400">
+        <h3 className="text-2xs font-bold uppercase tracking-[0.2em] flex items-center gap-2 text-gray-400">
           <Terminal className="w-3.5 h-3.5" />
           Governance Activity Log
         </h3>
         <div className="flex items-center gap-2">
-          <div className="px-2 py-0.5 rounded border border-emerald-500/30 text-[9px] font-bold text-emerald-400 bg-emerald-500/5 uppercase tracking-widest flex items-center gap-1.5">
+          <div className="px-2 py-0.5 rounded border border-emerald-500/30 text-2xs font-bold text-emerald-400 bg-emerald-500/5 uppercase tracking-widest flex items-center gap-1.5">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             Live Monitor
           </div>
@@ -62,7 +62,7 @@ export default function ActivityLog({ testRunId = 'PROD' }: ActivityLogProps) {
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
         {logs.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-gray-600 text-[10px] uppercase font-bold tracking-widest py-20 opacity-30">
+          <div className="h-full flex flex-col items-center justify-center text-gray-600 text-2xs uppercase font-bold tracking-widest py-20 opacity-30">
             <Shield className="w-8 h-8 mb-2" />
             Waiting for system telemetry
           </div>
@@ -77,17 +77,17 @@ export default function ActivityLog({ testRunId = 'PROD' }: ActivityLogProps) {
             </div>
             <div className="flex-1 min-w-0 pb-3 border-b border-white/5">
               <div className="flex items-center justify-between mb-1">
-                <span className={`text-[10px] font-mono ${
+                <span className={`text-2xs font-mono ${
                   log.level === 'error' ? 'text-red-400' : 
                   log.level === 'warn' ? 'text-amber-400' : 'text-blue-400'
                 }`}>
                   [{log.time}]
                 </span>
-                <span className="text-[9px] text-gray-600 font-bold uppercase tracking-widest">
+                <span className="text-2xs text-gray-600 font-bold uppercase tracking-widest">
                   sys::{log.target}
                 </span>
               </div>
-              <p className="text-[11px] text-gray-300 leading-relaxed group-hover:text-white transition-colors font-medium">
+              <p className="text-2xs text-gray-300 leading-relaxed group-hover:text-white transition-colors font-medium">
                 {log.event}
               </p>
             </div>

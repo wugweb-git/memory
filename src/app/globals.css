@@ -28,13 +28,26 @@
   --danger: #E11D48;
   --warning: #D97706;
 
-  /* Fluid typography scale (Kinetic) */
-  --font-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.8125rem);
-  --font-sm: clamp(0.8125rem, 0.75rem + 0.3vw, 0.875rem);
-  --font-base: clamp(0.875rem, 0.8rem + 0.4vw, 1rem);
-  --font-lg: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
-  --font-xl: clamp(1.75rem, 1.5rem + 1.2vw, 2.5rem);
-  --font-2xl: clamp(2.5rem, 2rem + 2vw, 4rem);
+  /* ── Type scale ────────────────────────────────────────────────
+     One continuous fluid ramp. UI/body sizes are flat-ish (2xs–md);
+     heading sizes (lg–5xl) scale with the viewport. No gaps. */
+  --font-2xs:  0.6875rem;                                  /* 11px — micro labels */
+  --font-xs:   0.75rem;                                    /* 12px — captions */
+  --font-sm:   0.8125rem;                                  /* 13px — secondary UI */
+  --font-base: clamp(0.9375rem, 0.9rem + 0.2vw, 1rem);    /* 15→16px — body */
+  --font-md:   clamp(1rem, 0.95rem + 0.25vw, 1.0625rem);  /* 16→17px — lead */
+  --font-lg:   clamp(1.125rem, 1.05rem + 0.35vw, 1.25rem);/* 18→20px — h5/h6 */
+  --font-xl:   clamp(1.375rem, 1.25rem + 0.6vw, 1.625rem);/* 22→26px — h4 */
+  --font-2xl:  clamp(1.75rem, 1.55rem + 0.9vw, 2.125rem); /* 28→34px — h3 */
+  --font-3xl:  clamp(2.125rem, 1.8rem + 1.5vw, 2.75rem);  /* 34→44px — h2 */
+  --font-4xl:  clamp(2.5rem, 2.05rem + 2.2vw, 3.5rem);    /* 40→56px — h1 */
+  --font-5xl:  clamp(3rem, 2.3rem + 3.4vw, 4.5rem);       /* 48→72px — display */
+
+  /* Line heights */
+  --leading-tight: 1.1;
+  --leading-snug: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
 
   /* Spacing */
   --space-xs: 0.5rem;

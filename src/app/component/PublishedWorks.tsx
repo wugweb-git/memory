@@ -66,14 +66,14 @@ export const PublishedWorks = () => {
     <section className="space-y-10 w-full" aria-label="Published works">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-2">
         <div className="kinetic-text">
-          <h2 className="text-2xl font-black text-text-primary tracking-tighter uppercase italic flex items-center gap-3">
+          <h2 className="text-2xl font-black text-text-primary tracking-tighter  flex items-center gap-3">
             <BookOpen size={22} className="text-accent" /> Works_Matrix
           </h2>
-          <p className="text-[10px] text-text-tertiary font-bold mt-1 uppercase tracking-[0.3em] opacity-60">
+          <p className="text-2xs text-text-tertiary font-bold mt-1 uppercase tracking-[0.3em] opacity-60">
             Thought Leadership — External Content Stream
           </p>
         </div>
-        <div className="px-5 py-2 rounded-full bg-secondary border border-border-secondary text-[10px] font-black text-text-tertiary flex items-center gap-3 uppercase tracking-widest shadow-sm">
+        <div className="px-5 py-2 rounded-full bg-secondary border border-border-secondary text-2xs font-black text-text-tertiary flex items-center gap-3 uppercase tracking-widest shadow-sm">
           <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
           {loading ? 'Syncing…' : `${works.length} Works`}
         </div>
@@ -84,7 +84,7 @@ export const PublishedWorks = () => {
           <Loader2 className="animate-spin" size={28} />
         </div>
       ) : works.length === 0 ? (
-        <p className="text-sm text-text-tertiary italic px-2">No published works indexed yet. Generate output or add profile sections.</p>
+        <p className="text-sm text-text-tertiary  px-2">No published works indexed yet. Generate output or add profile sections.</p>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {works.map((work, idx) => (
@@ -97,10 +97,10 @@ export const PublishedWorks = () => {
             >
               <header className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-4">
-                  <span className="px-4 py-1.5 rounded-full text-[9px] font-black tracking-[0.2em] uppercase border border-border-secondary bg-bg-secondary text-text-secondary shadow-sm">
+                  <span className="px-4 py-1.5 rounded-full text-2xs font-black tracking-[0.2em] uppercase border border-border-secondary bg-bg-secondary text-text-secondary shadow-sm">
                     {work.source}
                   </span>
-                  <time dateTime={work.date} className="text-[10px] text-text-disabled font-mono font-bold uppercase tracking-widest italic">
+                  <time dateTime={work.date} className="text-2xs text-text-disabled font-mono font-bold uppercase tracking-widest ">
                     {work.date}
                   </time>
                 </div>
@@ -117,11 +117,11 @@ export const PublishedWorks = () => {
 
               <div className="space-y-6 mb-8">
                 <h3 className="text-xl font-black text-text-primary tracking-tighter leading-none">{work.title}</h3>
-                <p className="text-sm text-text-secondary leading-relaxed font-medium line-clamp-2 italic">{work.summary}</p>
+                <p className="text-sm text-text-secondary leading-relaxed font-medium line-clamp-2 ">{work.summary}</p>
                 {work.tags.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {work.tags.map((tag) => (
-                      <span key={tag} className="px-3 py-1 rounded-lg bg-bg-secondary border border-border-secondary text-[9px] font-black font-mono text-text-tertiary uppercase">
+                      <span key={tag} className="px-3 py-1 rounded-lg bg-bg-secondary border border-border-secondary text-2xs font-black font-mono text-text-tertiary uppercase">
                         {tag}
                       </span>
                     ))}
@@ -131,10 +131,10 @@ export const PublishedWorks = () => {
 
               {work.summaryAI && (
                 <div className="p-6 rounded-[1.5rem] bg-bg-secondary/40 border border-border-primary">
-                  <div className="flex items-center gap-3 mb-3 text-[10px] font-black text-success tracking-[0.3em] uppercase">
+                  <div className="flex items-center gap-3 mb-3 text-2xs font-black text-success tracking-[0.3em] uppercase">
                     <Sparkles size={13} className="animate-pulse" /> Logic Synthesis
                   </div>
-                  <p className="text-xs text-text-secondary italic leading-relaxed border-l-2 border-success/30 pl-4">
+                  <p className="text-xs text-text-secondary  leading-relaxed border-l-2 border-success/30 pl-4">
                     &ldquo;{work.summaryAI}&rdquo;
                   </p>
                 </div>
@@ -147,14 +147,14 @@ export const PublishedWorks = () => {
               <Globe size={20} className="text-text-tertiary" />
               <div>
                 <h3 className="text-xs font-black text-text-primary tracking-[0.3em] uppercase">Creative_Node</h3>
-                <p className="text-[9px] font-bold text-text-disabled uppercase mt-1">Behance / Portfolio sync</p>
+                <p className="text-2xs font-bold text-text-disabled uppercase mt-1">Behance / Portfolio sync</p>
               </div>
             </header>
             <a
               href={IDENTITY_CONFIG.PORTFOLIO_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-auto px-6 py-2.5 rounded-full bg-black text-bg-primary text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl inline-flex items-center gap-2 w-fit"
+              className="mt-auto px-6 py-2.5 rounded-full bg-black text-bg-primary text-2xs font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl inline-flex items-center gap-2 w-fit"
             >
               <Share2 size={14} /> Launch Portfolio
             </a>

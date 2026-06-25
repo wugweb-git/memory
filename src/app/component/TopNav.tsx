@@ -107,10 +107,10 @@ export const TopNav: React.FC<TopNavProps> = ({ current, onChange, onMenuToggle 
             <Icon size={14} className="text-text-tertiary" />
           </div>
           <div className="min-w-0">
-            <span className="text-[13px] font-bold text-text-primary block truncate leading-tight">
+            <span className="text-sm font-bold text-text-primary block truncate leading-tight">
               {meta.label}
             </span>
-            <span className="text-[10px] text-text-tertiary hidden sm:block leading-tight font-mono">
+            <span className="text-2xs text-text-tertiary hidden sm:block leading-tight font-mono">
               {meta.desc}
             </span>
           </div>
@@ -119,11 +119,11 @@ export const TopNav: React.FC<TopNavProps> = ({ current, onChange, onMenuToggle 
         {/* Centre: search — desktop */}
         <button
           onClick={() => setPaletteOpen(true)}
-          className="hidden md:flex items-center gap-3 px-4 py-2 bg-secondary/60 border border-border-secondary rounded-2xl text-[12px] text-text-disabled hover:border-border-primary hover:bg-secondary transition-all w-56 lg:w-72"
+          className="hidden md:flex items-center gap-3 px-4 py-2 bg-secondary/60 border border-border-secondary rounded-2xl text-xs text-text-disabled hover:border-border-primary hover:bg-secondary transition-all w-56 lg:w-72"
         >
           <Search size={14} className="shrink-0" />
           <span className="flex-1 text-left">Search or jump to…</span>
-          <kbd className="text-[9px] bg-tertiary px-1.5 py-0.5 rounded font-mono text-text-disabled">⌘K</kbd>
+          <kbd className="text-2xs bg-tertiary px-1.5 py-0.5 rounded font-mono text-text-disabled">⌘K</kbd>
         </button>
 
         {/* Right: actions */}
@@ -139,7 +139,7 @@ export const TopNav: React.FC<TopNavProps> = ({ current, onChange, onMenuToggle 
           {/* New */}
           <button
             onClick={() => setPaletteOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-text-primary text-bg-primary rounded-xl text-[11px] font-bold hover:bg-accent-high transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-text-primary text-bg-primary rounded-xl text-2xs font-bold hover:bg-accent-high transition-colors shadow-sm"
           >
             <Plus size={14} />
             <span className="hidden sm:block">New</span>
@@ -149,7 +149,7 @@ export const TopNav: React.FC<TopNavProps> = ({ current, onChange, onMenuToggle 
           <button className="relative p-2 rounded-xl hover:bg-secondary transition-colors text-text-tertiary">
             <Bell size={17} />
             {notifications > 0 && (
-              <span className="absolute top-1 right-1 w-3.5 h-3.5 bg-accent rounded-full text-[8px] font-bold text-white flex items-center justify-center">
+              <span className="absolute top-1 right-1 w-3.5 h-3.5 bg-accent rounded-full text-2xs font-bold text-white flex items-center justify-center">
                 {notifications}
               </span>
             )}
@@ -204,7 +204,7 @@ export const TopNav: React.FC<TopNavProps> = ({ current, onChange, onMenuToggle 
               {/* Results */}
               <div className="py-2 max-h-[55vh] overflow-y-auto custom-scrollbar">
                 {!query && (
-                  <p className="text-[10px] font-black text-text-disabled uppercase tracking-[0.3em] px-5 py-2">
+                  <p className="text-2xs font-black text-text-disabled uppercase tracking-[0.3em] px-5 py-2">
                     Navigate & Actions
                   </p>
                 )}
@@ -225,11 +225,11 @@ export const TopNav: React.FC<TopNavProps> = ({ current, onChange, onMenuToggle 
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-text-primary truncate">{item.label}</p>
                           {'desc' in item && (
-                            <p className="text-[11px] text-text-tertiary truncate">{item.desc}</p>
+                            <p className="text-2xs text-text-tertiary truncate">{item.desc}</p>
                           )}
                         </div>
                         {'hint' in item && (
-                          <kbd className="text-[9px] bg-secondary px-1.5 py-0.5 rounded font-mono text-text-disabled shrink-0">
+                          <kbd className="text-2xs bg-secondary px-1.5 py-0.5 rounded font-mono text-text-disabled shrink-0">
                             {item.hint}
                           </kbd>
                         )}
@@ -240,7 +240,7 @@ export const TopNav: React.FC<TopNavProps> = ({ current, onChange, onMenuToggle 
                 )}
               </div>
 
-              <div className="px-5 py-2.5 border-t border-border-secondary flex items-center gap-4 text-[10px] text-text-disabled font-mono">
+              <div className="px-5 py-2.5 border-t border-border-secondary flex items-center gap-4 text-2xs text-text-disabled font-mono">
                 <span>↑↓ navigate</span>
                 <span>⏎ select</span>
                 <span>esc close</span>

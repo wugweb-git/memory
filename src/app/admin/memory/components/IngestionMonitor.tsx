@@ -73,8 +73,8 @@ export default function IngestionMonitor({ testRunId = 'PROD' }: IngestionMonito
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-white tracking-wide uppercase">{log.decision}</span>
-                  <span className="text-[10px] text-gray-500">•</span>
-                  <span className="text-[10px] text-gray-400 font-mono translate-y-[1px]">
+                  <span className="text-2xs text-gray-500">•</span>
+                  <span className="text-2xs text-gray-400 font-mono translate-y-[1px]">
                     {new Date(log.timestamp).toLocaleTimeString()}
                   </span>
                 </div>
@@ -87,7 +87,7 @@ export default function IngestionMonitor({ testRunId = 'PROD' }: IngestionMonito
                 <div className="hidden group-hover:block transition-all">
                   <ChevronRight className="w-4 h-4 text-gray-600" />
                 </div>
-                <div className="px-2 py-0.5 rounded bg-black/40 text-[10px] font-mono text-gray-500 uppercase">
+                <div className="px-2 py-0.5 rounded bg-black/40 text-2xs font-mono text-gray-500 uppercase">
                   {log.source || 'system'}
                 </div>
               </div>
@@ -96,7 +96,7 @@ export default function IngestionMonitor({ testRunId = 'PROD' }: IngestionMonito
         </AnimatePresence>
       </div>
 
-      <button className="w-full mt-6 py-2 rounded-lg border border-white/5 text-[10px] font-bold text-gray-500 hover:text-white hover:bg-white/5 transition-all tracking-widest uppercase">
+      <button className="w-full mt-6 py-2 rounded-lg border border-white/5 text-2xs font-bold text-gray-500 hover:text-white hover:bg-white/5 transition-all tracking-widest uppercase">
         View Full Audit Log
       </button>
     </div>

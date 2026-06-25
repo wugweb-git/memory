@@ -19,7 +19,7 @@ export function StandaloneNav() {
           <Link
             key={href}
             href={href}
-            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
+            className={`px-2.5 py-1 rounded-lg text-2xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
               active ? 'bg-cyan-500/20 text-cyan-300' : 'text-zinc-500 hover:text-zinc-200'
             }`}
           >

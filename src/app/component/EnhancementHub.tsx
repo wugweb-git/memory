@@ -214,7 +214,7 @@ export const EnhancementHub = () => {
       <motion.button
         whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-4 md:bottom-10 md:right-10 z-[60] bg-black text-white px-5 md:px-8 py-3 md:py-4 rounded-full font-black text-[10px] md:text-xs uppercase tracking-widest shadow-2xl flex items-center gap-3 overflow-hidden group border border-white/10"
+        className="fixed bottom-6 right-4 md:bottom-10 md:right-10 z-[60] bg-black text-white px-5 md:px-8 py-3 md:py-4 rounded-full font-black text-2xs md:text-xs uppercase tracking-widest shadow-2xl flex items-center gap-3 overflow-hidden group border border-white/10"
         aria-label={`Enhance Profile — ${pendingCount} items pending`}
       >
         <div className="absolute inset-0 bg-accent translate-y-full group-hover:translate-y-0 transition-transform duration-300 opacity-20" />
@@ -222,7 +222,7 @@ export const EnhancementHub = () => {
           <Sparkles size={16} className="text-accent" />
           Enhance Profile
           {pendingCount > 0 && (
-            <span className="bg-accent text-bg-primary text-[10px] w-5 h-5 rounded-full flex items-center justify-center -mr-2">
+            <span className="bg-accent text-bg-primary text-2xs w-5 h-5 rounded-full flex items-center justify-center -mr-2">
               {pendingCount}
             </span>
           )}
@@ -255,7 +255,7 @@ export const EnhancementHub = () => {
                     <div className="w-12 h-12 rounded-2xl bg-accent/5 flex items-center justify-center mb-4 border border-accent/10">
                       <Sparkles className="text-accent" size={24} />
                     </div>
-                    <h2 className="text-3xl font-black text-[#1A1A1A] tracking-tighter uppercase italic">
+                    <h2 className="text-3xl font-black text-[#1A1A1A] tracking-tighter ">
                       Advanced checklist
                     </h2>
                     <p className="text-sm font-medium text-[#888886]">
@@ -280,7 +280,7 @@ export const EnhancementHub = () => {
                       />
                     ))}
                   </div>
-                  <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-[#A0A09E]">
+                  <div className="flex items-center justify-between text-2xs font-black uppercase tracking-widest text-[#A0A09E]">
                     <span>Analysis Complete</span>
                     <span>{pendingCount} Nodes Pending</span>
                   </div>
@@ -328,7 +328,7 @@ export const EnhancementHub = () => {
                             className="overflow-hidden"
                           >
                             <div className="px-16 pb-6 space-y-5">
-                              <p className="text-xs leading-relaxed text-[#666664] font-medium italic">
+                              <p className="text-xs leading-relaxed text-[#666664] font-medium ">
                                 {rec.description}
                               </p>
                               {rec.cta && !isDone && (
@@ -339,7 +339,7 @@ export const EnhancementHub = () => {
                                       markDone(rec.id);
                                     }}
                                     disabled={generating && rec.id === '6'}
-                                    className="bg-[#1A1A1A] text-white px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl disabled:opacity-50 flex items-center gap-2"
+                                    className="bg-[#1A1A1A] text-white px-6 py-3 rounded-xl text-2xs font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl disabled:opacity-50 flex items-center gap-2"
                                   >
                                     {generating && rec.id === '6' && <Loader2 size={12} className="animate-spin" />}
                                     {rec.cta}
@@ -370,7 +370,7 @@ export const EnhancementHub = () => {
                   </div>
                   <div>
                     <h4 className="text-xs font-black text-white uppercase tracking-widest leading-none">Neural Mirror</h4>
-                    <p className="text-[9px] text-[#888886] font-bold uppercase tracking-[0.2em] mt-1">
+                    <p className="text-2xs text-[#888886] font-bold uppercase tracking-[0.2em] mt-1">
                       {pendingCount === 0 ? 'Status: Aligned' : 'Status: Locked'}
                     </p>
                   </div>
@@ -378,7 +378,7 @@ export const EnhancementHub = () => {
                 <button
                   onClick={finalizeSync}
                   disabled={finalizing}
-                  className="bg-white text-black px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-accent hover:text-white transition-all disabled:opacity-50 flex items-center gap-2"
+                  className="bg-white text-black px-8 py-3 rounded-xl text-2xs font-black uppercase tracking-widest hover:bg-accent hover:text-white transition-all disabled:opacity-50 flex items-center gap-2"
                 >
                   {finalizing
                     ? <><Loader2 size={13} className="animate-spin" /> Syncing…</>

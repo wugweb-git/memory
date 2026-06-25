@@ -50,10 +50,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ current, onChange, mobileOpen,
           <Command size={14} className="text-bg-primary" />
         </div>
         <div>
-          <span className="text-[13px] font-black text-text-primary tracking-tight uppercase italic">{APP_BRAND.name}</span>
+          <span className="text-sm font-black text-text-primary tracking-tight ">{APP_BRAND.name}</span>
           <div className="flex items-center gap-1 mt-0.5">
             <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-            <span className="text-[9px] font-bold text-text-tertiary uppercase tracking-widest">Active</span>
+            <span className="text-2xs font-bold text-text-tertiary uppercase tracking-widest">Active</span>
           </div>
         </div>
       </div>
@@ -62,7 +62,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ current, onChange, mobileOpen,
       <nav className="flex-1 overflow-y-auto py-4 px-3 custom-scrollbar">
         {WORKSPACE_NAV.map((group) => (
           <div key={group.group} className="mb-5">
-            <p className="text-[9px] font-black text-text-disabled uppercase tracking-[0.3em] px-3 mb-1.5">
+            <p className="text-2xs font-black text-text-disabled uppercase tracking-[0.3em] px-3 mb-1.5">
               {group.group}
             </p>
             {group.items.map(({ id, label, icon: Icon }) => {
@@ -101,8 +101,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ current, onChange, mobileOpen,
         {STATS.map((s) => (
           <div key={s.label} className="flex items-center gap-2.5">
             <s.icon size={12} className={s.color} />
-            <span className="text-[11px] text-text-disabled flex-1 font-mono">{s.label}</span>
-            <span className="text-[11px] font-bold text-text-secondary font-mono">{s.value}</span>
+            <span className="text-2xs text-text-disabled flex-1 font-mono">{s.label}</span>
+            <span className="text-2xs font-bold text-text-secondary font-mono">{s.value}</span>
           </div>
         ))}
       </div>
@@ -116,8 +116,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ current, onChange, mobileOpen,
             className="w-8 h-8 rounded-full border border-border-primary"
           />
           <div className="flex-1 min-w-0">
-            <p className="text-[12px] font-bold text-text-primary truncate">{IDENTITY_CONFIG.DISPLAY_NAME}</p>
-            <p className="text-[10px] text-text-tertiary truncate">{IDENTITY_CONFIG.ROLE}</p>
+            <p className="text-xs font-bold text-text-primary truncate">{IDENTITY_CONFIG.DISPLAY_NAME}</p>
+            <p className="text-2xs text-text-tertiary truncate">{IDENTITY_CONFIG.ROLE}</p>
           </div>
           <button className="p-1 text-text-disabled hover:text-accent transition-colors">
             <Bell size={14} />

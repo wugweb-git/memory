@@ -78,10 +78,10 @@ export const JobSearchAgent = () => {
     <section className="space-y-10 w-full" aria-label="Job search agent proactive outreach">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-2">
         <div className="kinetic-text">
-          <h2 className="text-2xl font-black text-text-primary tracking-tighter uppercase italic flex items-center gap-3">
+          <h2 className="text-2xl font-black text-text-primary tracking-tighter  flex items-center gap-3">
             <Target size={22} className="text-accent" /> Opportunity_Agent
           </h2>
-          <p className="text-[10px] text-text-tertiary font-bold mt-1 uppercase tracking-[0.3em] opacity-60">
+          <p className="text-2xs text-text-tertiary font-bold mt-1 uppercase tracking-[0.3em] opacity-60">
             Proactive Neural Matching — Outreach Matrix
           </p>
         </div>
@@ -95,10 +95,10 @@ export const JobSearchAgent = () => {
           >
             <RefreshCcw size={15} className={loading ? 'animate-spin' : ''} />
           </button>
-          <div className="px-5 py-2.5 rounded-full bg-secondary border border-border-secondary text-[10px] font-black text-text-tertiary flex items-center gap-3 uppercase tracking-widest shadow-sm">
+          <div className="px-5 py-2.5 rounded-full bg-secondary border border-border-secondary text-2xs font-black text-text-tertiary flex items-center gap-3 uppercase tracking-widest shadow-sm">
             <Fingerprint size={14} className="text-accent" /> Agent: Nominal
           </div>
-          <div className="px-5 py-2.5 rounded-full bg-success/5 border border-success/20 text-[10px] font-black text-success flex items-center gap-3 uppercase tracking-widest shadow-sm">
+          <div className="px-5 py-2.5 rounded-full bg-success/5 border border-success/20 text-2xs font-black text-success flex items-center gap-3 uppercase tracking-widest shadow-sm">
             <Zap size={14} className="animate-pulse" /> {leads.length} Matches
           </div>
         </div>
@@ -125,19 +125,19 @@ export const JobSearchAgent = () => {
                   <div className="flex items-center justify-between flex-wrap md:flex-nowrap gap-8 relative z-10">
                     <div className="flex items-center gap-8">
                       <div className="relative w-16 h-16 flex items-center justify-center shrink-0">
-                        <span className="text-[11px] font-black text-accent">{lead.score}%</span>
+                        <span className="text-2xs font-black text-accent">{lead.score}%</span>
                       </div>
                       <div className="space-y-1">
-                        <h4 className="text-xl font-black text-text-primary tracking-tighter uppercase italic">
+                        <h4 className="text-xl font-black text-text-primary tracking-tighter ">
                           {lead.role}
                         </h4>
-                        <p className="text-[10px] text-text-tertiary font-bold uppercase tracking-widest italic opacity-60">
+                        <p className="text-2xs text-text-tertiary font-bold uppercase tracking-widest  opacity-60">
                           {lead.company} · Sync: {lead.via}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-6 ml-auto">
-                      <span className={`px-4 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${statusCfg.color}`}>
+                      <span className={`px-4 py-1.5 rounded-full border text-2xs font-black uppercase tracking-widest flex items-center gap-2 ${statusCfg.color}`}>
                         <StatusIcon size={12} /> {statusCfg.label}
                       </span>
                       {lead.url ? (
@@ -145,7 +145,7 @@ export const JobSearchAgent = () => {
                           href={lead.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[10px] font-black text-accent uppercase tracking-widest hover:underline"
+                          className="text-2xs font-black text-accent uppercase tracking-widest hover:underline"
                         >
                           View_Nexus
                         </a>
@@ -154,12 +154,12 @@ export const JobSearchAgent = () => {
                           href={IDENTITY_CONFIG.LINKEDIN_JOBS_URL}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[10px] font-black text-accent uppercase tracking-widest hover:underline"
+                          className="text-2xs font-black text-accent uppercase tracking-widest hover:underline"
                         >
                           Find_Roles
                         </a>
                       )}
-                      <time className="text-[10px] font-mono text-text-tertiary">{lead.date}</time>
+                      <time className="text-2xs font-mono text-text-tertiary">{lead.date}</time>
                       <button
                         type="button"
                         className="w-11 h-11 rounded-2xl bg-bg-elevated border border-border-secondary flex items-center justify-center hover:bg-black hover:text-bg-primary transition-all"

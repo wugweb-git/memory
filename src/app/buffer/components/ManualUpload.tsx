@@ -111,7 +111,7 @@ export default function ManualUpload({ onComplete }: { onComplete: () => void })
               </div>
               <div>
                 <p className="text-sm text-white font-medium">{file.name}</p>
-                <p className="text-[10px] text-white/30 uppercase">{(file.size / 1024).toFixed(0)} KB</p>
+                <p className="text-2xs text-white/30 uppercase">{(file.size / 1024).toFixed(0)} KB</p>
               </div>
             </div>
             {status !== 'uploading' && (
@@ -123,7 +123,7 @@ export default function ManualUpload({ onComplete }: { onComplete: () => void })
 
           {status === 'uploading' && (
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-indigo-400">
+              <div className="flex items-center justify-between text-2xs uppercase font-bold tracking-widest text-indigo-400">
                 <span>Uploading...</span>
                 <span>{Math.round(progress)}%</span>
               </div>

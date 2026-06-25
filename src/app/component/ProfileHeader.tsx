@@ -124,20 +124,20 @@ export const ProfileHeader = () => {
           <div className="flex-1 text-center lg:text-left space-y-8">
             <div className="space-y-4">
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 mb-1 kinetic-text">
-                <h1 className="text-3xl md:text-5xl font-black text-text-primary tracking-tighter uppercase italic">
+                <h1 className="text-3xl md:text-5xl font-black text-text-primary tracking-tighter ">
                   {profileLoading ? '…' : displayName}
                 </h1>
-                <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-[10px] font-black text-bg-primary tracking-[0.2em] uppercase shadow-lg shadow-accent/20">
+                <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-2xs font-black text-bg-primary tracking-[0.2em] uppercase shadow-lg shadow-accent/20">
                   <Star size={10} fill="currentColor" /> {IDENTITY_CONFIG.ROLE.split(' ')[0]}
                 </div>
                 <Link
                   href="/admin/profile"
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-border-secondary text-[10px] font-bold uppercase text-text-tertiary hover:text-text-primary"
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-border-secondary text-2xs font-bold uppercase text-text-tertiary hover:text-text-primary"
                 >
                   <Pencil size={12} /> Edit
                 </Link>
               </div>
-              <p className="text-lg md:text-xl text-text-secondary font-medium max-w-2xl leading-relaxed italic tracking-tight">
+              <p className="text-lg md:text-xl text-text-secondary font-medium max-w-2xl leading-relaxed  tracking-tight">
                 {bio}
               </p>
             </div>
@@ -145,7 +145,7 @@ export const ProfileHeader = () => {
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6">
               <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-bg-secondary/50 border border-border-secondary">
                 <MapPin size={14} className="text-accent" />
-                <span className="text-[10px] font-black font-mono uppercase tracking-[0.2em] text-text-tertiary">
+                <span className="text-2xs font-black font-mono uppercase tracking-[0.2em] text-text-tertiary">
                   Global_Matrix
                 </span>
               </div>
@@ -154,13 +154,13 @@ export const ProfileHeader = () => {
                 className="flex items-center gap-3 px-4 py-2 rounded-xl bg-bg-secondary/50 border border-border-secondary hover:border-accent/40"
               >
                 <Globe size={14} className="text-text-tertiary" />
-                <span className="text-[10px] font-black font-mono uppercase tracking-[0.2em] text-text-tertiary">
+                <span className="text-2xs font-black font-mono uppercase tracking-[0.2em] text-text-tertiary">
                   Public profile
                 </span>
               </a>
               <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-success/5 border border-success/20">
                 <div className="w-1.5 h-1.5 bg-success rounded-full animate-pulse" />
-                <span className="text-[10px] font-black font-mono uppercase tracking-[0.2em] text-success">
+                <span className="text-2xs font-black font-mono uppercase tracking-[0.2em] text-success">
                   LLM_Anchor_Active
                 </span>
               </div>
@@ -173,7 +173,7 @@ export const ProfileHeader = () => {
                   href={social.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 px-5 py-2.5 rounded-2xl bg-bg-elevated border border-border-primary text-[10px] font-black text-text-tertiary uppercase tracking-widest transition-all hover:bg-black hover:text-bg-primary hover:scale-105 shadow-sm"
+                  className="flex items-center gap-2.5 px-5 py-2.5 rounded-2xl bg-bg-elevated border border-border-primary text-2xs font-black text-text-tertiary uppercase tracking-widest transition-all hover:bg-black hover:text-bg-primary hover:scale-105 shadow-sm"
                 >
                   <social.icon size={14} /> {social.label}
                 </a>
@@ -185,10 +185,10 @@ export const ProfileHeader = () => {
             {stats.map((stat) => (
               <div key={stat.label} className="space-y-3">
                 <div className="flex justify-between items-end">
-                  <span className="text-[9px] font-black text-text-tertiary tracking-[0.3em] uppercase">
+                  <span className="text-2xs font-black text-text-tertiary tracking-[0.3em] uppercase">
                     {stat.label}
                   </span>
-                  <span className="text-[10px] font-black font-mono text-accent">{stat.val}</span>
+                  <span className="text-2xs font-black font-mono text-accent">{stat.val}</span>
                 </div>
                 <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden border border-border-secondary shadow-inner">
                   <motion.div
@@ -201,14 +201,14 @@ export const ProfileHeader = () => {
               </div>
             ))}
             <div className="pt-4 space-y-3">
-              <span className="text-[9px] font-black text-text-tertiary tracking-[0.3em] uppercase block">
+              <span className="text-2xs font-black text-text-tertiary tracking-[0.3em] uppercase block">
                 Skill_Nodes
               </span>
               <div className="flex flex-wrap gap-2">
                 {skills.map((s) => (
                   <span
                     key={s}
-                    className="px-3 py-1 bg-secondary rounded border border-border-secondary text-[8px] font-bold text-text-secondary uppercase tracking-widest"
+                    className="px-3 py-1 bg-secondary rounded border border-border-secondary text-2xs font-bold text-text-secondary uppercase tracking-widest"
                   >
                     {s}
                   </span>

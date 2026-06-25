@@ -39,7 +39,7 @@ function AdminMemoryContent() {
             {testRunId !== 'PROD' && (
               <>
                 <span className="text-gray-600">|</span>
-                <span className="flex items-center gap-1.5 text-amber-400 font-bold px-2 py-0.5 rounded border border-amber-500/20 bg-amber-500/5 uppercase tracking-widest text-[10px]">
+                <span className="flex items-center gap-1.5 text-amber-400 font-bold px-2 py-0.5 rounded border border-amber-500/20 bg-amber-500/5 uppercase tracking-widest text-2xs">
                   Scope: {testRunId}
                 </span>
               </>
@@ -50,7 +50,7 @@ function AdminMemoryContent() {
           <div className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-xs font-mono text-gray-400">
             {testRunId === 'PROD' ? 'Live Production' : 'Validation Mode'} • Self-Healing Active
           </div>
-          <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">System Healthy</p>
+          <p className="text-2xs text-emerald-500 font-bold uppercase tracking-widest">System Healthy</p>
         </div>
       </header>
 
@@ -90,7 +90,7 @@ function AdminMemoryContent() {
         </div>
       </div>
 
-      <footer className="mt-20 py-8 border-t border-white/5 flex items-center justify-between text-[10px] text-gray-600 uppercase tracking-[0.2em] font-bold">
+      <footer className="mt-20 py-8 border-t border-white/5 flex items-center justify-between text-2xs text-gray-600 uppercase tracking-[0.2em] font-bold">
         <span>Identity Prism OS • Combined Operations Center</span>
         <div className="flex gap-8">
           <a href="/admin" className="hover:text-white transition-colors">Documentation</a>
@@ -104,7 +104,7 @@ function AdminMemoryContent() {
 
 export default function AdminMemoryPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center text-white/20 font-mono text-[10px] tracking-widest uppercase animate-pulse">Initializing Control Surface...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center text-white/20 font-mono text-2xs tracking-widest uppercase animate-pulse">Initializing Control Surface...</div>}>
       <AdminMemoryContent />
     </Suspense>
   );

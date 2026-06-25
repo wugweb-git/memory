@@ -37,3 +37,6 @@ scratch/
 # Generated Prisma Clients
 src/generated/
 tsconfig.tsbuildinfo
+
+# Local dev tooling
+.claude/

@@ -46,7 +46,7 @@ const StatusBadge = ({ status }: { status: MemoryItem['status'] }) => {
     Pending:    'bg-secondary text-text-tertiary border-border-secondary',
   };
   return (
-    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${map[status]}`}>
+    <span className={`inline-flex items-center gap-1 text-2xs font-bold px-2 py-0.5 rounded-full border ${map[status]}`}>
       {status === 'Processing' && <Loader2 size={9} className="animate-spin" />}
       {status}
     </span>
@@ -149,7 +149,7 @@ const DropZone: React.FC<{ onUploaded: (item: MemoryItem) => void }> = ({ onUplo
                 <p className="text-sm font-semibold text-text-primary">
                   {state === 'dragging' ? 'Drop to anchor' : 'Drop file or click to upload'}
                 </p>
-                <p className="text-[11px] text-text-tertiary mt-1">PDF, TXT, DOC, HTML, JSON, MD</p>
+                <p className="text-2xs text-text-tertiary mt-1">PDF, TXT, DOC, HTML, JSON, MD</p>
               </div>
             </motion.div>
           )}
@@ -159,13 +159,13 @@ const DropZone: React.FC<{ onUploaded: (item: MemoryItem) => void }> = ({ onUplo
               <div className="flex items-center gap-3">
                 <Loader2 size={18} className="text-accent animate-spin shrink-0" />
                 <span className="text-sm font-semibold text-text-primary">Processing…</span>
-                <span className="ml-auto text-[11px] font-mono text-text-tertiary">{progress}%</span>
+                <span className="ml-auto text-2xs font-mono text-text-tertiary">{progress}%</span>
               </div>
               <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
                 <motion.div animate={{ width: `${progress}%` }} transition={{ duration: 0.3 }}
                   className="h-full bg-accent rounded-full" />
               </div>
-              <p className="text-[11px] text-text-tertiary">Parse → Gate → Normalise → Embed…</p>
+              <p className="text-2xs text-text-tertiary">Parse → Gate → Normalise → Embed…</p>
             </motion.div>
           )}
 
@@ -175,7 +175,7 @@ const DropZone: React.FC<{ onUploaded: (item: MemoryItem) => void }> = ({ onUplo
                 <CheckCircle2 size={22} className="text-success" />
               </div>
               <p className="text-sm font-semibold text-success">{message}</p>
-              <p className="text-[11px] text-text-tertiary">Embedding will complete in background</p>
+              <p className="text-2xs text-text-tertiary">Embedding will complete in background</p>
             </motion.div>
           )}
 
@@ -185,9 +185,9 @@ const DropZone: React.FC<{ onUploaded: (item: MemoryItem) => void }> = ({ onUplo
                 <AlertCircle size={22} className="text-danger" />
               </div>
               <p className="text-sm font-semibold text-danger">Upload failed</p>
-              <p className="text-[11px] text-text-tertiary max-w-[260px]">{message}</p>
+              <p className="text-2xs text-text-tertiary max-w-[260px]">{message}</p>
               <button onClick={(e) => { e.stopPropagation(); setState('idle'); }}
-                className="text-[10px] font-bold text-accent hover:underline mt-1">Try again →</button>
+                className="text-2xs font-bold text-accent hover:underline mt-1">Try again →</button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -340,7 +340,7 @@ export const MemoryVaultWithUpload: React.FC = () => {
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
         {CATEGORIES.map(c => (
           <button key={c} onClick={() => setCat(c)}
-            className={`px-4 py-2 rounded-xl text-[11px] font-semibold whitespace-nowrap transition-all border ${
+            className={`px-4 py-2 rounded-xl text-2xs font-semibold whitespace-nowrap transition-all border ${
               cat === c ? 'bg-text-primary text-bg-primary border-text-primary' : 'border-border-primary text-text-tertiary hover:bg-bg-elevated hover:text-text-primary'
             }`}>
             {c}
@@ -367,7 +367,7 @@ export const MemoryVaultWithUpload: React.FC = () => {
                   <thead>
                     <tr className="bg-secondary/40 border-b border-border-primary">
                       {['File', 'Type', 'Size', 'Date', 'Status', ''].map(h => (
-                        <th key={h} className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-text-tertiary">{h}</th>
+                        <th key={h} className="px-6 py-4 text-2xs font-bold uppercase tracking-widest text-text-tertiary">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -378,7 +378,7 @@ export const MemoryVaultWithUpload: React.FC = () => {
                           <div className="flex flex-col items-center gap-3 text-text-disabled">
                             <Database size={32} strokeWidth={1} />
                             <p className="text-sm font-medium">No packets found</p>
-                            <button onClick={() => setShowUpload(true)} className="text-accent text-[12px] font-semibold hover:underline">
+                            <button onClick={() => setShowUpload(true)} className="text-accent text-xs font-semibold hover:underline">
                               Upload your first document →
                             </button>
                           </div>
@@ -397,9 +397,9 @@ export const MemoryVaultWithUpload: React.FC = () => {
                               <span className="text-sm font-semibold text-text-primary truncate max-w-[200px] group-hover:text-accent transition-colors">{f.name}</span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-[11px] font-mono text-text-tertiary uppercase">{f.type}</td>
-                          <td className="px-6 py-4 text-[11px] text-text-tertiary">{f.size}</td>
-                          <td className="px-6 py-4 text-[11px] font-mono text-text-tertiary">{f.date}</td>
+                          <td className="px-6 py-4 text-2xs font-mono text-text-tertiary uppercase">{f.type}</td>
+                          <td className="px-6 py-4 text-2xs text-text-tertiary">{f.size}</td>
+                          <td className="px-6 py-4 text-2xs font-mono text-text-tertiary">{f.date}</td>
                           <td className="px-6 py-4"><StatusBadge status={f.status} /></td>
                           <td className="px-6 py-4">
                             <button onClick={() => removeItem(f.id)}
@@ -421,7 +421,7 @@ export const MemoryVaultWithUpload: React.FC = () => {
                 <div className="col-span-full glass-panel rounded-[2rem] border border-border-secondary p-12 flex flex-col items-center gap-4 text-text-disabled shadow-2xl">
                   <Database size={32} strokeWidth={1} />
                   <p className="text-sm font-medium">No packets found</p>
-                  <button onClick={() => setShowUpload(true)} className="text-accent text-[12px] font-semibold hover:underline">Upload your first document →</button>
+                  <button onClick={() => setShowUpload(true)} className="text-accent text-xs font-semibold hover:underline">Upload your first document →</button>
                 </div>
               ) : (
                 filtered.map((f, idx) => (
@@ -438,12 +438,12 @@ export const MemoryVaultWithUpload: React.FC = () => {
                       </button>
                     </div>
                     <p className="text-sm font-semibold text-text-primary leading-tight line-clamp-2 mb-2 group-hover:text-accent transition-colors">{f.name}</p>
-                    <div className="flex items-center gap-2 text-[11px] text-text-tertiary font-mono mb-3">
+                    <div className="flex items-center gap-2 text-2xs text-text-tertiary font-mono mb-3">
                       <span>{f.type}</span><span>·</span><span>{f.size}</span>
                     </div>
                     <div className="flex items-center justify-between pt-3 border-t border-border-secondary/50">
                       <StatusBadge status={f.status} />
-                      <span className="text-[10px] font-mono text-text-disabled">{f.date}</span>
+                      <span className="text-2xs font-mono text-text-disabled">{f.date}</span>
                     </div>
                   </motion.div>
                 ))
@@ -458,12 +458,12 @@ export const MemoryVaultWithUpload: React.FC = () => {
         <div className="glass-panel p-6 rounded-[2rem] border border-border-secondary shadow-xl space-y-4">
           <div className="flex items-center gap-3">
             <HardDrive size={16} className="text-accent" />
-            <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-widest">Storage Usage</span>
+            <span className="text-2xs font-semibold text-text-tertiary uppercase tracking-widest">Storage Usage</span>
           </div>
           <div className="h-2 bg-secondary rounded-full overflow-hidden border border-border-primary">
             <motion.div initial={{ width: 0 }} animate={{ width: `${storePct}%` }} className="h-full bg-accent opacity-80 rounded-full" />
           </div>
-          <div className="flex justify-between text-[11px] font-semibold text-text-tertiary">
+          <div className="flex justify-between text-2xs font-semibold text-text-tertiary">
             <span>{stats ? `${stats.used_gb} GB used` : '—'}</span>
             <span>{stats ? `${stats.limit_gb} GB limit` : '—'}</span>
           </div>
@@ -472,14 +472,14 @@ export const MemoryVaultWithUpload: React.FC = () => {
         <div className="glass-panel p-6 rounded-[2rem] border border-border-secondary shadow-xl space-y-3">
           <div className="flex items-center gap-3">
             <Shield size={16} className="text-success" />
-            <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-widest">Encryption</span>
+            <span className="text-2xs font-semibold text-text-tertiary uppercase tracking-widest">Encryption</span>
           </div>
           <div className="space-y-2">
-            <div className="flex justify-between text-[11px]">
+            <div className="flex justify-between text-2xs">
               <span className="text-text-tertiary">Protocol</span>
               <span className="font-mono text-success font-semibold">AES-GCM-256</span>
             </div>
-            <div className="flex justify-between text-[11px]">
+            <div className="flex justify-between text-2xs">
               <span className="text-text-tertiary">Redundancy</span>
               <span className="font-mono text-success font-semibold">3× cloud sync</span>
             </div>
@@ -489,14 +489,14 @@ export const MemoryVaultWithUpload: React.FC = () => {
         <div className="glass-panel p-6 rounded-[2rem] border border-border-secondary shadow-xl space-y-3">
           <div className="flex items-center gap-3">
             <Database size={16} className="text-text-tertiary" />
-            <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-widest">Index Stats</span>
+            <span className="text-2xs font-semibold text-text-tertiary uppercase tracking-widest">Index Stats</span>
           </div>
           <div className="space-y-2">
-            <div className="flex justify-between text-[11px]">
+            <div className="flex justify-between text-2xs">
               <span className="text-text-tertiary">Total packets</span>
               <span className="font-semibold text-text-primary">{stats ? stats.total_packets.toLocaleString() : items.length}</span>
             </div>
-            <div className="flex justify-between text-[11px]">
+            <div className="flex justify-between text-2xs">
               <span className="text-text-tertiary">Mapped</span>
               <span className="font-semibold text-success">{stats ? stats.mapped.toLocaleString() : items.filter(i => i.status === 'Mapped').length}</span>
             </div>

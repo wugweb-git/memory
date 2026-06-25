@@ -138,13 +138,13 @@ export const UniversalSync = () => {
       <div className="space-y-8 relative z-10">
         <div className="flex items-start justify-between">
           <div className="kinetic-text">
-            <h3 className="text-[11px] font-black tracking-[0.5em] text-text-primary uppercase flex items-center gap-4">
+            <h3 className="text-2xs font-black tracking-[0.5em] text-text-primary uppercase flex items-center gap-4">
               <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
                 <LinkIcon size={16} className="text-accent" />
               </div>
               Neural_Uplink_Bridge
             </h3>
-            <p className="text-[9px] text-text-tertiary font-black tracking-[0.3em] mt-3 uppercase opacity-40 italic">
+            <p className="text-2xs text-text-tertiary font-black tracking-[0.3em] mt-3 uppercase opacity-40 ">
               Syncing LinkedIn, Blogs, and External Intelligence
             </p>
           </div>
@@ -158,7 +158,7 @@ export const UniversalSync = () => {
               onChange={(e) => setUrl(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSync()}
               placeholder="Paste resource URL (LinkedIn / Web)..."
-              className="w-full bg-bg-secondary/30 border-2 border-border-primary/50 rounded-2xl px-6 py-5 text-sm font-black text-text-primary focus:border-accent/40 outline-none transition-all italic shadow-inner pr-14 tracking-tight"
+              className="w-full bg-bg-secondary/30 border-2 border-border-primary/50 rounded-2xl px-6 py-5 text-sm font-black text-text-primary focus:border-accent/40 outline-none transition-all  shadow-inner pr-14 tracking-tight"
             />
             <div className="absolute right-5 top-1/2 -translate-y-1/2 transition-all">
               {url.includes('linkedin') ? (
@@ -180,8 +180,8 @@ export const UniversalSync = () => {
 
         <div className="space-y-4">
           <div className="flex items-center justify-between px-2">
-            <span className="text-[10px] font-black text-text-tertiary tracking-[0.3em] uppercase">Active_Bridges</span>
-            <span className="text-[10px] font-black text-accent uppercase tracking-widest">{syncedItems.length} Nodes</span>
+            <span className="text-2xs font-black text-text-tertiary tracking-[0.3em] uppercase">Active_Bridges</span>
+            <span className="text-2xs font-black text-accent uppercase tracking-widest">{syncedItems.length} Nodes</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[180px] overflow-y-auto custom-scrollbar pr-3">
@@ -202,17 +202,17 @@ export const UniversalSync = () => {
                       )}
                     </div>
                     <div className="space-y-0.5">
-                      <span className="text-[11px] font-black text-text-primary truncate max-w-[140px] block tracking-tight">
+                      <span className="text-2xs font-black text-text-primary truncate max-w-[140px] block tracking-tight">
                         {item.title}
                       </span>
-                      <span className="text-[9px] font-bold text-text-disabled uppercase tracking-widest block opacity-60">
+                      <span className="text-2xs font-bold text-text-disabled uppercase tracking-widest block opacity-60">
                         {item.lastSync}
                       </span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-success/10 border border-success/20">
                     <div className="w-1.5 h-1.5 rounded-full bg-success shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                    <span className="text-[8px] font-black text-success uppercase tracking-widest">Bridged</span>
+                    <span className="text-2xs font-black text-success uppercase tracking-widest">Bridged</span>
                   </div>
                 </motion.div>
               ))}

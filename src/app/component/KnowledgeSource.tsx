@@ -30,7 +30,7 @@ export const KnowledgeSource = () => {
   return (
     <div className="space-y-6">
       <div className="space-y-4">
-        <h3 className="text-[10px] font-black tracking-[0.3em] text-text-tertiary flex items-center justify-between uppercase kinetic-text">
+        <h3 className="text-2xs font-black tracking-[0.3em] text-text-tertiary flex items-center justify-between uppercase kinetic-text">
           Source_Intake <Database size={13} className="text-accent" aria-hidden="true" />
         </h3>
         
@@ -48,8 +48,8 @@ export const KnowledgeSource = () => {
       {/* Syncing Indicators */}
       <div className="space-y-3">
          <div className="flex items-center justify-between px-1">
-            <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest">Active_Anchors</span>
-            <span className="text-[9px] font-bold text-accent px-2 py-0.5 bg-accent/5 rounded-full border border-accent/10">SYNC_LIVE</span>
+            <span className="text-2xs font-black text-text-tertiary uppercase tracking-widest">Active_Anchors</span>
+            <span className="text-2xs font-bold text-accent px-2 py-0.5 bg-accent/5 rounded-full border border-accent/10">SYNC_LIVE</span>
          </div>
          <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar pr-2">
             <AnimatePresence initial={false}>
@@ -65,7 +65,7 @@ export const KnowledgeSource = () => {
                   </div>
                   <div className="flex items-center gap-2">
                      <div className="w-1.5 h-1.5 rounded-full bg-success opacity-60" />
-                     <span className="text-[9px] font-black text-text-tertiary uppercase tracking-tighter opacity-0 group-hover:opacity-100 transition-opacity">Anchored</span>
+                     <span className="text-2xs font-black text-text-tertiary uppercase tracking-tighter opacity-0 group-hover:opacity-100 transition-opacity">Anchored</span>
                   </div>
                 </motion.div>
               ))}

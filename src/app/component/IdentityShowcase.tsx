@@ -26,8 +26,8 @@ export const IdentityShowcase = () => {
         <aside className="w-full xl:w-96 bg-bg-secondary/40 border-r border-border-primary p-8 xl:p-12 flex flex-col justify-between">
           <div className="space-y-8">
             <div className="space-y-2">
-              <h3 className="text-[10px] font-black tracking-[0.5em] text-accent uppercase">Public layer</h3>
-              <h4 className="text-3xl font-black text-text-primary italic tracking-tighter uppercase leading-[0.9]">
+              <h3 className="text-2xs font-black tracking-[0.5em] text-accent uppercase">Public layer</h3>
+              <h4 className="text-3xl font-black text-text-primary  tracking-tighter uppercase leading-[0.9]">
                 Identity surfaces
               </h4>
             </div>
@@ -38,13 +38,13 @@ export const IdentityShowcase = () => {
             <Link
               href={publicUrl}
               target="_blank"
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-text-primary text-bg-primary text-[10px] font-black uppercase tracking-widest hover:bg-accent transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-text-primary text-bg-primary text-2xs font-black uppercase tracking-widest hover:bg-accent transition-colors"
             >
               <Eye size={14} /> View public profile <ExternalLink size={12} />
             </Link>
             <Link
               href="/admin/profile"
-              className="block text-[10px] font-bold text-accent uppercase tracking-widest hover:underline"
+              className="block text-2xs font-bold text-accent uppercase tracking-widest hover:underline"
             >
               Edit profile & posts →
             </Link>
@@ -72,9 +72,9 @@ export const IdentityShowcase = () => {
                   >
                     <div className="flex items-center justify-between mb-4">
                       <Globe size={18} className="text-text-tertiary group-hover:text-accent" />
-                      <span className="text-[9px] font-black uppercase text-success">{f.status}</span>
+                      <span className="text-2xs font-black uppercase text-success">{f.status}</span>
                     </div>
-                    <p className="text-[10px] font-black text-text-disabled uppercase tracking-widest">{f.platform}</p>
+                    <p className="text-2xs font-black text-text-disabled uppercase tracking-widest">{f.platform}</p>
                     <p className="text-sm font-bold text-text-primary mt-1">{f.label}</p>
                     <div className="mt-4 h-1 bg-secondary rounded-full overflow-hidden">
                       <div className="h-full bg-accent rounded-full" style={{ width: `${f.score}%` }} />
@@ -85,7 +85,7 @@ export const IdentityShowcase = () => {
 
               {posts.length > 0 && (
                 <div className="space-y-3">
-                  <h5 className="text-[10px] font-black uppercase tracking-widest text-text-tertiary flex items-center gap-2">
+                  <h5 className="text-2xs font-black uppercase tracking-widest text-text-tertiary flex items-center gap-2">
                     <BookOpen size={14} /> Recent on profile
                   </h5>
                   {posts.slice(0, 3).map((p) => (

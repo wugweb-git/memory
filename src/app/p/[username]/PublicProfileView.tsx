@@ -136,12 +136,12 @@ export function PublicProfileView({ username }: { username: string }) {
                 transition={{ delay: 0.3 }}
                 className="glass-panel p-8 rounded-[2.5rem] border-white/20 backdrop-blur-3xl shadow-3xl"
               >
-                <h1 className="text-5xl font-black italic tracking-tight uppercase leading-[0.85] text-text-primary kinetic-text">
+                <h1 className="text-5xl font-black  tracking-tight uppercase leading-[0.85] text-text-primary kinetic-text">
                   {displayName}
                 </h1>
                 <div className="mt-6 flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                  <p className="text-[10px] font-black text-text-tertiary uppercase tracking-[0.4em] opacity-60">
+                  <p className="text-2xs font-black text-text-tertiary uppercase tracking-[0.4em] opacity-60">
                     {profile?.isPublished === false ? 'Draft' : 'Digital Twin Active'}
                   </p>
                 </div>
@@ -152,7 +152,7 @@ export function PublicProfileView({ username }: { username: string }) {
           <div className="space-y-6">
             <Link
               href="/ask"
-              className="flex items-center justify-center gap-3 w-full py-5 bg-text-primary text-bg-primary rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] shadow-xl hover:bg-accent transition-all"
+              className="flex items-center justify-center gap-3 w-full py-5 bg-text-primary text-bg-primary rounded-[1.5rem] text-2xs font-black uppercase tracking-[0.2em] shadow-xl hover:bg-accent transition-all"
             >
               <Brain size={20} /> Initiate Neural Sync
             </Link>
@@ -179,7 +179,7 @@ export function PublicProfileView({ username }: { username: string }) {
         <div className="flex-1 space-y-24">
           {references.length > 0 && (
             <section className="space-y-6">
-              <h2 className="text-[11px] font-black uppercase tracking-[0.5em] text-text-tertiary">References</h2>
+              <h2 className="text-2xs font-black uppercase tracking-[0.5em] text-text-tertiary">References</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {references.map((ref) => {
                   const c = sectionContent(ref);
@@ -202,7 +202,7 @@ export function PublicProfileView({ username }: { username: string }) {
 
           {posts.length > 0 && (
             <section className="space-y-8">
-              <h2 className="text-[11px] font-black uppercase tracking-[0.5em] text-text-tertiary flex items-center gap-3">
+              <h2 className="text-2xs font-black uppercase tracking-[0.5em] text-text-tertiary flex items-center gap-3">
                 <BookOpen size={16} className="text-accent" /> Latest_Works
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -220,12 +220,12 @@ export function PublicProfileView({ username }: { username: string }) {
                       transition={{ delay: idx * 0.05 }}
                       className="glass-panel p-8 rounded-[2rem] border border-border-secondary hover:border-accent/40 block group"
                     >
-                      <span className="text-[9px] font-black uppercase text-accent">{post.type}</span>
+                      <span className="text-2xs font-black uppercase text-accent">{post.type}</span>
                       <h3 className="text-xl font-black mt-2 group-hover:text-accent transition-colors">{post.title}</h3>
-                      <p className="text-sm text-text-tertiary mt-2 line-clamp-3 italic">
+                      <p className="text-sm text-text-tertiary mt-2 line-clamp-3 ">
                         {String(c.summary ?? c.body ?? '').slice(0, 160)}
                       </p>
-                      <span className="text-[10px] text-text-disabled mt-4 block">{String(c.date ?? '')}</span>
+                      <span className="text-2xs text-text-disabled mt-4 block">{String(c.date ?? '')}</span>
                     </motion.a>
                   );
                 })}
@@ -242,23 +242,23 @@ export function PublicProfileView({ username }: { username: string }) {
                 transition={{ delay: 0.1 * i }}
                 className="p-12 glass-panel border border-border-secondary rounded-[3.5rem] shadow-xl relative overflow-hidden"
               >
-                <p className="text-xl font-bold italic text-text-secondary leading-relaxed">&ldquo;{t.content}&rdquo;</p>
+                <p className="text-xl font-bold  text-text-secondary leading-relaxed">&ldquo;{t.content}&rdquo;</p>
                 <div className="flex items-center gap-5 pt-8">
                   <img src={t.avatar} alt="" className="w-12 h-12 rounded-2xl" />
-                  <span className="text-[11px] font-black uppercase tracking-widest">{t.author}</span>
+                  <span className="text-2xs font-black uppercase tracking-widest">{t.author}</span>
                 </div>
               </motion.div>
             ))}
           </div>
 
           <div className="space-y-10">
-            <h2 className="text-[11px] font-black uppercase tracking-[0.5em] text-text-tertiary">Interaction_Modes</h2>
+            <h2 className="text-2xs font-black uppercase tracking-[0.5em] text-text-tertiary">Interaction_Modes</h2>
             <div className="flex flex-wrap gap-4">
               {tabs.map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-8 py-3 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest border-2 ${
+                  className={`px-8 py-3 rounded-[1.5rem] text-2xs font-black uppercase tracking-widest border-2 ${
                     activeTab === tab
                       ? 'bg-text-primary text-bg-primary border-text-primary'
                       : 'border-border-secondary text-text-tertiary'
@@ -280,13 +280,13 @@ export function PublicProfileView({ username }: { username: string }) {
                     <div className="flex justify-between">
                       {service.icon}
                       {'popular' in service && service.popular && (
-                        <span className="px-3 py-1 bg-accent text-bg-primary text-[9px] font-black uppercase rounded-full">
+                        <span className="px-3 py-1 bg-accent text-bg-primary text-2xs font-black uppercase rounded-full">
                           Popular
                         </span>
                       )}
                     </div>
-                    <h3 className="text-3xl font-black italic uppercase">{service.title}</h3>
-                    <p className="text-[11px] font-black text-text-tertiary uppercase opacity-60">{service.description}</p>
+                    <h3 className="text-3xl font-black ">{service.title}</h3>
+                    <p className="text-2xs font-black text-text-tertiary uppercase opacity-60">{service.description}</p>
                   </div>
                   <div className="flex items-center justify-between mt-12 pt-8 border-t border-border-primary/40">
                     <span className="text-3xl font-black">{service.price}</span>
@@ -300,8 +300,8 @@ export function PublicProfileView({ username }: { username: string }) {
           </div>
 
           <section className="glass-panel p-16 rounded-[4rem] border border-border-secondary">
-            <h2 className="text-[11px] font-black tracking-[0.5em] text-accent uppercase mb-6">About</h2>
-            <p className="text-2xl font-bold text-text-secondary leading-snug italic">{bio}</p>
+            <h2 className="text-2xs font-black tracking-[0.5em] text-accent uppercase mb-6">About</h2>
+            <p className="text-2xl font-bold text-text-secondary leading-snug ">{bio}</p>
           </section>
         </div>
       </div>
@@ -313,7 +313,7 @@ export function PublicProfileView({ username }: { username: string }) {
       >
         <Link
           href="/"
-          className="relative px-8 py-5 bg-text-primary text-bg-primary rounded-[1.25rem] text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl flex items-center gap-3 hover:bg-accent transition-all"
+          className="relative px-8 py-5 bg-text-primary text-bg-primary rounded-[1.25rem] text-2xs font-black uppercase tracking-[0.2em] shadow-2xl flex items-center gap-3 hover:bg-accent transition-all"
         >
           Build Your Prism <ArrowUpRight size={18} />
         </Link>

@@ -126,7 +126,7 @@ export default function MemoryControlSurface() {
         </div>
 
         <nav className="space-y-1">
-          <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4 px-3">Lifecycle Control</h2>
+          <h2 className="text-2xs font-bold text-zinc-500 uppercase tracking-widest mb-4 px-3">Lifecycle Control</h2>
           {SIDEBAR_ITEMS.map((item) => (
             <button key={item.label}
               onClick={() => setActiveSidebarItem(item.label)}
@@ -173,9 +173,9 @@ export default function MemoryControlSurface() {
             <div key={stat.label} className="relative group overflow-hidden rounded-2xl border border-white/5 p-5 bg-zinc-900/40 backdrop-blur-sm transition-all hover:border-white/10">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-1">{stat.label}</p>
+                  <p className="text-2xs uppercase tracking-widest text-zinc-500 font-bold mb-1">{stat.label}</p>
                   <p className="text-2xl font-black tracking-tight">{stat.value}</p>
-                  <p className="text-[11px] text-zinc-500 font-medium mt-1">{stat.sub}</p>
+                  <p className="text-2xs text-zinc-500 font-medium mt-1">{stat.sub}</p>
                 </div>
                 <stat.icon size={20} className={`${stat.color} opacity-80 group-hover:scale-110 transition-transform`} />
               </div>
@@ -206,13 +206,13 @@ export default function MemoryControlSurface() {
                   className={`w-full text-left p-4 rounded-xl border transition-all ${selectedPacket?.id === packet.id ? 'bg-cyan-500/10 border-cyan-500/40 shadow-lg shadow-cyan-500/5' : 'bg-black/40 border-white/5 hover:border-white/20'}`}
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${packet.status === 'accepted' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                    <span className={`px-2 py-0.5 rounded text-2xs font-bold uppercase ${packet.status === 'accepted' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
                       {packet.status}
                     </span>
-                    <span className="text-[10px] font-mono text-zinc-500">{new Date(packet.ingestion_time).toLocaleTimeString()}</span>
+                    <span className="text-2xs font-mono text-zinc-500">{new Date(packet.ingestion_time).toLocaleTimeString()}</span>
                   </div>
                   <h4 className="text-sm font-bold tracking-tight mb-1 uppercase">{packet.type}</h4>
-                  <div className="flex items-center gap-2 text-[11px] text-zinc-400">
+                  <div className="flex items-center gap-2 text-2xs text-zinc-400">
                     <span className="font-medium text-zinc-300">{packet.source}</span>
                     <span className="w-1 h-1 rounded-full bg-zinc-700" />
                     <span>Attempts: {packet.retry_count ?? 0}</span>
@@ -234,7 +234,7 @@ export default function MemoryControlSurface() {
               <div className="space-y-4">
                 {thresholds.map((row) => (
                   <div key={row.threshold} className="space-y-2">
-                    <div className="flex items-center justify-between text-[11px] font-bold">
+                    <div className="flex items-center justify-between text-2xs font-bold">
                       <span className="text-zinc-500 uppercase tracking-tighter">Capacity Threshold {row.threshold}%</span>
                       <span className={row.hit ? 'text-amber-400' : 'text-zinc-700'}>{row.hit ? 'TRIGGERED' : 'READY'}</span>
                     </div>
@@ -252,7 +252,7 @@ export default function MemoryControlSurface() {
                     <ShieldAlert size={18} />
                     <div>
                       <p className="text-xs font-bold uppercase tracking-widest leading-none">Ingestion Hard Lock</p>
-                      <p className="text-[10px] font-medium opacity-70 mt-1">Storage limit exceeded. Actions restricted.</p>
+                      <p className="text-2xs font-medium opacity-70 mt-1">Storage limit exceeded. Actions restricted.</p>
                     </div>
                   </div>
                 )}
@@ -265,31 +265,31 @@ export default function MemoryControlSurface() {
                 <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <p className="text-[10px] text-zinc-500 font-bold uppercase">Integrity</p>
-                      <p className="text-[11px] font-mono uppercase text-emerald-400">{selectedPacket.status}</p>
+                      <p className="text-2xs text-zinc-500 font-bold uppercase">Integrity</p>
+                      <p className="text-2xs font-mono uppercase text-emerald-400">{selectedPacket.status}</p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-[10px] text-zinc-500 font-bold uppercase">Source Access</p>
-                      <p className="text-[11px] font-mono uppercase">{selectedPacket.source}</p>
+                      <p className="text-2xs text-zinc-500 font-bold uppercase">Source Access</p>
+                      <p className="text-2xs font-mono uppercase">{selectedPacket.source}</p>
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <p className="text-[10px] text-zinc-500 font-bold uppercase">Payload Matrix</p>
-                    <pre className="max-h-60 overflow-auto p-4 rounded-xl bg-black/60 border border-white/10 text-[10px] font-mono text-zinc-300 custom-scrollbar leading-relaxed">
+                    <p className="text-2xs text-zinc-500 font-bold uppercase">Payload Matrix</p>
+                    <pre className="max-h-60 overflow-auto p-4 rounded-xl bg-black/60 border border-white/10 text-2xs font-mono text-zinc-300 custom-scrollbar leading-relaxed">
                       {JSON.stringify(selectedPacket.content, null, 2)}
                     </pre>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 pt-2">
-                    <button onClick={() => runAction('delete', selectedPacket.id)} className="px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-[10px] font-bold text-red-400 uppercase hover:bg-red-500/20 transition-colors">Terminate</button>
-                    <button onClick={() => replayPacket(selectedPacket.id)} className="px-3 py-2 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-[10px] font-bold text-cyan-400 uppercase hover:bg-cyan-500/20 transition-colors">Replay Matrix</button>
+                    <button onClick={() => runAction('delete', selectedPacket.id)} className="px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-2xs font-bold text-red-400 uppercase hover:bg-red-500/20 transition-colors">Terminate</button>
+                    <button onClick={() => replayPacket(selectedPacket.id)} className="px-3 py-2 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-2xs font-bold text-cyan-400 uppercase hover:bg-cyan-500/20 transition-colors">Replay Matrix</button>
                   </div>
                 </div>
               ) : (
                 <div className="py-12 flex flex-col items-center justify-center text-zinc-600 border border-dashed border-white/5 rounded-2xl">
                   <Activity size={20} className="mb-2 opacity-20" />
-                  <p className="text-[10px] font-bold uppercase tracking-widest">Select Packet</p>
+                  <p className="text-2xs font-bold uppercase tracking-widest">Select Packet</p>
                 </div>
               )}
             </section>

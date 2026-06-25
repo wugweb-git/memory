@@ -56,10 +56,10 @@ export const IntegrationMatrix = () => {
   return (
     <div className="space-y-12">
       <div className="kinetic-text">
-        <h2 className="text-3xl font-black text-text-primary tracking-tighter uppercase italic flex items-center gap-4">
+        <h2 className="text-3xl font-black text-text-primary tracking-tighter  flex items-center gap-4">
            <Settings size={26} className="text-accent" /> System_Integrations
         </h2>
-        <p className="text-[10px] text-text-tertiary font-bold mt-2 uppercase tracking-[0.4em] opacity-60">Neural Uplink Channels & Meeting Protocols</p>
+        <p className="text-2xs text-text-tertiary font-bold mt-2 uppercase tracking-[0.4em] opacity-60">Neural Uplink Channels & Meeting Protocols</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
@@ -70,7 +70,7 @@ export const IntegrationMatrix = () => {
           </div>
           
           <div className="space-y-2 relative z-10">
-            <h3 className="text-xl font-black text-text-primary uppercase tracking-tight italic">Calendar Integration</h3>
+            <h3 className="text-xl font-black text-text-primary uppercase tracking-tight ">Calendar Integration</h3>
             <p className="text-xs font-medium text-text-tertiary">Connect your calendars to automatically block availability during existing events</p>
           </div>
 
@@ -78,7 +78,7 @@ export const IntegrationMatrix = () => {
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <h4 className="text-sm font-black text-text-primary uppercase tracking-wider">Connected Calendars</h4>
-                <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest opacity-60">Sync your personal and work calendars</p>
+                <p className="text-2xs font-bold text-text-tertiary uppercase tracking-widest opacity-60">Sync your personal and work calendars</p>
               </div>
             </div>
 
@@ -99,12 +99,12 @@ export const IntegrationMatrix = () => {
                       <h5 className="text-xs font-black text-text-primary flex items-center gap-2">
                         {acc.provider}
                         {acc.isPrimary && (
-                          <span className="bg-success/10 text-success text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full flex items-center gap-1 border border-success/20">
+                          <span className="bg-success/10 text-success text-2xs font-black uppercase tracking-widest px-2 py-0.5 rounded-full flex items-center gap-1 border border-success/20">
                             <CheckCircle2 size={8} /> PRIMARY
                           </span>
                         )}
                       </h5>
-                      <p className="text-[10px] font-bold text-text-tertiary truncate max-w-[200px]">{acc.email}</p>
+                      <p className="text-2xs font-bold text-text-tertiary truncate max-w-[200px]">{acc.email}</p>
                     </div>
                   </div>
                   <button className="p-2 rounded-lg hover:bg-bg-elevated text-text-disabled hover:text-text-tertiary transition-colors">
@@ -114,7 +114,7 @@ export const IntegrationMatrix = () => {
               ))}
             </div>
 
-            <button className="w-full py-4 rounded-2xl border-2 border-dashed border-border-secondary text-text-tertiary text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:border-accent hover:text-accent transition-all hover:bg-accent/5">
+            <button className="w-full py-4 rounded-2xl border-2 border-dashed border-border-secondary text-text-tertiary text-2xs font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:border-accent hover:text-accent transition-all hover:bg-accent/5">
               <Plus size={16} /> Add calendar account
             </button>
           </div>
@@ -127,7 +127,7 @@ export const IntegrationMatrix = () => {
           </div>
 
           <div className="space-y-2 relative z-10">
-            <h3 className="text-xl font-black text-text-primary uppercase tracking-tight italic">Meeting Location</h3>
+            <h3 className="text-xl font-black text-text-primary uppercase tracking-tight ">Meeting Location</h3>
             <p className="text-xs font-medium text-text-tertiary">Configure your preferred video conferencing tools for meetings</p>
           </div>
 
@@ -143,7 +143,7 @@ export const IntegrationMatrix = () => {
                   </div>
                   <div>
                     <h5 className="text-sm font-black text-text-primary uppercase tracking-widest">{tool.name}</h5>
-                    <p className="text-[10px] font-medium text-text-tertiary max-w-[200px]">{tool.description}</p>
+                    <p className="text-2xs font-medium text-text-tertiary max-w-[200px]">{tool.description}</p>
                   </div>
                 </div>
                 <button 
@@ -168,10 +168,10 @@ export const IntegrationMatrix = () => {
               </div>
               <div>
                 <h4 className="text-xs font-black text-text-primary uppercase tracking-widest">Global Dynamic Pricing</h4>
-                <p className="text-[9px] font-bold text-text-tertiary uppercase tracking-widest opacity-60 italic">Location-aware fee mapping</p>
+                <p className="text-2xs font-bold text-text-tertiary uppercase tracking-widest opacity-60 ">Location-aware fee mapping</p>
               </div>
             </div>
-            <button className="text-[10px] font-black text-accent uppercase tracking-widest hover:underline">
+            <button className="text-2xs font-black text-accent uppercase tracking-widest hover:underline">
               Configure
             </button>
           </div>

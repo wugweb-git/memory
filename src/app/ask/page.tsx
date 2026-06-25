@@ -61,12 +61,12 @@ export default function AskNeuralInterface() {
           <section className="space-y-6 text-center lg:text-left">
              <div className="flex items-center gap-4 text-accent mb-6 justify-center lg:justify-start">
                 <Brain size={24} className="animate-pulse" />
-                <span className="text-[11px] font-black uppercase tracking-[0.5em]">LAYER_3 // IDENTITY_SYNC</span>
+                <span className="text-2xs font-black uppercase tracking-[0.5em]">LAYER_3 // IDENTITY_SYNC</span>
              </div>
-             <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter uppercase leading-[0.85] text-text-primary kinetic-text break-words">
+             <h1 className="text-4xl md:text-6xl font-black  tracking-tighter uppercase leading-[0.85] text-text-primary kinetic-text break-words">
                 Neural_Sync_Interface
              </h1>
-             <p className="max-w-2xl text-lg font-medium text-text-tertiary italic leading-relaxed">
+             <p className="max-w-2xl text-lg font-medium text-text-tertiary  leading-relaxed">
                 Pose a cognitive query to the Digital Twin. Every synapse is grounded in your verified memory graph.
              </p>
           </section>
@@ -82,7 +82,7 @@ export default function AskNeuralInterface() {
                    <div className="w-24 h-24 rounded-full bg-accent/10 flex items-center justify-center mb-10 border border-accent/20 shadow-[0_0_50px_rgba(0,170,255,0.1)]">
                       <Sparkles size={40} className="text-accent" />
                    </div>
-                   <h2 className="text-4xl font-black text-text-primary mb-4 italic tracking-tighter">Prism Awakens</h2>
+                   <h2 className="text-4xl font-black text-text-primary mb-4  tracking-tighter">Prism Awakens</h2>
                    <p className="text-xs font-bold text-text-tertiary tracking-[0.3em] uppercase opacity-40">Awaiting semantic ignition</p>
                  </motion.div>
                ) : (
@@ -112,7 +112,7 @@ export default function AskNeuralInterface() {
                              {m.role !== 'user' ? highlightKeywords(text) : text}
                            </div>
                          </div>
-                         <span className="text-[10px] mt-6 font-black font-mono text-text-disabled uppercase tracking-[0.25em] opacity-50">
+                         <span className="text-2xs mt-6 font-black font-mono text-text-disabled uppercase tracking-[0.25em] opacity-50">
                            {m.role === 'user' ? 'UPLINK_STABLE' : 'TWIN_REFLEX'}{' // '}{new Date().toLocaleTimeString()}
                          </span>
                        </div>
@@ -149,7 +149,7 @@ export default function AskNeuralInterface() {
       <div className="max-w-4xl mx-auto">
         <form onSubmit={handleSend} className="group relative glass-panel rounded-[2.5rem] border-white/5 focus-within:border-accent/50 transition-all duration-700 shadow-3xl overflow-hidden">
           <div className="hidden md:flex items-center px-10 py-5 border-b border-border-secondary bg-white/[0.02]">
-            <div className="flex items-center gap-8 text-[10px] font-black text-text-tertiary tracking-[0.3em] uppercase">
+            <div className="flex items-center gap-8 text-2xs font-black text-text-tertiary tracking-[0.3em] uppercase">
               <span className="flex items-center gap-2"><RefreshCcw size={14} className="animate-spin text-accent" /> Uplink: Quantum_Stable</span>
               <span className="flex items-center gap-2 border-l border-border-secondary pl-8">Core: Neural_Prism_v4</span>
             </div>
@@ -168,7 +168,7 @@ export default function AskNeuralInterface() {
                   }
                 }}
                 placeholder="Pose a cognitive query..."
-                className="w-full h-24 md:h-32 p-2 bg-transparent text-base md:text-2xl font-bold text-text-primary placeholder:text-text-disabled placeholder:italic focus:outline-none resize-none scrollbar-hide kinetic-text"
+                className="w-full h-24 md:h-32 p-2 bg-transparent text-base md:text-2xl font-bold text-text-primary placeholder:text-text-disabled placeholder: focus:outline-none resize-none scrollbar-hide kinetic-text"
               />
             </div>
           </div>
@@ -185,7 +185,7 @@ export default function AskNeuralInterface() {
             <button 
               type="submit"
               disabled={isLoading || input.trim() === ''}
-              className="px-5 md:px-16 py-3 md:py-5 rounded-[1.25rem] md:rounded-[1.5rem] font-black text-[10px] md:text-xs tracking-[0.2em] md:tracking-[0.3em] uppercase transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-accent text-bg-primary hover:bg-accent-high hover:scale-105 active:scale-95 shadow-2xl shadow-accent/40 flex items-center gap-2 md:gap-4 group"
+              className="px-5 md:px-16 py-3 md:py-5 rounded-[1.25rem] md:rounded-[1.5rem] font-black text-2xs md:text-xs tracking-[0.2em] md:tracking-[0.3em] uppercase transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-accent text-bg-primary hover:bg-accent-high hover:scale-105 active:scale-95 shadow-2xl shadow-accent/40 flex items-center gap-2 md:gap-4 group"
             >
               <span className="relative z-10">{isLoading ? 'EXECUTING_SYNC...' : 'INITIATE_SYNAPSE'}</span>
               <ArrowUpRight size={20} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />

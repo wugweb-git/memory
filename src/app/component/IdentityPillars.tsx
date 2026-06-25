@@ -29,23 +29,23 @@ export const IdentityPillars = () => {
                 <p.icon size={20} aria-hidden="true" />
               </div>
               <div className="space-y-0.5">
-                 <span className="text-[10px] font-black text-text-tertiary tracking-[0.3em] uppercase block">{p.label}</span>
+                 <span className="text-2xs font-black text-text-tertiary tracking-[0.3em] uppercase block">{p.label}</span>
                  <div className="h-0.5 w-8 bg-border-secondary group-hover:w-full transition-all duration-700" />
               </div>
             </header>
 
-            <h3 className="text-xl font-black text-text-primary tracking-tighter mb-4 leading-none uppercase italic kinetic-text group-hover:text-accent transition-colors">
+            <h3 className="text-xl font-black text-text-primary tracking-tighter mb-4 leading-none  kinetic-text group-hover:text-accent transition-colors">
               {p.title}
             </h3>
             
-            <p className="text-sm text-text-secondary leading-relaxed font-medium flex-1 italic tracking-tight">
+            <p className="text-sm text-text-secondary leading-relaxed font-medium flex-1  tracking-tight">
               {p.content}
             </p>
 
             <footer className="mt-8 pt-6 border-t border-border-secondary flex items-center justify-between">
               <div className="flex items-center gap-2">
                  <Sparkles size={12} className="text-text-disabled opacity-40 group-hover:opacity-100 group-hover:text-accent transition-all" />
-                 <span className="text-[10px] font-black text-text-disabled uppercase tracking-widest group-hover:text-text-tertiary transition-colors">Signature_Logic</span>
+                 <span className="text-2xs font-black text-text-disabled uppercase tracking-widest group-hover:text-text-tertiary transition-colors">Signature_Logic</span>
               </div>
               <div className="flex gap-1">
                  <div className="w-1 h-1 rounded-full bg-border-primary" />

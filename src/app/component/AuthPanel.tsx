@@ -107,13 +107,13 @@ export const AuthPanel = () => {
           </div>
           <div>
             <p className="text-sm font-bold text-text-primary">{user.email}</p>
-            <p className="text-[10px] text-text-tertiary uppercase tracking-widest">Role: {user.role}</p>
+            <p className="text-2xs text-text-tertiary uppercase tracking-widest">Role: {user.role}</p>
           </div>
         </div>
         {user.role === 'admin' && (
           <a
             href="/admin"
-            className="block text-center text-[11px] font-black uppercase tracking-widest text-accent hover:underline"
+            className="block text-center text-2xs font-black uppercase tracking-widest text-accent hover:underline"
           >
             Open Admin Console
           </a>
@@ -121,7 +121,7 @@ export const AuthPanel = () => {
         <button
           type="button"
           onClick={logout}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-border-secondary text-text-tertiary hover:text-danger hover:border-danger/30 transition-colors text-[11px] font-black uppercase tracking-widest"
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-border-secondary text-text-tertiary hover:text-danger hover:border-danger/30 transition-colors text-2xs font-black uppercase tracking-widest"
         >
           <LogOut size={14} /> Sign out
         </button>
@@ -156,7 +156,7 @@ export const AuthPanel = () => {
         <button
           type="submit"
           disabled={loading}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-text-primary text-bg-primary text-[11px] font-black uppercase tracking-widest disabled:opacity-40"
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-text-primary text-bg-primary text-2xs font-black uppercase tracking-widest disabled:opacity-40"
         >
           {loading ? <Loader2 size={14} className="animate-spin" /> : <LogIn size={14} />}
           Sign in
@@ -165,7 +165,7 @@ export const AuthPanel = () => {
           type="button"
           disabled={loading}
           onClick={signup}
-          className="flex-1 py-3 rounded-xl border border-border-secondary text-[11px] font-black uppercase tracking-widest text-text-tertiary hover:border-accent/30 transition-colors"
+          className="flex-1 py-3 rounded-xl border border-border-secondary text-2xs font-black uppercase tracking-widest text-text-tertiary hover:border-accent/30 transition-colors"
         >
           Sign up
         </button>

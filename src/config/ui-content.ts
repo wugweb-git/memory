@@ -1,7 +1,7 @@
 import {
   Command, Brain, Database, Archive, Layers, Sparkles, FileText, History,
   Settings, Cpu, LayoutDashboard, User, Eye, Activity, Link2,
-  MessageSquare, Zap,
+  MessageSquare, Zap, ShieldCheck,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -67,6 +67,59 @@ export const WORKSPACE_NAV = [
 export const SIDEBAR_STATS = [
   { label: 'Uplink', value: 'Live', colorClass: 'text-accent' },
   { label: 'Integrity', value: 'Nominal', colorClass: 'text-success' },
+] as const;
+
+/** Unified route-based navigation — single source of truth for the app shell.
+ *  Grouped sidebar (desktop) + mobile drawer all read from this. */
+export const NAV_GROUPS: ReadonlyArray<{
+  group: string;
+  items: ReadonlyArray<{ href: string; label: string; icon: LucideIcon }>;
+}> = [
+  {
+    group: 'Workspace',
+    items: [
+      { href: '/', label: 'Console', icon: LayoutDashboard },
+      { href: '/ask', label: 'Ask', icon: MessageSquare },
+    ],
+  },
+  {
+    group: 'Data',
+    items: [
+      { href: '/memory', label: 'Memory', icon: Database },
+      { href: '/buffer', label: 'Buffer', icon: Archive },
+      { href: '/content', label: 'Content', icon: FileText },
+      { href: '/history', label: 'History', icon: History },
+    ],
+  },
+  {
+    group: 'Intelligence',
+    items: [
+      { href: '/cognitive', label: 'Cognitive', icon: Cpu },
+      { href: '/persona', label: 'Persona', icon: Sparkles },
+    ],
+  },
+  {
+    group: 'Identity',
+    items: [
+      { href: '/portfolio', label: 'Portfolio', icon: Eye },
+    ],
+  },
+  {
+    group: 'System',
+    items: [
+      { href: '/system', label: 'System', icon: Settings },
+      { href: '/admin', label: 'Admin', icon: ShieldCheck },
+    ],
+  },
+] as const;
+
+/** Primary mobile-dock items (compact subset of NAV_GROUPS). */
+export const MOBILE_DOCK_ITEMS: ReadonlyArray<{ href: string; label: string; icon: LucideIcon }> = [
+  { href: '/', label: 'Console', icon: LayoutDashboard },
+  { href: '/memory', label: 'Memory', icon: Database },
+  { href: '/cognitive', label: 'Cognitive', icon: Cpu },
+  { href: '/persona', label: 'Persona', icon: Sparkles },
+  { href: '/system', label: 'System', icon: Settings },
 ] as const;
 
 export const CHAT_HIGHLIGHT_KEYWORDS = [

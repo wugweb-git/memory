@@ -93,16 +93,16 @@ export default function AdminConsole() {
   ];
 
   return (
-    <div className={`min-h-screen bg-[#FDFDFB] text-[#1A1A1A] flex flex-col ${inter.className}`}>
-      <header className="h-20 border-b border-[#F0F0EE] bg-white/80 backdrop-blur-3xl flex items-center justify-between px-4 md:px-10 shrink-0 z-50 sticky top-0">
+    <div className={`text-text-primary flex flex-col ${inter.className}`}>
+      <header className="h-20 border-b border-border-secondary bg-bg-elevated rounded-radius-xl mb-6 flex items-center justify-between px-4 md:px-10 shrink-0">
          <div className="flex items-center gap-8">
             <Link href="/" className="group flex items-center gap-3">
                <div className="w-10 h-10 rounded-2xl bg-black flex items-center justify-center text-white shadow-xl group-hover:scale-110 transition-transform">
                   <Command size={20} />
                </div>
                <div className="flex flex-col">
-                  <h1 className="text-[13px] font-black tracking-[0.2em] uppercase italic">Creator Dashboard</h1>
-                  <p className={`text-[9px] ${jetBrains.className} text-[#A0A09E] uppercase tracking-widest`}>Node: CONFIG_NODE_ALPHA</p>
+                  <h1 className="text-sm font-black tracking-[0.2em] ">Creator Dashboard</h1>
+                  <p className={`text-2xs ${jetBrains.className} text-[#A0A09E] uppercase tracking-widest`}>Node: CONFIG_NODE_ALPHA</p>
                </div>
             </Link>
          </div>
@@ -115,7 +115,7 @@ export default function AdminConsole() {
              >
                <Menu size={20} className="text-[#666664]" />
              </button>
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-full border text-[10px] font-black tracking-widest uppercase italic transition-all ${auditResults ? 'bg-success/5 border-success/20 text-success' : 'bg-[#F5F5F3] border-[#E0E0DE] text-[#1A1A1A]'}`}>
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-full border text-2xs font-black tracking-widest  transition-all ${auditResults ? 'bg-success/5 border-success/20 text-success' : 'bg-[#F5F5F3] border-[#E0E0DE] text-[#1A1A1A]'}`}>
                <ShieldCheck size={12} /> {auditResults ? 'Matrix_Aligned' : 'System_Secure'}
             </div>
              <div className="w-px h-8 bg-[#E0E0DE] hidden md:block" />
@@ -127,32 +127,32 @@ export default function AdminConsole() {
                <div className="w-8 h-8 rounded-xl bg-[#F5F5F3] overflow-hidden border border-[#E0E0DE]">
                   <img src={avatarFallbackUrl()} alt={IDENTITY_CONFIG.DISPLAY_NAME} />
                </div>
-               <span className="text-[11px] font-black uppercase tracking-widest hidden md:block">{IDENTITY_CONFIG.DISPLAY_NAME}</span>
+               <span className="text-2xs font-black uppercase tracking-widest hidden md:block">{IDENTITY_CONFIG.DISPLAY_NAME}</span>
             </button>
          </div>
       </header>
 
       <div className="flex-1 flex overflow-hidden">
          <aside className={`${mobileNavOpen ? 'flex' : 'hidden'} lg:flex w-full lg:w-80 border-r border-[#F0F0EE] bg-white p-6 lg:p-10 flex-col gap-8 lg:gap-12 overflow-y-auto absolute lg:static inset-0 z-40 lg:z-auto`}>
-            <button onClick={runAudit} disabled={isAuditing} className="w-full py-4 bg-accent text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3">
+            <button onClick={runAudit} disabled={isAuditing} className="w-full py-4 bg-accent text-white rounded-2xl text-2xs font-black uppercase tracking-[0.2em] shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3">
                {isAuditing ? <RefreshCcw size={16} className="animate-spin" /> : <Sparkles size={16} />} 
                Run System Audit
             </button>
 
             {sidebarItems.map(section => (
                <div key={section.section} className="space-y-6">
-                  <h3 className="text-[10px] font-black text-[#A0A09E] tracking-[0.4em] uppercase px-4">{section.section}</h3>
+                  <h3 className="text-2xs font-black text-[#A0A09E] tracking-[0.4em] uppercase px-4">{section.section}</h3>
                   <div className="space-y-2">
                      {section.items.map(item => {
                        const isActive = targetBlock === item.id;
                        return (
                          <div key={item.id} className="relative group">
                            {item.href ? (
-                             <Link href={item.href} className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl text-[11px] font-black tracking-widest uppercase transition-all ${isActive ? 'bg-[#F2F2ED] text-[#1A1A1A]' : 'text-[#666664] hover:bg-[#FBFBFA] hover:text-[#1A1A1A]'}`}>
+                             <Link href={item.href} className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl text-2xs font-black tracking-widest uppercase transition-all ${isActive ? 'bg-[#F2F2ED] text-[#1A1A1A]' : 'text-[#666664] hover:bg-[#FBFBFA] hover:text-[#1A1A1A]'}`}>
                                 {item.icon} {item.label}
                              </Link>
                            ) : (
-                              <button onClick={() => { setTargetBlock(item.id); setMobileNavOpen(false); }} className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-[11px] font-black tracking-widest uppercase transition-all ${isActive ? 'bg-[#F2F2ED] text-[#1A1A1A]' : 'text-[#666664] hover:bg-[#FBFBFA] hover:text-[#1A1A1A]'}`}>
+                              <button onClick={() => { setTargetBlock(item.id); setMobileNavOpen(false); }} className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-2xs font-black tracking-widest uppercase transition-all ${isActive ? 'bg-[#F2F2ED] text-[#1A1A1A]' : 'text-[#666664] hover:bg-[#FBFBFA] hover:text-[#1A1A1A]'}`}>
                                 {item.icon} {item.label}
                              </button>
                            )}
@@ -170,9 +170,9 @@ export default function AdminConsole() {
                   <div className="space-y-2">
                      <div className="flex items-center gap-3 text-accent mb-2">
                         <div className="w-2 h-2 rounded-full bg-accent animate-ping" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em]">System.Status: Active</span>
+                        <span className="text-2xs font-black uppercase tracking-[0.3em]">System.Status: Active</span>
                      </div>
-                     <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-tight">{targetBlock}</h2>
+                     <h2 className="text-4xl font-black  tracking-tighter uppercase leading-tight">{targetBlock}</h2>
                      <p className="text-[#888886] text-xs font-bold uppercase tracking-widest">Node: {targetBlock.replace(' ', '_').toUpperCase()} // LAYER_ADMIN</p>
                   </div>
                </header>
@@ -187,7 +187,7 @@ export default function AdminConsole() {
                                     <Sparkles size={32} />
                                  </div>
                                  <div className="space-y-1">
-                                    <h3 className="text-2xl font-black italic tracking-tighter uppercase">Launch Sequence [14 Nodes]</h3>
+                                    <h3 className="text-2xl font-black  tracking-tighter uppercase">Launch Sequence [14 Nodes]</h3>
                                     <p className="text-[#888886] text-xs font-bold uppercase tracking-[0.3em]">Identity Alignment Progress</p>
                                  </div>
                               </div>
@@ -202,7 +202,7 @@ export default function AdminConsole() {
                                           <div className={`w-8 h-8 rounded-xl flex items-center justify-center border transition-all ${item.completed ? 'bg-success/10 border-success/40 text-success' : 'bg-white border-[#E0E0DE] text-[#E0E0DE]'}`}>
                                              {item.completed ? <CheckCircle2 size={16} /> : <div className="w-4 h-4 rounded-full border-2 border-dashed border-[#E0E0DE]" />}
                                           </div>
-                                          <span className={`text-[11px] font-black uppercase tracking-wider ${item.completed ? 'text-[#A0A09E] line-through' : 'text-[#1A1A1A]'}`}>
+                                          <span className={`text-2xs font-black uppercase tracking-wider ${item.completed ? 'text-[#A0A09E] line-through' : 'text-[#1A1A1A]'}`}>
                                              {item.id.toString().padStart(2, '0')} // {item.text}
                                           </span>
                                        </div>
@@ -218,14 +218,14 @@ export default function AdminConsole() {
                                 <div className="absolute top-0 right-0 w-1/2 h-full bg-accent/5 blur-[120px] pointer-events-none" />
                                 <div className="flex items-center justify-between relative z-10">
                                    <div className="space-y-2">
-                                      <h3 className="text-2xl font-black italic tracking-tighter uppercase flex items-center gap-4">
+                                      <h3 className="text-2xl font-black  tracking-tighter uppercase flex items-center gap-4">
                                          <Activity className="text-accent" /> 20-Point Semantic Audit
                                       </h3>
-                                      <p className="text-[#888886] text-[10px] font-black uppercase tracking-[0.4em]">Audit_ID: {auditResults.audit_id}</p>
+                                      <p className="text-[#888886] text-2xs font-black uppercase tracking-[0.4em]">Audit_ID: {auditResults.audit_id}</p>
                                    </div>
                                    <div className="text-right">
-                                      <p className="text-4xl font-black italic text-accent">{auditResults.passed}/20</p>
-                                      <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Nodes Verified</p>
+                                      <p className="text-4xl font-black  text-accent">{auditResults.passed}/20</p>
+                                      <p className="text-2xs font-black uppercase tracking-widest opacity-60">Nodes Verified</p>
                                    </div>
                                 </div>
 
@@ -233,10 +233,10 @@ export default function AdminConsole() {
                                    {auditResults.results.map((r: any, i: number) => (
                                      <div key={i} className={`p-4 rounded-2xl border transition-all ${r.status === 'PASS' ? 'bg-white/5 border-white/10' : 'bg-danger/10 border-danger/20'}`}>
                                         <div className="flex items-center justify-between mb-3">
-                                           <span className={`text-[9px] font-black font-mono tracking-tighter ${r.status === 'PASS' ? 'text-accent' : 'text-danger'}`}>{i + 1}</span>
+                                           <span className={`text-2xs font-black font-mono tracking-tighter ${r.status === 'PASS' ? 'text-accent' : 'text-danger'}`}>{i + 1}</span>
                                            {r.status === 'PASS' ? <CheckCircle2 size={12} className="text-accent" /> : <X size={12} className="text-danger" />}
                                         </div>
-                                        <p className="text-[9px] font-black uppercase tracking-widest truncate leading-tight">{r.name}</p>
+                                        <p className="text-2xs font-black uppercase tracking-widest truncate leading-tight">{r.name}</p>
                                      </div>
                                    ))}
                                 </div>
@@ -255,8 +255,8 @@ export default function AdminConsole() {
                                         <div className="w-1 h-8 bg-[#F0F0EE] rounded-full" />
                                      </div>
                                      <div className="space-y-1">
-                                        <p className="text-[10px] font-black text-[#A0A09E] tracking-[0.3em] uppercase">{stat.label}</p>
-                                        <p className="text-2xl font-black text-[#1A1A1A] italic tracking-tighter">{stat.val}</p>
+                                        <p className="text-2xs font-black text-[#A0A09E] tracking-[0.3em] uppercase">{stat.label}</p>
+                                        <p className="text-2xl font-black text-[#1A1A1A]  tracking-tighter">{stat.val}</p>
                                      </div>
                                  </div>
                                ))}
@@ -269,8 +269,8 @@ export default function AdminConsole() {
                               <Command size={60} className="relative z-10" />
                            </div>
                            <div className="space-y-4">
-                              <h3 className="text-2xl font-black italic tracking-tighter uppercase italic">{targetBlock} Sync</h3>
-                              <button onClick={() => setTargetBlock('Home')} className="px-10 py-4 bg-black text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-accent transition-all">
+                              <h3 className="text-2xl font-black  tracking-tighter ">{targetBlock} Sync</h3>
+                              <button onClick={() => setTargetBlock('Home')} className="px-10 py-4 bg-black text-white rounded-2xl text-2xs font-black uppercase tracking-widest hover:bg-accent transition-all">
                                 Establish Matrix Sync
                               </button>
                            </div>

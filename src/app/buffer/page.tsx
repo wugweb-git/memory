@@ -199,7 +199,7 @@ export default function BufferControlSurface() {
             <div className="rounded-2xl bg-white/[0.02] border border-white/5 overflow-hidden backdrop-blur-sm">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-white/[0.03] text-[10px] uppercase tracking-widest text-white/40">
+                  <tr className="bg-white/[0.03] text-2xs uppercase tracking-widest text-white/40">
                     <th className="px-6 py-4 font-medium">Node ID</th>
                     <th className="px-6 py-4 font-medium">Origin</th>
                     <th className="px-6 py-4 font-medium">Type</th>
@@ -232,20 +232,20 @@ export default function BufferControlSurface() {
                         onClick={() => setSelectedId(item.id === selectedId ? null : item.id)}
                         className={`hover:bg-white/[0.03] transition-colors cursor-pointer group ${selectedId === item.id ? 'bg-indigo-500/10' : ''}`}
                       >
-                        <td className="px-6 py-4 font-mono text-[10px] text-white/60">
+                        <td className="px-6 py-4 font-mono text-2xs text-white/60">
                            {item.id.substring(0, 18)}...
                         </td>
                         <td className="px-6 py-4">
-                          <span className="px-2 py-1 rounded bg-white/5 text-[10px] text-white/80">{item.source}</span>
+                          <span className="px-2 py-1 rounded bg-white/5 text-2xs text-white/80">{item.source}</span>
                         </td>
-                        <td className="px-6 py-4 text-xs text-white/50 uppercase tracking-tighter italic">{item.type}</td>
+                        <td className="px-6 py-4 text-xs text-white/50 uppercase tracking-tighter ">{item.type}</td>
                         <td className="px-6 py-4 text-xs tabular-nums text-white/40">{formatSize(item.size)}</td>
                         <td className="px-6 py-4">
-                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${getStateColor(item.state)}`}>
+                          <span className={`px-2 py-0.5 rounded-full text-2xs font-bold uppercase tracking-wider ${getStateColor(item.state)}`}>
                             {item.state}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-[10px] text-white/30">
+                        <td className="px-6 py-4 text-2xs text-white/30">
                           {new Date(item.created_at).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 text-right">
@@ -275,7 +275,7 @@ export default function BufferControlSurface() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-4">
-                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-white/40 border-b border-white/5 pb-2">Actions</h4>
+                    <h4 className="text-2xs font-bold uppercase tracking-widest text-white/40 border-b border-white/5 pb-2">Actions</h4>
                     <div className="grid grid-cols-2 gap-3">
                       <button 
                          onClick={() => handleAction(selectedId, 'review')}
@@ -305,8 +305,8 @@ export default function BufferControlSurface() {
                   </div>
 
                   <div className="space-y-4">
-                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-white/40 border-b border-white/5 pb-2">Payload Data</h4>
-                    <div className="bg-black/40 rounded-xl p-4 font-mono text-[11px] overflow-auto max-h-64 scrollbar-thin scrollbar-thumb-white/10">
+                    <h4 className="text-2xs font-bold uppercase tracking-widest text-white/40 border-b border-white/5 pb-2">Payload Data</h4>
+                    <div className="bg-black/40 rounded-xl p-4 font-mono text-2xs overflow-auto max-h-64 scrollbar-thin scrollbar-thumb-white/10">
                        <pre className="text-emerald-400/80">
                          {JSON.stringify(items.find(i => i.id === selectedId)?.raw_payload, null, 2)}
                        </pre>

@@ -44,12 +44,12 @@ export const ActivityLog = () => {
     <section className="space-y-8 max-w-4xl mx-auto w-full" aria-label="Activity signals">
       <div className="flex items-center justify-between px-2">
         <div className="kinetic-text">
-          <h2 className="text-2xl font-black text-text-primary tracking-tighter uppercase italic flex items-center gap-3">
+          <h2 className="text-2xl font-black text-text-primary tracking-tighter  flex items-center gap-3">
              <Signal size={22} className="text-accent" /> Activity_Pulse
           </h2>
           <p className="text-xs text-text-tertiary font-bold mt-1 tracking-[0.2em] uppercase opacity-60">Creation + Curation Stream</p>
         </div>
-        <div className={`flex items-center gap-3 px-4 py-2 rounded-full border text-[10px] font-black tracking-widest uppercase transition-all duration-700 ${
+        <div className={`flex items-center gap-3 px-4 py-2 rounded-full border text-2xs font-black tracking-widest uppercase transition-all duration-700 ${
           error ? 'bg-danger/10 border-danger/20 text-danger shadow-lg shadow-danger/10' : 'bg-success/5 border-success/20 text-success'
         }`} role="status">
           <RefreshCw size={12} className={loading ? "animate-spin" : ""} aria-hidden="true" /> 
@@ -74,7 +74,7 @@ export const ActivityLog = () => {
                 role="status"
               >
                 <RefreshCw size={32} className="animate-spin text-accent" aria-hidden="true" />
-                <span className="text-[10px] font-black tracking-widest uppercase">Synchronizing Matrix...</span>
+                <span className="text-2xs font-black tracking-widest uppercase">Synchronizing Matrix...</span>
               </motion.li>
             ) : error && signals.length === 0 ? (
               <motion.li 
@@ -83,7 +83,7 @@ export const ActivityLog = () => {
                 role="alert"
               >
                 <AlertCircle size={32} className="text-danger/40" aria-hidden="true" />
-                <span className="text-[10px] font-black tracking-widest text-text-tertiary uppercase">Database node desynchronized.</span>
+                <span className="text-2xs font-black tracking-widest text-text-tertiary uppercase">Database node desynchronized.</span>
               </motion.li>
             ) : (
               signals.map((signal, idx) => (
@@ -109,7 +109,7 @@ export const ActivityLog = () => {
                     <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
                       <div className="space-y-2">
                         <div className="flex items-center gap-3">
-                          <span className={`text-[9px] font-black tracking-[0.2em] px-2 py-0.5 rounded-full border uppercase flex items-center gap-1.5 ${
+                          <span className={`text-2xs font-black tracking-[0.2em] px-2 py-0.5 rounded-full border uppercase flex items-center gap-1.5 ${
                             signal.type === 'creation' 
                               ? 'bg-accent/5 border-accent/20 text-accent' 
                               : 'bg-success/5 border-success/20 text-success'
@@ -119,7 +119,7 @@ export const ActivityLog = () => {
                               : <Bookmark size={10} aria-hidden="true" />
                             } {signal.action}
                           </span>
-                          <span className="text-[10px] text-text-disabled font-mono font-bold uppercase tracking-widest">Via_{signal.source}</span>
+                          <span className="text-2xs text-text-disabled font-mono font-bold uppercase tracking-widest">Via_{signal.source}</span>
                         </div>
                         <h4 className="text-lg font-black text-text-primary tracking-tighter group-hover:text-accent transition-colors flex items-center gap-3 group/title">
                           {signal.target} 
@@ -127,14 +127,14 @@ export const ActivityLog = () => {
                         </h4>
                       </div>
                       <div className="flex flex-col items-start md:items-end shrink-0 gap-2">
-                        <time dateTime={signal.time} className="text-[10px] font-black font-mono text-text-tertiary tracking-widest">{signal.time}</time>
-                        <span className="text-[9px] px-3 py-1 rounded-full bg-secondary border border-border-secondary text-text-tertiary font-black tracking-widest uppercase italic">{signal.industry}</span>
+                        <time dateTime={signal.time} className="text-2xs font-black font-mono text-text-tertiary tracking-widest">{signal.time}</time>
+                        <span className="text-2xs px-3 py-1 rounded-full bg-secondary border border-border-secondary text-text-tertiary font-black tracking-widest ">{signal.industry}</span>
                       </div>
                     </div>
 
                     {signal.spiritNote && (
                       <blockquote className="p-4 rounded-radius-xl bg-bg-secondary/40 border-l-2 border-accent mt-2 shadow-inner">
-                        <p className="text-xs text-text-secondary leading-relaxed italic font-medium">&ldquo;{signal.spiritNote}&rdquo;</p>
+                        <p className="text-xs text-text-secondary leading-relaxed  font-medium">&ldquo;{signal.spiritNote}&rdquo;</p>
                       </blockquote>
                     )}
                   </article>

@@ -16,7 +16,7 @@ const NavBar: React.FC = () => {
         <div className="w-9 h-9 rounded-xl bg-text-primary flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
           <LogoIcon size={18} className="text-bg-primary" />
         </div>
-        <span className="text-[12px] font-black uppercase tracking-[0.2em] text-text-primary italic hidden sm:block">
+        <span className="text-xs font-black uppercase tracking-[0.2em] text-text-primary  hidden sm:block">
           {APP_BRAND.name}
         </span>
       </Link>
@@ -29,7 +29,7 @@ const NavBar: React.FC = () => {
             <Link
               key={href}
               href={href}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-2xs font-black uppercase tracking-widest whitespace-nowrap transition-all ${
                 isActive
                   ? 'bg-text-primary text-bg-primary shadow-md'
                   : 'text-text-tertiary hover:bg-secondary hover:text-text-primary'
@@ -44,7 +44,7 @@ const NavBar: React.FC = () => {
 
       <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary border border-border-secondary shrink-0">
         <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" aria-hidden />
-        <span className="text-[9px] font-black uppercase tracking-widest text-text-tertiary hidden sm:block">
+        <span className="text-2xs font-black uppercase tracking-widest text-text-tertiary hidden sm:block">
           {APP_BRAND.statusLabel}
         </span>
       </div>

@@ -117,7 +117,7 @@ export default function OutputStudioPage() {
               placeholder="Draft content"
             />
             {outputId && (
-              <p className="text-[10px] font-mono text-text-tertiary">
+              <p className="text-2xs font-mono text-text-tertiary">
                 Output ID: {outputId}
               </p>
             )}

@@ -119,13 +119,13 @@ export const MemoryVault = ({ onRequestUpload }: MemoryVaultProps) => {
       <div className="flex flex-col gap-10">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-4">
           <div className="kinetic-text">
-            <h2 className="text-4xl font-black text-text-primary tracking-tighter uppercase italic flex items-center gap-5">
+            <h2 className="text-4xl font-black text-text-primary tracking-tighter  flex items-center gap-5">
               <div className="p-3 rounded-2xl bg-accent/10 border border-accent/20">
                 <HardDrive size={28} className="text-accent" />
               </div>
               Fragment_Browser
             </h2>
-            <p className="text-[11px] text-text-tertiary font-black mt-3 uppercase tracking-[0.5em] opacity-40">
+            <p className="text-2xs text-text-tertiary font-black mt-3 uppercase tracking-[0.5em] opacity-40">
               Persistence // L1 Storage Cluster
             </p>
           </div>
@@ -136,11 +136,11 @@ export const MemoryVault = ({ onRequestUpload }: MemoryVaultProps) => {
                 onRequestUpload?.();
                 window.dispatchEvent(new CustomEvent('prism:open-upload'));
               }}
-              className="px-8 py-3 rounded-2xl bg-text-primary text-bg-primary text-[10px] font-black uppercase tracking-widest flex items-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-2xl"
+              className="px-8 py-3 rounded-2xl bg-text-primary text-bg-primary text-2xs font-black uppercase tracking-widest flex items-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-2xl"
             >
               <Plus size={16} /> New_Neural_Drop
             </button>
-            <div className="px-6 py-3 rounded-2xl bg-bg-secondary border border-border-primary text-[10px] font-black text-success flex items-center gap-3 uppercase tracking-widest shadow-inner">
+            <div className="px-6 py-3 rounded-2xl bg-bg-secondary border border-border-primary text-2xs font-black text-success flex items-center gap-3 uppercase tracking-widest shadow-inner">
               <Shield size={16} className="opacity-60" /> {files.length} fragments
             </div>
           </div>
@@ -154,7 +154,7 @@ export const MemoryVault = ({ onRequestUpload }: MemoryVaultProps) => {
               placeholder="Query persistent fragments..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-bg-secondary/30 border-2 border-border-primary/50 rounded-2xl pl-14 pr-6 py-5 text-sm font-black text-text-primary focus:border-accent/40 outline-none transition-all italic shadow-inner"
+              className="w-full bg-bg-secondary/30 border-2 border-border-primary/50 rounded-2xl pl-14 pr-6 py-5 text-sm font-black text-text-primary focus:border-accent/40 outline-none transition-all  shadow-inner"
             />
           </div>
           <div className="flex gap-2 p-1.5 bg-bg-secondary rounded-2xl border border-border-primary">
@@ -183,7 +183,7 @@ export const MemoryVault = ({ onRequestUpload }: MemoryVaultProps) => {
               key={cat}
               type="button"
               onClick={() => setActiveCategory(cat)}
-              className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${
+              className={`px-5 py-2 rounded-full text-2xs font-black uppercase tracking-widest border transition-all ${
                 activeCategory === cat
                   ? 'bg-accent text-bg-primary border-accent shadow-lg shadow-accent/20'
                   : 'bg-bg-secondary text-text-tertiary border-border-secondary hover:border-accent/30'
@@ -200,7 +200,7 @@ export const MemoryVault = ({ onRequestUpload }: MemoryVaultProps) => {
           <Loader2 className="animate-spin text-accent" size={32} />
         </div>
       ) : filteredFiles.length === 0 ? (
-        <p className="text-sm text-text-tertiary italic text-center py-16 px-4">
+        <p className="text-sm text-text-tertiary  text-center py-16 px-4">
           No memory fragments yet. Use Upload &amp; Ingest above to add documents.
         </p>
       ) : viewMode === 'grid' ? (
@@ -226,10 +226,10 @@ export const MemoryVault = ({ onRequestUpload }: MemoryVaultProps) => {
                   </button>
                 </div>
                 <h3 className="text-sm font-black text-text-primary truncate">{file.name}</h3>
-                <p className="text-[10px] text-text-tertiary mt-1 font-mono uppercase">
+                <p className="text-2xs text-text-tertiary mt-1 font-mono uppercase">
                   {file.type} · {file.size} · {file.date}
                 </p>
-                <span className="inline-block mt-3 text-[9px] font-black px-2 py-1 rounded-full border border-border-secondary bg-bg-secondary text-text-tertiary uppercase">
+                <span className="inline-block mt-3 text-2xs font-black px-2 py-1 rounded-full border border-border-secondary bg-bg-secondary text-text-tertiary uppercase">
                   {file.status}
                 </span>
               </motion.article>
@@ -246,11 +246,11 @@ export const MemoryVault = ({ onRequestUpload }: MemoryVaultProps) => {
               <FileIcon type={file.type} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-text-primary truncate">{file.name}</p>
-                <p className="text-[10px] text-text-tertiary font-mono">
+                <p className="text-2xs text-text-tertiary font-mono">
                   {file.category} · {file.size} · {file.date}
                 </p>
               </div>
-              <span className="text-[9px] font-black uppercase text-text-tertiary">{file.status}</span>
+              <span className="text-2xs font-black uppercase text-text-tertiary">{file.status}</span>
               <button
                 type="button"
                 onClick={() => removeFile(file.id)}

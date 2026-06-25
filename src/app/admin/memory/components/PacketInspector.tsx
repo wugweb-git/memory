@@ -57,7 +57,7 @@ export default function PacketInspector({ packetId, onClose }: PacketInspectorPr
             </div>
             <div>
               <h2 className="text-2xl font-black text-white tracking-tighter uppercase">Packet Diagnostic</h2>
-              <p className="text-[10px] text-gray-500 font-mono tracking-[0.2em] mt-1 uppercase">ID: {packetId}</p>
+              <p className="text-2xs text-gray-500 font-mono tracking-[0.2em] mt-1 uppercase">ID: {packetId}</p>
             </div>
           </div>
           <button 
@@ -80,7 +80,7 @@ export default function PacketInspector({ packetId, onClose }: PacketInspectorPr
                     <button
                       key={tab}
                       onClick={() => setActiveTab(tab)}
-                      className={`flex-1 py-2 px-3 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+                      className={`flex-1 py-2 px-3 rounded-md text-2xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
                         activeTab === tab 
                           ? 'bg-white/10 text-white shadow-inner' 
                           : 'text-gray-500 hover:text-gray-300'
@@ -94,8 +94,8 @@ export default function PacketInspector({ packetId, onClose }: PacketInspectorPr
                   ))}
                 </div>
                 
-                <div className="bg-[#050505] rounded-2xl border border-white/5 p-6 font-mono text-[11px] overflow-x-auto min-h-[500px] shadow-inner relative group">
-                  <div className="absolute top-4 right-4 text-[9px] text-gray-700 font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="bg-[#050505] rounded-2xl border border-white/5 p-6 font-mono text-2xs overflow-x-auto min-h-[500px] shadow-inner relative group">
+                  <div className="absolute top-4 right-4 text-2xs text-gray-700 font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
                     ReadOnly.raw
                   </div>
                   {activeTab === 'content' && (
@@ -109,7 +109,7 @@ export default function PacketInspector({ packetId, onClose }: PacketInspectorPr
                     </pre>
                   )}
                   {activeTab === 'trace' && (
-                    <pre className="text-gray-500 italic leading-relaxed">
+                    <pre className="text-gray-500  leading-relaxed">
                       {JSON.stringify(data?.packet?.trace, null, 2)}
                     </pre>
                   )}
@@ -123,7 +123,7 @@ export default function PacketInspector({ packetId, onClose }: PacketInspectorPr
               {/* L2 Pulse */}
               <div className="space-y-5">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em] flex items-center gap-3">
+                  <h3 className="text-2xs font-black text-gray-500 uppercase tracking-[0.3em] flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
                     Interpretation Pulse (2.0)
                   </h3>
@@ -146,7 +146,7 @@ export default function PacketInspector({ packetId, onClose }: PacketInspectorPr
               {/* L2.5 Enrichment */}
               <div className="space-y-5">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em] flex items-center gap-3">
+                  <h3 className="text-2xs font-black text-gray-500 uppercase tracking-[0.3em] flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.8)]" />
                     Deep Semantic Layer (2.5)
                   </h3>
@@ -160,7 +160,7 @@ export default function PacketInspector({ packetId, onClose }: PacketInspectorPr
         </div>
         
         {/* Footer info */}
-        <div className="p-4 border-t border-white/5 bg-black flex items-center justify-between text-[9px] text-gray-600 font-bold uppercase tracking-widest px-8">
+        <div className="p-4 border-t border-white/5 bg-black flex items-center justify-between text-2xs text-gray-600 font-bold uppercase tracking-widest px-8">
            <div className="flex items-center gap-6">
              <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Vault Integrity Verified</span>
              <span className="flex items-center gap-2 text-blue-500/80 underline decoration-blue-500/20 cursor-pointer hover:text-blue-400">View Raw Trace Logs</span>

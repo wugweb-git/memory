@@ -52,7 +52,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ current, onChange }) => {
                     strokeWidth={active ? 2.5 : 2}
                   />
                 </div>
-                <span className={`text-[9px] font-bold leading-none tracking-wide ${
+                <span className={`text-2xs font-bold leading-none tracking-wide ${
                   active ? 'text-text-primary' : 'text-text-disabled'
                 }`}>
                   {label}

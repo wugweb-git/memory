@@ -86,28 +86,28 @@ export default function AdminProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-primary text-text-primary">
+    <div className="text-text-primary">
       <ToastContainer position="bottom-right" theme="light" />
-      <header className="border-b border-border-secondary bg-bg-elevated sticky top-0 z-50">
+      <header className="border-b border-border-secondary bg-bg-elevated rounded-radius-xl mb-6">
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/admin" className="p-2 rounded-xl hover:bg-secondary" aria-label="Back">
               <ArrowLeft size={18} />
             </Link>
-            <h1 className="text-sm font-black uppercase italic tracking-tight">Profile Editor</h1>
+            <h1 className="text-sm font-black  tracking-tight">Profile Editor</h1>
           </div>
           <div className="flex items-center gap-2">
             <Link
               href={`/p/${IDENTITY_CONFIG.HANDLE}`}
               target="_blank"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border-secondary text-[10px] font-bold uppercase"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border-secondary text-2xs font-bold uppercase"
             >
               <Eye size={14} /> Preview
             </Link>
             <button
               onClick={handleSaveBasic}
               disabled={saving || loading}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-text-primary text-bg-primary text-[10px] font-bold uppercase disabled:opacity-50"
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-text-primary text-bg-primary text-2xs font-bold uppercase disabled:opacity-50"
             >
               {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
               Save
@@ -122,7 +122,7 @@ export default function AdminProfilePage() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+              className={`px-4 py-2 rounded-full text-2xs font-black uppercase tracking-widest border ${
                 activeTab === tab
                   ? 'bg-text-primary text-bg-primary border-text-primary'
                   : 'border-border-secondary text-text-tertiary'
@@ -141,20 +141,20 @@ export default function AdminProfilePage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <section className="glass-panel rounded-3xl border border-border-secondary p-6 space-y-4">
               <h2 className="text-xs font-black uppercase tracking-widest text-text-tertiary">Identity</h2>
-              <label className="block text-[10px] font-bold uppercase text-text-tertiary">Display name</label>
+              <label className="block text-2xs font-bold uppercase text-text-tertiary">Display name</label>
               <input
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 className="w-full rounded-2xl border border-border-secondary bg-bg-primary px-4 py-3 text-sm"
               />
-              <label className="block text-[10px] font-bold uppercase text-text-tertiary">Bio</label>
+              <label className="block text-2xs font-bold uppercase text-text-tertiary">Bio</label>
               <textarea
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 rows={4}
                 className="w-full rounded-2xl border border-border-secondary bg-bg-primary px-4 py-3 text-sm resize-none"
               />
-              <label className="block text-[10px] font-bold uppercase text-text-tertiary">Avatar URL</label>
+              <label className="block text-2xs font-bold uppercase text-text-tertiary">Avatar URL</label>
               <input
                 value={avatarUrl}
                 onChange={(e) => setAvatarUrl(e.target.value)}
@@ -177,9 +177,9 @@ export default function AdminProfilePage() {
                 alt={displayName}
                 className="w-32 h-32 rounded-full object-cover border-4 border-border-secondary mb-4"
               />
-              <h2 className="text-2xl font-black italic uppercase">{displayName}</h2>
+              <h2 className="text-2xl font-black ">{displayName}</h2>
               <p className="text-sm text-text-tertiary mt-2 max-w-sm">{bio || 'No bio yet.'}</p>
-              <p className="text-[10px] text-text-disabled mt-4 font-mono">
+              <p className="text-2xs text-text-disabled mt-4 font-mono">
                 {sections.length} sections · {contentSections.length} posts
               </p>
             </section>
@@ -228,7 +228,7 @@ export default function AdminProfilePage() {
                 <BookOpen size={14} /> On profile ({contentSections.length})
               </h2>
               {contentSections.length === 0 ? (
-                <p className="text-sm text-text-tertiary italic">No posts yet. Add one above or publish from Output Studio.</p>
+                <p className="text-sm text-text-tertiary ">No posts yet. Add one above or publish from Output Studio.</p>
               ) : (
                 contentSections.map((s) => (
                   <PostRow key={s.id} section={s} onDelete={() => handleDeleteSection(s.id)} />
@@ -248,13 +248,13 @@ function PostRow({ section, onDelete }: { section: ProfileSection; onDelete: () 
   return (
     <div className="glass-panel rounded-2xl border border-border-secondary p-4 flex items-start justify-between gap-4">
       <div className="min-w-0">
-        <span className="text-[9px] font-black uppercase text-accent">{section.type}</span>
+        <span className="text-2xs font-black uppercase text-accent">{section.type}</span>
         <h3 className="font-bold text-text-primary truncate">{section.title}</h3>
         <p className="text-xs text-text-tertiary line-clamp-2 mt-1">
           {String(c.summary ?? c.body ?? '').slice(0, 120)}
         </p>
         {url && (
-          <a href={url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-accent flex items-center gap-1 mt-2">
+          <a href={url} target="_blank" rel="noopener noreferrer" className="text-2xs text-accent flex items-center gap-1 mt-2">
             <ExternalLink size={10} /> Link
           </a>
         )}

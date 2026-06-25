@@ -83,7 +83,7 @@ export default function EmbeddingMonitor({ testRunId = 'PROD' }: EmbeddingMonito
           icon={<AlertCircle className="w-4 h-4 text-red-400" />} 
           color="red"
           action={
-            <button className="text-[10px] underline hover:text-red-300 font-bold">
+            <button className="text-2xs underline hover:text-red-300 font-bold">
               RETRY ALL
             </button>
           }
@@ -127,8 +127,8 @@ function StatusCard({ label, count, icon, color, action, subtext }: any) {
         <div className="text-2xl font-bold text-white">
           {count > 999 ? `${(count / 1000).toFixed(1)}k` : count}
         </div>
-        <div className="text-[10px] uppercase font-bold tracking-widest opacity-60">{label}</div>
-        {subtext && <div className="text-[8px] text-gray-500 mt-1 uppercase font-medium">{subtext}</div>}
+        <div className="text-2xs uppercase font-bold tracking-widest opacity-60">{label}</div>
+        {subtext && <div className="text-2xs text-gray-500 mt-1 uppercase font-medium">{subtext}</div>}
       </div>
     </div>
   );

@@ -133,7 +133,7 @@ export default function PersonaIntelligencePage() {
     <div className="w-full max-w-3xl mx-auto px-4 py-8 space-y-8">
       <header className="space-y-3">
         <div className="space-y-1">
-          <h1 className="text-xl font-black uppercase italic">Persona Intelligence</h1>
+          <h1 className="text-xl font-black ">Persona Intelligence</h1>
           <p className="text-xs text-text-tertiary uppercase tracking-widest">Layer 4 — Digital Twin Evolution</p>
         </div>
         <button
@@ -159,8 +159,8 @@ export default function PersonaIntelligencePage() {
         <div className="grid grid-cols-1 gap-2">
           {(['communicationStyle', 'writingStyle', 'decisionStyle'] as const).map((key) => (
             <div key={key} className="bg-secondary/40 rounded-xl p-3">
-              <p className="text-[10px] uppercase tracking-widest text-text-tertiary mb-1">{key}</p>
-              <pre className="text-[10px] overflow-auto">{JSON.stringify((profile as any)?.[key] || {}, null, 2)}</pre>
+              <p className="text-2xs uppercase tracking-widest text-text-tertiary mb-1">{key}</p>
+              <pre className="text-2xs overflow-auto">{JSON.stringify((profile as any)?.[key] || {}, null, 2)}</pre>
             </div>
           ))}
         </div>
@@ -181,7 +181,7 @@ export default function PersonaIntelligencePage() {
               <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
                 <div className="h-1.5 bg-text-primary rounded-full transition-all" style={{ width: `${t.traitValue * 100}%` }} />
               </div>
-              <p className="text-[10px] text-text-tertiary">Confidence {Math.round(t.confidence * 100)}% · Evidence {t.evidenceCount}</p>
+              <p className="text-2xs text-text-tertiary">Confidence {Math.round(t.confidence * 100)}% · Evidence {t.evidenceCount}</p>
             </div>
           ))
         )}
@@ -198,13 +198,13 @@ export default function PersonaIntelligencePage() {
               <div key={log.id} className="flex items-start justify-between bg-secondary/40 rounded-xl p-3">
                 <div className="space-y-0.5">
                   <p className="text-xs font-bold">{log.changedField || 'general'}</p>
-                  <p className="text-[10px] text-text-tertiary">{log.reason || 'no reason'}</p>
+                  <p className="text-2xs text-text-tertiary">{log.reason || 'no reason'}</p>
                 </div>
                 <div className="text-right">
-                  <span className={`text-[10px] font-bold ${(log.confidenceDelta || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  <span className={`text-2xs font-bold ${(log.confidenceDelta || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                     {(log.confidenceDelta || 0) >= 0 ? '+' : ''}{Math.round((log.confidenceDelta || 0) * 100)}%
                   </span>
-                  <p className="text-[10px] text-text-tertiary">{new Date(log.createdAt).toLocaleDateString()}</p>
+                  <p className="text-2xs text-text-tertiary">{new Date(log.createdAt).toLocaleDateString()}</p>
                 </div>
               </div>
             ))}
@@ -223,13 +223,13 @@ export default function PersonaIntelligencePage() {
             { label: 'Mode', field: 'preferredMode' as const, options: ['operator', 'founder', 'architect'] },
           ].map((ctrl) => (
             <div key={ctrl.field} className="space-y-1">
-              <p className="text-[10px] uppercase tracking-widest text-text-tertiary">{ctrl.label}</p>
+              <p className="text-2xs uppercase tracking-widest text-text-tertiary">{ctrl.label}</p>
               <div className="flex flex-wrap gap-1">
                 {ctrl.options.map((opt) => (
                   <button
                     key={opt}
                     onClick={() => updateAdaptive(ctrl.field, opt)}
-                    className={`px-2 py-1 rounded-lg border text-[10px] uppercase ${(adaptive as any)?.[ctrl.field] === opt ? 'bg-text-primary text-bg-primary border-text-primary' : 'border-border-secondary'}`}
+                    className={`px-2 py-1 rounded-lg border text-2xs uppercase ${(adaptive as any)?.[ctrl.field] === opt ? 'bg-text-primary text-bg-primary border-text-primary' : 'border-border-secondary'}`}
                   >
                     {opt.replace(/-/g, ' ')}
                   </button>

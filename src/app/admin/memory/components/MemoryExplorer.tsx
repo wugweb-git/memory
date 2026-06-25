@@ -73,13 +73,13 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-white/5 bg-black">
-              <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500 tracking-widest">Packet ID</th>
-              <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500 tracking-widest">Source</th>
-              <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500 tracking-widest">Type</th>
-              <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500 tracking-widest">Status</th>
-              <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500 tracking-widest">Embed Status</th>
-              <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500 tracking-widest">Time</th>
-              <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500 tracking-widest"></th>
+              <th className="px-6 py-4 text-2xs uppercase font-bold text-gray-500 tracking-widest">Packet ID</th>
+              <th className="px-6 py-4 text-2xs uppercase font-bold text-gray-500 tracking-widest">Source</th>
+              <th className="px-6 py-4 text-2xs uppercase font-bold text-gray-500 tracking-widest">Type</th>
+              <th className="px-6 py-4 text-2xs uppercase font-bold text-gray-500 tracking-widest">Status</th>
+              <th className="px-6 py-4 text-2xs uppercase font-bold text-gray-500 tracking-widest">Embed Status</th>
+              <th className="px-6 py-4 text-2xs uppercase font-bold text-gray-500 tracking-widest">Time</th>
+              <th className="px-6 py-4 text-2xs uppercase font-bold text-gray-500 tracking-widest"></th>
             </tr>
           </thead>
           <tbody>
@@ -100,7 +100,7 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-[10px] text-blue-400 font-bold inline-block uppercase tracking-tight">
+                  <div className="px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-2xs text-blue-400 font-bold inline-block uppercase tracking-tight">
                     {packet.source}
                   </div>
                 </td>
@@ -133,7 +133,7 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
         </table>
       </div>
 
-      <div className="p-4 bg-black/50 border-t border-white/10 flex items-center justify-between text-[10px] text-gray-600 font-bold tracking-widest uppercase">
+      <div className="p-4 bg-black/50 border-t border-white/10 flex items-center justify-between text-2xs text-gray-600 font-bold tracking-widest uppercase">
         <div className="flex items-center gap-4">
           <span>Showing 10 records</span>
           <span className="flex items-center gap-1">
@@ -166,7 +166,7 @@ function StatusBadge({ status }: any) {
     archived: 'text-gray-400 bg-white/10'
   };
   return (
-    <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${styles[status] || styles.active}`}>
+    <span className={`px-2 py-0.5 rounded text-2xs font-bold uppercase tracking-wider ${styles[status] || styles.active}`}>
       {status}
     </span>
   );
@@ -182,7 +182,7 @@ function EmbedStatusBadge({ status }: any) {
   return (
     <div className="flex items-center gap-2">
       <div className={`w-1.5 h-1.5 rounded-full ${status === 'embedded' ? 'bg-blue-400' : 'bg-gray-600'} shadow-[0_0_5px_rgba(96,165,250,0.5)]`} />
-      <span className={`text-[9px] font-bold uppercase tracking-wider ${styles[status] || 'text-gray-500'}`}>
+      <span className={`text-2xs font-bold uppercase tracking-wider ${styles[status] || 'text-gray-500'}`}>
         {status}
       </span>
     </div>

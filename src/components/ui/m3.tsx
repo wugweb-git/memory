@@ -4,7 +4,7 @@ export function M3Page({ title, subtitle, children }: { title: string; subtitle?
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
       <div className="rounded-3xl bg-white/90 border border-border-secondary p-5 shadow-sm">
-        <h1 className="text-lg font-black uppercase italic">{title}</h1>
+        <h1 className="text-lg font-black ">{title}</h1>
         {subtitle ? <p className="text-sm text-text-tertiary mt-1">{subtitle}</p> : null}
       </div>
       {children}

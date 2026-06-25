@@ -53,7 +53,7 @@ export const VentureVault = ({ selectedIndustry }: { selectedIndustry?: string }
       {loading ? (
         <div className="flex justify-center py-12"><Loader2 className="animate-spin text-text-tertiary" /></div>
       ) : filtered.length === 0 ? (
-        <p className="text-sm text-text-tertiary italic px-1">No ventures in profile. Add sections with type &quot;venture&quot; via profile API.</p>
+        <p className="text-sm text-text-tertiary  px-1">No ventures in profile. Add sections with type &quot;venture&quot; via profile API.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filtered.map((v) => (
@@ -61,20 +61,20 @@ export const VentureVault = ({ selectedIndustry }: { selectedIndustry?: string }
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <h3 className="text-base font-black text-text-primary">{v.name}</h3>
-                  <p className="text-[10px] text-text-tertiary uppercase tracking-widest mt-1">{v.industry} · {v.phase}</p>
+                  <p className="text-2xs text-text-tertiary uppercase tracking-widest mt-1">{v.industry} · {v.phase}</p>
                 </div>
-                <span className="text-[9px] font-black px-2 py-1 rounded-full bg-accent/10 text-accent border border-accent/20">{v.role}</span>
+                <span className="text-2xs font-black px-2 py-1 rounded-full bg-accent/10 text-accent border border-accent/20">{v.role}</span>
               </div>
-              <p className="text-xs text-text-secondary italic">{v.logicApplied}</p>
+              <p className="text-xs text-text-secondary ">{v.logicApplied}</p>
               <p className="text-xs text-text-tertiary border-l-2 border-accent/30 pl-3">{v.legacyLessons}</p>
               <div className="flex items-start gap-2 p-3 rounded-xl bg-bg-secondary/50">
                 <Sparkles size={14} className="text-accent shrink-0 mt-0.5" />
-                <p className="text-[11px] text-text-secondary">{v.perspective2026}</p>
+                <p className="text-2xs text-text-secondary">{v.perspective2026}</p>
               </div>
               {v.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1">
                   {v.tags.map((t) => (
-                    <span key={t} className="text-[8px] font-bold px-2 py-0.5 rounded bg-secondary border border-border-secondary text-text-tertiary">{t}</span>
+                    <span key={t} className="text-2xs font-bold px-2 py-0.5 rounded bg-secondary border border-border-secondary text-text-tertiary">{t}</span>
                   ))}
                 </div>
               )}

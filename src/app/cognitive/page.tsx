@@ -28,7 +28,7 @@ const Panel: React.FC<{
   children: React.ReactNode;
 }> = ({ title, accent = 'border-border-secondary', children }) => (
   <div className={`glass-panel rounded-[2rem] border ${accent} p-6 space-y-4 shadow-2xl`}>
-    <h3 className="text-[10px] font-black text-text-tertiary uppercase tracking-[0.3em]">
+    <h3 className="text-2xs font-black text-text-tertiary uppercase tracking-[0.3em]">
       {title}
     </h3>
     {children}
@@ -37,7 +37,7 @@ const Panel: React.FC<{
 
 const ConfidenceBar: React.FC<{ value: number }> = ({ value }) => (
   <div className="space-y-1.5">
-    <div className="flex justify-between text-[10px] font-mono text-text-tertiary">
+    <div className="flex justify-between text-2xs font-mono text-text-tertiary">
       <span>Confidence</span>
       <span className="font-bold text-text-primary">{Math.round(value * 100)}%</span>
     </div>
@@ -68,7 +68,7 @@ const FeedbackBar: React.FC<{ decisionId: string }> = ({ decisionId }) => {
   }
 
   if (sent) return (
-    <div className="flex items-center gap-2 text-[11px] text-success font-semibold">
+    <div className="flex items-center gap-2 text-2xs text-success font-semibold">
       <CheckCircle size={14} /> Feedback recorded
     </div>
   );
@@ -83,7 +83,7 @@ const FeedbackBar: React.FC<{ decisionId: string }> = ({ decisionId }) => {
         <button
           key={f.key}
           onClick={() => submit(f.key)}
-          className={`flex-1 py-2 rounded-xl border border-border-secondary text-[11px] font-bold text-text-tertiary uppercase tracking-widest transition-all ${f.color}`}
+          className={`flex-1 py-2 rounded-xl border border-border-secondary text-2xs font-bold text-text-tertiary uppercase tracking-widest transition-all ${f.color}`}
         >
           {f.label}
         </button>
@@ -129,7 +129,7 @@ const DecideTab: React.FC<{ mode: Mode }> = ({ mode }) => {
     <div className="space-y-6">
       {/* Optional JD/Idea input */}
       <div>
-        <label className="text-[10px] font-black text-text-tertiary uppercase tracking-[0.3em] block mb-2">
+        <label className="text-2xs font-black text-text-tertiary uppercase tracking-[0.3em] block mb-2">
           Optional Input (JD / Idea / Brief)
         </label>
         <textarea
@@ -145,7 +145,7 @@ const DecideTab: React.FC<{ mode: Mode }> = ({ mode }) => {
       <button
         onClick={run}
         disabled={loading}
-        className="w-full py-4 rounded-[1.5rem] bg-text-primary text-bg-primary font-black uppercase tracking-[0.3em] text-[11px] flex items-center justify-center gap-3 hover:bg-accent-high transition-all disabled:opacity-40 shadow-2xl"
+        className="w-full py-4 rounded-[1.5rem] bg-text-primary text-bg-primary font-black uppercase tracking-[0.3em] text-2xs flex items-center justify-center gap-3 hover:bg-accent-high transition-all disabled:opacity-40 shadow-2xl"
       >
         {loading
           ? <><RefreshCw size={16} className="animate-spin" /> Synthesising…</>
@@ -181,7 +181,7 @@ const DecideTab: React.FC<{ mode: Mode }> = ({ mode }) => {
                 <ol className="space-y-3">
                   {output.recommendations.map((r: string, i: number) => (
                     <li key={i} className="flex gap-3 group">
-                      <span className="text-[11px] font-black text-accent mt-0.5 shrink-0 w-5">{i + 1}.</span>
+                      <span className="text-2xs font-black text-accent mt-0.5 shrink-0 w-5">{i + 1}.</span>
                       <p className="text-sm text-text-secondary leading-snug flex-1">{r}</p>
                     </li>
                   ))}
@@ -198,7 +198,7 @@ const DecideTab: React.FC<{ mode: Mode }> = ({ mode }) => {
                     const isMed  = p.toLowerCase().startsWith('medium');
                     return (
                       <div key={i} className="flex items-start gap-3">
-                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border shrink-0 mt-0.5 uppercase ${
+                        <span className={`text-2xs font-black px-2 py-0.5 rounded-full border shrink-0 mt-0.5 uppercase ${
                           isHigh ? 'bg-danger/10  text-danger  border-danger/20'  :
                           isMed  ? 'bg-warning/10 text-warning border-warning/20' :
                                    'bg-secondary  text-text-tertiary border-border-secondary'
@@ -232,8 +232,8 @@ const DecideTab: React.FC<{ mode: Mode }> = ({ mode }) => {
             {/* Reasoning */}
             {output.reasoning && (
               <div className="glass-panel rounded-[1.5rem] border border-border-secondary p-4 shadow-xl">
-                <p className="text-[10px] font-black text-text-disabled uppercase tracking-widest mb-1.5">Reasoning</p>
-                <p className="text-xs text-text-tertiary leading-relaxed italic">{output.reasoning}</p>
+                <p className="text-2xs font-black text-text-disabled uppercase tracking-widest mb-1.5">Reasoning</p>
+                <p className="text-xs text-text-tertiary leading-relaxed ">{output.reasoning}</p>
               </div>
             )}
 
@@ -281,7 +281,7 @@ const EvaluateTab: React.FC<{ mode: Mode }> = ({ mode }) => {
   return (
     <div className="space-y-6">
       <div>
-        <label className="text-[10px] font-black text-text-tertiary uppercase tracking-[0.3em] block mb-2">
+        <label className="text-2xs font-black text-text-tertiary uppercase tracking-[0.3em] block mb-2">
           Paste Input (JD / Brief / Idea)
         </label>
         <textarea
@@ -296,7 +296,7 @@ const EvaluateTab: React.FC<{ mode: Mode }> = ({ mode }) => {
       <button
         onClick={run}
         disabled={loading || !input.trim()}
-        className="w-full py-4 rounded-[1.5rem] bg-text-primary text-bg-primary font-black uppercase tracking-[0.3em] text-[11px] flex items-center justify-center gap-3 hover:bg-accent-high transition-all disabled:opacity-40 shadow-2xl"
+        className="w-full py-4 rounded-[1.5rem] bg-text-primary text-bg-primary font-black uppercase tracking-[0.3em] text-2xs flex items-center justify-center gap-3 hover:bg-accent-high transition-all disabled:opacity-40 shadow-2xl"
       >
         {loading
           ? <><RefreshCw size={16} className="animate-spin" /> Evaluating…</>
@@ -317,7 +317,7 @@ const EvaluateTab: React.FC<{ mode: Mode }> = ({ mode }) => {
             {/* Verdict badge */}
             <div className="glass-panel rounded-[2rem] border border-border-secondary p-6 flex items-center justify-between shadow-2xl">
               <div>
-                <p className="text-[10px] font-black text-text-disabled uppercase tracking-widest mb-1">Fit Score</p>
+                <p className="text-2xs font-black text-text-disabled uppercase tracking-widest mb-1">Fit Score</p>
                 <p className="text-4xl font-black text-text-primary">{Math.round((result.fit_score || 0) * 100)}%</p>
               </div>
               <span className={`text-sm font-black px-4 py-2 rounded-2xl border uppercase tracking-widest ${verdictColor(result.verdict)}`}>
@@ -365,7 +365,7 @@ const EvaluateTab: React.FC<{ mode: Mode }> = ({ mode }) => {
 
             {result.reasoning && (
               <div className="glass-panel rounded-[1.5rem] border border-border-secondary p-4">
-                <p className="text-xs text-text-tertiary italic">{result.reasoning}</p>
+                <p className="text-xs text-text-tertiary ">{result.reasoning}</p>
               </div>
             )}
           </motion.div>
@@ -410,7 +410,7 @@ const GapsTab: React.FC = () => {
       <button
         onClick={run}
         disabled={loading}
-        className="w-full py-4 rounded-[1.5rem] bg-text-primary text-bg-primary font-black uppercase tracking-[0.3em] text-[11px] flex items-center justify-center gap-3 hover:bg-accent-high transition-all disabled:opacity-40 shadow-2xl"
+        className="w-full py-4 rounded-[1.5rem] bg-text-primary text-bg-primary font-black uppercase tracking-[0.3em] text-2xs flex items-center justify-center gap-3 hover:bg-accent-high transition-all disabled:opacity-40 shadow-2xl"
       >
         {loading
           ? <><RefreshCw size={16} className="animate-spin" /> Analysing…</>
@@ -431,12 +431,12 @@ const GapsTab: React.FC = () => {
             {/* Coverage score */}
             <div className="glass-panel rounded-[2rem] border border-border-secondary p-6 flex items-center justify-between shadow-2xl">
               <div>
-                <p className="text-[10px] font-black text-text-disabled uppercase tracking-widest mb-1">Domain Coverage</p>
+                <p className="text-2xs font-black text-text-disabled uppercase tracking-widest mb-1">Domain Coverage</p>
                 <p className="text-4xl font-black text-text-primary">{Math.round((result.coverage_score || 0) * 100)}%</p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] text-text-tertiary">{result.total_entities} entities</p>
-                <p className="text-[10px] text-text-tertiary">{result.total_signals} signals</p>
+                <p className="text-2xs text-text-tertiary">{result.total_entities} entities</p>
+                <p className="text-2xs text-text-tertiary">{result.total_signals} signals</p>
               </div>
             </div>
 
@@ -444,7 +444,7 @@ const GapsTab: React.FC = () => {
               <Panel title="Missing Domains" accent="border-danger/20">
                 <div className="flex flex-wrap gap-2">
                   {result.missing_domains.map((d: string) => (
-                    <span key={d} className="px-3 py-1.5 bg-danger/5 border border-danger/20 text-danger text-[11px] font-bold rounded-xl uppercase tracking-wide">
+                    <span key={d} className="px-3 py-1.5 bg-danger/5 border border-danger/20 text-danger text-2xs font-bold rounded-xl uppercase tracking-wide">
                       {d}
                     </span>
                   ))}
@@ -456,7 +456,7 @@ const GapsTab: React.FC = () => {
               <Panel title="Weak Entities (low occurrences)" accent="border-warning/20">
                 <div className="flex flex-wrap gap-2">
                   {result.weak_entities.map((e: string) => (
-                    <span key={e} className="px-3 py-1 bg-warning/5 border border-warning/20 text-warning text-[11px] font-semibold rounded-xl">
+                    <span key={e} className="px-3 py-1 bg-warning/5 border border-warning/20 text-warning text-2xs font-semibold rounded-xl">
                       {e}
                     </span>
                   ))}
@@ -515,7 +515,7 @@ const HistoryTab: React.FC = () => {
     <div className="glass-panel rounded-[2rem] border border-border-secondary p-12 text-center shadow-xl">
       <History size={32} className="mx-auto text-text-disabled mb-3" strokeWidth={1.5} />
       <p className="text-sm font-semibold text-text-tertiary">No decision history yet.</p>
-      <p className="text-[12px] text-text-disabled mt-1">Run "Get Direction" to generate your first decision.</p>
+      <p className="text-xs text-text-disabled mt-1">Run "Get Direction" to generate your first decision.</p>
     </div>
   );
 
@@ -531,7 +531,7 @@ const HistoryTab: React.FC = () => {
               className="w-full flex items-center justify-between px-5 py-4 hover:bg-secondary/30 transition-colors text-left gap-4"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border uppercase tracking-widest shrink-0 ${
+                <span className={`text-2xs font-black px-2 py-0.5 rounded-full border uppercase tracking-widest shrink-0 ${
                   h.mode === 'architect' ? 'bg-accent/10 text-accent border-accent/20' :
                   h.mode === 'founder'   ? 'bg-warning/10 text-warning border-warning/20' :
                   'bg-success/10 text-success border-success/20'
@@ -542,12 +542,12 @@ const HistoryTab: React.FC = () => {
               </div>
               <div className="flex items-center gap-3 shrink-0">
                 {h.lastFeedback && (
-                  <span className={`text-[9px] font-black uppercase tracking-widest ${
+                  <span className={`text-2xs font-black uppercase tracking-widest ${
                     h.lastFeedback === 'accepted' ? 'text-success' :
                     h.lastFeedback === 'rejected' ? 'text-danger'  : 'text-text-disabled'
                   }`}>{h.lastFeedback}</span>
                 )}
-                <span className="text-[10px] font-mono text-text-disabled">
+                <span className="text-2xs font-mono text-text-disabled">
                   {new Date(h.createdAt).toLocaleDateString()}
                 </span>
                 {isOpen ? <ChevronUp size={14} className="text-text-tertiary" /> : <ChevronDown size={14} className="text-text-tertiary" />}
@@ -565,10 +565,10 @@ const HistoryTab: React.FC = () => {
                   <div className="px-5 pb-5 pt-2 space-y-3 border-t border-border-secondary/60">
                     {recs.length > 0 && (
                       <div>
-                        <p className="text-[10px] font-black text-text-disabled uppercase tracking-widest mb-2">Recommendations</p>
+                        <p className="text-2xs font-black text-text-disabled uppercase tracking-widest mb-2">Recommendations</p>
                         <ol className="space-y-1.5">
                           {recs.map((r: string, i: number) => (
-                            <li key={i} className="flex gap-2.5 text-[12px] text-text-secondary">
+                            <li key={i} className="flex gap-2.5 text-xs text-text-secondary">
                               <span className="text-accent font-black shrink-0">{i + 1}.</span>{r}
                             </li>
                           ))}
@@ -576,7 +576,7 @@ const HistoryTab: React.FC = () => {
                       </div>
                     )}
                     {h.outputJson?.reasoning && (
-                      <p className="text-xs text-text-disabled italic border-t border-border-secondary/60 pt-3">
+                      <p className="text-xs text-text-disabled  border-t border-border-secondary/60 pt-3">
                         {h.outputJson.reasoning}
                       </p>
                     )}
@@ -618,10 +618,10 @@ export default function CognitivePage() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-black text-text-primary uppercase italic">Cognitive Engine</h1>
+              <h1 className="text-xl font-black text-text-primary ">Cognitive Engine</h1>
               <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-success/10 border border-success/20">
                 <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                <span className="text-[9px] font-black text-success uppercase tracking-widest">Active</span>
+                <span className="text-2xs font-black text-success uppercase tracking-widest">Active</span>
               </div>
             </div>
             <p className="text-sm text-text-tertiary mt-0.5">L4 decision synthesis — read-only, structured output</p>
@@ -631,7 +631,7 @@ export default function CognitivePage() {
 
       {/* Mode selector */}
       <div>
-        <p className="text-[10px] font-black text-text-disabled uppercase tracking-[0.3em] mb-2">Mode</p>
+        <p className="text-2xs font-black text-text-disabled uppercase tracking-[0.3em] mb-2">Mode</p>
         <div className="flex gap-2 p-1.5 glass-panel rounded-[2rem] border border-border-secondary shadow-xl">
           {(Object.keys(MODE_CONFIG) as Mode[]).map(m => {
             const cfg = MODE_CONFIG[m];
@@ -641,7 +641,7 @@ export default function CognitivePage() {
               <button
                 key={m}
                 onClick={() => setMode(m)}
-                className={`flex-1 flex items-center justify-center gap-2.5 py-3 rounded-[1.5rem] text-[11px] font-bold uppercase tracking-widest transition-all duration-200 ${
+                className={`flex-1 flex items-center justify-center gap-2.5 py-3 rounded-[1.5rem] text-2xs font-bold uppercase tracking-widest transition-all duration-200 ${
                   active
                     ? 'bg-text-primary text-bg-primary shadow-sm'
                     : 'text-text-tertiary hover:bg-secondary hover:text-text-primary'
@@ -653,7 +653,7 @@ export default function CognitivePage() {
             );
           })}
         </div>
-        <p className="text-[10px] text-text-disabled mt-1.5 pl-1 font-mono">
+        <p className="text-2xs text-text-disabled mt-1.5 pl-1 font-mono">
           {MODE_CONFIG[mode].desc}
         </p>
       </div>
@@ -667,7 +667,7 @@ export default function CognitivePage() {
             <button
               key={t.id}
               onClick={() => setSubTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-[11px] font-bold uppercase tracking-widest transition-all border-b-2 -mb-px ${
+              className={`flex items-center gap-2 px-4 py-2.5 text-2xs font-bold uppercase tracking-widest transition-all border-b-2 -mb-px ${
                 active
                   ? 'border-text-primary text-text-primary'
                   : 'border-transparent text-text-tertiary hover:text-text-primary'

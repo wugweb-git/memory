@@ -61,7 +61,7 @@ export default function RagTester({ testRunId = 'PROD' }: RagTesterProps) {
           </p>
         </div>
         <div className="flex gap-4">
-          <div className="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] text-blue-400 uppercase tracking-wider font-bold">
+          <div className="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-2xs text-blue-400 uppercase tracking-wider font-bold">
             text-embedding-3-small
           </div>
         </div>
@@ -122,10 +122,10 @@ export default function RagTester({ testRunId = 'PROD' }: RagTesterProps) {
                   <div>
                     <div className="text-xs font-mono text-gray-400">Packet: {result.packet_id.slice(-8)}</div>
                     <div className="flex items-center gap-4 mt-1">
-                      <span className="text-[10px] text-gray-500 flex items-center gap-1">
+                      <span className="text-2xs text-gray-500 flex items-center gap-1">
                         <Database className="w-3 h-3" /> {result.source}
                       </span>
-                      <span className="text-[10px] text-gray-500 flex items-center gap-1">
+                      <span className="text-2xs text-gray-500 flex items-center gap-1">
                         <Clock className="w-3 h-3" /> {new Date(result.timestamp).toLocaleDateString()}
                       </span>
                     </div>
@@ -135,10 +135,10 @@ export default function RagTester({ testRunId = 'PROD' }: RagTesterProps) {
                   <div className="text-2xl font-bold text-white leading-none">
                     {Math.round(result.score * 100)}%
                   </div>
-                  <div className="text-[10px] text-amber-400/80 uppercase tracking-tighter mt-1 font-bold">
+                  <div className="text-2xs text-amber-400/80 uppercase tracking-tighter mt-1 font-bold">
                     Weighted Score
                   </div>
-                  <div className="text-[10px] text-gray-600 mt-1">
+                  <div className="text-2xs text-gray-600 mt-1">
                     vScore: {result.raw_score.toFixed(4)}
                   </div>
                 </div>
