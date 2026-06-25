@@ -75,4 +75,15 @@ Primary tracking document for bugs, architectural resolutions, and pending work.
 
 ---
 
-*Last updated: April 2026*
+---
+
+## Audit note — 2026-06-25
+
+Full cross-check of the April–May audit docs against the live tree: every BUG-/BLOCKER-/HIGH
+item listed in those audits is fixed in code. Verified via clean `next build`, `tsc --noEmit`,
+`eslint`, zero TODO/FIXME markers, and no runtime errors in the prior 7 days. The point-in-time
+audit snapshots were moved to [`archive/`](./archive/) to stop them reading as open issues.
+Forward-looking work is consolidated in [`PENDING.md`](./PENDING.md) and
+[`master-roadmap.md`](./master-roadmap.md).
+
+*Last updated: June 2026*

@@ -23,10 +23,10 @@ One-line truth: **L1 = memory. L2 = signals. L2.5 = meaning. L3 = thinking. L4 =
 
 | Concern | Technology |
 |---|---|
-| Framework | Next.js 16 (App Router) |
+| Framework | Next.js 15 (App Router) |
 | Memory DB | MongoDB via Prisma (custom output path `src/generated/mongo`) |
 | Intelligence DB | Neon (Postgres) via Prisma (custom output path `src/generated/postgres`) |
-| AI / LLM | LangChain + GPT-4o-mini (structured) + GPT-4o (complex, Phase 4) |
+| AI / LLM | LangChain + GPT-4o-mini (reasoning/structured) + GPT-4o (L4 output generation) |
 | Vector search | MongoDB Atlas Vector Search |
 | File storage | Vercel Blob |
 | Observability | Langfuse |
@@ -151,9 +151,9 @@ npm run prisma:generate   # regenerate both Prisma clients
 Hosted on Vercel. Every push to `main` triggers a production deploy.
 
 Project: `https://vercel.com/wugweb/memory`
-Live URL: `https://memory-b3spkg6m5-wugweb.vercel.app`
+Live URL: `https://memory-git-main-wugweb.vercel.app` (stable `main` alias)
 
-All API routes use `export const dynamic = 'force-dynamic'` to prevent Turbopack static collection at build time.
+Most API routes set `export const dynamic = 'force-dynamic'` to prevent static collection at build time. Routes that read request data (`req.json()`, query params, cookies) are inferred as dynamic by Next.js even without the explicit export.
 
 ---
 
