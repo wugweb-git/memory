@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -233,6 +233,8 @@ export function PublicProfileView({ username }: { username: string }) {
             </section>
           )}
 
+          <SanityShowcase />
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {testimonials.map((t, i) => (
               <motion.div
@@ -319,5 +321,72 @@ export function PublicProfileView({ username }: { username: string }) {
         </Link>
       </motion.div>
     </div>
+  );
+}
+
+/** Sanity-backed showcase (projects / case studies / writing).
+ *  Renders nothing when Sanity isn't configured — the internal-API
+ *  sections above remain the fallback. */
+function SanityShowcase() {
+  const [data, setData] = useState<{
+    enabled: boolean;
+    projects: any[];
+    caseStudies: any[];
+    blogPosts: any[];
+  } | null>(null);
+
+  useEffect(() => {
+    fetch('/api/showcase')
+      .then((r) => r.json())
+      .then(setData)
+      .catch(() => setData(null));
+  }, []);
+
+  if (!data?.enabled) return null;
+
+  const items = [
+    ...(data.projects ?? []).map((p: any) => ({ ...p, kind: 'Project' })),
+    ...(data.caseStudies ?? []).map((c: any) => ({ ...c, kind: 'Case Study' })),
+    ...(data.blogPosts ?? []).map((b: any) => ({ ...b, kind: 'Writing' })),
+  ];
+  if (items.length === 0) return null;
+
+  return (
+    <section className="space-y-8">
+      <h2 className="text-2xs font-black uppercase tracking-[0.5em] text-text-tertiary flex items-center gap-3">
+        <Sparkles size={16} className="text-accent" /> Showcase
+      </h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {items.slice(0, 9).map((it: any) => {
+          const body = (
+            <>
+              <span className="text-2xs font-black uppercase text-accent">{it.kind}</span>
+              <h3 className="text-lg font-bold mt-2 group-hover:text-accent transition-colors">{it.title}</h3>
+              <p className="text-sm text-text-tertiary mt-2 line-clamp-3">
+                {String(it.summary ?? it.excerpt ?? '').slice(0, 160)}
+              </p>
+            </>
+          );
+          return it.url ? (
+            <a
+              key={it._id}
+              href={it.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="glass-panel p-6 rounded-[2rem] border border-border-secondary hover:border-accent/40 block group"
+            >
+              {body}
+            </a>
+          ) : (
+            <div
+              key={it._id}
+              className="glass-panel p-6 rounded-[2rem] border border-border-secondary group"
+            >
+              {body}
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }

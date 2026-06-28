@@ -1,6 +1,7 @@
 import { postgres } from '../db/postgres';
 import { publishContentToProfile } from '@/lib/profile/store';
 import { IDENTITY_CONFIG } from '@/config/identity';
+import { createGeneratedOutput } from '@/lib/cms/queries';
 
 export type AutomationMode = 'webhook' | 'profile_only' | 'skipped';
 
@@ -21,6 +22,7 @@ export type AutomationPushResult = {
   webhookOk?: boolean;
   profilePublished?: boolean;
   profileUsername?: string;
+  sanitySynced?: boolean;
 };
 
 /**
@@ -94,6 +96,24 @@ export async function pushToAutomation(
     data: { status: mode === 'skipped' ? 'ready' : 'pushed' },
   });
 
+  // Mirror the artifact into Sanity as a generatedOutput doc (best-effort;
+  // no-op when Sanity isn't configured — never blocks publishing).
+  let sanitySynced = false;
+  if (mode !== 'skipped') {
+    try {
+      const doc = await createGeneratedOutput({
+        title: `${output.platform} — ${output.id.slice(0, 8)}`,
+        platform: output.platform,
+        content: String(output.content ?? ''),
+        status: 'published',
+        sourceDecisionId: output.decisionId ?? undefined,
+      });
+      sanitySynced = Boolean(doc);
+    } catch (err) {
+      console.error('[Automation] Sanity sync failed:', err);
+    }
+  }
+
   return {
     mode,
     outputId,
@@ -101,5 +121,6 @@ export async function pushToAutomation(
     webhookOk,
     profilePublished,
     profileUsername: profilePublished ? profileUsername : undefined,
+    sanitySynced,
   };
 }
