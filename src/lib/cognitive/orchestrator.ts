@@ -11,6 +11,9 @@ import { dedup } from "./dedup";
 import { logDecisionNeon } from "./logging/neon";
 import { runCritic } from "./output/critic";
 import { getModeInstruction } from "./mode/mode";
+import { selectModel } from "./routing";
+import { runReasoner } from "./agents/reasoner";
+import { runDecisionAgent } from "./agents/decision";
 import langfuse from "../observability/langfuse";
 
 export async function processDecision(params: {
@@ -52,14 +55,31 @@ export async function processDecision(params: {
       modeInstruction: getModeInstruction(mode)
     });
 
-    // 3. LLM call
-    const generation = trace.generation({
-      name: "reasoning_pass",
-      model: "gpt-4o-mini",
-      input: prompt
-    });
-    const rawOutput = await runLLM(prompt);
-    generation.end({ output: rawOutput });
+    // 3. Reasoning — single-pass (default) or multi-agent split (Phase 4, opt-in
+    //    via COGNITIVE_MULTI_AGENT=1). Both produce the same JSON contract, so
+    //    sanitize/dedup/critic/log below are unchanged.
+    let rawOutput: string;
+    if (process.env.COGNITIVE_MULTI_AGENT === "1") {
+      const tier = selectModel({
+        contextSize:
+          (context.entities?.length || 0) +
+          (context.signals?.length || 0) +
+          (context.relationships?.length || 0),
+        complex: Boolean(external_input),
+      });
+
+      const reasonGen = trace.generation({ name: "reasoner", model: "gpt-4o-mini", input: prompt });
+      const analysis = await runReasoner(context, mode, "gpt-4o-mini");
+      reasonGen.end({ output: analysis });
+
+      const decideGen = trace.generation({ name: "decision", model: tier, input: analysis });
+      rawOutput = await runDecisionAgent({ analysis, context, mode, externalInput: external_input, modelName: tier });
+      decideGen.end({ output: rawOutput });
+    } else {
+      const generation = trace.generation({ name: "reasoning_pass", model: "gpt-4o-mini", input: prompt });
+      rawOutput = await runLLM(prompt);
+      generation.end({ output: rawOutput });
+    }
 
     // 4. Sanitize
     const sanitized = sanitize(rawOutput);

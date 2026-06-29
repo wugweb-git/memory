@@ -6,6 +6,40 @@ const model = new ChatOpenAI({
   temperature: 0.1,
 });
 
+/** Per-(model,temperature) ChatOpenAI cache for the multi-agent path. */
+const _modelCache: Record<string, ChatOpenAI> = {};
+function getModel(modelName: string, temperature = 0.1): ChatOpenAI {
+  const key = `${modelName}:${temperature}`;
+  if (!_modelCache[key]) {
+    _modelCache[key] = new ChatOpenAI({ modelName, temperature });
+  }
+  return _modelCache[key];
+}
+
+/**
+ * Model-parameterized reasoning call used by the Phase 4 multi-agent path.
+ * `system` lets each agent assume a strict role.
+ */
+export async function runAgentLLM(
+  prompt: string,
+  modelName = "gpt-4o-mini",
+  system = "You are the Cognitive Engine of a Personal Operating System. Reason deeply and provide structured guidance.",
+  temperature = 0.1,
+): Promise<string> {
+  try {
+    const response = await getModel(modelName, temperature).invoke([
+      new SystemMessage(system),
+      new HumanMessage(prompt),
+    ]);
+    return typeof response.content === "string"
+      ? response.content
+      : JSON.stringify(response.content);
+  } catch (err: any) {
+    console.error("[LLM/Agent] Execution Failure:", err.message);
+    throw new Error(`LLM_FAILURE: ${err.message}`);
+  }
+}
+
 /**
  * Executes a structured reasoning call to the LLM.
  * Returns the raw string result for post-processing.

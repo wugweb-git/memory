@@ -37,8 +37,29 @@ export class ProcessingEngine {
             timestamp: new Date(s.timestamp),
             test_run_id: testRunId,
             processing_state: 'complete'
-          })) as any 
+          })) as any
         });
+
+        // Signal-spike trigger (L3 Phase 4, opt-in via COGNITIVE_SIGNAL_TRIGGER=1):
+        // a high-intensity signal queues a cognitive run so the brain reacts to
+        // momentum shifts. Best-effort — never fails packet processing.
+        if (
+          process.env.COGNITIVE_SIGNAL_TRIGGER === '1' &&
+          testRunId === 'PROD' &&
+          signals.some((s) => (s.intensity_absolute ?? 0) > 0.9)
+        ) {
+          try {
+            const { processDecision } = await import('@/lib/cognitive/orchestrator');
+            const { IDENTITY_CONFIG } = await import('@/config/identity');
+            await processDecision({
+              userId: IDENTITY_CONFIG.DEFAULT_USER_ID,
+              mode: 'operator',
+              external_input: null,
+            });
+          } catch (err) {
+            console.error('[ProcessingEngine] signal-spike cognitive trigger failed:', err);
+          }
+        }
 
         // Create Activity entries for each signal
         for (const signal of signals) {
