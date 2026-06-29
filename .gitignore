@@ -41,3 +41,6 @@ tsconfig.tsbuildinfo
 # Local dev tooling
 .claude/
 .env*
+
+# Local Claude working notes
+CLAUDE.local.md
