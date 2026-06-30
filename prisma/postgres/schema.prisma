@@ -5,8 +5,12 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  // Neon (Vercel integration) exposes brain_*-prefixed vars; there is no plain
+  // DATABASE_URL. Use the Prisma-tuned pooled URL at runtime and the unpooled
+  // URL for migrations. Falls back to DATABASE_URL if a plain one is provided.
+  url       = env("brain_POSTGRES_PRISMA_URL")
+  directUrl = env("brain_POSTGRES_URL_NON_POOLING")
 }
 
 model DecisionLog {
