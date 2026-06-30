@@ -45,10 +45,10 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
   }, [fetchPackets]);
 
   return (
-    <div className="bg-[#0a0a0a] rounded-xl border border-white/10 overflow-hidden relative">
-      <div className="p-6 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
+    <div className="bg-[#0a0a0a] rounded-xl border border-border-secondary overflow-hidden relative">
+      <div className="p-6 border-b border-border-secondary flex items-center justify-between bg-white/[0.02]">
         <div>
-          <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+          <h2 className="text-xl font-semibold text-text-primary flex items-center gap-2">
             <Database className="w-5 h-5 text-gray-400" />
             Memory Data Explorer
           </h2>
@@ -58,7 +58,7 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
           <select 
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="bg-black border border-white/10 rounded-md px-3 py-1.5 text-xs text-gray-300 focus:outline-none focus:ring-1 focus:ring-white/20"
+            className="bg-bg-primary border border-border-secondary rounded-md px-3 py-1.5 text-xs text-gray-300 focus:outline-none focus:ring-1 focus:ring-white/20"
           >
             <option value="">All Types</option>
             <option value="email">Email</option>
@@ -72,7 +72,7 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="border-b border-white/5 bg-black">
+            <tr className="border-b border-border-secondary bg-bg-primary">
               <th className="px-6 py-4 text-2xs uppercase font-bold text-gray-500 tracking-widest">Packet ID</th>
               <th className="px-6 py-4 text-2xs uppercase font-bold text-gray-500 tracking-widest">Source</th>
               <th className="px-6 py-4 text-2xs uppercase font-bold text-gray-500 tracking-widest">Type</th>
@@ -85,22 +85,22 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
           <tbody>
             {loading ? (
               [...Array(5)].map((_, i) => (
-                <tr key={i} className="animate-pulse border-b border-white/5">
-                  <td colSpan={7} className="px-6 py-8 h-4 bg-white/5 opacity-20"></td>
+                <tr key={i} className="animate-pulse border-b border-border-secondary">
+                  <td colSpan={7} className="px-6 py-8 h-4 bg-secondary opacity-20"></td>
                 </tr>
               ))
             ) : packets.map((packet) => (
-              <tr key={packet.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-all group">
+              <tr key={packet.id} className="border-b border-border-secondary hover:bg-white/[0.02] transition-all group">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
                     <Hash className="w-3 h-3 text-gray-600" />
-                    <span className="text-xs font-mono text-gray-400 group-hover:text-white transition-colors">
+                    <span className="text-xs font-mono text-gray-400 group-hover:text-text-primary transition-colors">
                       {packet.id.slice(-8)}
                     </span>
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-2xs text-blue-400 font-bold inline-block uppercase tracking-tight">
+                  <div className="px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-2xs text-accent font-bold inline-block uppercase tracking-tight">
                     {packet.source}
                   </div>
                 </td>
@@ -122,7 +122,7 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
                 <td className="px-6 py-4 text-right">
                   <button 
                     onClick={() => setSelectedPacketId(packet.id)}
-                    className="p-2 hover:bg-white/10 rounded-md transition-all text-gray-600 hover:text-white"
+                    className="p-2 hover:bg-secondary rounded-md transition-all text-gray-600 hover:text-text-primary"
                   >
                     <Eye className="w-4 h-4" />
                   </button>
@@ -133,7 +133,7 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
         </table>
       </div>
 
-      <div className="p-4 bg-black/50 border-t border-white/10 flex items-center justify-between text-2xs text-gray-600 font-bold tracking-widest uppercase">
+      <div className="p-4 bg-bg-primary/50 border-t border-border-secondary flex items-center justify-between text-2xs text-gray-600 font-bold tracking-widest uppercase">
         <div className="flex items-center gap-4">
           <span>Showing 10 records</span>
           <span className="flex items-center gap-1">
@@ -141,9 +141,9 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <button className="p-1 hover:text-white transition-all"><ChevronLeft className="w-4 h-4" /></button>
-          <span className="text-white px-2">Page 1</span>
-          <button className="p-1 hover:text-white transition-all"><ChevronRight className="w-4 h-4" /></button>
+          <button className="p-1 hover:text-text-primary transition-all"><ChevronLeft className="w-4 h-4" /></button>
+          <span className="text-text-primary px-2">Page 1</span>
+          <button className="p-1 hover:text-text-primary transition-all"><ChevronRight className="w-4 h-4" /></button>
         </div>
       </div>
 
@@ -160,10 +160,10 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
 
 function StatusBadge({ status }: any) {
   const styles: any = {
-    active: 'text-emerald-400 bg-emerald-500/10',
-    failed: 'text-red-400 bg-red-500/10',
-    partial: 'text-amber-400 bg-amber-500/10',
-    archived: 'text-gray-400 bg-white/10'
+    active: 'text-success bg-emerald-500/10',
+    failed: 'text-danger bg-red-500/10',
+    partial: 'text-warning bg-amber-500/10',
+    archived: 'text-gray-400 bg-secondary'
   };
   return (
     <span className={`px-2 py-0.5 rounded text-2xs font-bold uppercase tracking-wider ${styles[status] || styles.active}`}>
@@ -174,10 +174,10 @@ function StatusBadge({ status }: any) {
 
 function EmbedStatusBadge({ status }: any) {
   const styles: any = {
-    embedded: 'text-blue-400 bg-blue-500/10',
-    pending: 'text-amber-400 bg-amber-500/10',
+    embedded: 'text-accent bg-blue-500/10',
+    pending: 'text-warning bg-amber-500/10',
     processing: 'text-violet-400 bg-violet-500/10',
-    failed: 'text-red-400 bg-red-500/10'
+    failed: 'text-danger bg-red-500/10'
   };
   return (
     <div className="flex items-center gap-2">

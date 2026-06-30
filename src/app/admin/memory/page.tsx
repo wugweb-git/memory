@@ -14,22 +14,22 @@ function AdminMemoryContent() {
   const testRunId = searchParams.get('test_run_id') || 'PROD';
 
   return (
-    <div className="min-h-screen bg-black text-white p-8 font-sans">
+    <div className="min-h-screen bg-bg-primary text-text-primary p-8 font-sans">
       {/* HEADER */}
       <header className="mb-12 flex items-center justify-between">
         <div>
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-blue-500 rounded-lg shadow-[0_0_15px_rgba(59,130,246,0.5)]">
-              <Brain className="w-6 h-6 text-white" />
+              <Brain className="w-6 h-6 text-text-primary" />
             </div>
             <h1 className="text-3xl font-bold tracking-tight">System Control Surface</h1>
           </div>
           <div className="flex items-center gap-4 text-sm">
-            <span className="flex items-center gap-1.5 text-emerald-400 font-medium">
+            <span className="flex items-center gap-1.5 text-success font-medium">
               <Shield className="w-4 h-4" /> Layer 1: Locked
             </span>
             <span className="text-gray-600">|</span>
-            <span className="flex items-center gap-1.5 text-blue-400 font-medium">
+            <span className="flex items-center gap-1.5 text-accent font-medium">
               <Layers className="w-4 h-4" /> Layer 2: Active
             </span>
             <span className="text-gray-600">|</span>
@@ -39,7 +39,7 @@ function AdminMemoryContent() {
             {testRunId !== 'PROD' && (
               <>
                 <span className="text-gray-600">|</span>
-                <span className="flex items-center gap-1.5 text-amber-400 font-bold px-2 py-0.5 rounded border border-amber-500/20 bg-amber-500/5 uppercase tracking-widest text-2xs">
+                <span className="flex items-center gap-1.5 text-warning font-bold px-2 py-0.5 rounded border border-amber-500/20 bg-amber-500/5 uppercase tracking-widest text-2xs">
                   Scope: {testRunId}
                 </span>
               </>
@@ -47,7 +47,7 @@ function AdminMemoryContent() {
           </div>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <div className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-xs font-mono text-gray-400">
+          <div className="px-4 py-2 bg-secondary border border-border-secondary rounded-lg text-xs font-mono text-gray-400">
             {testRunId === 'PROD' ? 'Live Production' : 'Validation Mode'} • Self-Healing Active
           </div>
           <p className="text-2xs text-emerald-500 font-bold uppercase tracking-widest">System Healthy</p>
@@ -66,14 +66,14 @@ function AdminMemoryContent() {
         <div className="col-span-12 lg:col-span-8 flex flex-col gap-10">
           <RagTester testRunId={testRunId} />
           <MemoryExplorer testRunId={testRunId} />
-          <div className="p-6 bg-gradient-to-br from-purple-500/5 to-transparent border border-white/10 rounded-xl">
+          <div className="p-6 bg-gradient-to-br from-purple-500/5 to-transparent border border-border-secondary rounded-xl">
              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Hardening Audit (L2.5)</h3>
              <ul className="grid grid-cols-2 gap-4 text-xs">
-                <li className="flex items-center justify-between text-emerald-400">
+                <li className="flex items-center justify-between text-success">
                    <span>Adaptive Retries</span>
                    <Shield className="w-3 h-3" />
                 </li>
-                <li className="flex items-center justify-between text-blue-400">
+                <li className="flex items-center justify-between text-accent">
                    <span>Deterministic Signals</span>
                    <Layers className="w-3 h-3" />
                 </li>
@@ -81,7 +81,7 @@ function AdminMemoryContent() {
                    <span>Verified-Only Graph</span>
                    <Layers className="w-3 h-3" />
                 </li>
-                <li className="flex items-center justify-between text-amber-400">
+                <li className="flex items-center justify-between text-warning">
                    <span>Rule-Based Fallback</span>
                    <Shield className="w-3 h-3" />
                 </li>
@@ -90,12 +90,12 @@ function AdminMemoryContent() {
         </div>
       </div>
 
-      <footer className="mt-20 py-8 border-t border-white/5 flex items-center justify-between text-2xs text-gray-600 uppercase tracking-[0.2em] font-bold">
+      <footer className="mt-20 py-8 border-t border-border-secondary flex items-center justify-between text-2xs text-gray-600 uppercase tracking-[0.2em] font-bold">
         <span>Identity Prism OS • Combined Operations Center</span>
         <div className="flex gap-8">
-          <a href="/admin" className="hover:text-white transition-colors">Documentation</a>
-          <a href="/admin/memory" className="hover:text-white transition-colors">Security Audit</a>
-          <a href="/api/health/system" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">System Health JSON</a>
+          <a href="/admin" className="hover:text-text-primary transition-colors">Documentation</a>
+          <a href="/admin/memory" className="hover:text-text-primary transition-colors">Security Audit</a>
+          <a href="/api/health/system" target="_blank" rel="noopener noreferrer" className="hover:text-text-primary transition-colors">System Health JSON</a>
         </div>
       </footer>
     </div>
@@ -104,7 +104,7 @@ function AdminMemoryContent() {
 
 export default function AdminMemoryPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center text-white/20 font-mono text-2xs tracking-widest uppercase animate-pulse">Initializing Control Surface...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-bg-primary flex items-center justify-center text-text-secondary font-mono text-2xs tracking-widest uppercase animate-pulse">Initializing Control Surface...</div>}>
       <AdminMemoryContent />
     </Suspense>
   );

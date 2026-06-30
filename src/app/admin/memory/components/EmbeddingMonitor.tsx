@@ -39,18 +39,18 @@ export default function EmbeddingMonitor({ testRunId = 'PROD' }: EmbeddingMonito
   }, [fetchStats]);
 
   return (
-    <div className="bg-[#0a0a0a] rounded-xl border border-white/10 p-6 flex flex-col gap-6">
+    <div className="bg-[#0a0a0a] rounded-xl border border-border-secondary p-6 flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-            <PieChart className="w-5 h-5 text-blue-400" />
+          <h2 className="text-xl font-semibold text-text-primary flex items-center gap-2">
+            <PieChart className="w-5 h-5 text-accent" />
             Embedding Pipeline
           </h2>
           <p className="text-sm text-gray-400 mt-1">Real-time semantic indexing status.</p>
         </div>
         <button 
           onClick={fetchStats}
-          className={`p-2 hover:bg-white/5 rounded-full transition-all ${isRefreshing ? 'animate-spin' : ''}`}
+          className={`p-2 hover:bg-secondary rounded-full transition-all ${isRefreshing ? 'animate-spin' : ''}`}
         >
           <RefreshCw className="w-4 h-4 text-gray-400" />
         </button>
@@ -60,44 +60,44 @@ export default function EmbeddingMonitor({ testRunId = 'PROD' }: EmbeddingMonito
         <StatusCard 
           label="Backlog" 
           count={stats.pending + stats.processing} 
-          icon={<Clock className="w-4 h-4 text-amber-400" />} 
+          icon={<Clock className="w-4 h-4 text-warning" />} 
           color="amber"
           subtext="Queueing for worker..."
         />
         <StatusCard 
           label="Token Burn (Est)" 
           count={Math.round(stats.embedded * 250)} 
-          icon={<Zap className="w-4 h-4 text-blue-400" />} 
+          icon={<Zap className="w-4 h-4 text-accent" />} 
           color="blue"
           subtext="OpenAI text-3-small"
         />
         <StatusCard 
           label="Embedded" 
           count={stats.embedded} 
-          icon={<CheckCircle2 className="w-4 h-4 text-emerald-400" />} 
+          icon={<CheckCircle2 className="w-4 h-4 text-success" />} 
           color="emerald"
         />
         <StatusCard 
           label="Failed" 
           count={stats.failed} 
-          icon={<AlertCircle className="w-4 h-4 text-red-400" />} 
+          icon={<AlertCircle className="w-4 h-4 text-danger" />} 
           color="red"
           action={
-            <button className="text-2xs underline hover:text-red-300 font-bold">
+            <button className="text-2xs underline hover:text-danger font-bold">
               RETRY ALL
             </button>
           }
         />
       </div>
 
-      <div className="mt-2 p-4 bg-white/5 rounded-lg border border-white/5">
+      <div className="mt-2 p-4 bg-secondary rounded-lg border border-border-secondary">
         <div className="flex items-center justify-between text-xs mb-2">
           <span className="text-gray-400">Memory Sync Progress</span>
-          <span className="text-white font-bold">
+          <span className="text-text-primary font-bold">
             {Math.round((stats.embedded / (stats.pending + stats.processing + stats.embedded + stats.failed || 1)) * 100)}%
           </span>
         </div>
-        <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+        <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
           <motion.div 
             initial={{ width: 0 }}
             animate={{ width: `${(stats.embedded / (stats.pending + stats.processing + stats.embedded + stats.failed || 1)) * 100}%` }}
@@ -111,10 +111,10 @@ export default function EmbeddingMonitor({ testRunId = 'PROD' }: EmbeddingMonito
 
 function StatusCard({ label, count, icon, color, action, subtext }: any) {
   const colors: any = {
-    amber: 'bg-amber-500/10 border-amber-500/20 text-amber-400',
-    blue: 'bg-blue-500/10 border-blue-500/20 text-blue-400',
-    emerald: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
-    red: 'bg-red-500/10 border-red-500/20 text-red-400',
+    amber: 'bg-amber-500/10 border-amber-500/20 text-warning',
+    blue: 'bg-blue-500/10 border-blue-500/20 text-accent',
+    emerald: 'bg-emerald-500/10 border-emerald-500/20 text-success',
+    red: 'bg-red-500/10 border-red-500/20 text-danger',
   };
 
   return (
@@ -124,7 +124,7 @@ function StatusCard({ label, count, icon, color, action, subtext }: any) {
         {action}
       </div>
       <div>
-        <div className="text-2xl font-bold text-white">
+        <div className="text-2xl font-bold text-text-primary">
           {count > 999 ? `${(count / 1000).toFixed(1)}k` : count}
         </div>
         <div className="text-2xs uppercase font-bold tracking-widest opacity-60">{label}</div>

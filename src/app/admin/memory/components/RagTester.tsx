@@ -49,11 +49,11 @@ export default function RagTester({ testRunId = 'PROD' }: RagTesterProps) {
   };
 
   return (
-    <div className="bg-[#0a0a0a] rounded-xl border border-white/10 p-6 overflow-hidden">
+    <div className="bg-[#0a0a0a] rounded-xl border border-border-secondary p-6 overflow-hidden">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-            <Zap className="w-5 h-5 text-amber-400" />
+          <h2 className="text-xl font-semibold text-text-primary flex items-center gap-2">
+            <Zap className="w-5 h-5 text-warning" />
             Retrieval Engine Tester
           </h2>
           <p className="text-sm text-gray-400 mt-1">
@@ -61,7 +61,7 @@ export default function RagTester({ testRunId = 'PROD' }: RagTesterProps) {
           </p>
         </div>
         <div className="flex gap-4">
-          <div className="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-2xs text-blue-400 uppercase tracking-wider font-bold">
+          <div className="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-2xs text-accent uppercase tracking-wider font-bold">
             text-embedding-3-small
           </div>
         </div>
@@ -73,7 +73,7 @@ export default function RagTester({ testRunId = 'PROD' }: RagTesterProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Ask your memory anything..."
-          className="w-full bg-white/5 border border-white/10 rounded-lg py-4 pl-12 pr-24 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
+          className="w-full bg-secondary border border-border-secondary rounded-lg py-4 pl-12 pr-24 text-text-primary placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
         />
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
         <button
@@ -92,7 +92,7 @@ export default function RagTester({ testRunId = 'PROD' }: RagTesterProps) {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-3 text-red-400"
+              className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-3 text-danger"
             >
               <AlertCircle className="w-5 h-5" />
               <span className="text-sm">{error}</span>
@@ -100,7 +100,7 @@ export default function RagTester({ testRunId = 'PROD' }: RagTesterProps) {
           )}
 
           {results.length === 0 && !isSearching && !error && query.length >= 3 && (
-            <div className="text-center py-12 border-2 border-dashed border-white/5 rounded-xl">
+            <div className="text-center py-12 border-2 border-dashed border-border-secondary rounded-xl">
               <Database className="w-12 h-12 text-gray-600 mx-auto mb-4" />
               <p className="text-gray-500 text-sm">No semantic matches found for this query.</p>
             </div>
@@ -112,12 +112,12 @@ export default function RagTester({ testRunId = 'PROD' }: RagTesterProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05 }}
-              className="bg-white/5 border border-white/10 rounded-lg p-5 group hover:border-amber-500/30 transition-all"
+              className="bg-secondary border border-border-secondary rounded-lg p-5 group hover:border-amber-500/30 transition-all"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white/5 rounded-lg">
-                    <FileText className="w-4 h-4 text-amber-400" />
+                  <div className="p-2 bg-secondary rounded-lg">
+                    <FileText className="w-4 h-4 text-warning" />
                   </div>
                   <div>
                     <div className="text-xs font-mono text-gray-400">Packet: {result.packet_id.slice(-8)}</div>
@@ -132,10 +132,10 @@ export default function RagTester({ testRunId = 'PROD' }: RagTesterProps) {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-white leading-none">
+                  <div className="text-2xl font-bold text-text-primary leading-none">
                     {Math.round(result.score * 100)}%
                   </div>
-                  <div className="text-2xs text-amber-400/80 uppercase tracking-tighter mt-1 font-bold">
+                  <div className="text-2xs text-warning/80 uppercase tracking-tighter mt-1 font-bold">
                     Weighted Score
                   </div>
                   <div className="text-2xs text-gray-600 mt-1">
@@ -144,7 +144,7 @@ export default function RagTester({ testRunId = 'PROD' }: RagTesterProps) {
                 </div>
               </div>
 
-              <div className="text-sm text-gray-300 leading-relaxed font-serif bg-black/30 p-4 rounded border border-white/5">
+              <div className="text-sm text-gray-300 leading-relaxed font-serif bg-bg-primary/30 p-4 rounded border border-border-secondary">
                 &quot;{result.chunk}&quot;
               </div>
             </motion.div>

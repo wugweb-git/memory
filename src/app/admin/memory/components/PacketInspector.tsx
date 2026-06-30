@@ -47,22 +47,22 @@ export default function PacketInspector({ packetId, onClose }: PacketInspectorPr
   if (!packetId) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/80 backdrop-blur-md p-4">
-      <div className="w-full max-w-6xl h-full bg-[#0d0d0d] border-l border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
+    <div className="fixed inset-0 z-50 flex items-center justify-end bg-bg-primary/80 backdrop-blur-md p-4">
+      <div className="w-full max-w-6xl h-full bg-[#0d0d0d] border-l border-border-secondary shadow-[0_0_50px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
         {/* Header */}
-        <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/[0.01]">
+        <div className="p-6 border-b border-border-secondary flex items-center justify-between bg-white/[0.01]">
           <div className="flex items-center gap-5">
             <div className="p-3 bg-purple-500/10 rounded-xl border border-purple-500/20 shadow-[0_0_15px_rgba(168,85,247,0.2)]">
               <Activity className="w-7 h-7 text-purple-400" />
             </div>
             <div>
-              <h2 className="text-2xl font-black text-white tracking-tighter uppercase">Packet Diagnostic</h2>
+              <h2 className="text-2xl font-black text-text-primary tracking-tighter uppercase">Packet Diagnostic</h2>
               <p className="text-2xs text-gray-500 font-mono tracking-[0.2em] mt-1 uppercase">ID: {packetId}</p>
             </div>
           </div>
           <button 
             onClick={onClose}
-            className="p-3 hover:bg-white/10 rounded-full transition-all text-gray-400 hover:text-white group"
+            className="p-3 hover:bg-secondary rounded-full transition-all text-gray-400 hover:text-text-primary group"
           >
             <X className="w-7 h-7 group-hover:rotate-90 transition-transform duration-300" />
           </button>
@@ -75,14 +75,14 @@ export default function PacketInspector({ packetId, onClose }: PacketInspectorPr
             {/* Left: Raw Data & Ingestion Trace */}
             <div className="col-span-12 lg:col-span-5 space-y-8">
               <div className="space-y-4">
-                <div className="flex items-center gap-4 p-1 bg-black rounded-lg border border-white/5">
+                <div className="flex items-center gap-4 p-1 bg-bg-primary rounded-lg border border-border-secondary">
                   {(['content', 'metadata', 'trace'] as const).map((tab) => (
                     <button
                       key={tab}
                       onClick={() => setActiveTab(tab)}
                       className={`flex-1 py-2 px-3 rounded-md text-2xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
                         activeTab === tab 
-                          ? 'bg-white/10 text-white shadow-inner' 
+                          ? 'bg-secondary text-text-primary shadow-inner' 
                           : 'text-gray-500 hover:text-gray-300'
                       }`}
                     >
@@ -94,7 +94,7 @@ export default function PacketInspector({ packetId, onClose }: PacketInspectorPr
                   ))}
                 </div>
                 
-                <div className="bg-[#050505] rounded-2xl border border-white/5 p-6 font-mono text-2xs overflow-x-auto min-h-[500px] shadow-inner relative group">
+                <div className="bg-[#050505] rounded-2xl border border-border-secondary p-6 font-mono text-2xs overflow-x-auto min-h-[500px] shadow-inner relative group">
                   <div className="absolute top-4 right-4 text-2xs text-gray-700 font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
                     ReadOnly.raw
                   </div>
@@ -160,10 +160,10 @@ export default function PacketInspector({ packetId, onClose }: PacketInspectorPr
         </div>
         
         {/* Footer info */}
-        <div className="p-4 border-t border-white/5 bg-black flex items-center justify-between text-2xs text-gray-600 font-bold uppercase tracking-widest px-8">
+        <div className="p-4 border-t border-border-secondary bg-bg-primary flex items-center justify-between text-2xs text-gray-600 font-bold uppercase tracking-widest px-8">
            <div className="flex items-center gap-6">
              <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Vault Integrity Verified</span>
-             <span className="flex items-center gap-2 text-blue-500/80 underline decoration-blue-500/20 cursor-pointer hover:text-blue-400">View Raw Trace Logs</span>
+             <span className="flex items-center gap-2 text-blue-500/80 underline decoration-blue-500/20 cursor-pointer hover:text-accent">View Raw Trace Logs</span>
            </div>
            <span>Identity Prism Diagnostic Tool v1.2</span>
         </div>

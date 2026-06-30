@@ -22,7 +22,7 @@ export function IntelPanel({ metrics, loading }: IntelPanelProps) {
 
   if (!metrics) {
     return (
-      <div className="bg-slate-900/50 border border-slate-800 border-dashed rounded-xl h-48 flex flex-col items-center justify-center text-slate-500 text-2xs uppercase font-bold tracking-widest bg-black/40">
+      <div className="bg-slate-900/50 border border-slate-800 border-dashed rounded-xl h-48 flex flex-col items-center justify-center text-text-tertiary text-2xs uppercase font-bold tracking-widest bg-bg-primary/40">
         <BrainCircuit className="w-8 h-8 mb-2 opacity-20" />
         Intelligence synthesis waiting
       </div>
@@ -33,18 +33,18 @@ export function IntelPanel({ metrics, loading }: IntelPanelProps) {
     <div className="space-y-4">
       <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
         <div className="py-3 px-4 flex flex-row items-center justify-between border-b border-slate-800/50 bg-white/[0.02]">
-          <h3 className="text-2xs font-bold uppercase tracking-[0.2em] flex items-center gap-2 text-slate-400">
-            <BrainCircuit className="w-3.5 h-3.5 text-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.5)]" />
+          <h3 className="text-2xs font-bold uppercase tracking-[0.2em] flex items-center gap-2 text-text-tertiary">
+            <BrainCircuit className="w-3.5 h-3.5 text-accent shadow-[0_0_8px_rgba(96,165,250,0.5)]" />
             Intelligence Layer 2
           </h3>
-          <div className="px-2 py-0.5 rounded border border-blue-500/30 text-2xs font-bold text-blue-400 bg-blue-500/5 uppercase tracking-widest">
+          <div className="px-2 py-0.5 rounded border border-blue-500/30 text-2xs font-bold text-accent bg-blue-500/5 uppercase tracking-widest">
             Rule Engine 1.0
           </div>
         </div>
         <div className="p-4">
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-1">
-              <div className="flex items-center gap-2 text-slate-500">
+              <div className="flex items-center gap-2 text-text-tertiary">
                 <Activity className="w-3 h-3" />
                 <span className="text-2xs uppercase font-bold tracking-widest">Signal Volume</span>
               </div>
@@ -52,7 +52,7 @@ export function IntelPanel({ metrics, loading }: IntelPanelProps) {
             </div>
 
             <div className="space-y-1">
-              <div className="flex items-center gap-2 text-slate-500">
+              <div className="flex items-center gap-2 text-text-tertiary">
                 <LineChart className="w-3 h-3" />
                 <span className="text-2xs uppercase font-bold tracking-widest">Mean Intensity</span>
               </div>
@@ -61,9 +61,9 @@ export function IntelPanel({ metrics, loading }: IntelPanelProps) {
             
             <div className="col-span-2 space-y-4 pt-4 border-t border-slate-800/50 mt-2">
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-2xs uppercase font-bold text-slate-500 tracking-widest">
+                <div className="flex items-center justify-between text-2xs uppercase font-bold text-text-tertiary tracking-widest">
                   <span>Work Commitment</span>
-                  <span className="text-blue-400 font-mono">{Math.round(metrics.work_load * 100)}%</span>
+                  <span className="text-accent font-mono">{Math.round(metrics.work_load * 100)}%</span>
                 </div>
                 <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden shadow-inner">
                   <div 
@@ -74,9 +74,9 @@ export function IntelPanel({ metrics, loading }: IntelPanelProps) {
               </div>
 
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-2xs uppercase font-bold text-slate-500 tracking-widest">
+                <div className="flex items-center justify-between text-2xs uppercase font-bold text-text-tertiary tracking-widest">
                   <span>Health & Vitality</span>
-                  <span className="text-emerald-400 font-mono">{Math.round(metrics.health_impact * 100)}%</span>
+                  <span className="text-success font-mono">{Math.round(metrics.health_impact * 100)}%</span>
                 </div>
                 <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden shadow-inner">
                   <div 
