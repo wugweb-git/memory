@@ -4,6 +4,8 @@ import {
   MessageSquare, Zap, ShieldCheck,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { IDENTITY_CONFIG } from '@/config/identity';
+import { featureEnabled, type FeatureKey } from '@/config/features';
 
 /** Global app chrome */
 export const APP_BRAND = {
@@ -71,56 +73,70 @@ export const SIDEBAR_STATS = [
 
 /** Unified route-based navigation — single source of truth for the app shell.
  *  Grouped sidebar (desktop) + mobile drawer all read from this. */
-export const NAV_GROUPS: ReadonlyArray<{
-  group: string;
-  items: ReadonlyArray<{ href: string; label: string; icon: LucideIcon }>;
-}> = [
+type NavItem = { href: string; label: string; icon: LucideIcon; feature?: FeatureKey };
+type NavGroup = { group: string; items: ReadonlyArray<NavItem> };
+
+/** Full nav definition. `feature` tags gate visibility via MVP flags; untagged
+ *  items are core and always shown. Filtered exports are derived below. */
+const RAW_NAV_GROUPS: ReadonlyArray<NavGroup> = [
   {
     group: 'Workspace',
     items: [
       { href: '/', label: 'Console', icon: LayoutDashboard },
-      { href: '/ask', label: 'Ask', icon: MessageSquare },
+      { href: '/ask', label: 'Ask', icon: MessageSquare, feature: 'ask' },
     ],
   },
   {
     group: 'Data',
     items: [
-      { href: '/memory', label: 'Memory', icon: Database },
-      { href: '/buffer', label: 'Buffer', icon: Archive },
+      { href: '/memory', label: 'Memory', icon: Database, feature: 'memory' },
+      { href: '/buffer', label: 'Buffer', icon: Archive, feature: 'buffer' },
       { href: '/content', label: 'Content', icon: FileText },
-      { href: '/history', label: 'History', icon: History },
+      { href: '/history', label: 'History', icon: History, feature: 'history' },
     ],
   },
   {
     group: 'Intelligence',
     items: [
-      { href: '/cognitive', label: 'Cognitive', icon: Cpu },
-      { href: '/persona', label: 'Persona', icon: Sparkles },
+      { href: '/cognitive', label: 'Cognitive', icon: Cpu, feature: 'cognitive' },
+      { href: '/persona', label: 'Persona', icon: Sparkles, feature: 'persona' },
     ],
   },
   {
     group: 'Identity',
     items: [
       { href: '/portfolio', label: 'Portfolio', icon: Eye },
+      { href: `/p/${IDENTITY_CONFIG.HANDLE}`, label: 'Profile', icon: User },
     ],
   },
   {
     group: 'System',
     items: [
-      { href: '/system', label: 'System', icon: Settings },
-      { href: '/admin', label: 'Admin', icon: ShieldCheck },
+      { href: '/system', label: 'System', icon: Settings, feature: 'system' },
+      { href: '/admin', label: 'Admin', icon: ShieldCheck, feature: 'admin' },
     ],
   },
-] as const;
+];
 
-/** Primary mobile-dock items (compact subset of NAV_GROUPS). */
-export const MOBILE_DOCK_ITEMS: ReadonlyArray<{ href: string; label: string; icon: LucideIcon }> = [
+/** Nav groups with feature-disabled items (and now-empty groups) removed. */
+export const NAV_GROUPS: ReadonlyArray<NavGroup> = RAW_NAV_GROUPS
+  .map((g) => ({ ...g, items: g.items.filter((i) => featureEnabled(i.feature)) }))
+  .filter((g) => g.items.length > 0);
+
+/** Primary mobile-dock items (compact subset of NAV_GROUPS), feature-filtered. */
+const RAW_MOBILE_DOCK_ITEMS: ReadonlyArray<NavItem> = [
   { href: '/', label: 'Console', icon: LayoutDashboard },
-  { href: '/memory', label: 'Memory', icon: Database },
-  { href: '/cognitive', label: 'Cognitive', icon: Cpu },
-  { href: '/persona', label: 'Persona', icon: Sparkles },
-  { href: '/system', label: 'System', icon: Settings },
-] as const;
+  { href: '/content', label: 'Content', icon: FileText },
+  { href: '/portfolio', label: 'Portfolio', icon: Eye },
+  { href: '/memory', label: 'Memory', icon: Database, feature: 'memory' },
+  { href: '/cognitive', label: 'Cognitive', icon: Cpu, feature: 'cognitive' },
+  { href: '/persona', label: 'Persona', icon: Sparkles, feature: 'persona' },
+  { href: '/system', label: 'System', icon: Settings, feature: 'system' },
+];
+
+export const MOBILE_DOCK_ITEMS: ReadonlyArray<NavItem> = RAW_MOBILE_DOCK_ITEMS
+  .filter((i) => featureEnabled(i.feature))
+  .slice(0, 5);
 
 export const CHAT_HIGHLIGHT_KEYWORDS = [
   'AI', 'Fintech', 'Identity', 'UX', 'Architecture', 'Prism', 'RAG', 'Vector',
