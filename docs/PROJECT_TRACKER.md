@@ -66,7 +66,7 @@ Primary tracking document for bugs, architectural resolutions, and pending work.
 | ID | Task | Priority | Layer | Status |
 |---|---|---|---|---|
 | TSK-001 | Multi-agent split (Retriever → Reasoner → Critic → Formatter) | HIGH | L3 Phase 4 | 🕒 Pending |
-| TSK-002 | n8n orchestration bridge — event-triggered cognitive runs | HIGH | L3 Phase 4 | 🕒 Pending |
+| TSK-002 | Internal orchestration bridge — event-triggered cognitive runs (no n8n) | HIGH | L3 Phase 4 | 🕒 Pending |
 | TSK-003 | Signal spike auto-trigger → cognitive run | MEDIUM | L3 Phase 4 | 🕒 Pending |
 | TSK-004 | External tool integration (Calendar / Tasks) | MEDIUM | L3 | 🕒 Pending |
 | TSK-005 | Semantic dedup — embedding cosine similarity (upgrade from substring) | MEDIUM | L3 Phase 2 upgrade | 🕒 Pending |

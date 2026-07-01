@@ -350,3 +350,25 @@ model OutputLog {
   @@index([decisionId])
   @@map("output_logs")
 }
+
+// Public profile — the world-facing serving surface (Neon, L5 output).
+// Moved here from the Mongo schema: Mongo holds ingestion/raw (L0–L2.5);
+// Neon holds the final processed/serving data (output, profile).
+model Profile {
+  id            String   @id @default(uuid())
+  username      String   @unique
+  displayName   String
+  bio           String?
+  avatarUrl     String?
+  coverImageUrl String?
+  socialLinks   Json?    // Array of { platform, url }
+  sections      Json?    // Array of { id, type, title, content, settings }
+  theme         Json?    // { primaryColor, accentColor, font, mode }
+  isPublished   Boolean  @default(false)
+  test_run_id   String   @default("PROD")
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  @@index([test_run_id])
+  @@map("profiles")
+}

@@ -32,6 +32,10 @@ export const API_ENDPOINTS = {
   analytics: {
     content: { path: '/api/analytics/content', methods: ['GET'] as const },
   },
+  cms: {
+    content: { path: '/api/cms/content', methods: ['GET', 'POST', 'PATCH', 'DELETE'] as const },
+    showcase: { path: '/api/showcase', methods: ['GET'] as const },
+  },
   automation: {
     rules: { path: '/api/automation/rules', methods: ['GET'] as const },
   },
@@ -71,6 +75,7 @@ export const API_ENDPOINTS = {
   },
   output: {
     generate: { path: '/api/output/generate', methods: ['POST'] as const },
+    drafts: { path: '/api/output/drafts', methods: ['GET'] as const },
     history: { path: '/api/output/history', methods: ['GET'] as const },
     publish: { path: '/api/output/publish', methods: ['POST'] as const },
     schedule: { path: '/api/output/schedule', methods: ['POST'] as const },
@@ -134,7 +139,11 @@ export const UI_API = {
   upload: API_ENDPOINTS.upload.file.path,
   outputGenerate: API_ENDPOINTS.output.generate.path,
   outputSchedule: API_ENDPOINTS.output.schedule.path,
+  outputPublish: API_ENDPOINTS.output.publish.path,
+  outputDrafts: API_ENDPOINTS.output.drafts.path,
   outputHistory: API_ENDPOINTS.output.history.path,
+  cmsContent: API_ENDPOINTS.cms.content.path,
+  showcase: API_ENDPOINTS.cms.showcase.path,
   healthSystem: API_ENDPOINTS.health.system.path,
   healthPersona: API_ENDPOINTS.health.persona.path,
   healthOutput: API_ENDPOINTS.health.output.path,

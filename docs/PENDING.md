@@ -45,7 +45,7 @@
 8. **Phase 4 (built, untested live):** after the brain works, flip `COGNITIVE_MULTI_AGENT=1`
    and `COGNITIVE_SIGNAL_TRIGGER=1` and verify the reasoner→decision split + signal trigger.
 9. **Ingestion connectors store the POSTed payload only** — no real article-HTML/email/RSS
-   fetching/parsing yet. Wire real fetchers or drive via n8n.
+   fetching/parsing yet. Wire real fetchers directly (no n8n).
 10. **Home SPA sections not extracted to routes** (profile/twin/showcase/activity/settings);
     Console links to existing routes only.
 11. Minor: `/buffer` h1 still uppercase ("BUFFER CONTROL SURFACE") vs the no-uppercase rule.
@@ -77,7 +77,7 @@ criteria live in [`master-roadmap.md`](./master-roadmap.md).
 
 ## Cognitive (L3 Phase 4)
 - [ ] Multi-agent split (Retriever → Reasoner → Critic → Formatter)
-- [ ] n8n orchestration bridge — event-triggered cognitive runs
+- [ ] Internal orchestration bridge — event-triggered cognitive runs (no n8n)
 - [ ] Signal-spike auto-trigger → cognitive run
 - [ ] Semantic dedup via embedding cosine similarity (upgrade from substring match)
 

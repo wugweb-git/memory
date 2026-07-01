@@ -1,4 +1,5 @@
 import { mongo as prisma } from '@/lib/db/mongo';
+import { postgres } from '@/lib/db/postgres';
 import { IDENTITY_CONFIG } from '@/config/identity';
 
 const SECTIONS = [
@@ -88,7 +89,7 @@ const SOURCES = [
 export async function seedProfileAndSources() {
   const handle = IDENTITY_CONFIG.HANDLE;
 
-  await prisma.profile.upsert({
+  await postgres.profile.upsert({
     where: { username: handle },
     update: {
       displayName: IDENTITY_CONFIG.DISPLAY_NAME,

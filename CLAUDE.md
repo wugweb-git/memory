@@ -36,7 +36,7 @@ Pipeline (`src/lib/cognitive/orchestrator.ts`): `buildContext → buildPrompt �
 - See `docs/design.md`.
 
 ## Env vars (live in Vercel; `vercel env pull .env.local` for local)
-`DATABASE_URL` (Neon), `MONGODB_URI`, `OPENAI_API_KEY`, `LANGFUSE_PUBLIC_KEY/SECRET_KEY/HOST`, `BLOB_READ_WRITE_TOKEN`, `N8N_WEBHOOK_URL`, `SANITY_PROJECT_ID`/`SANITY_DATASET`/`SANITY_API_TOKEN`, `AUTH_SECRET`.
+`DATABASE_URL` (Neon), `MONGODB_URI`, `OPENAI_API_KEY`, `GEMINI_API_KEY` (cognitive LLM; optional `GEMINI_MODEL`, default `gemini-2.0-flash`), `LANGFUSE_PUBLIC_KEY/SECRET_KEY/HOST`, `BLOB_READ_WRITE_TOKEN`, `SANITY_PROJECT_ID`/`SANITY_DATASET`/`SANITY_API_TOKEN`, `AUTH_SECRET`.
 
 ## Commands & verification
 - `npm run dev` · `npm run build` · `npx tsc --noEmit` · `npm run lint`

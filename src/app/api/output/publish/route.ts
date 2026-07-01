@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { pushToAutomation } from "@/lib/output/automation";
+import { publishOutput } from "@/lib/output/automation";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { getRequestUser } from "@/lib/security/auth";
 import { hasPermission } from "@/lib/security/roles";
@@ -20,23 +20,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "outputId required" }, { status: 400 });
     }
 
-    const result = await pushToAutomation(outputId, {
+    const result = await publishOutput(outputId, {
       profileUsername: body.profileUsername,
     });
 
     const messages: Record<string, string> = {
-      webhook: 'Artifact pushed to n8n automation',
-      profile_only: 'N8N not configured — artifact published to profile',
-      skipped: 'Automation skipped (configure N8N_WEBHOOK_URL or profile publish)',
+      published: 'Artifact published to profile' + (result.sanitySynced ? ' and synced to CMS' : ''),
+      skipped: 'Publish skipped — profile publish failed',
     };
 
     return NextResponse.json({
-      status: 'success',
+      status: result.mode === 'skipped' ? 'error' : 'success',
       mode: result.mode,
       message: messages[result.mode],
+      platform: result.platform,
       profilePublished: result.profilePublished,
+      sanitySynced: result.sanitySynced,
       payload: result.payload,
-    });
+    }, { status: result.mode === 'skipped' ? 502 : 200 });
 
   } catch (err: any) {
     console.error("[API/Output/Push] Error:", err);

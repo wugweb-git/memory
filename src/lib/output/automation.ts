@@ -2,37 +2,33 @@ import { postgres } from '../db/postgres';
 import { publishContentToProfile } from '@/lib/profile/store';
 import { IDENTITY_CONFIG } from '@/config/identity';
 import { createGeneratedOutput } from '@/lib/cms/queries';
+import { routeDistribution } from '@/lib/distribution/router';
+import { publishNow } from '@/lib/publishing/publisher';
 
-export type AutomationMode = 'webhook' | 'profile_only' | 'skipped';
+export type PublishMode = 'published' | 'skipped';
 
-export type AutomationPushResult = {
-  mode: AutomationMode;
+export type PublishResult = {
+  mode: PublishMode;
   outputId: string;
-  payload: {
-    event: string;
-    system: string;
-    data: {
-      id: string;
-      platform: string;
-      content: string;
-      user_id: string;
-      timestamp: string;
-    };
-  };
-  webhookOk?: boolean;
-  profilePublished?: boolean;
+  platform: string;
+  /** Platform-formatted distribution payload (from the platform adapter). */
+  payload: unknown;
+  platformResult?: { platform: string; status: string; externalId: string };
+  profilePublished: boolean;
   profileUsername?: string;
-  sanitySynced?: boolean;
+  sanitySynced: boolean;
 };
 
 /**
- * Pushes a generated artifact to n8n when configured; otherwise syncs to the public profile.
+ * Publishes a generated artifact directly — no external automation hop.
+ *
+ * Flow: outputLog → distribution routing (platform adapter formatting) →
+ * platform publish record → public profile → Sanity `generatedOutput` mirror.
  */
-export async function pushToAutomation(
+export async function publishOutput(
   outputId: string,
   options?: { profileUsername?: string },
-): Promise<AutomationPushResult> {
-  const webhookUrl = process.env.N8N_WEBHOOK_URL;
+): Promise<PublishResult> {
   const profileUsername = options?.profileUsername ?? IDENTITY_CONFIG.HANDLE;
 
   const output = await postgres.outputLog.findUnique({
@@ -43,82 +39,63 @@ export async function pushToAutomation(
     throw new Error('Output not found: ' + outputId);
   }
 
-  const payload: AutomationPushResult['payload'] = {
-    event: 'artifact_ready',
-    system: 'Identity Prism OS',
-    data: {
-      id: output.id,
-      platform: output.platform,
-      content: String(output.content ?? ''),
-      user_id: output.userId,
-      timestamp: new Date().toISOString(),
-    },
-  };
+  const content = String(output.content ?? '');
 
-  let mode: AutomationMode = 'skipped';
-  let webhookOk: boolean | undefined;
-  let profilePublished = false;
-
-  if (webhookUrl) {
-    mode = 'webhook';
-    try {
-      const res = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      webhookOk = res.ok;
-      if (!res.ok) {
-        console.error('[Automation] Webhook failed:', res.status, res.statusText);
-      }
-    } catch (err) {
-      webhookOk = false;
-      console.error('[Automation] Network error:', err);
-    }
-  } else {
-    console.warn('[Automation] N8N_WEBHOOK_URL not set — publishing to profile instead.');
-    try {
-      await publishContentToProfile({
-        username: profileUsername,
-        userId: output.userId,
-        outputId,
-      });
-      profilePublished = true;
-      mode = 'profile_only';
-    } catch (err) {
-      console.error('[Automation] Profile publish fallback failed:', err);
-      mode = 'skipped';
-    }
+  // Distribution: apply platform-specific formatting via the platform adapters.
+  // A bad/unsupported platform is logged but does not abort the publish.
+  let payload: unknown = null;
+  let platformResult: PublishResult['platformResult'];
+  try {
+    payload = routeDistribution({ platform: output.platform, content });
+    platformResult = await publishNow({ platform: output.platform, content });
+  } catch (err) {
+    console.error('[Publish] Distribution routing failed:', err);
   }
+
+  // Direct publish to the public profile (the functional publish target today).
+  let profilePublished = false;
+  try {
+    await publishContentToProfile({
+      username: profileUsername,
+      userId: output.userId,
+      outputId,
+    });
+    profilePublished = true;
+  } catch (err) {
+    console.error('[Publish] Profile publish failed:', err);
+  }
+
+  const mode: PublishMode = profilePublished ? 'published' : 'skipped';
 
   await postgres.outputLog.update({
     where: { id: outputId },
-    data: { status: mode === 'skipped' ? 'ready' : 'pushed' },
+    data: { status: mode === 'published' ? 'pushed' : 'ready' },
   });
 
   // Mirror the artifact into Sanity as a generatedOutput doc (best-effort;
   // no-op when Sanity isn't configured — never blocks publishing).
   let sanitySynced = false;
-  if (mode !== 'skipped') {
+  if (mode === 'published') {
     try {
       const doc = await createGeneratedOutput({
         title: `${output.platform} — ${output.id.slice(0, 8)}`,
         platform: output.platform,
-        content: String(output.content ?? ''),
+        content,
         status: 'published',
         sourceDecisionId: output.decisionId ?? undefined,
       });
       sanitySynced = Boolean(doc);
     } catch (err) {
-      console.error('[Automation] Sanity sync failed:', err);
+      console.error('[Publish] Sanity sync failed:', err);
     }
   }
 
   return {
     mode,
     outputId,
+    platform: output.platform,
     payload,
-    webhookOk,
+    platformResult,
     profilePublished,
     profileUsername: profilePublished ? profileUsername : undefined,
     sanitySynced,

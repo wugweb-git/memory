@@ -411,25 +411,6 @@ model BlobEvent {
   @@map("blob_events")
 }
 
-// --- LAYER 3: IDENTITY (Profile & Experience) ---
-
-model Profile {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  username        String   @unique
-  displayName     String
-  bio             String?
-  avatarUrl       String?
-  coverImageUrl   String?
-  socialLinks     Json?    // Array of { platform, url }
-  sections        Json?    // Array of { id, type, title, content, settings }
-  theme           Json?    // { primaryColor, accentColor, font, mode }
-  
-  isPublished     Boolean  @default(false)
-  test_run_id     String   @default("PROD")
-  
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
-
-  @@index([test_run_id])
-  @@map("profiles")
-}
+// NOTE: The public `Profile` model moved to the Neon/Postgres schema.
+// Mongo holds ingestion/raw (L0–L2.5); Neon holds final processed/serving
+// data (output, profile). See prisma/postgres/schema.prisma → model Profile.

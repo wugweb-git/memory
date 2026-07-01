@@ -217,4 +217,4 @@ Feedback submitted to `/api/cognitive/feedback` triggers `EvolutionEngine.evolve
 | Phase 1 — Core | ✅ Complete | Context builder, single LLM, sanitize, dedup, logging, `/decide` |
 | Phase 2 — Harden | ✅ Complete | Critic gate, confidence penalty, langfuse tracing, feedback API |
 | Phase 3 — Expand | ✅ Complete | `/evaluate`, `/gaps`, `/prioritize`, `opportunity_evaluations` table, scheduled crons |
-| Phase 4 — Scale | 🕒 Pending | Multi-agent split, n8n orchestration, event-triggered decisions |
+| Phase 4 — Scale | 🕒 Pending | Multi-agent split, internal orchestration, event-triggered decisions |

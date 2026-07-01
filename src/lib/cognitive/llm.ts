@@ -1,17 +1,24 @@
-import { ChatOpenAI } from "@langchain/openai";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { SystemMessage, HumanMessage } from "@langchain/core/messages";
+import { config } from "@/config";
 
-const model = new ChatOpenAI({
-  modelName: "gpt-4o-mini",
-  temperature: 0.1,
-});
+const DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+const SYSTEM_PROMPT =
+  "You are the Cognitive Engine of a Personal Operating System. Reason deeply and provide structured guidance.";
 
-/** Per-(model,temperature) ChatOpenAI cache for the multi-agent path. */
-const _modelCache: Record<string, ChatOpenAI> = {};
-function getModel(modelName: string, temperature = 0.1): ChatOpenAI {
+/** Per-(model,temperature) Gemini client cache (shared by single-pass and multi-agent paths). */
+const _modelCache: Record<string, ChatGoogleGenerativeAI> = {};
+function getModel(modelName: string = DEFAULT_MODEL, temperature = 0.1): ChatGoogleGenerativeAI {
   const key = `${modelName}:${temperature}`;
   if (!_modelCache[key]) {
-    _modelCache[key] = new ChatOpenAI({ modelName, temperature });
+    if (!config.geminiApiKey) {
+      throw new Error("GEMINI_API_KEY not found in environment");
+    }
+    _modelCache[key] = new ChatGoogleGenerativeAI({
+      model: modelName,
+      temperature,
+      apiKey: config.geminiApiKey,
+    });
   }
   return _modelCache[key];
 }
@@ -22,8 +29,8 @@ function getModel(modelName: string, temperature = 0.1): ChatOpenAI {
  */
 export async function runAgentLLM(
   prompt: string,
-  modelName = "gpt-4o-mini",
-  system = "You are the Cognitive Engine of a Personal Operating System. Reason deeply and provide structured guidance.",
+  modelName = DEFAULT_MODEL,
+  system = SYSTEM_PROMPT,
   temperature = 0.1,
 ): Promise<string> {
   try {
@@ -46,15 +53,14 @@ export async function runAgentLLM(
  */
 export async function runLLM(prompt: string): Promise<string> {
   try {
-    const response = await model.invoke([
-      new SystemMessage("You are the Cognitive Engine of a Personal Operating System. Reason deeply and provide structured guidance."),
-      new HumanMessage(prompt)
+    const response = await getModel(DEFAULT_MODEL, 0.1).invoke([
+      new SystemMessage(SYSTEM_PROMPT),
+      new HumanMessage(prompt),
     ]);
 
-    return typeof response.content === "string" 
-      ? response.content 
+    return typeof response.content === "string"
+      ? response.content
       : JSON.stringify(response.content);
-      
   } catch (err: any) {
     console.error("[LLM] Execution Failure:", err.message);
     throw new Error(`LLM_FAILURE: ${err.message}`);
@@ -66,36 +72,22 @@ export async function runLLM(prompt: string): Promise<string> {
  * Used for content generation (posts, memos) where plain prose is required.
  */
 export async function runTextLLM(prompt: string): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error("OPENAI_API_KEY not found in environment");
+  try {
+    const response = await getModel(DEFAULT_MODEL, 0.6).invoke([
+      new HumanMessage(prompt),
+    ]);
+
+    const text = typeof response.content === "string"
+      ? response.content
+      : JSON.stringify(response.content);
+
+    if (!text.trim()) {
+      throw new Error("LLM returned empty content");
+    }
+
+    return text.trim();
+  } catch (err: any) {
+    console.error("[LLM/Text] Execution Failure:", err.message);
+    throw new Error(`LLM_CALL_FAILED: ${err.message}`);
   }
-
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.6
-      // No response_format — returns raw prose
-    })
-  });
-
-  if (!res.ok) {
-    const errorBody = await res.text();
-    throw new Error(`LLM_CALL_FAILED: ${res.status} - ${errorBody}`);
-  }
-
-  const json = await res.json();
-  const text = json.choices[0].message.content;
-
-  if (!text) {
-    throw new Error("LLM returned empty content");
-  }
-
-  return text.trim();
 }

@@ -1,4 +1,3 @@
-import { mongo as prisma } from '@/lib/db/mongo';
 import { postgres } from '@/lib/db/postgres';
 import { IDENTITY_CONFIG } from '@/config/identity';
 import type { ProfileRecord, ProfileSection, PublishToProfileInput } from './types';
@@ -21,7 +20,7 @@ function normalizeSections(raw: unknown): ProfileSection[] {
 }
 
 export async function getProfile(username: string): Promise<ProfileRecord | null> {
-  const row = await (prisma as any).profile.findUnique({ where: { username } });
+  const row = await (postgres as any).profile.findUnique({ where: { username } });
   if (!row) return null;
   return {
     ...row,
@@ -35,7 +34,7 @@ export async function upsertProfile(
 ): Promise<ProfileRecord> {
   const sections =
     data.sections !== undefined ? data.sections : undefined;
-  const row = await (prisma as any).profile.upsert({
+  const row = await (postgres as any).profile.upsert({
     where: { username },
     update: {
       ...data,
