@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
 
     const messages: Record<string, string> = {
       published: 'Artifact published to profile' + (result.sanitySynced ? ' and synced to CMS' : ''),
+      duplicate: 'Already published — skipped (idempotent)',
       skipped: 'Publish skipped — profile publish failed',
     };
 

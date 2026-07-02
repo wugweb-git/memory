@@ -109,6 +109,12 @@ export const API_ENDPOINTS = {
     graph: { path: '/api/semantic/graph', methods: ['GET'] as const },
     timeline: { path: '/api/semantic/timeline', methods: ['GET'] as const },
   },
+  system: {
+    features: { path: '/api/system/features', methods: ['GET', 'PATCH'] as const },
+  },
+  jobs: {
+    run: { path: '/api/jobs/run', methods: ['GET', 'POST'] as const },
+  },
   workflows: {
     logs: { path: '/api/workflows/logs', methods: ['GET'] as const },
     run: { path: '/api/workflows/run', methods: ['POST'] as const },
@@ -144,6 +150,7 @@ export const UI_API = {
   outputHistory: API_ENDPOINTS.output.history.path,
   cmsContent: API_ENDPOINTS.cms.content.path,
   showcase: API_ENDPOINTS.cms.showcase.path,
+  systemFeatures: API_ENDPOINTS.system.features.path,
   healthSystem: API_ENDPOINTS.health.system.path,
   healthPersona: API_ENDPOINTS.health.persona.path,
   healthOutput: API_ENDPOINTS.health.output.path,

@@ -5,7 +5,7 @@ import { createGeneratedOutput } from '@/lib/cms/queries';
 import { routeDistribution } from '@/lib/distribution/router';
 import { publishNow } from '@/lib/publishing/publisher';
 
-export type PublishMode = 'published' | 'skipped';
+export type PublishMode = 'published' | 'skipped' | 'duplicate';
 
 export type PublishResult = {
   mode: PublishMode;
@@ -40,6 +40,23 @@ export async function publishOutput(
   }
 
   const content = String(output.content ?? '');
+
+  // Idempotency: if this output already has a published record, don't publish
+  // it again (prevents duplicate profile sections from queue retries).
+  const already = await (postgres as any).publishedOutput.findFirst({
+    where: { outputId },
+    select: { id: true },
+  });
+  if (already) {
+    return {
+      mode: 'duplicate',
+      outputId,
+      platform: output.platform,
+      payload: null,
+      profilePublished: false,
+      sanitySynced: false,
+    };
+  }
 
   // Distribution: apply platform-specific formatting via the platform adapters.
   // A bad/unsupported platform is logged but does not abort the publish.

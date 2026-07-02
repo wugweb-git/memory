@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Command, Menu, X, Bell } from 'lucide-react';
 import { APP_BRAND, NAV_GROUPS, MOBILE_DOCK_ITEMS, SIDEBAR_STATS } from '@/config/ui-content';
 import { IDENTITY_CONFIG, avatarFallbackUrl } from '@/config/identity';
+import { UI_API } from '@/lib/api/endpoints';
 
 type AppShellProps = {
   children: React.ReactNode;
@@ -23,9 +24,24 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
   const pathname = usePathname() || '/';
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  // Runtime module flags (toggled from /system). Until they load, the static
+  // config-filtered nav renders as-is — no flash of hidden modules re-appearing.
+  const [flags, setFlags] = useState<Record<string, boolean> | null>(null);
+  useEffect(() => {
+    fetch(UI_API.systemFeatures)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => j?.features && setFlags(j.features))
+      .catch(() => {});
+  }, []);
+  const featureOn = (key?: string) => !key || flags === null || flags[key] !== false;
+  const navGroups = NAV_GROUPS
+    .map((g) => ({ ...g, items: g.items.filter((i) => featureOn(i.feature)) }))
+    .filter((g) => g.items.length > 0);
+  const dockItems = MOBILE_DOCK_ITEMS.filter((i) => featureOn(i.feature));
+
   const NavList = ({ onNavigate }: { onNavigate?: () => void }) => (
     <nav className="flex-1 overflow-y-auto py-4 px-3 custom-scrollbar">
-      {NAV_GROUPS.map((group) => (
+      {navGroups.map((group) => (
         <div key={group.group} className="mb-5">
           <p className="text-2xs font-black text-text-disabled uppercase tracking-[0.3em] px-3 mb-1.5">
             {group.group}
@@ -149,7 +165,7 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
       {/* Mobile bottom dock */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 glass-panel border-t border-border-secondary safe-navbar">
         <div className="flex items-stretch justify-around px-2 pt-2">
-          {MOBILE_DOCK_ITEMS.map(({ href, label, icon: Icon }) => {
+          {dockItems.map(({ href, label, icon: Icon }) => {
             const active = isActive(pathname, href);
             return (
               <Link
