@@ -46,7 +46,8 @@ export default function BufferControlSurface() {
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'raw' | 'reviewed' | 'promoted'>('all');
-  
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   // Stats & Ingestion Monitoring
   const fetchStats = useCallback(async () => {
     try {
@@ -63,10 +64,18 @@ export default function BufferControlSurface() {
     try {
       const stateFilter = activeTab === 'all' ? '' : `&state=${activeTab}`;
       const res = await fetch(`${API_ENDPOINTS.blob.list.path}?limit=50${stateFilter}`);
+      if (!res.ok) {
+        // A dead intake store must not look like an empty queue.
+        setLoadError('Intake store unreachable — items can’t be loaded right now.');
+        setItems([]);
+        return;
+      }
       const data = await res.json();
+      setLoadError(null);
       setItems(data.items || []);
     } catch (err) {
       console.error('Failed to fetch blob items', err);
+      setLoadError('Intake store unreachable — items can’t be loaded right now.');
     } finally {
       setLoading(false);
     }
@@ -126,7 +135,7 @@ export default function BufferControlSurface() {
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className={`w-3 h-3 rounded-full animate-pulse ${stats ? getStatusColor(stats.status) : 'bg-text-disabled'}`} />
-            <h1 className="text-sm font-medium tracking-tight uppercase text-text-primary">Buffer Control Surface</h1>
+            <h1 className="text-sm font-bold tracking-tight text-text-primary">Buffer</h1>
             <span className="h-4 w-px bg-secondary mx-2" />
             <div className="flex items-center gap-2 text-xs text-text-tertiary">
               <HardDrive size={14} />
@@ -217,10 +226,15 @@ export default function BufferControlSurface() {
                     ))
                   ) : items.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-20 text-center text-text-disabled">
+                      <td colSpan={7} className={`px-6 py-20 text-center ${loadError ? 'text-danger' : 'text-text-disabled'}`}>
                          <div className="flex flex-col items-center gap-3">
                            <Database size={32} />
-                           <p>No nodes detected in current quarantine.</p>
+                           <p className={loadError ? 'font-bold' : ''}>{loadError ?? 'Nothing waiting for review.'}</p>
+                           {loadError && (
+                             <button onClick={() => { fetchItems(); fetchStats(); }} className="px-4 py-1.5 rounded-xl border border-danger/40 text-xs font-bold hover:bg-danger/5">
+                               Retry
+                             </button>
+                           )}
                          </div>
                       </td>
                     </tr>

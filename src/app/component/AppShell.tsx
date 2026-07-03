@@ -34,6 +34,17 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
       .catch(() => {});
   }, []);
   const featureOn = (key?: string) => !key || flags === null || flags[key] !== false;
+
+  // Session state for the topbar account entry.
+  const [session, setSession] = useState<{ email: string; role: string } | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
+  useEffect(() => {
+    fetch(UI_API.authMe, { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setSession)
+      .catch(() => setSession(null))
+      .finally(() => setSessionChecked(true));
+  }, []);
   const navGroups = NAV_GROUPS
     .map((g) => ({ ...g, items: g.items.filter((i) => featureOn(i.feature)) }))
     .filter((g) => g.items.length > 0);
@@ -149,10 +160,23 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
             <span className="text-sm font-bold tracking-tight text-text-primary">{APP_BRAND.name}</span>
           </Link>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary border border-border-secondary">
-          <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" aria-hidden />
-          <span className="text-2xs font-black uppercase tracking-widest text-text-tertiary hidden sm:block">{APP_BRAND.statusLabel}</span>
-        </div>
+        <Link
+          href={`/login?next=${encodeURIComponent(pathname)}`}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary border border-border-secondary hover:border-border-primary transition-colors"
+        >
+          {session ? (
+            <>
+              <span className="w-5 h-5 rounded-full bg-text-primary text-bg-primary text-2xs font-bold flex items-center justify-center">
+                {session.email.charAt(0).toUpperCase()}
+              </span>
+              <span className="text-2xs font-bold text-text-tertiary hidden sm:block">{session.role}</span>
+            </>
+          ) : (
+            <span className="text-2xs font-bold text-text-tertiary">
+              {sessionChecked ? 'Sign in' : '…'}
+            </span>
+          )}
+        </Link>
       </header>
 
       {/* Content */}

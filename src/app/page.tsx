@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Database, ShieldCheck, Archive, Zap, Brain, Cpu,
@@ -66,16 +66,70 @@ const QUICK = [
   { href: '/content',   label: 'Content',                icon: FileText,  desc: 'Generated & published output' },
 ] as const;
 
-const LAYERS = [
-  { id: 'L0', name: 'Intake',     badge: 'bg-success/10 text-success border-success/20', status: 'Active' },
-  { id: 'L1', name: 'Memory',     badge: 'bg-success/10 text-success border-success/20', status: 'Active' },
-  { id: 'L2', name: 'Processing', badge: 'bg-success/10 text-success border-success/20', status: 'Active' },
-  { id: 'L3', name: 'Cognitive',  badge: 'bg-accent/10 text-accent border-accent/20',   status: 'Active' },
-  { id: 'L4', name: 'Persona',    badge: 'bg-warning/10 text-warning border-warning/20', status: 'Standby' },
+type LayerStatus = 'Active' | 'Degraded' | 'Offline' | 'Checking';
+
+const LAYER_DEFS = [
+  { id: 'L0', name: 'Intake' },
+  { id: 'L1', name: 'Memory' },
+  { id: 'L2', name: 'Processing' },
+  { id: 'L3', name: 'Cognitive' },
+  { id: 'L4', name: 'Persona' },
+  { id: 'L5', name: 'Output' },
 ] as const;
+
+const STATUS_BADGE: Record<LayerStatus, string> = {
+  Active:   'bg-success/10 text-success border-success/20',
+  Degraded: 'bg-warning/10 text-warning border-warning/20',
+  Offline:  'bg-danger/10 text-danger border-danger/20',
+  Checking: 'bg-secondary text-text-disabled border-border-secondary',
+};
+
+/** Real per-layer health, probed from the layers' own APIs — no pretend statuses. */
+function useLayerHealth(): Record<string, LayerStatus> {
+  const [layers, setLayers] = useState<Record<string, LayerStatus>>(
+    Object.fromEntries(LAYER_DEFS.map((l) => [l.id, 'Checking'])),
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function probe() {
+      // L0–L2 live in the ingestion store; one health call covers them.
+      const mongoLayers = fetch('/api/health/system')
+        .then((r) => (r.ok ? r.json() : Promise.reject()))
+        .then((h) => {
+          const s: LayerStatus =
+            h.status === 'LOCKED' ? 'Active' : h.status === 'DEGRADED' ? 'Degraded' : 'Offline';
+          // A degraded response with 0 packets usually means the DB is unreachable.
+          return h.warning ? 'Offline' : s;
+        })
+        .catch((): LayerStatus => 'Offline');
+
+      const ping = (url: string) =>
+        fetch(url).then((r): LayerStatus => (r.ok ? 'Active' : 'Offline')).catch((): LayerStatus => 'Offline');
+
+      const [l012, l3, l4, l5] = await Promise.all([
+        mongoLayers,
+        ping('/api/cognitive/history'),
+        ping('/api/persona/profile'),
+        ping('/api/output/history'),
+      ]);
+
+      if (!cancelled) {
+        setLayers({ L0: l012, L1: l012, L2: l012, L3: l3, L4: l4, L5: l5 });
+      }
+    }
+
+    probe();
+    return () => { cancelled = true; };
+  }, []);
+
+  return layers;
+}
 
 export default function ConsolePage() {
   const { stats, loading } = useDashboardData();
+  const layerHealth = useLayerHealth();
 
   return (
     <AppShell>
@@ -133,16 +187,19 @@ export default function ConsolePage() {
 
           <div>
             <Label>System Layers</Label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-              {LAYERS.map((l) => (
-                <div key={l.id} className="glass-panel rounded-radius-xl p-4 text-center border border-border-secondary">
-                  <p className="text-2xs font-black text-text-disabled font-mono">{l.id}</p>
-                  <p className="text-sm font-bold text-text-primary mt-0.5">{l.name}</p>
-                  <span className={`inline-block mt-2 text-2xs font-black px-2 py-0.5 rounded-full border uppercase tracking-widest ${l.badge}`}>
-                    {l.status}
-                  </span>
-                </div>
-              ))}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {LAYER_DEFS.map((l) => {
+                const status = layerHealth[l.id] ?? 'Checking';
+                return (
+                  <div key={l.id} className="glass-panel rounded-radius-xl p-4 text-center border border-border-secondary">
+                    <p className="text-2xs font-black text-text-disabled font-mono">{l.id}</p>
+                    <p className="text-sm font-bold text-text-primary mt-0.5">{l.name}</p>
+                    <span className={`inline-block mt-2 text-2xs font-black px-2 py-0.5 rounded-full border uppercase tracking-widest ${STATUS_BADGE[status]}`}>
+                      {status}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

@@ -58,6 +58,7 @@ export default function MemoryControlSurface() {
   const [activityFilter, setActivityFilter] = useState('');
   const [activeSidebarItem, setActiveSidebarItem] = useState('Home');
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const fetchMonitor = useCallback(async () => {
     setLoading(true);
@@ -66,7 +67,12 @@ export default function MemoryControlSurface() {
         fetch(API_ENDPOINTS.memory.monitor.path),
         fetch(`${API_ENDPOINTS.memory.packets.path}?limit=100&status=${encodeURIComponent(statusFilter)}&source=${encodeURIComponent(sourceFilter)}`)
       ]);
-      if (!monitorRes.ok || !packetRes.ok) return;
+      if (!monitorRes.ok || !packetRes.ok) {
+        // An unreachable memory store must not masquerade as an empty vault.
+        setLoadError('Memory store unreachable — this is a connection problem, not an empty vault.');
+        return;
+      }
+      setLoadError(null);
       const monitorJson = await monitorRes.json();
       const packetJson = await packetRes.json();
       setMonitor(monitorJson);
@@ -74,6 +80,8 @@ export default function MemoryControlSurface() {
       if (packetJson.rows?.length) {
         setSelectedPacket((current: any) => current ?? packetJson.rows[0]);
       }
+    } catch {
+      setLoadError('Memory store unreachable — this is a connection problem, not an empty vault.');
     } finally {
       setLoading(false);
     }
@@ -188,10 +196,22 @@ export default function MemoryControlSurface() {
               </button>
             ))}
             {!packets.length && (
-              <div className="h-40 flex flex-col items-center justify-center text-text-disabled border border-dashed border-border-secondary rounded-2xl">
-                <Database size={24} className="mb-2 opacity-40" />
-                <p className="text-xs font-bold uppercase tracking-widest">No Packets Detected</p>
-              </div>
+              loadError ? (
+                <div className="h-40 flex flex-col items-center justify-center gap-3 text-danger border border-dashed border-danger/30 rounded-2xl px-6 text-center">
+                  <p className="text-sm font-bold">{loadError}</p>
+                  <button
+                    onClick={fetchMonitor}
+                    className="px-4 py-1.5 rounded-xl border border-danger/40 text-xs font-bold hover:bg-danger/5"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : (
+                <div className="h-40 flex flex-col items-center justify-center text-text-disabled border border-dashed border-border-secondary rounded-2xl">
+                  <Database size={24} className="mb-2 opacity-40" />
+                  <p className="text-xs font-bold">No packets yet</p>
+                </div>
+              )
             )}
           </div>
         </section>

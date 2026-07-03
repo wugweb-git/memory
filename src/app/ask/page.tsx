@@ -59,15 +59,15 @@ export default function AskNeuralInterface() {
           
           {/* Header Section */}
           <section className="space-y-6 text-center lg:text-left">
-             <div className="flex items-center gap-4 text-accent mb-6 justify-center lg:justify-start">
-                <Brain size={24} className="animate-pulse" />
-                <span className="text-2xs font-black uppercase tracking-[0.5em]">LAYER_3 // IDENTITY_SYNC</span>
+             <div className="flex items-center gap-3 text-accent mb-6 justify-center lg:justify-start">
+                <Brain size={22} />
+                <span className="text-2xs font-bold uppercase tracking-widest">Digital twin</span>
              </div>
-             <h1 className="text-4xl md:text-6xl font-black  tracking-tighter uppercase leading-[0.85] text-text-primary kinetic-text break-words">
-                Neural_Sync_Interface
+             <h1 className="text-4xl md:text-5xl font-black tracking-tight text-text-primary break-words">
+                Ask
              </h1>
-             <p className="max-w-2xl text-lg font-medium text-text-tertiary  leading-relaxed">
-                Pose a cognitive query to the Digital Twin. Every synapse is grounded in your verified memory graph.
+             <p className="max-w-2xl text-lg font-medium text-text-tertiary leading-relaxed">
+                Ask anything — answers are grounded in your own memory, not the open internet.
              </p>
           </section>
 
@@ -82,8 +82,8 @@ export default function AskNeuralInterface() {
                    <div className="w-24 h-24 rounded-full bg-accent/10 flex items-center justify-center mb-10 border border-accent/20 shadow-[0_0_50px_rgba(0,170,255,0.1)]">
                       <Sparkles size={40} className="text-accent" />
                    </div>
-                   <h2 className="text-4xl font-black text-text-primary mb-4  tracking-tighter">Prism Awakens</h2>
-                   <p className="text-xs font-bold text-text-tertiary tracking-[0.3em] uppercase opacity-40">Awaiting semantic ignition</p>
+                   <h2 className="text-3xl font-black text-text-primary mb-3 tracking-tight">Start a conversation</h2>
+                   <p className="text-sm text-text-tertiary">Try &ldquo;What am I building right now?&rdquo; or &ldquo;Summarize my week.&rdquo;</p>
                  </motion.div>
                ) : (
                  <div className="space-y-16 relative z-10">
@@ -112,8 +112,8 @@ export default function AskNeuralInterface() {
                              {m.role !== 'user' ? highlightKeywords(text) : text}
                            </div>
                          </div>
-                         <span className="text-2xs mt-6 font-black font-mono text-text-disabled uppercase tracking-[0.25em] opacity-50">
-                           {m.role === 'user' ? 'UPLINK_STABLE' : 'TWIN_REFLEX'}{' // '}{new Date().toLocaleTimeString()}
+                         <span className="text-2xs mt-4 font-medium text-text-disabled">
+                           {m.role === 'user' ? 'You' : 'Twin'} · {new Date().toLocaleTimeString()}
                          </span>
                        </div>
                      </motion.div>
@@ -167,7 +167,7 @@ export default function AskNeuralInterface() {
                     handleSend();
                   }
                 }}
-                placeholder="Pose a cognitive query..."
+                placeholder="Ask anything…"
                 className="w-full h-24 md:h-32 p-2 bg-transparent text-base md:text-2xl font-bold text-text-primary placeholder:text-text-disabled placeholder: focus:outline-none resize-none scrollbar-hide kinetic-text"
               />
             </div>

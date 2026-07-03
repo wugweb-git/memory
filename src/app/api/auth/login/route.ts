@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { mongo } from '@/lib/db/mongo';
 import { INTERNAL_VAULT } from '@/config/vault';
+import { IDENTITY_CONFIG } from '@/config/identity';
 import { signToken } from '@/lib/security/jwt';
 import { sessionCookie } from '@/lib/security/auth';
 
@@ -15,7 +16,38 @@ export async function POST(req: NextRequest) {
     }
 
     const normalized = String(email).trim().toLowerCase();
-    const user = await mongo.user.findUnique({ where: { email: normalized } });
+
+    // Owner login via env credentials (single-owner product). Works without a
+    // user database; disabled unless ADMIN_PASSWORD is set in the environment.
+    if (
+      INTERNAL_VAULT.ADMIN_PASSWORD &&
+      INTERNAL_VAULT.ADMIN_EMAIL &&
+      normalized === INTERNAL_VAULT.ADMIN_EMAIL.toLowerCase() &&
+      String(password) === INTERNAL_VAULT.ADMIN_PASSWORD
+    ) {
+      const token = signToken(
+        { sub: IDENTITY_CONFIG.DEFAULT_USER_ID, email: normalized, role: 'admin' },
+        INTERNAL_VAULT.AUTH_SECRET,
+      );
+      const res = NextResponse.json({
+        access_token: token,
+        user: { id: IDENTITY_CONFIG.DEFAULT_USER_ID, email: normalized, role: 'admin' },
+      });
+      res.headers.set('Set-Cookie', sessionCookie(token));
+      return res;
+    }
+
+    // Database-backed users. A DB outage must not read as "wrong password".
+    let user;
+    try {
+      user = await mongo.user.findUnique({ where: { email: normalized } });
+    } catch (dbError) {
+      console.error('[Auth Login] user DB unreachable:', dbError);
+      return NextResponse.json(
+        { error: 'Sign-in service unavailable — try again shortly' },
+        { status: 503 },
+      );
+    }
     if (!user) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }

@@ -16,8 +16,8 @@ export function middleware(request: NextRequest) {
   if (pathname.startsWith('/admin')) {
     const actor = getRequestUser(request);
     if (!hasPermission(actor.role, 'admin:read')) {
-      const login = new URL('/', request.url);
-      login.searchParams.set('admin', 'login');
+      const login = new URL('/login', request.url);
+      login.searchParams.set('next', pathname);
       return NextResponse.redirect(login);
     }
   }

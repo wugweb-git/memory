@@ -52,6 +52,7 @@ export function PublicProfileView({ username }: { username: string }) {
   );
   const references = useMemo(() => byType('reference'), [byType]);
   const ventures = useMemo(() => byType('venture'), [byType]);
+  const experience = useMemo(() => byType('experience'), [byType]);
 
   // Only real, owner-authored content renders publicly — no placeholder
   // services or testimonials.
@@ -153,6 +154,49 @@ export function PublicProfileView({ username }: { username: string }) {
                 );
               })}
             </div>
+          </section>
+        )}
+
+        {/* ── Experience / career tree (Neon profile sections, type=experience) ── */}
+        {experience.length > 0 && (
+          <section className="space-y-4">
+            <Eyebrow>Career</Eyebrow>
+            <ol className="relative border-l border-border-secondary ml-1.5 space-y-6">
+              {experience.map((exp) => {
+                const c = sectionContent(exp);
+                const company = str(c.company) || str(c.organization);
+                const industries = Array.isArray(c.industries)
+                  ? (c.industries as string[])
+                  : str(c.industry) ? [str(c.industry)] : [];
+                const logic = str(c.originalLogic) || str(c.logic);
+                const perspective = str(c.perspective2026) || str(c.perspective);
+                return (
+                  <li key={exp.id} className="ml-5">
+                    <span className="absolute -left-[6.5px] mt-1.5 h-3 w-3 rounded-full bg-accent border-2 border-bg-primary" />
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                      <h3 className="text-base font-bold text-text-primary">{exp.title}</h3>
+                      {str(c.date) && <span className="text-2xs text-text-disabled shrink-0">{str(c.date)}</span>}
+                    </div>
+                    {company && <p className="text-sm text-text-tertiary mt-0.5">{company}</p>}
+                    {logic && <p className="text-sm text-text-secondary mt-2 max-w-prose">{logic}</p>}
+                    {perspective && (
+                      <p className="text-sm text-text-secondary mt-2 pl-3 border-l-2 border-accent/40 max-w-prose">
+                        <span className="text-accent font-medium">Now: </span>{perspective}
+                      </p>
+                    )}
+                    {industries.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-3">
+                        {industries.map((ind) => (
+                          <span key={ind} className="text-2xs font-medium px-2 py-0.5 rounded-full bg-bg-secondary border border-border-secondary text-text-tertiary">
+                            {ind}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
           </section>
         )}
 
