@@ -7,8 +7,8 @@ export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/ingest/rss
- * Body: { feedUrl, items: [{ title, url, summary?, publishedAt? }], autoPromote? }
- * Ingests RSS feed items into the L0 blob buffer (one blob item per entry).
+ * Body: { feedUrl, items?, autoPromote? } — with only feedUrl, the feed is
+ * fetched + parsed server-side (RSS 2.0/Atom). One blob item per entry.
  */
 export async function POST(req: NextRequest) {
   const actor = requireOwner(req);
@@ -17,11 +17,11 @@ export async function POST(req: NextRequest) {
   if (!limit.allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
   try {
     const body = await req.json();
-    if (!body?.feedUrl || !Array.isArray(body?.items)) {
-      return NextResponse.json({ error: 'feedUrl and items[] required' }, { status: 400 });
+    if (!body?.feedUrl) {
+      return NextResponse.json({ error: 'feedUrl required' }, { status: 400 });
     }
     const result = await ingestRss(
-      { feedUrl: body.feedUrl, items: body.items },
+      { feedUrl: body.feedUrl, items: Array.isArray(body.items) ? body.items : undefined },
       { autoPromote: Boolean(body.autoPromote) }
     );
     return NextResponse.json(result);

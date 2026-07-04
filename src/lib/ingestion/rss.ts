@@ -1,4 +1,5 @@
 import { Push_To_Blob, Promote_To_Memory } from '@/lib/blobLayer';
+import { fetchUrl, parseFeed } from './fetchers';
 
 export interface RssItem {
   title: string;
@@ -9,27 +10,42 @@ export interface RssItem {
 
 export interface RssPayload {
   feedUrl: string;
-  items: RssItem[];
+  /** Optional pre-parsed items. When omitted, the feed is fetched + parsed. */
+  items?: RssItem[];
 }
 
+const MAX_FEED_ITEMS = 20;
+
 /**
- * Ingest RSS feed items into Layer 0 (Blob buffer).
+ * Ingest RSS/Atom feed items into Layer 0 (Blob buffer).
  *
- * Each item becomes its own blob item (so it can be reviewed/promoted/rejected
- * independently). External content → tagged `external`, held for review by
- * default. Returns per-item blob ids.
+ * With only a `feedUrl`, the feed is fetched and parsed server-side
+ * (RSS 2.0 + Atom). Each item becomes its own blob item (so it can be
+ * reviewed/promoted/rejected independently). External content → tagged
+ * `external`, held for review by default. Returns per-item blob ids.
  */
 export async function ingestRss(
   payload: RssPayload,
   opts: { autoPromote?: boolean } = {}
 ) {
-  if (!payload?.feedUrl || !Array.isArray(payload.items)) {
-    throw new Error('rss ingestion requires `feedUrl` and `items[]`');
+  if (!payload?.feedUrl) {
+    throw new Error('rss ingestion requires `feedUrl`');
+  }
+
+  let items = Array.isArray(payload.items) ? payload.items : null;
+  let fetched = false;
+  if (!items) {
+    const xml = await fetchUrl(payload.feedUrl);
+    items = parseFeed(xml).slice(0, MAX_FEED_ITEMS);
+    fetched = true;
+    if (items.length === 0) {
+      throw new Error('Feed fetched but no items could be parsed (RSS 2.0/Atom expected)');
+    }
   }
 
   const results: Array<{ url: string; blob_id: string; promoted: boolean }> = [];
 
-  for (const entry of payload.items) {
+  for (const entry of items) {
     if (!entry?.url) continue;
 
     const item = await Push_To_Blob({
@@ -45,7 +61,7 @@ export async function ingestRss(
       },
       trace_json: {
         origin: 'rss',
-        input_mode: 'imported',
+        input_mode: fetched ? 'fetched' : 'imported',
         declared_author: 'external',
         ingestion_path: 'ingest/rss',
         feed_url: payload.feedUrl,
@@ -65,6 +81,7 @@ export async function ingestRss(
   return {
     source: 'rss',
     accepted: true,
+    fetched,
     count: results.length,
     items: results,
   };
