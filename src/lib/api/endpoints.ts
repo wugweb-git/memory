@@ -112,6 +112,9 @@ export const API_ENDPOINTS = {
   system: {
     features: { path: '/api/system/features', methods: ['GET', 'PATCH'] as const },
   },
+  recommendations: {
+    list: { path: '/api/recommendations', methods: ['GET'] as const },
+  },
   jobs: {
     run: { path: '/api/jobs/run', methods: ['GET', 'POST'] as const },
   },
@@ -151,6 +154,7 @@ export const UI_API = {
   cmsContent: API_ENDPOINTS.cms.content.path,
   showcase: API_ENDPOINTS.cms.showcase.path,
   systemFeatures: API_ENDPOINTS.system.features.path,
+  recommendations: API_ENDPOINTS.recommendations.list.path,
   healthSystem: API_ENDPOINTS.health.system.path,
   healthPersona: API_ENDPOINTS.health.persona.path,
   healthOutput: API_ENDPOINTS.health.output.path,

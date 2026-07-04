@@ -10,6 +10,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { AppShell } from './component/AppShell';
 import { useDashboardData } from './hooks/useDashboardData';
+import { UI_API } from '@/lib/api/endpoints';
 
 /* ── Error boundary ───────────────────────────────────────────── */
 class SectionErrorBoundary extends React.Component<
@@ -127,9 +128,30 @@ function useLayerHealth(): Record<string, LayerStatus> {
   return layers;
 }
 
+type Recommendation = {
+  id: string;
+  title: string;
+  reason: string;
+  href: string;
+  urgent: boolean;
+};
+
+/** Next-best-actions from the recommendation engine (live system state). */
+function useRecommendations() {
+  const [recs, setRecs] = useState<Recommendation[] | null>(null);
+  useEffect(() => {
+    fetch(UI_API.recommendations)
+      .then((r) => (r.ok ? r.json() : { recommendations: [] }))
+      .then((j) => setRecs(Array.isArray(j.recommendations) ? j.recommendations : []))
+      .catch(() => setRecs([]));
+  }, []);
+  return recs;
+}
+
 export default function ConsolePage() {
   const { stats, loading } = useDashboardData();
   const layerHealth = useLayerHealth();
+  const recommendations = useRecommendations();
 
   return (
     <AppShell>
@@ -159,6 +181,39 @@ export default function ConsolePage() {
               <StatCard label="Buffer Queue" value={String(stats.bufferQueue)} sub="Pending review" icon={<Archive size={18} className="text-warning" />} />
               <StatCard label="Uplink" value={String(stats.uplink)} sub="Last 24h" icon={<Zap size={18} className="text-accent" />} />
             </>
+          )}
+        </div>
+
+        {/* Next best actions — the "act" surface (recommendation engine) */}
+        <div className="mb-8">
+          <Label>Next best actions</Label>
+          {recommendations === null ? (
+            <Skeleton className="h-20" />
+          ) : recommendations.length === 0 ? (
+            <div className="glass-panel rounded-radius-xl border border-border-secondary p-5 flex items-center gap-3">
+              <ShieldCheck size={18} className="text-success shrink-0" />
+              <p className="text-sm text-text-tertiary">All clear — nothing needs your attention right now.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {recommendations.map((rec) => (
+                <Link
+                  key={rec.id}
+                  href={rec.href}
+                  className="glass-panel w-full flex items-center gap-4 p-4 rounded-radius-xl border border-border-secondary hover:border-accent/40 transition-all group"
+                >
+                  <span
+                    className={`w-2 h-2 rounded-full shrink-0 ${rec.urgent ? 'bg-warning' : 'bg-accent'}`}
+                    aria-hidden
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-text-primary leading-tight">{rec.title}</p>
+                    <p className="text-2xs text-text-tertiary truncate mt-0.5">{rec.reason}</p>
+                  </div>
+                  <ChevronRight size={16} className="text-text-disabled group-hover:text-accent transition-colors shrink-0" />
+                </Link>
+              ))}
+            </div>
           )}
         </div>
 
