@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { mongo } from '@/lib/db/mongo';
+import { postgres } from '@/lib/db/postgres';
 import { INTERNAL_VAULT } from '@/config/vault';
 import { IDENTITY_CONFIG } from '@/config/identity';
 import { signToken } from '@/lib/security/jwt';
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     // Database-backed users. A DB outage must not read as "wrong password".
     let user;
     try {
-      user = await mongo.user.findUnique({ where: { email: normalized } });
+      user = await postgres.user.findUnique({ where: { email: normalized } });
     } catch (dbError) {
       console.error('[Auth Login] user DB unreachable:', dbError);
       return NextResponse.json(
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     const role = isAdmin ? 'admin' : user.role;
 
     if (role !== user.role) {
-      await mongo.user.update({ where: { id: user.id }, data: { role } });
+      await postgres.user.update({ where: { id: user.id }, data: { role } });
     }
 
     const token = signToken(

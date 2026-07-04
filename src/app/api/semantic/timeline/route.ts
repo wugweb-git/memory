@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { mongo as prisma } from "@/lib/db/mongo";
+import { postgres as prisma } from "@/lib/db/postgres";
 import { buildSemanticTimeline } from "@/lib/semantic/timeline";
 
 export const dynamic = "force-dynamic";

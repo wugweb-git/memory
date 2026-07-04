@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { mongo as prisma } from '@/lib/db/mongo';
+import { postgres as prisma } from '@/lib/db/postgres';
 import { SemanticEngine } from '@/lib/processing/semantic';
 
 export const dynamic = 'force-dynamic';

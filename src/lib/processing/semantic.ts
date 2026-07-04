@@ -1,7 +1,7 @@
 import { ChatOpenAI } from '@langchain/openai';
 import { SystemMessage, HumanMessage } from '@langchain/core/messages';
 import { SettingsController } from '../memory/settings';
-import { mongo } from '@/lib/db/mongo';
+import { postgres } from '@/lib/db/postgres';
 import { isUniqueError } from '@/lib/prisma';
 import crypto from 'crypto';
 import { ReconciliationEngine } from '../memory/semantic/reconciliation';
@@ -31,7 +31,7 @@ export class SemanticEngine {
     const now = new Date();
     const expiryTime = new Date(now.getTime() - 5 * 60 * 1000);
 
-    const result = await mongo.memoryPacket.updateMany({
+    const result = await postgres.memoryPacket.updateMany({
       where: {
         id: packetId,
         OR: [
@@ -49,7 +49,7 @@ export class SemanticEngine {
   }
 
   private static async releaseLock(packetId: string) {
-    await mongo.memoryPacket.update({
+    await postgres.memoryPacket.update({
       where: { id: packetId },
       data: {
         processing_lock: false,
@@ -75,12 +75,12 @@ export class SemanticEngine {
       }
 
       // 2. Fetch Context
-      const packet = await mongo.memoryPacket.findFirst({ 
+      const packet = await postgres.memoryPacket.findFirst({ 
         where: { id: packetId, test_run_id: testRunId } 
       });
       if (!packet) return { success: false, entityCount: 0, fallback: false };
 
-      const signals = await mongo.signal.findMany({ 
+      const signals = await postgres.signal.findMany({ 
         where: { packet_id: packetId, test_run_id: testRunId } 
       });
 
@@ -89,9 +89,9 @@ export class SemanticEngine {
       if (!lockAcquired) return { success: false, entityCount: 0, fallback: false };
 
       // Cleanup previous partial attempts for idempotency (Sequential to avoid transactions)
-      await mongo.semanticObject.deleteMany({ where: { packet_id: packetId, test_run_id: testRunId } });
-      await mongo.relationship.deleteMany({ where: { source_chunk_ids: { has: packetId }, test_run_id: testRunId } });
-      await mongo.pendingEdge.deleteMany({ where: { source_chunk_id: packetId, test_run_id: testRunId } });
+      await postgres.semanticObject.deleteMany({ where: { packet_id: packetId, test_run_id: testRunId } });
+      await postgres.relationship.deleteMany({ where: { source_chunk_ids: { has: packetId }, test_run_id: testRunId } });
+      await postgres.pendingEdge.deleteMany({ where: { source_chunk_id: packetId, test_run_id: testRunId } });
 
       const contentStr = typeof packet.content === 'string' ? packet.content : JSON.stringify(packet.content);
       const signalsStr = signals.map(s => `${s.type} (${s.category})`).join(', ');
@@ -171,7 +171,7 @@ export class SemanticEngine {
             const relDedupHash = this.generateHash(`${fromEnt.entity_id}_${toEnt.entity_id}_${rel.type.toLowerCase().replace(' ', '_')}`);
             
             try {
-              await mongo.relationship.upsert({
+              await postgres.relationship.upsert({
                 where: { dedup_hash_test_run_id: { dedup_hash: relDedupHash, test_run_id: testRunId } },
                 update: { source_chunk_ids: { push: packetId } },
                 create: {
@@ -189,7 +189,7 @@ export class SemanticEngine {
             } catch (err) { /* Unique collision handled */ }
           } else {
             // Buffer in PendingEdge for future reconciliation
-            await mongo.pendingEdge.create({
+            await postgres.pendingEdge.create({
               data: {
                 from_temp: rel.from.toLowerCase(),
                 to_temp: rel.to.toLowerCase(),
@@ -204,7 +204,7 @@ export class SemanticEngine {
       }
 
       // 8. Capture Results in SemanticObject
-      await mongo.semanticObject.create({
+      await postgres.semanticObject.create({
         data: {
           packet_id: packetId,
           entities: processedEntities.map(e => ({

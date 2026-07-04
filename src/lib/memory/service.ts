@@ -1,4 +1,4 @@
-import { mongo as prisma } from '@/lib/db/mongo';
+import { postgres as prisma } from '@/lib/db/postgres';
 import { ingestionGate, generateHash, addProcessingError } from './gate';
 import { normalize } from './normalization';
 import { shouldFilter } from './noise-filter';
@@ -186,7 +186,7 @@ export class MemoryService {
     // Sequential deletes to avoid transaction dependency
     await prisma.embedding.deleteMany({ where: { packet_id: packetId } });
     await prisma.activityStream.deleteMany({ where: { packet_id: packetId } });
-    await prisma.retryQueue.deleteMany({ where: { packet_id: packetId } });
+    await prisma.packetRetryQueue.deleteMany({ where: { packet_id: packetId } });
     return prisma.memoryPacket.delete({ where: { id: packetId } });
   }
 }

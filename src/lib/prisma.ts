@@ -1,8 +1,8 @@
-import { mongo } from './db/mongo';
-import type { Prisma } from '../generated/mongo';
+import { postgres } from './db/postgres';
+import type { Prisma } from '../generated/postgres';
 
 // Re-export the singleton so legacy imports still work
-export default mongo;
+export default postgres;
 export { Prisma };
 
 /**

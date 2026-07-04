@@ -112,9 +112,6 @@ npm run prisma:generate
 ## Environment Variables
 
 ```env
-# MongoDB
-MONGODB_URI=
-
 # Postgres (Neon)
 DATABASE_URL=
 

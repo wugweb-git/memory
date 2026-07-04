@@ -1,4 +1,4 @@
-import { mongo as prisma } from '@/lib/db/mongo';
+import { postgres as prisma } from '@/lib/db/postgres';
 import { WindowType } from '../memory/types';
 
 

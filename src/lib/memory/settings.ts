@@ -1,4 +1,4 @@
-import { mongo as prisma } from '@/lib/db/mongo';
+import { postgres as prisma } from '@/lib/db/postgres';
 
 const CACHE_TTL = 60 * 1000; // 60 seconds
 

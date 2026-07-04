@@ -1,4 +1,4 @@
-import { mongo } from "@/lib/db/mongo";
+import { postgres } from "@/lib/db/postgres";
 import crypto from 'crypto';
 
 export interface ReconciliationResult {
@@ -32,7 +32,7 @@ export class ReconciliationEngine {
     const dedupHash = this.generateHash(`${normalized}_${type}`);
 
     // 1. EXACT MATCH (Normalized Name + Type + TestRunId)
-    const existing = await mongo.entity.findUnique({
+    const existing = await postgres.entity.findUnique({
       where: {
         normalized_name_type_test_run_id: {
           normalized_name: normalized,
@@ -47,7 +47,7 @@ export class ReconciliationEngine {
       const newSourceCount = (metadata.source_count || 0) + 1;
       
       // Update metadata and occurrences
-      const updated = await mongo.entity.update({
+      const updated = await postgres.entity.update({
         where: { id: existing.id },
         data: {
           occurrences: { increment: 1 },
@@ -65,7 +65,7 @@ export class ReconciliationEngine {
       // Verification Logic: verified = true ONLY IF source_count >= 2
       const sourceCount = (updated.metadata as any)?.source_count || 1;
       if (!updated.verified && sourceCount >= 2) {
-        await mongo.entity.update({
+        await postgres.entity.update({
           where: { id: updated.id },
           data: { verified: true }
         });
@@ -75,7 +75,7 @@ export class ReconciliationEngine {
     }
 
     // 2. ALIAS MATCH
-    const aliasMatch = await mongo.entityAlias.findFirst({
+    const aliasMatch = await postgres.entityAlias.findFirst({
       where: {
         alias: normalized,
         test_run_id: testRunId
@@ -84,7 +84,7 @@ export class ReconciliationEngine {
     });
 
     if (aliasMatch && aliasMatch.entity.type === type) {
-      const updated = await mongo.entity.update({
+      const updated = await postgres.entity.update({
         where: { id: aliasMatch.entity_id },
         data: {
           occurrences: { increment: 1 },
@@ -96,7 +96,7 @@ export class ReconciliationEngine {
     }
 
     // 3. CREATE NEW (Unverified)
-    const newEntity = await mongo.entity.create({
+    const newEntity = await postgres.entity.create({
       data: {
         name,
         normalized_name: normalized,
@@ -123,7 +123,7 @@ export class ReconciliationEngine {
    * Rule: Relationship created ONLY IF both sides are verified.
    */
   static async promotePendingEdges(packetId: string, testRunId: string) {
-    const pending = await mongo.pendingEdge.findMany({
+    const pending = await postgres.pendingEdge.findMany({
       where: { source_chunk_id: packetId, test_run_id: testRunId }
     });
 
@@ -137,7 +137,7 @@ export class ReconciliationEngine {
       if (fromEnt && toEnt) {
         const relDedupHash = this.generateHash(`${fromEnt.id}_${toEnt.id}_${edge.type}`);
         
-        await mongo.relationship.upsert({
+        await postgres.relationship.upsert({
           where: { 
             dedup_hash_test_run_id: { 
               dedup_hash: relDedupHash, 
@@ -161,14 +161,14 @@ export class ReconciliationEngine {
         });
 
         // Cleanup pending edge
-        await mongo.pendingEdge.delete({ where: { id: edge.id } });
+        await postgres.pendingEdge.delete({ where: { id: edge.id } });
       }
     }
   }
 
   private static async findVerifiedEntity(name: string, testRunId: string) {
     const normalized = name.toLowerCase().trim();
-    return mongo.entity.findFirst({
+    return postgres.entity.findFirst({
       where: {
         test_run_id: testRunId,
         verified: true,

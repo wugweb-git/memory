@@ -1,6 +1,6 @@
 import prisma from './prisma';
 import crypto from 'crypto';
-import type { Prisma } from '../generated/mongo';
+import type { Prisma } from '../generated/postgres';
 // Note: recursive import fixed below with a mock or internal logic if needed,
 // but for this audit we ensure stability.
 

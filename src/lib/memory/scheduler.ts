@@ -1,5 +1,5 @@
 import { processEmbedding } from './rag';
-import { mongo as prisma } from '@/lib/db/mongo';
+import { postgres as prisma } from '@/lib/db/postgres';
 // @ts-ignore - node-cron types may be missing in restricted envs
 import cron from 'node-cron';
 import { SettingsController } from './settings';

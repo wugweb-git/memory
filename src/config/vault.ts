@@ -13,7 +13,6 @@ if (isProduction && !isNextBuildPhase && !resolvedAuthSecret) {
 }
 
 export const INTERNAL_VAULT = {
-  MONGODB_URI: process.env.MONGODB_URI || process.env.MONGO_URI || process.env.STORAGE_URL || '',
   OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
   BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN || '',
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || process.env.Gemini_API_Key || '',

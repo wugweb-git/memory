@@ -1,4 +1,4 @@
-import { mongo } from "@/lib/db/mongo";
+import { postgres } from "@/lib/db/postgres";
 import { SemanticEngine } from "@/lib/processing/semantic";
 import { MemoryService } from "../service";
 
@@ -35,7 +35,7 @@ export class SemanticDiagnostics {
 
     // 1. ISOLATION TEST
     await runTest('1. Isolation Check', async () => {
-      const packet = await mongo.memoryPacket.create({
+      const packet = await postgres.memoryPacket.create({
         data: {
           source: 'diag',
           source_id: 'iso_1',
@@ -51,8 +51,8 @@ export class SemanticDiagnostics {
       
       await SemanticEngine.processSemantic(packet.id, { testRunId });
       
-      const prodEntities = await mongo.entity.findMany({ where: { test_run_id: 'PROD' } });
-      const diagEntities = await mongo.entity.findMany({ where: { test_run_id: testRunId } });
+      const prodEntities = await postgres.entity.findMany({ where: { test_run_id: 'PROD' } });
+      const diagEntities = await postgres.entity.findMany({ where: { test_run_id: testRunId } });
       
       if (diagEntities.length === 0) throw new Error("No entities created in diag scope.");
       return { diagEntitiesCount: diagEntities.length, prodEntitiesStabiltiy: "Checked" };
@@ -60,7 +60,7 @@ export class SemanticDiagnostics {
 
     // 2. DETERMINISTIC MERGE TEST
     await runTest('2. Deterministic Merge', async () => {
-      const packet = await mongo.memoryPacket.create({
+      const packet = await postgres.memoryPacket.create({
         data: {
           source: 'diag',
           source_id: 'merge_1',
@@ -85,7 +85,7 @@ export class SemanticDiagnostics {
       await SemanticEngine.processSemantic(packet.id, { testRunId, llmClient: mockLLM });
       await SemanticEngine.processSemantic(packet.id, { testRunId, llmClient: mockLLM });
 
-      const entities = await mongo.entity.findMany({ where: { normalized_name: 'alice', test_run_id: testRunId } });
+      const entities = await postgres.entity.findMany({ where: { normalized_name: 'alice', test_run_id: testRunId } });
       if (entities.length !== 1) throw new Error(`Expected 1 entity, found ${entities.length}`);
       if (entities[0].occurrences !== 2) throw new Error(`Expected 2 occurrences, found ${entities[0].occurrences}`);
       
@@ -94,7 +94,7 @@ export class SemanticDiagnostics {
 
     // 3. RELATIONSHIP BLOCK (Unverified)
     await runTest('3. Relationship Block', async () => {
-      const packet = await mongo.memoryPacket.create({
+      const packet = await postgres.memoryPacket.create({
         data: {
           source: 'diag',
           source_id: 'rel_block_1',
@@ -122,8 +122,8 @@ export class SemanticDiagnostics {
 
       await SemanticEngine.processSemantic(packet.id, { testRunId, llmClient: mockLLM });
 
-      const relationships = await mongo.relationship.findMany({ where: { test_run_id: testRunId } });
-      const pending = await mongo.pendingEdge.findMany({ where: { test_run_id: testRunId } });
+      const relationships = await postgres.relationship.findMany({ where: { test_run_id: testRunId } });
+      const pending = await postgres.pendingEdge.findMany({ where: { test_run_id: testRunId } });
 
       if (relationships.length > 0) throw new Error("Relationship created for unverified entities!");
       if (pending.length === 0) throw new Error("No PendingEdge created for unverified relationship.");
@@ -135,25 +135,25 @@ export class SemanticDiagnostics {
     await runTest('4. Promotion Pass', async () => {
       // Alice and BobCorp exist from previous test as unverified
       // We manually promote them or process a second signal to trigger verification behavior
-      const alice = await mongo.entity.findFirst({ where: { normalized_name: 'alice', test_run_id: testRunId } });
-      const bobCorp = await mongo.entity.findFirst({ where: { normalized_name: 'bobcorp', test_run_id: testRunId } });
+      const alice = await postgres.entity.findFirst({ where: { normalized_name: 'alice', test_run_id: testRunId } });
+      const bobCorp = await postgres.entity.findFirst({ where: { normalized_name: 'bobcorp', test_run_id: testRunId } });
 
       if (!alice || !bobCorp) throw new Error("Setup failed: Entities not found.");
 
       // Verify both (simulation of reconciliation/source count growth)
-      await mongo.entity.updateMany({
+      await postgres.entity.updateMany({
         where: { id: { in: [alice.id, bobCorp.id] } },
         data: { verified: true }
       });
 
       // Run promotion pass (normally triggered at end of processSemantic or by a job)
       const ReconciliationEngine = (await import('./reconciliation')).ReconciliationEngine;
-      const packet = await mongo.memoryPacket.findFirst({ where: { source_id: 'rel_block_1', test_run_id: testRunId } });
+      const packet = await postgres.memoryPacket.findFirst({ where: { source_id: 'rel_block_1', test_run_id: testRunId } });
       
       await ReconciliationEngine.promotePendingEdges(packet!.id, testRunId);
 
-      const relationships = await mongo.relationship.findMany({ where: { test_run_id: testRunId } });
-      const pending = await mongo.pendingEdge.findMany({ where: { test_run_id: testRunId } });
+      const relationships = await postgres.relationship.findMany({ where: { test_run_id: testRunId } });
+      const pending = await postgres.pendingEdge.findMany({ where: { test_run_id: testRunId } });
 
       if (relationships.length === 0) throw new Error("Relationship not promoted after verification.");
       if (pending.length !== 0) throw new Error("PendingEdge not cleared after promotion.");
@@ -163,11 +163,11 @@ export class SemanticDiagnostics {
 
     // CLEANUP DIAGNOSTIC DATA (Sequential to avoid transaction errors)
     try {
-      await mongo.memoryPacket.deleteMany({ where: { test_run_id: testRunId } });
-      await mongo.entity.deleteMany({ where: { test_run_id: testRunId } });
-      await mongo.relationship.deleteMany({ where: { test_run_id: testRunId } });
-      await mongo.pendingEdge.deleteMany({ where: { test_run_id: testRunId } });
-      await mongo.semanticObject.deleteMany({ where: { test_run_id: testRunId } });
+      await postgres.memoryPacket.deleteMany({ where: { test_run_id: testRunId } });
+      await postgres.entity.deleteMany({ where: { test_run_id: testRunId } });
+      await postgres.relationship.deleteMany({ where: { test_run_id: testRunId } });
+      await postgres.pendingEdge.deleteMany({ where: { test_run_id: testRunId } });
+      await postgres.semanticObject.deleteMany({ where: { test_run_id: testRunId } });
     } catch (err) {
       console.warn('[Semantic/Diagnostics] Cleanup failed (non-critical):', err);
     }

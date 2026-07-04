@@ -1,4 +1,3 @@
-import { mongo } from "../db/mongo";
 import { postgres } from "../db/postgres";
 
 /**
@@ -21,7 +20,7 @@ export async function buildContext(userId: string) {
     const [entities, relationships, signals, recentDecisions, intelligence] = await Promise.all([
 
       // 1. Verified entities from L2.5 semantic graph
-      mongo.entity.findMany({
+      postgres.entity.findMany({
         where: {
           verified: true,
           processing_state: "complete",
@@ -40,7 +39,7 @@ export async function buildContext(userId: string) {
       }),
 
       // 2. Verified relationships from L2.5
-      mongo.relationship.findMany({
+      postgres.relationship.findMany({
         where: {
           verified: true,
           test_run_id: "PROD"
@@ -56,7 +55,7 @@ export async function buildContext(userId: string) {
       }),
 
       // 3. Recent signals from L2 — PROD only to prevent test data in decisions
-      mongo.signal.findMany({
+      postgres.signal.findMany({
         where: { test_run_id: "PROD" },
         take: 20,
         orderBy: { timestamp: "desc" },

@@ -7,14 +7,10 @@
 
 ## 🔴 P0 — Prod blockers (verified failing in prod)
 
-1. **MongoDB SRV DNS broken everywhere.** `MONGODB_URI` uses `mongodb+srv://`; the SRV
-   lookup gets a search-domain suffix appended and fails — on Vercel
-   (`cluster0.qstcdiz.mongodb.net.ec2.internal`) **and** locally (`.local`). Every
-   Mongo-backed layer (L0 blob, L1 memory, L2 signals, L2.5 semantic, all `/api/ingest/*`,
-   `/buffer`, `/memory`) 500s.
-   **Fix:** replace `MONGODB_URI` in Vercel (all environments) with the **non-SRV standard**
-   connection string from Atlas (`mongodb://host1:27017,host2,host3/db?replicaSet=…&ssl=true&authSource=admin`),
-   then redeploy. (Atlas → Connect → Drivers → older driver version shows the non-SRV string.)
+1. ~~**MongoDB SRV DNS broken everywhere.**~~ **RESOLVED by removal (2026-07-04):** MongoDB was
+   dropped entirely — all 20 L0–L2.5 models migrated to Neon (pgvector for embeddings). The Atlas
+   cluster is retained untouched as a **cold archive** only (old data recoverable via the non-SRV
+   connection string if ever needed). `MONGODB_URI` can be deleted from Vercel env.
 
 2. **OpenAI quota exceeded (429).** `/api/cognitive/decide` runs end-to-end (the Neon fix
    works) but the LLM call returns `429 You exceeded your current quota`.

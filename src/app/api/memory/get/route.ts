@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { mongo } from '@/lib/db/mongo';
+import { postgres } from '@/lib/db/postgres';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     }
 
     // 1. Fetch Packet (Source of Truth)
-    const packet = await mongo.memoryPacket.findUnique({
+    const packet = await postgres.memoryPacket.findUnique({
       where: { id }
     });
 
@@ -27,14 +27,14 @@ export async function GET(req: NextRequest) {
     }
 
     // 2. Fetch Associated Signals (L2)
-    const signals = await mongo.signal.findMany({
+    const signals = await postgres.signal.findMany({
       where: { packet_id: id },
       orderBy: { timestamp: 'desc' }
     });
 
     // 3. Fetch Associated Semantic Object (L2.5)
     // There should ideally only be one per packet/version
-    const semantic = await mongo.semanticObject.findFirst({
+    const semantic = await postgres.semanticObject.findFirst({
       where: { packet_id: id },
       orderBy: { timestamp: 'desc' }
     });

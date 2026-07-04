@@ -5,13 +5,13 @@ export function isPrismaConfigError(error: unknown): boolean {
   return (
     error.name === 'PrismaClientInitializationError' ||
     msg.includes('Environment variable not found') ||
-    msg.includes('MONGODB_URI') ||
+    msg.includes('brain_POSTGRES') ||
     msg.includes('DATABASE_URL')
   );
 }
 
 export const DB_SETUP_HINT =
-  'Database not configured. Add MONGODB_URI and DATABASE_URL to .env.local, then restart the dev server.';
+  'Database not configured. Add the brain_POSTGRES_* (Neon) vars to .env.local, then restart the dev server.';
 
 export function degradedSystemHealth() {
   return {

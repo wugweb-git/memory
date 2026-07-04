@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { mongo } from '@/lib/db/mongo';
+import { postgres } from '@/lib/db/postgres';
 import { INTERNAL_VAULT } from '@/config/vault';
 import { signToken } from '@/lib/security/jwt';
 import { sessionCookie } from '@/lib/security/auth';
@@ -15,14 +15,14 @@ export async function POST(req: NextRequest) {
     }
 
     const normalized = String(email).trim().toLowerCase();
-    const existing = await mongo.user.findUnique({ where: { email: normalized } });
+    const existing = await postgres.user.findUnique({ where: { email: normalized } });
     if (existing) {
       return NextResponse.json({ error: 'Email already registered' }, { status: 409 });
     }
 
     const isAdmin = INTERNAL_VAULT.ADMIN_EMAIL && normalized === INTERNAL_VAULT.ADMIN_EMAIL.toLowerCase();
     const password_hash = await bcrypt.hash(String(password), 10);
-    const user = await mongo.user.create({
+    const user = await postgres.user.create({
       data: {
         email: normalized,
         password_hash,

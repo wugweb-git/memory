@@ -1,4 +1,4 @@
-import { mongo as prisma } from '@/lib/db/mongo';
+import { postgres as prisma } from '@/lib/db/postgres';
 import { extractSignals } from './signals';
 import { MemoryPacket } from '../memory/types';
 

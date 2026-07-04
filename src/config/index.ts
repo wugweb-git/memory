@@ -17,7 +17,6 @@ export function loadConfig() {
   return {
     env,
     authSecret: INTERNAL_VAULT.AUTH_SECRET,
-    mongodbUri: INTERNAL_VAULT.MONGODB_URI,
     openaiApiKey: INTERNAL_VAULT.OPENAI_API_KEY,
     geminiApiKey: INTERNAL_VAULT.GEMINI_API_KEY,
     blobToken: INTERNAL_VAULT.BLOB_READ_WRITE_TOKEN,

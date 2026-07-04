@@ -4,7 +4,7 @@ export const maxDuration = 60;
 import { convertToModelMessages, streamText, type UIMessage } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { NextResponse } from 'next/server';
-import { vectorStore } from '@/utils/openai';
+import { retrieve } from '@/lib/memory/rag';
 
 const SYSTEM_PROMPT = `IDENTITY: You are the Antigravity AI integrated into the Identity Prism OS.
 MISSION: Ground all responses strictly in the provided context nodes (Memory).
@@ -51,14 +51,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'SIG_EMPTY: Awaiting signal spark.' }, { status: 400 });
     }
 
-    const retriever = vectorStore().asRetriever(
-      searchMode === 'mmr'
-        ? { searchType: 'mmr', searchKwargs: { fetchK: 15, lambda: 0.3 } }
-        : { searchType: 'similarity', k: 10 },
-    );
-
-    const docs = await retriever.invoke(question);
-    const context = docs.map((doc) => doc.pageContent).join('\n\n');
+    // pgvector cosine retrieval over the memory embeddings (top-10 packets).
+    // searchMode kept for API compat; MMR re-ranking is a future refinement.
+    void searchMode;
+    const retrieved = await retrieve(question);
+    const packets = Array.isArray(retrieved) ? retrieved : [];
+    const context = packets
+      .map((p: any) => (Array.isArray(p.context) ? p.context.join('\n') : ''))
+      .filter(Boolean)
+      .join('\n\n');
 
     const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const result = streamText({

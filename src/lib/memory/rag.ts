@@ -1,8 +1,14 @@
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
-import { mongo as prisma } from '@/lib/db/mongo';
+import { postgres as prisma } from '@/lib/db/postgres';
+import { Prisma } from '../../generated/postgres';
 import { addProcessingError } from './gate';
 import { EmbeddingStatus, ProcessingError } from './types';
+
+/** pgvector text literal: '[0.1,0.2,…]' — bound as a parameter, cast with ::vector. */
+function toVectorLiteral(vec: number[]): string {
+  return `[${vec.join(',')}]`;
+}
 
 const EMBEDDING_MODEL = 'text-embedding-3-small';
 const EMBEDDING_VERSION = 1;
@@ -104,25 +110,23 @@ export async function processEmbedding(packetId: string) {
 
     await prisma.embedding.deleteMany({ where: { packet_id: packetId } });
 
-    // 6. PERSIST VECTORS
-    const embeddingEntries = chunks.map((chunk, index) => ({
-      packet_id: packetId,
-      embedding: vectorResults[index],
-      text_chunk: chunk,
-      test_run_id: packet.test_run_id, // Propagate from packet
-      metadata: {
+    // 6. PERSIST VECTORS — raw SQL because Prisma can't bind pgvector columns.
+    // Chunk counts per packet are small, so per-row parameterized inserts are fine.
+    for (let index = 0; index < chunks.length; index++) {
+      const metadata = JSON.stringify({
         model: EMBEDDING_MODEL,
         version: EMBEDDING_VERSION,
         chunk_index: index,
         type: packet.type,
         source: packet.source,
-        timestamp: packet.ingestion_time.toISOString()
-      }
-    }));
-
-    await prisma.embedding.createMany({
-      data: embeddingEntries as any
-    });
+        timestamp: packet.ingestion_time.toISOString(),
+      });
+      await prisma.$executeRaw`
+        INSERT INTO embeddings (id, packet_id, embedding, text_chunk, metadata, test_run_id)
+        VALUES (gen_random_uuid(), ${packetId}, ${toVectorLiteral(vectorResults[index])}::vector,
+                ${chunks[index]}, ${metadata}::jsonb, ${packet.test_run_id})
+      `;
+    }
 
     // 7. SUCCESS: Move to embedded state
     await prisma.memoryPacket.update({
@@ -161,10 +165,9 @@ export async function processEmbedding(packetId: string) {
   }
 }
 
-import { getDb } from './mongoClient';
-
 /**
  * Retrieval Logic with Pre-filtering, 50 -> 10 re-ranking, and Recency Boosting.
+ * pgvector cosine search (HNSW index `embeddings_embedding_hnsw`).
  */
 export async function retrieve(query: string, filters: any = {}) {
   // 1. QUERY VALIDATION
@@ -177,43 +180,34 @@ export async function retrieve(query: string, filters: any = {}) {
 
   // 2. GENERATE QUERY VECTOR
   const queryVector = await embeddings.embedQuery(cleanQuery);
+  const queryVec = toVectorLiteral(queryVector);
 
-  // 3. NATIVE VECTOR SEARCH
-  const db = await getDb();
-  const collection = db.collection('embeddings');
+  // 3. NATIVE VECTOR SEARCH — cosine distance (<=>); score = 1 - distance,
+  // matching Atlas $vectorSearch's higher-is-better semantics.
+  const typeFilter = filters.type
+    ? Prisma.sql`AND metadata->>'type' = ${filters.type}`
+    : Prisma.empty;
+  const sourceFilter = filters.source
+    ? Prisma.sql`AND metadata->>'source' = ${filters.source}`
+    : Prisma.empty;
+  const sensitivityFilter = filters.sensitivity
+    ? Prisma.sql`AND metadata->>'sensitivity' = ${filters.sensitivity}`
+    : Prisma.empty;
 
-  // Build filters for MongoDB
-  const mongoFilter: any = {
-    test_run_id: { $eq: test_run_id }
-  };
-  
-  if (filters.type) mongoFilter['metadata.type'] = filters.type;
-  if (filters.source) mongoFilter['metadata.source'] = filters.source;
-  if (filters.sensitivity) mongoFilter['metadata.sensitivity'] = filters.sensitivity;
-  
-  const pipeline = [
-    {
-      $vectorSearch: {
-        index: 'vector_index',
-        path: 'embedding',
-        queryVector: queryVector,
-        numCandidates: 100, // Search space
-        limit: 50,          // Retrieve top 50 for re-ranking
-        filter: mongoFilter // NATIVE FILTERING
-      }
-    },
-    {
-      $project: {
-        _id: 1,
-        packet_id: 1,
-        text_chunk: 1,
-        metadata: 1,
-        score: { $meta: 'vectorSearchScore' }
-      }
-    }
-  ];
-
-  const results = await collection.aggregate(pipeline).toArray();
+  const results = await prisma.$queryRaw<
+    Array<{ id: string; packet_id: string; text_chunk: string; metadata: any; score: number }>
+  >(Prisma.sql`
+    SELECT id, packet_id, text_chunk, metadata,
+           1 - (embedding <=> ${queryVec}::vector) AS score
+    FROM embeddings
+    WHERE embedding IS NOT NULL
+      AND test_run_id = ${test_run_id}
+      ${typeFilter}
+      ${sourceFilter}
+      ${sensitivityFilter}
+    ORDER BY embedding <=> ${queryVec}::vector
+    LIMIT 50
+  `);
 
   // 5. CONTEXT ASSEMBLY (Group by packet_id)
   const grouped = results.reduce((acc: any, curr: any) => {

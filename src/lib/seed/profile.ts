@@ -1,5 +1,4 @@
-import { mongo as prisma } from '@/lib/db/mongo';
-import { postgres } from '@/lib/db/postgres';
+import { postgres, postgres as prisma } from '@/lib/db/postgres';
 import { IDENTITY_CONFIG } from '@/config/identity';
 
 const SECTIONS = [

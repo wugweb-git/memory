@@ -1,6 +1,6 @@
 import { MemoryService } from './service';
 import { processEmbedding } from './rag';
-import { mongo as prisma } from '@/lib/db/mongo';
+import { postgres as prisma } from '@/lib/db/postgres';
 import { ingestionGate } from './gate';
 
 export interface TestResult {

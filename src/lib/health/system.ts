@@ -1,4 +1,4 @@
-import { mongo as prisma } from '@/lib/db/mongo';
+import { postgres as prisma } from '@/lib/db/postgres';
 import { integrationsFromSources } from '@/lib/integrations/from-sources';
 
 export async function buildSystemHealth() {

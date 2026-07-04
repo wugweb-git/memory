@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { mongo as prisma } from '@/lib/db/mongo';
+import { postgres as prisma } from '@/lib/db/postgres';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
 
     const [packets, retries, sources, activity, documents] = await Promise.all([
       prisma.memoryPacket.findMany({ where: { status: { not: 'rejected' }, test_run_id } }),
-      prisma.retryQueue.findMany({ where: { test_run_id } }),
+      prisma.packetRetryQueue.findMany({ where: { test_run_id } }),
       prisma.source.findMany({}),
       prisma.activityStream.findMany({ where: { test_run_id }, orderBy: { timestamp: 'desc' }, take: 50 }),
       prisma.document.findMany({ where: { test_run_id }, take: 100 })
