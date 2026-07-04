@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireOwner } from '@/lib/security/auth';
+import { checkRateLimit } from '@/lib/security/rate-limit';
 import { ingestRss } from '@/lib/ingestion/rss';
 
 export const dynamic = 'force-dynamic';
@@ -9,6 +11,10 @@ export const dynamic = 'force-dynamic';
  * Ingests RSS feed items into the L0 blob buffer (one blob item per entry).
  */
 export async function POST(req: NextRequest) {
+  const actor = requireOwner(req);
+  if (actor instanceof NextResponse) return actor;
+  const limit = checkRateLimit(`ingest:rss:${actor.userId}`, 30, 60_000);
+  if (!limit.allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
   try {
     const body = await req.json();
     if (!body?.feedUrl || !Array.isArray(body?.items)) {

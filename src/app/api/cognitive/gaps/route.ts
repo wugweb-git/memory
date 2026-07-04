@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireOwner } from '@/lib/security/auth';
+import { checkRateLimit } from '@/lib/security/rate-limit';
 import { buildContext } from '@/lib/cognitive/contextBuilder';
 
 export const dynamic = 'force-dynamic';
@@ -18,6 +20,10 @@ const EXPECTED_ENT_TYPES  = ['person', 'company', 'concept', 'tool'];
  *                    missing_entity_types, weak_signals, summary }
  */
 export async function POST(req: NextRequest) {
+  const actor = requireOwner(req);
+  if (actor instanceof NextResponse) return actor;
+  const limit = checkRateLimit(`cognitive:gaps:${actor.userId}`, 30, 60_000);
+  if (!limit.allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
   try {
     const body = await req.json();
     const { user_id } = body;

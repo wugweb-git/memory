@@ -15,6 +15,7 @@ const MODULE_LABELS: Record<string, string> = {
   history: "History",
   cognitive: "Cognitive engine",
   persona: "Persona",
+  career: "Career",
   system: "System page",
   admin: "Admin",
 };

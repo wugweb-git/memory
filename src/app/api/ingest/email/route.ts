@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireOwner } from '@/lib/security/auth';
+import { checkRateLimit } from '@/lib/security/rate-limit';
 import { ingestEmail } from '@/lib/ingestion/email';
 
 export const dynamic = 'force-dynamic';
@@ -9,6 +11,10 @@ export const dynamic = 'force-dynamic';
  * Ingests an inbound email into the L0 blob buffer.
  */
 export async function POST(req: NextRequest) {
+  const actor = requireOwner(req);
+  if (actor instanceof NextResponse) return actor;
+  const limit = checkRateLimit(`ingest:email:${actor.userId}`, 30, 60_000);
+  if (!limit.allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
   try {
     const body = await req.json();
     if (!body?.from || !body?.body) {

@@ -67,6 +67,24 @@ export function getRequestUser(req: NextRequest): RequestActor {
   };
 }
 
+/**
+ * Guard for owner-only write surfaces (ingest, cognitive runs).
+ * Passes for an authenticated session (JWT cookie/bearer) or automation
+ * carrying JOB_SECRET/CRON_SECRET. The anonymous role fallback does NOT
+ * pass — these endpoints spend LLM budget / write to L0.
+ */
+export function requireOwner(req: NextRequest): RequestActor | NextResponse {
+  const actor = getRequestUser(req);
+  if (actor.authenticated) return actor;
+
+  const bearer = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
+  const jobSecret = req.headers.get('x-job-secret') ?? bearer;
+  if (process.env.JOB_SECRET && jobSecret === process.env.JOB_SECRET) return actor;
+  if (process.env.CRON_SECRET && bearer === process.env.CRON_SECRET) return actor;
+
+  return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+}
+
 export function requirePermission(req: NextRequest, permission: string): RequestActor | NextResponse {
   const actor = getRequestUser(req);
   if (!hasPermission(actor.role, permission)) {

@@ -1,6 +1,6 @@
 import {
   Command, Brain, Database, Archive, Layers, Sparkles, FileText, History,
-  Settings, Cpu, LayoutDashboard, User, Eye, Activity, Link2,
+  Settings, Cpu, LayoutDashboard, User, Eye, Activity, Link2, Briefcase,
   MessageSquare, Zap, ShieldCheck,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -105,6 +105,7 @@ const RAW_NAV_GROUPS: ReadonlyArray<NavGroup> = [
   {
     group: 'Identity',
     items: [
+      { href: '/career', label: 'Career', icon: Briefcase, feature: 'career' },
       { href: '/portfolio', label: 'Portfolio', icon: Eye },
       { href: `/p/${IDENTITY_CONFIG.HANDLE}`, label: 'Profile', icon: User },
     ],

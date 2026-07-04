@@ -19,10 +19,10 @@ interface Application {
 }
 
 const STATUS_LABEL: Record<Application['status'], string> = {
-  Applied:      'MATRIX_INGRESS',
-  Interviewing: 'SYNC_ACTIVE',
-  Rejected:     'NULL_VOID',
-  Offer:        'ACCEPTED',
+  Applied:      'Applied',
+  Interviewing: 'Interviewing',
+  Rejected:     'Rejected',
+  Offer:        'Offer',
 };
 const STATUS_COLOR: Record<Application['status'], string> = {
   Applied:      'text-accent',
@@ -85,12 +85,12 @@ export const JobPipeline = () => {
     <div className="space-y-10 w-full" aria-label="Job applications pipeline">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-2">
-        <div className="kinetic-text">
-          <h2 className="text-2xl font-black text-text-primary tracking-tighter  flex items-center gap-3">
-            <Briefcase size={22} className="text-accent" /> Career_Matrix
+        <div>
+          <h2 className="text-2xl font-black text-text-primary tracking-tight flex items-center gap-3">
+            <Briefcase size={22} className="text-accent" /> Applications
           </h2>
-          <p className="text-2xs text-text-tertiary font-bold mt-1 uppercase tracking-[0.3em] opacity-60">
-            Automated Pipeline // Linked_Nexus, Indeed_Reflex
+          <p className="text-2xs font-bold uppercase tracking-widest text-text-tertiary mt-1">
+            Pipeline &amp; status
           </p>
         </div>
         <div className="flex gap-3 items-center">

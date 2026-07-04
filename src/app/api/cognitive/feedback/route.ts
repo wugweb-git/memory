@@ -1,5 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
+import { requireOwner } from '@/lib/security/auth';
+import { checkRateLimit } from '@/lib/security/rate-limit';
 import { postgres } from "@/lib/db/postgres";
 import { waitUntil } from "@vercel/functions";
 
@@ -8,6 +10,10 @@ import { waitUntil } from "@vercel/functions";
  * Crucial for the L4 evolution loop.
  */
 export async function POST(req: NextRequest) {
+  const actor = requireOwner(req);
+  if (actor instanceof NextResponse) return actor;
+  const limit = checkRateLimit(`cognitive:feedback:${actor.userId}`, 30, 60_000);
+  if (!limit.allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
   try {
     const body = await req.json();
     const { decisionId, userId, feedbackType, comment } = body;

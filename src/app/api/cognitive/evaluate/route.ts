@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireOwner } from '@/lib/security/auth';
+import { checkRateLimit } from '@/lib/security/rate-limit';
 import { buildContext } from '@/lib/cognitive/contextBuilder';
 import { runLLM } from '@/lib/cognitive/llm';
 import { logDecisionNeon } from '@/lib/cognitive/logging/neon';
@@ -16,6 +18,10 @@ export const dynamic = 'force-dynamic';
  * Output contract: { fit_score, verdict, why_yes, why_no, action_items, confidence, reasoning }
  */
 export async function POST(req: NextRequest) {
+  const actor = requireOwner(req);
+  if (actor instanceof NextResponse) return actor;
+  const limit = checkRateLimit(`cognitive:evaluate:${actor.userId}`, 30, 60_000);
+  if (!limit.allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
   try {
     const body = await req.json();
     const { user_id, input_text, mode = 'architect' } = body;

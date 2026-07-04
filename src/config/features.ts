@@ -16,6 +16,7 @@ export type FeatureKey =
   | 'history'
   | 'cognitive'
   | 'persona'
+  | 'career'
   | 'system'
   | 'admin';
 
@@ -26,6 +27,7 @@ const DEFAULTS: Record<FeatureKey, boolean> = {
   history: true,
   cognitive: true,
   persona: true,
+  career: true,
   system: true,
   admin: true,
 };
