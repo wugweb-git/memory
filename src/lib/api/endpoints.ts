@@ -61,6 +61,11 @@ export const API_ENDPOINTS = {
     prioritize: { path: '/api/cognitive/prioritize', methods: ['POST'] as const },
     traces: { path: '/api/cognitive/traces', methods: ['GET'] as const },
   },
+  ingest: {
+    article: { path: '/api/ingest/article', methods: ['POST'] as const },
+    email: { path: '/api/ingest/email', methods: ['POST'] as const },
+    rss: { path: '/api/ingest/rss', methods: ['POST'] as const },
+  },
   memory: {
     audit: { path: '/api/memory/audit', methods: ['GET'] as const },
     get: { path: '/api/memory/get', methods: ['GET'] as const },
