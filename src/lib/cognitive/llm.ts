@@ -1,24 +1,44 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { ChatOpenAI } from "@langchain/openai";
+import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 import { config } from "@/config";
 
-const DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+/**
+ * Cognitive LLM — provider-flexible.
+ * Groq (OpenAI-compatible, fast Llama) is used when GROQ_API_KEY is set;
+ * otherwise Gemini. Models overridable via GROQ_MODEL / GEMINI_MODEL.
+ */
+const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
+const GROQ_DEFAULT_MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+const GEMINI_DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+
+const DEFAULT_MODEL = config.groqApiKey ? GROQ_DEFAULT_MODEL : GEMINI_DEFAULT_MODEL;
+
 const SYSTEM_PROMPT =
   "You are the Cognitive Engine of a Personal Operating System. Reason deeply and provide structured guidance.";
 
-/** Per-(model,temperature) Gemini client cache (shared by single-pass and multi-agent paths). */
-const _modelCache: Record<string, ChatGoogleGenerativeAI> = {};
-function getModel(modelName: string = DEFAULT_MODEL, temperature = 0.1): ChatGoogleGenerativeAI {
+/** Per-(model,temperature) client cache (shared by single-pass and multi-agent paths). */
+const _modelCache: Record<string, BaseChatModel> = {};
+function getModel(modelName: string = DEFAULT_MODEL, temperature = 0.1): BaseChatModel {
   const key = `${modelName}:${temperature}`;
   if (!_modelCache[key]) {
-    if (!config.geminiApiKey) {
-      throw new Error("GEMINI_API_KEY not found in environment");
+    if (config.groqApiKey) {
+      _modelCache[key] = new ChatOpenAI({
+        modelName,
+        temperature,
+        apiKey: config.groqApiKey,
+        configuration: { baseURL: GROQ_BASE_URL },
+      });
+    } else if (config.geminiApiKey) {
+      _modelCache[key] = new ChatGoogleGenerativeAI({
+        model: modelName,
+        temperature,
+        apiKey: config.geminiApiKey,
+      });
+    } else {
+      throw new Error("No cognitive LLM key configured (GROQ_API_KEY or GEMINI_API_KEY)");
     }
-    _modelCache[key] = new ChatGoogleGenerativeAI({
-      model: modelName,
-      temperature,
-      apiKey: config.geminiApiKey,
-    });
   }
   return _modelCache[key];
 }

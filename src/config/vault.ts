@@ -16,6 +16,8 @@ export const INTERNAL_VAULT = {
   OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
   BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN || '',
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || process.env.Gemini_API_Key || '',
+  GROQ_API_KEY: process.env.GROQ_API_KEY || '',
+  MINIMAX_API_KEY: process.env.MINIMAX_API_KEY || '',
 
   AUTH_SECRET: resolvedAuthSecret || 'dev_auth_secret_insecure_fallback',
   ADMIN_EMAIL: process.env.ADMIN_EMAIL || 'admin@prism.io',

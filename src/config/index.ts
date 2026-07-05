@@ -19,6 +19,8 @@ export function loadConfig() {
     authSecret: INTERNAL_VAULT.AUTH_SECRET,
     openaiApiKey: INTERNAL_VAULT.OPENAI_API_KEY,
     geminiApiKey: INTERNAL_VAULT.GEMINI_API_KEY,
+    groqApiKey: INTERNAL_VAULT.GROQ_API_KEY,
+    minimaxApiKey: INTERNAL_VAULT.MINIMAX_API_KEY,
     blobToken: INTERNAL_VAULT.BLOB_READ_WRITE_TOKEN,
     allowedOrigins: readEnv('ALLOWED_ORIGINS', '*').split(',').map((x) => x.trim()),
     requestLimitBytes: Number(readEnv('REQUEST_LIMIT_BYTES', '1048576')),

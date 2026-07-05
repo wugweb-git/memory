@@ -30,9 +30,11 @@ function getLastUserText(messages: UIMessage[]): string {
  */
 export async function POST(req: Request) {
   try {
-    if (!process.env.OPENAI_API_KEY) {
+    const groqKey = process.env.GROQ_API_KEY;
+    const openaiKey = process.env.OPENAI_API_KEY;
+    if (!groqKey && !openaiKey) {
       return NextResponse.json(
-        { message: 'OPENAI_API_KEY is not configured in the environment' },
+        { message: 'No chat LLM configured (GROQ_API_KEY or OPENAI_API_KEY)' },
         { status: 401 },
       );
     }
@@ -52,18 +54,31 @@ export async function POST(req: Request) {
     }
 
     // pgvector cosine retrieval over the memory embeddings (top-10 packets).
+    // Retrieval needs OpenAI embeddings — if that fails (e.g. no embedding
+    // quota), the chat still answers, just ungrounded, rather than erroring.
     // searchMode kept for API compat; MMR re-ranking is a future refinement.
     void searchMode;
-    const retrieved = await retrieve(question);
-    const packets = Array.isArray(retrieved) ? retrieved : [];
-    const context = packets
-      .map((p: any) => (Array.isArray(p.context) ? p.context.join('\n') : ''))
-      .filter(Boolean)
-      .join('\n\n');
+    let context = '';
+    try {
+      const retrieved = await retrieve(question);
+      const packets = Array.isArray(retrieved) ? retrieved : [];
+      context = packets
+        .map((p: any) => (Array.isArray(p.context) ? p.context.join('\n') : ''))
+        .filter(Boolean)
+        .join('\n\n');
+    } catch (retrievalErr) {
+      console.warn('[Chat] retrieval unavailable, answering without memory context:', retrievalErr);
+    }
 
-    const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    // Groq (OpenAI-compatible) when configured; OpenAI otherwise.
+    const provider = groqKey
+      ? createOpenAI({ apiKey: groqKey, baseURL: 'https://api.groq.com/openai/v1' })
+      : createOpenAI({ apiKey: openaiKey });
+    const chatModel = groqKey
+      ? (process.env.GROQ_MODEL || 'llama-3.3-70b-versatile')
+      : 'gpt-4-turbo';
     const result = streamText({
-      model: openai('gpt-4-turbo') as unknown as Parameters<typeof streamText>[0]['model'],
+      model: provider(chatModel) as unknown as Parameters<typeof streamText>[0]['model'],
       temperature,
       system: `${SYSTEM_PROMPT}\n\nContext nodes:\n${context || '(no indexed clusters matched)'}`,
       messages: await convertToModelMessages(messages),
