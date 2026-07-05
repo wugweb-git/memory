@@ -26,9 +26,19 @@
 ## 🟡 P1 — Finish the pillars (after P0)
 
 4. **Sanity schema → correct project.** App reads `4d6jaglm`/production (reads + write token
-   verified live). Deploy the schema there for Studio editing: `npx sanity schema deploy`
-   (config reads `SANITY_STUDIO_PROJECT_ID`). Note: an earlier MCP deploy went to the wrong
-   project `splvhmk1` (different Sanity account) — ignore it.
+   verified live) — in-app CMS management (`/portfolio`) reads/writes fine without this; it
+   only affects the standalone Sanity Studio's editing UI (which we don't embed — needs React
+   19). Note: an earlier MCP deploy went to the wrong project `splvhmk1` (different Sanity
+   account) — ignore it.
+   **Attempted 2026-07-05:** `npx sanity schemas deploy` fails in the main repo (React 18) with
+   `"./compiler-runtime" is not exported` — the schema-deploy manifest builder needs React 19,
+   same constraint as embedding Studio. Worked around by running the deploy from an isolated
+   temp env with React 19 (`sanity.cli.ts` in repo root has the project/dataset config) — got
+   past the build step, then hit `Unauthorized — missing grant sanity.project/deployStudio`.
+   **`SANITY_API_WRITE_TOKEN` is Editor-scoped (content writes only); deploying schemas needs
+   an Administrator-scoped token.** To finish: generate an Administrator API token at
+   manage.sanity.io → project `4d6jaglm` → API → Tokens, set it as `SANITY_AUTH_TOKEN`, then
+   re-run the isolated-env deploy (or `npx sanity login` interactively).
 5. **Re-run end-to-end** once Mongo + OpenAI are fixed: `/api/ingest/article` → blob →
    promote → memory packet; `/api/cognitive/decide` → real decision + Neon `decision_logs` row.
 
