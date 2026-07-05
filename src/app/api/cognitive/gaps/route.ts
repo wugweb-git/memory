@@ -22,7 +22,7 @@ const EXPECTED_ENT_TYPES  = ['person', 'company', 'concept', 'tool'];
 export async function POST(req: NextRequest) {
   const actor = requireOwner(req);
   if (actor instanceof NextResponse) return actor;
-  const limit = checkRateLimit(`cognitive:gaps:${actor.userId}`, 30, 60_000);
+  const limit = await checkRateLimit(`cognitive:gaps:${actor.userId}`, 30, 60_000);
   if (!limit.allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
   try {
     const body = await req.json();

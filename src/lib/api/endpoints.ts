@@ -91,6 +91,7 @@ export const API_ENDPOINTS = {
     feedback: { path: '/api/persona/feedback', methods: ['POST'] as const },
     profile: { path: '/api/persona/profile', methods: ['GET'] as const },
     rebuild: { path: '/api/persona/rebuild', methods: ['POST'] as const },
+    rollback: { path: '/api/persona/rollback', methods: ['GET', 'POST'] as const },
     style: { path: '/api/persona/style', methods: ['GET'] as const },
     traits: { path: '/api/persona/traits', methods: ['GET'] as const },
   },
@@ -119,6 +120,9 @@ export const API_ENDPOINTS = {
   },
   recommendations: {
     list: { path: '/api/recommendations', methods: ['GET'] as const },
+  },
+  pulse: {
+    checkins: { path: '/api/pulse', methods: ['GET', 'POST'] as const },
   },
   jobs: {
     run: { path: '/api/jobs/run', methods: ['GET', 'POST'] as const },
@@ -160,6 +164,7 @@ export const UI_API = {
   showcase: API_ENDPOINTS.cms.showcase.path,
   systemFeatures: API_ENDPOINTS.system.features.path,
   recommendations: API_ENDPOINTS.recommendations.list.path,
+  pulse: API_ENDPOINTS.pulse.checkins.path,
   healthSystem: API_ENDPOINTS.health.system.path,
   healthPersona: API_ENDPOINTS.health.persona.path,
   healthOutput: API_ENDPOINTS.health.output.path,
@@ -183,6 +188,7 @@ export const UI_API = {
   personaAdaptiveUi: API_ENDPOINTS.persona.adaptiveUi.path,
   personaDrift: API_ENDPOINTS.persona.drift.path,
   personaFeedback: API_ENDPOINTS.persona.feedback.path,
+  personaRollback: API_ENDPOINTS.persona.rollback.path,
   authMe: API_ENDPOINTS.auth.me.path,
   authLogin: API_ENDPOINTS.auth.login.path,
   authSignup: API_ENDPOINTS.auth.signup.path,

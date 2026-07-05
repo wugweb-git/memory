@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   const actor = requireOwner(req);
   if (actor instanceof NextResponse) return actor;
-  const limit = checkRateLimit(`ingest:email:${actor.userId}`, 30, 60_000);
+  const limit = await checkRateLimit(`ingest:email:${actor.userId}`, 30, 60_000);
   if (!limit.allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
   try {
     const body = await req.json();

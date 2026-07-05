@@ -2,10 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import pdf from "pdf-parse";
 import { MemoryService } from '@/lib/memory/service';
 import { getRequestUserId } from '@/lib/identity/request';
+import { requireOwner } from '@/lib/security/auth';
+import { checkRateLimit } from '@/lib/security/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  const actor = requireOwner(req);
+  if (actor instanceof NextResponse) return actor;
+  const limit = await checkRateLimit(`upload:${actor.userId}`, 30, 60_000);
+  if (!limit.allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
   try {
     const formData: FormData = await req.formData();
     const uploadedFiles = formData.getAll('filepond');

@@ -137,14 +137,20 @@ export const VoiceIngestion = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          type:    'voice_note',
-          source:  'voice_ingestion',
-          content: parsed.raw_transcript,
-          metadata: {
+          type:   'voice_note',
+          source: 'voice_ingestion',
+          raw_payload: {
+            content: parsed.raw_transcript,
             what: parsed.what,
             when: parsed.when,
             why:  parsed.why,
             how:  parsed.how,
+          },
+          trace_json: {
+            origin: 'voice_ingestion',
+            input_mode: 'voice',
+            ingestion_path: 'buffer/voice',
+            received_at: new Date().toISOString(),
           },
         }),
       });

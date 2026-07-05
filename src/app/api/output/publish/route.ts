@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
     const actor = getRequestUser(req);
-    const limit = checkRateLimit(`publish:${actor.userId}`, 20, 60_000);
+    const limit = await checkRateLimit(`publish:${actor.userId}`, 20, 60_000);
     if (!limit.allowed) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
     if (!hasPermission(actor.role, "publish")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 

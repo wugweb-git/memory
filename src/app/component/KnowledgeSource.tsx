@@ -1,21 +1,17 @@
 "use client";
 import React, { useState } from 'react';
-import { Database, Link as LinkIcon, Globe, FileText, CheckCircle2 } from 'lucide-react';
-import { FilePond, registerPlugin } from 'react-filepond';
+import { Database, Globe, FileText, CheckCircle2 } from 'lucide-react';
+import { FilePond } from 'react-filepond';
 import 'filepond/dist/filepond.min.css';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IDENTITY_CONFIG } from '@/config/identity';
 
 export const KnowledgeSource = () => {
-  const [sources, setSources] = useState([
-    { id: '1', name: 'Identity_Prism_Core.pdf', type: 'document', status: 'anchored' },
-    { id: '2', name: `${new URL(IDENTITY_CONFIG.SITE_URL).host}/architecture`, type: 'link', status: 'anchored' },
-  ]);
+  const [sources, setSources] = useState<{ id: string; name: string; type: string; status: string }[]>([]);
 
   const onProcessFile = (err: any, file: any) => {
     if (!err) {
-      toast.success('Cognitive fragment anchored to Memory Vault.', {
+      toast.success('Anchored to your memory vault.', {
         icon: <CheckCircle2 className="text-success" />
       });
       setSources(prev => [{
@@ -30,8 +26,8 @@ export const KnowledgeSource = () => {
   return (
     <div className="space-y-6">
       <div className="space-y-4">
-        <h3 className="text-2xs font-black tracking-[0.3em] text-text-tertiary flex items-center justify-between uppercase kinetic-text">
-          Source_Intake <Database size={13} className="text-accent" aria-hidden="true" />
+        <h3 className="text-2xs font-bold tracking-widest text-text-tertiary flex items-center justify-between uppercase">
+          Files &amp; links <Database size={13} className="text-accent" aria-hidden="true" />
         </h3>
         
         <div className="relative glass-card p-4 rounded-radius-xl border-dashed border-border-primary hover:border-accent/40 transition-all duration-500">
@@ -45,12 +41,10 @@ export const KnowledgeSource = () => {
         </div>
       </div>
 
-      {/* Syncing Indicators */}
+      {/* This session's uploads */}
+      {sources.length > 0 && (
       <div className="space-y-3">
-         <div className="flex items-center justify-between px-1">
-            <span className="text-2xs font-black text-text-tertiary uppercase tracking-widest">Active_Anchors</span>
-            <span className="text-2xs font-bold text-accent px-2 py-0.5 bg-accent/5 rounded-full border border-accent/10">SYNC_LIVE</span>
-         </div>
+         <span className="text-2xs font-bold text-text-tertiary uppercase tracking-widest px-1">This session</span>
          <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar pr-2">
             <AnimatePresence initial={false}>
               {sources.map(source => (
@@ -72,6 +66,7 @@ export const KnowledgeSource = () => {
             </AnimatePresence>
          </div>
       </div>
+      )}
 
       <style dangerouslySetInnerHTML={{ __html: `
         .filepond--panel-root { background-color: var(--bg-secondary) !important; border-radius: 1.5rem !important; }

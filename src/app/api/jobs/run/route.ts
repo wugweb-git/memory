@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { runScheduledPublisher } from "@/jobs/scheduled-publisher";
 import { runPublishingQueueJob } from "@/jobs/publishing-queue";
 import { runRetryWorker } from "@/jobs/retry-worker";
+import { runRetentionCleanup } from "@/jobs/retention-cleanup";
 import { postgres } from "@/lib/db/postgres";
 import { getRequestUser } from "@/lib/security/auth";
 import { hasPermission } from "@/lib/security/roles";
@@ -24,7 +25,8 @@ async function runAll() {
   const scheduler = await runScheduledPublisher();
   const queue = await runPublishingQueueJob();
   const retries = await runRetryWorker();
-  const result = { scheduler, queue, retries, ranAt: new Date().toISOString() };
+  const retention = await runRetentionCleanup();
+  const result = { scheduler, queue, retries, retention, ranAt: new Date().toISOString() };
 
   try {
     await postgres.executionAuditLog.create({

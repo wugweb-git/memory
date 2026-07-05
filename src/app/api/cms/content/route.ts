@@ -17,7 +17,7 @@ export async function GET() {
 /** POST — create a public content doc in Sanity. */
 export async function POST(req: NextRequest) {
   const actor = getRequestUser(req);
-  const limit = checkRateLimit(`cms:${actor.userId}`, 40, 60_000);
+  const limit = await checkRateLimit(`cms:${actor.userId}`, 40, 60_000);
   if (!limit.allowed) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
   if (!hasPermission(actor.role, "publish")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 

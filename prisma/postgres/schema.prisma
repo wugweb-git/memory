@@ -783,3 +783,30 @@ model BlobEvent {
   @@index([blob_id])
   @@map("blob_events")
 }
+
+// Distributed rate-limit counters (Neon-backed so limits hold across
+// serverless instances — the prior in-memory Map reset per cold start).
+model RateLimitCounter {
+  key       String   @id
+  count     Int      @default(1)
+  resetAt   DateTime
+
+  @@map("rate_limit_counters")
+}
+
+// Pulse — direct wellbeing/momentum check-ins (src/lib/pulse/*). Not tied to
+// a memory packet, so it's its own table rather than reusing Signal.
+model PulseCheckin {
+  id            String   @id @default(uuid())
+  userId        String
+  motivation    Float
+  energy        Float
+  stress        Float
+  attention     Float
+  burnoutRisk   Float
+  flagged       Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("pulse_checkins")
+}

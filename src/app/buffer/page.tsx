@@ -20,6 +20,9 @@ import {
   MoreVertical
 } from 'lucide-react';
 import ManualUpload from './components/ManualUpload';
+import { VoiceIngestion } from '@/app/component/VoiceIngestion';
+import { KnowledgeSource } from '@/app/component/KnowledgeSource';
+import { PulseWidget } from '@/app/component/PulseWidget';
 
 interface BlobItem {
   id: string;
@@ -47,6 +50,7 @@ export default function BufferControlSurface() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'raw' | 'reviewed' | 'promoted'>('all');
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [captureMode, setCaptureMode] = useState<'upload' | 'voice' | 'knowledge' | 'pulse'>('upload');
 
   // Stats & Ingestion Monitoring
   const fetchStats = useCallback(async () => {
@@ -183,7 +187,30 @@ export default function BufferControlSurface() {
               </div>
             </div>
 
-              <ManualUpload onComplete={() => fetchItems()} />
+            <div className="p-5 rounded-2xl bg-secondary border border-border-secondary space-y-4">
+              <div className="grid grid-cols-4 gap-1">
+                {([
+                  ['upload', 'Upload'],
+                  ['voice', 'Voice'],
+                  ['knowledge', 'Files'],
+                  ['pulse', 'Pulse'],
+                ] as const).map(([mode, label]) => (
+                  <button
+                    key={mode}
+                    onClick={() => setCaptureMode(mode)}
+                    className={`px-2 py-1.5 rounded-lg text-2xs font-bold transition-colors ${
+                      captureMode === mode ? 'bg-text-primary text-bg-primary' : 'text-text-tertiary hover:bg-bg-secondary'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {captureMode === 'upload' && <ManualUpload onComplete={() => fetchItems()} />}
+              {captureMode === 'voice' && <VoiceIngestion />}
+              {captureMode === 'knowledge' && <KnowledgeSource />}
+              {captureMode === 'pulse' && <PulseWidget />}
+            </div>
           </div>
 
           {/* 🔹 CENTER PANEL: BLOB FEED */}
@@ -316,6 +343,23 @@ export default function BufferControlSurface() {
                       </button>
                     </div>
                   </div>
+
+                  {items.find(i => i.id === selectedId)?.trace_json?.provenance && (
+                    <div className="p-3 rounded-xl border border-border-secondary bg-secondary/40 flex items-center justify-between">
+                      <span className="text-2xs font-bold text-text-tertiary uppercase tracking-widest">Authenticity signal</span>
+                      {(() => {
+                        const p = items.find(i => i.id === selectedId)?.trace_json?.provenance;
+                        const trusted = p.reason === 'trusted';
+                        return (
+                          <span className={`text-2xs font-bold px-2 py-0.5 rounded-full border ${
+                            trusted ? 'text-success border-success/30 bg-success/5' : 'text-warning border-warning/30 bg-warning/5'
+                          }`}>
+                            {trusted ? 'Likely human' : 'Possibly AI-generated'} · trust {Math.round(p.trustScore * 100)}%
+                          </span>
+                        );
+                      })()}
+                    </div>
+                  )}
 
                   <div className="space-y-4">
                     <h4 className="text-2xs font-bold uppercase tracking-widest text-text-tertiary border-b border-border-secondary pb-2">Payload Data</h4>

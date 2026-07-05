@@ -1,5 +1,6 @@
 import { Push_To_Blob, Promote_To_Memory } from '@/lib/blobLayer';
 import { fetchUrl, parseFeed } from './fetchers';
+import { detectAiLikelihood, detectProvenanceSignal } from '@/lib/provenance/detection';
 
 export interface RssItem {
   title: string;
@@ -48,6 +49,12 @@ export async function ingestRss(
   for (const entry of items) {
     if (!entry?.url) continue;
 
+    let provenance: ReturnType<typeof detectProvenanceSignal> | null = null;
+    if (entry.summary && entry.summary.length >= 40) {
+      const { aiProbability, humanProbability } = detectAiLikelihood(entry.summary);
+      provenance = detectProvenanceSignal({ aiProbability, humanProbability, verifiedHuman: false });
+    }
+
     const item = await Push_To_Blob({
       type: 'rss',
       source: 'rss',
@@ -65,6 +72,7 @@ export async function ingestRss(
         declared_author: 'external',
         ingestion_path: 'ingest/rss',
         feed_url: payload.feedUrl,
+        ...(provenance ? { provenance } : {}),
         received_at: new Date().toISOString(),
       },
     });

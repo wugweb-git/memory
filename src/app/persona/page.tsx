@@ -77,6 +77,32 @@ export default function PersonaIntelligencePage() {
     }
   }
 
+  const ROLLBACK_FIELDS = ['communicationStyle', 'writingStyle', 'decisionStyle'];
+
+  async function rollbackField(logId: string, field: string) {
+    if (!ROLLBACK_FIELDS.includes(field)) return;
+    if (!confirm(`Roll back ${field} to its value before this change?`)) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/persona/rollback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ field, toLogId: logId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? 'Rollback failed');
+        return;
+      }
+      await fetchData(userId);
+    } catch {
+      setError('Rollback failed');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function sendFeedback() {
     setSaving(true);
     try {
@@ -195,13 +221,22 @@ export default function PersonaIntelligencePage() {
         ) : (
           <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
             {timeline.map((log) => (
-              <div key={log.id} className="flex items-start justify-between bg-secondary/40 rounded-xl p-3">
-                <div className="space-y-0.5">
+              <div key={log.id} className="flex items-start justify-between bg-secondary/40 rounded-xl p-3 gap-3">
+                <div className="space-y-0.5 min-w-0">
                   <p className="text-xs font-bold">{log.changedField || 'general'}</p>
                   <p className="text-2xs text-text-tertiary">{log.reason || 'no reason'}</p>
+                  {log.changedField && ROLLBACK_FIELDS.includes(log.changedField) && log.reason !== 'rollback' && (
+                    <button
+                      onClick={() => rollbackField(log.id, log.changedField!)}
+                      disabled={saving}
+                      className="text-2xs font-bold uppercase text-accent disabled:opacity-50"
+                    >
+                      Roll back
+                    </button>
+                  )}
                 </div>
-                <div className="text-right">
-                  <span className={`text-2xs font-bold ${(log.confidenceDelta || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                <div className="text-right shrink-0">
+                  <span className={`text-2xs font-bold ${(log.confidenceDelta || 0) >= 0 ? 'text-success' : 'text-danger'}`}>
                     {(log.confidenceDelta || 0) >= 0 ? '+' : ''}{Math.round((log.confidenceDelta || 0) * 100)}%
                   </span>
                   <p className="text-2xs text-text-tertiary">{new Date(log.createdAt).toLocaleDateString()}</p>

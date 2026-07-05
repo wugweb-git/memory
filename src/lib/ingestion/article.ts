@@ -1,5 +1,6 @@
 import { Push_To_Blob, Promote_To_Memory } from '@/lib/blobLayer';
 import { fetchUrl, extractArticle } from './fetchers';
+import { detectAiLikelihood, detectProvenanceSignal } from '@/lib/provenance/detection';
 
 export interface ArticlePayload {
   url: string;
@@ -44,6 +45,14 @@ export async function ingestExternalArticle(
     }
   }
 
+  // Provenance: score authenticity of fetched content so review (the buffer)
+  // can see whether a "source" is likely AI-generated slop before it's kept.
+  let provenance: ReturnType<typeof detectProvenanceSignal> | null = null;
+  if (content && content.length >= 40) {
+    const { aiProbability, humanProbability } = detectAiLikelihood(content);
+    provenance = detectProvenanceSignal({ aiProbability, humanProbability, verifiedHuman: false });
+  }
+
   const item = await Push_To_Blob({
     type: 'article',
     source: 'article',
@@ -60,6 +69,7 @@ export async function ingestExternalArticle(
       ingestion_path: 'ingest/article',
       fetched,
       ...(fetchError ? { fetch_error: fetchError } : {}),
+      ...(provenance ? { provenance } : {}),
       received_at: new Date().toISOString(),
     },
   });
@@ -77,6 +87,7 @@ export async function ingestExternalArticle(
     state: item.state,
     fetched,
     ...(fetchError ? { fetch_error: fetchError } : {}),
+    ...(provenance ? { provenance } : {}),
     title,
     content_chars: content?.length ?? 0,
     promoted: Boolean(promotedPacketId),

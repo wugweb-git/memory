@@ -12,7 +12,7 @@ import { waitUntil } from "@vercel/functions";
 export async function POST(req: NextRequest) {
   const actor = requireOwner(req);
   if (actor instanceof NextResponse) return actor;
-  const limit = checkRateLimit(`cognitive:feedback:${actor.userId}`, 30, 60_000);
+  const limit = await checkRateLimit(`cognitive:feedback:${actor.userId}`, 30, 60_000);
   if (!limit.allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
   try {
     const body = await req.json();
