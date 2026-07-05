@@ -78,7 +78,8 @@ export async function POST(req: Request) {
       ? (process.env.GROQ_MODEL || 'llama-3.3-70b-versatile')
       : 'gpt-4-turbo';
     const result = streamText({
-      model: provider(chatModel) as unknown as Parameters<typeof streamText>[0]['model'],
+      // .chat() forces the chat-completions endpoint (Groq has no /responses API)
+      model: provider.chat(chatModel) as unknown as Parameters<typeof streamText>[0]['model'],
       temperature,
       system: `${SYSTEM_PROMPT}\n\nContext nodes:\n${context || '(no indexed clusters matched)'}`,
       messages: await convertToModelMessages(messages),
