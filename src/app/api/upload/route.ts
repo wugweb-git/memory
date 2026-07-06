@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pdf from "pdf-parse";
+import { extractText } from 'unpdf';
 import { MemoryService } from '@/lib/memory/service';
 import { getRequestUserId } from '@/lib/identity/request';
 import { requireOwner } from '@/lib/security/auth';
@@ -32,8 +32,15 @@ export async function POST(req: NextRequest) {
 
     // 1. Parse File Content
     if (fileName.endsWith('.pdf')) {
-      const data = await pdf(Buffer.from(fileContent));
-      parsedText = data.text;
+      try {
+        const { text } = await extractText(new Uint8Array(fileContent), { mergePages: true });
+        parsedText = Array.isArray(text) ? text.join('\n\n') : text;
+      } catch (pdfErr: any) {
+        return NextResponse.json(
+          { error: `Could not parse this PDF (${pdfErr?.message ?? 'unreadable'}). Try exporting it again or uploading the text.` },
+          { status: 400 },
+        );
+      }
     } else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) {
       const text = new TextDecoder().decode(fileContent);
       parsedText = text.replace(/<[^>]*>?/gm, ''); // Basic HTML strip

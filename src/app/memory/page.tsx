@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AppShell } from '@/app/component/AppShell';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
 import { Activity, AlertTriangle, Database, FileLock2, Folder, HardDrive, Home, RefreshCcw, Server, ShieldAlert } from 'lucide-react';
+import ManualUpload from '@/app/buffer/components/ManualUpload';
 
 type MonitorState = {
   stats: {
@@ -217,6 +218,10 @@ export default function MemoryControlSurface() {
         </section>
 
         <aside className="space-y-6">
+          <section className="glass-panel rounded-radius-xl border border-border-secondary p-6">
+            <ManualUpload onComplete={() => fetchMonitor()} />
+          </section>
+
           <section className="glass-panel rounded-radius-xl border border-border-secondary p-6">
             <h3 className="text-xs font-bold uppercase tracking-widest text-text-tertiary mb-5">Storage Topology</h3>
             <div className="space-y-4">

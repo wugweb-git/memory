@@ -1,194 +1,160 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { Upload, X, Check, Loader2, AlertCircle } from 'lucide-react';
-import { upload } from '@vercel/blob/client';
 
+/**
+ * Direct-to-memory upload. Posts the file to /api/upload (multipart), which
+ * parses PDF/HTML/text and runs the full ingestion pipeline
+ * (gate → normalize → memory packet). Replaces the old @vercel/blob client
+ * flow whose handler route was never implemented — uploads always failed.
+ */
 export default function ManualUpload({ onComplete }: { onComplete: () => void }) {
   const [file, setFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [status, setStatus] = useState<'idle' | 'uploading' | 'processing' | 'success' | 'error'>('idle');
-  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<'idle' | 'uploading' | 'success' | 'stalled' | 'error'>('idle');
+  const [message, setMessage] = useState<string | null>(null);
+  const [needsLogin, setNeedsLogin] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
       setStatus('idle');
-      setError(null);
+      setMessage(null);
+      setNeedsLogin(false);
     }
   };
 
-  const startUpload = async () => {
+  const startUpload = () => {
     if (!file) return;
-
-    setUploading(true);
     setStatus('uploading');
     setProgress(0);
+    setMessage(null);
+    setNeedsLogin(false);
 
-    try {
-      // 1. REAL UPLOAD TO VERCEL BLOB
-      const newBlob = await upload(file.name, file, {
-        access: 'public',
-        handleUploadUrl: '/api/blob/upload-handler', // Needs to be implemented
-        onUploadProgress: (progressEvent) => {
-          setProgress(progressEvent.percentage);
-        },
-      });
+    const form = new FormData();
+    form.append('filepond', file);
 
-      setStatus('processing');
-
-      // 2. STORE METADATA IN SUPABASE (via Layer 0 API)
-      const res = await fetch('/api/blob', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'manual_upload',
-          source: 'user_buffer',
-          source_id: 'manual',
-          raw_payload: {
-            filename: file.name,
-            size: file.size,
-            type: file.type
-          },
-          file_ref: newBlob.url,
-          trace_json: {
-            origin: 'web_ui',
-            ingestion_path: 'buffer/manual_upload',
-            blob_url: newBlob.url
-          }
-        })
-      });
-
-      if (!res.ok) throw new Error('Failed to register upload in buffer database');
-
-      setStatus('success');
-      setTimeout(() => {
-        setFile(null);
-        setStatus('idle');
-        onComplete();
-      }, 2000);
-
-    } catch (err: any) {
-      console.error('Upload failure', err);
-      setError(err.message || 'Upload failed');
+    // XHR instead of fetch for real upload progress.
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/upload');
+    xhr.withCredentials = true;
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      let body: any = {};
+      try { body = JSON.parse(xhr.responseText); } catch { /* non-JSON */ }
+      if (xhr.status === 200) {
+        setStatus('success');
+        setMessage(`In memory — packet ${String(body.packetId ?? '').slice(0, 8)}`);
+        setTimeout(() => { setFile(null); setStatus('idle'); onComplete(); }, 2500);
+      } else if (xhr.status === 202) {
+        setStatus('stalled');
+        setMessage(body.reason ? `Held by the ingestion gate: ${body.reason}` : 'Held by the ingestion gate for review.');
+      } else if (xhr.status === 401) {
+        setStatus('error');
+        setNeedsLogin(true);
+        setMessage('You need to sign in before ingesting data.');
+      } else {
+        setStatus('error');
+        setMessage(body.error || body.message || `Upload failed (HTTP ${xhr.status})`);
+      }
+    };
+    xhr.onerror = () => {
       setStatus('error');
-    } finally {
-      setUploading(false);
-    }
+      setMessage('Network error — upload did not reach the server.');
+    };
+    xhr.send(form);
   };
 
+  const uploading = status === 'uploading';
+
   return (
-    <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/5 space-y-4">
-      <div className="flex items-center justify-between border-b border-white/5 pb-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-white">Manual Data Ingest</h3>
-        <button className="text-white/20 hover:text-white transition-colors">
-          <Loader2 className={`w-4 h-4 ${uploading ? 'animate-spin' : 'hidden'}`} />
-        </button>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-2xs font-bold uppercase tracking-widest text-text-tertiary">Upload to memory</h3>
+        {uploading && <Loader2 size={14} className="animate-spin text-text-tertiary" />}
       </div>
 
       {!file ? (
-        <div className="border-2 border-dashed border-white/10 rounded-xl p-10 flex flex-col items-center justify-center gap-4 hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all cursor-pointer relative group">
-          <input 
-            type="file" 
-            className="absolute inset-0 opacity-0 cursor-pointer" 
+        <div className="border-2 border-dashed border-border-primary rounded-xl p-8 flex flex-col items-center justify-center gap-3 hover:border-accent/50 hover:bg-accent/5 transition-all cursor-pointer relative group">
+          <input
+            type="file"
+            accept=".pdf,.txt,.md,.html,.htm,.json,.csv"
+            className="absolute inset-0 opacity-0 cursor-pointer"
             onChange={handleFileChange}
           />
-          <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white/40 group-hover:scale-110 transition-transform">
-            <Upload size={24} />
+          <div className="w-11 h-11 rounded-full bg-secondary border border-border-secondary flex items-center justify-center text-text-tertiary group-hover:scale-110 transition-transform">
+            <Upload size={20} />
           </div>
           <div className="text-center">
-            <p className="text-sm text-white/80">Drop file or click to select</p>
-            <p className="text-xs text-white/30 mt-1">Maximum payload: 50MB</p>
+            <p className="text-sm text-text-primary font-medium">Drop a file or click to select</p>
+            <p className="text-2xs text-text-tertiary mt-1">PDF, text, Markdown, HTML — parsed straight into memory</p>
           </div>
         </div>
       ) : (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-3 rounded-lg bg-white/5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded bg-white/5 flex items-center justify-center text-indigo-400">
-                <Upload size={20} />
-              </div>
-              <div>
-                <p className="text-sm text-white font-medium">{file.name}</p>
-                <p className="text-2xs text-white/30 uppercase">{(file.size / 1024).toFixed(0)} KB</p>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between p-3 rounded-xl bg-secondary border border-border-secondary">
+            <div className="flex items-center gap-3 min-w-0">
+              <Upload size={16} className="text-accent shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm text-text-primary font-medium truncate">{file.name}</p>
+                <p className="text-2xs text-text-tertiary">{(file.size / 1024).toFixed(0)} KB</p>
               </div>
             </div>
-            {status !== 'uploading' && (
-              <button onClick={() => setFile(null)} className="p-2 hover:bg-white/10 rounded-full text-white/40">
-                <X size={16} />
+            {!uploading && (
+              <button onClick={() => { setFile(null); setStatus('idle'); setMessage(null); }} className="p-1.5 hover:bg-bg-secondary rounded-full text-text-disabled shrink-0">
+                <X size={15} />
               </button>
             )}
           </div>
 
-          {status === 'uploading' && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-2xs uppercase font-bold tracking-widest text-indigo-400">
-                <span>Uploading...</span>
-                <span>{Math.round(progress)}%</span>
+          {uploading && (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-2xs font-bold text-text-tertiary">
+                <span>Uploading…</span>
+                <span>{progress}%</span>
               </div>
-              <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-indigo-500 transition-all duration-300 ease-out"
-                  style={{ width: `${progress}%` }}
-                />
+              <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
+                <div className="h-full bg-accent transition-all duration-200" style={{ width: `${progress}%` }} />
               </div>
-            </div>
-          )}
-
-          {status === 'processing' && (
-            <div className="flex items-center gap-2 text-xs text-amber-400 animate-pulse">
-              <RefreshCw className="w-3 h-3 animate-spin" />
-              <span>Finalizing node persistence...</span>
             </div>
           )}
 
           {status === 'success' && (
-            <div className="flex items-center gap-2 text-xs text-emerald-400">
-              <Check className="w-4 h-4" />
-              <span>Ingestion successful. Node at quarantine.</span>
-            </div>
+            <p className="flex items-center gap-2 text-xs text-success font-medium">
+              <Check size={14} /> {message}
+            </p>
           )}
-
+          {status === 'stalled' && (
+            <p className="flex items-center gap-2 text-xs text-warning font-medium">
+              <AlertCircle size={14} /> {message}
+            </p>
+          )}
           {status === 'error' && (
-            <div className="flex items-center gap-2 text-xs text-rose-500">
-              <AlertCircle className="w-4 h-4" />
-              <span>{error || 'Ingestion failed'}</span>
+            <div className="flex items-start gap-2 text-xs text-danger font-medium">
+              <AlertCircle size={14} className="shrink-0 mt-0.5" />
+              <span>
+                {message}{' '}
+                {needsLogin && (
+                  <Link href="/login?next=/buffer" className="underline font-bold">Sign in</Link>
+                )}
+              </span>
             </div>
           )}
 
           {status === 'idle' && (
-            <button 
+            <button
               onClick={startUpload}
-              className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all shadow-lg shadow-indigo-600/20"
+              className="w-full py-2.5 rounded-xl bg-text-primary text-bg-primary text-sm font-bold hover:bg-text-secondary transition-colors"
             >
-              Start Secure Ingest
+              Ingest into memory
             </button>
           )}
         </div>
       )}
     </div>
-  );
-}
-
-function RefreshCw(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-      <path d="M21 3v5h-5" />
-      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-      <path d="M3 21v-5h5" />
-    </svg>
   );
 }

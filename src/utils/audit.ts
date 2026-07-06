@@ -1,5 +1,5 @@
-import { OpenAIEmbeddings } from '@langchain/openai';
 import { postgres } from '@/lib/db/postgres';
+import { getEmbeddings, embeddingsProvider } from '@/lib/memory/embeddings';
 
 /**
  * IDENTITY PRISM: MEMORY AUDIT (v4.3 — Neon)
@@ -22,13 +22,17 @@ export async function runMemoryAudit() {
       report.sectors.database = { status: 'FAIL', error: e.message };
     }
 
-    // Sector 2: OpenAI / Vector Handshake
-    try {
-      const transformer = new OpenAIEmbeddings({ modelName: 'text-embedding-3-small' });
-      await transformer.embedQuery('Health Check');
-      report.sectors.vector_engine = { status: 'SYNCHRONIZED', provider: 'OpenAI' };
-    } catch (e: any) {
-      report.sectors.vector_engine = { status: 'FAIL', error: e.message };
+    // Sector 2: Embedding provider handshake (OpenRouter/custom/OpenAI)
+    const provider = embeddingsProvider();
+    if (!provider.configured) {
+      report.sectors.vector_engine = { status: 'UNCONFIGURED', note: 'Set OPENROUTER_API_KEY (or OPENAI_API_KEY)' };
+    } else {
+      try {
+        await getEmbeddings().embedQuery('Health Check');
+        report.sectors.vector_engine = { status: 'SYNCHRONIZED', provider: provider.name };
+      } catch (e: any) {
+        report.sectors.vector_engine = { status: 'FAIL', provider: provider.name, error: e.message };
+      }
     }
 
     // Sector 3: Vector index (pgvector)

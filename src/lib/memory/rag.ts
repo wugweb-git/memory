@@ -1,25 +1,22 @@
-import { OpenAIEmbeddings } from '@langchain/openai';
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 import { postgres as prisma } from '@/lib/db/postgres';
 import { Prisma } from '../../generated/postgres';
 import { addProcessingError } from './gate';
 import { EmbeddingStatus, ProcessingError } from './types';
+import { getEmbeddings } from './embeddings';
 
 /** pgvector text literal: '[0.1,0.2,…]' — bound as a parameter, cast with ::vector. */
 function toVectorLiteral(vec: number[]): string {
   return `[${vec.join(',')}]`;
 }
 
-const EMBEDDING_MODEL = 'text-embedding-3-small';
+const EMBEDDING_MODEL = process.env.EMBEDDINGS_MODEL || 'text-embedding-3-small';
 const EMBEDDING_VERSION = 1;
 const CHUNK_SIZE = 800;
 const CHUNK_OVERLAP = 100;
 
-// Initialize OpenAI Embeddings with batching enabled
-const embeddings = new OpenAIEmbeddings({
-  modelName: EMBEDDING_MODEL,
-  batchSize: 20, // Efficiency: Batch up to 20 chunks per request
-});
+// Pluggable provider: OpenRouter → custom OpenAI-compatible → OpenAI.
+const embeddings = getEmbeddings();
 
 /**
  * IDENTITY PRISM: RAG PIPELINE (LAYER 1.2)
