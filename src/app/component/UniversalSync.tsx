@@ -49,7 +49,7 @@ export const UniversalSync = () => {
 
   const loadBridges = useCallback(async () => {
     try {
-      const res = await fetch('/api/blob?type=external_link&limit=20', { cache: 'no-store' });
+      const res = await fetch('/api/blob?type=article&limit=20', { cache: 'no-store' });
       if (!res.ok) return;
       const data = await res.json();
       const items = parseBlobItems<{ id: string; raw_payload?: string; created_at?: string; metadata?: { url?: string; title?: string } }>(data);
@@ -89,21 +89,18 @@ export const UniversalSync = () => {
       const pathLabel = parsed.pathname && parsed.pathname !== '/' ? parsed.pathname : '';
       const title = `${host}${pathLabel} // Core Fragment`;
 
-      const res = await fetch('/api/blob', {
+      // Real ingestion: the article fetcher pulls the page server-side and
+      // extracts readable content into the buffer — not just a bare link.
+      const res = await fetch('/api/ingest/article', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          type: 'external_link',
-          source: 'universal_sync',
-          source_id: parsed.href,
-          raw_payload: parsed.href,
-          trace_json: { bridge: true, host },
-        }),
+        credentials: 'include',
+        body: JSON.stringify({ url: parsed.href }),
       });
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || err.error || 'Bridge rejected');
+        throw new Error(err.message || err.error || 'Sync rejected');
       }
 
       setSyncedItems((prev) => [
@@ -116,7 +113,7 @@ export const UniversalSync = () => {
         },
         ...prev.filter((p) => !p.id.startsWith('default-')),
       ]);
-      toast.success('Fragment bridged to Genesis stream.');
+      toast.success('Fetched and added to your buffer for review.');
       setUrl('');
       await loadBridges();
     } catch (e: unknown) {

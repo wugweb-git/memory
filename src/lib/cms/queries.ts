@@ -2,15 +2,18 @@ import { sanityClient, sanityWriteClient } from './sanity';
 
 /* ── GROQ ──────────────────────────────────────────────────────── */
 const PROJECTS = `*[_type == "project" && !(_id in path("drafts.**"))] | order(featured desc, publishedAt desc){
-  _id, title, "slug": slug.current, summary, tags, url, featured, publishedAt
+  _id, title, "slug": slug.current, summary, tags, url, featured, publishedAt,
+  "coverImage": coverImage.asset->url
 }`;
 
 const CASE_STUDIES = `*[_type == "caseStudy" && !(_id in path("drafts.**"))] | order(publishedAt desc){
-  _id, title, "slug": slug.current, client, summary, outcome, tags, publishedAt
+  _id, title, "slug": slug.current, client, summary, outcome, tags, publishedAt,
+  "coverImage": coverImage.asset->url
 }`;
 
 const BLOG_POSTS = `*[_type == "blogPost" && !(_id in path("drafts.**"))] | order(publishedAt desc){
-  _id, title, "slug": slug.current, excerpt, tags, publishedAt
+  _id, title, "slug": slug.current, excerpt, tags, publishedAt,
+  "coverImage": coverImage.asset->url
 }`;
 
 /* ── Reads (public showcase) ───────────────────────────────────── */

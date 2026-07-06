@@ -1,61 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { extractPersonaEvidence } from '@/lib/persona/extractor';
-import { evolvePersonaField } from '@/lib/persona/evolution';
-import { isVerifiedHuman } from '@/lib/persona/fingerprint';
-import { collectProfileRebuildText } from '@/lib/persona/rebuild-source';
-import { IDENTITY_CONFIG } from '@/config/identity';
+import { rebuildPersona } from '@/lib/persona/rebuild';
+import { requireOwner } from '@/lib/security/auth';
+import { checkRateLimit } from '@/lib/security/rate-limit';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
+/**
+ * POST /api/persona/rebuild — full L4 rebuild per the layer-4 doc:
+ * evidence (profile + outputs + decisions + signals + feedback) → traits →
+ * LLM voice synthesis → confidence-gated evolution of all persona fields.
+ */
 export async function POST(req: NextRequest) {
+  const actor = requireOwner(req);
+  if (actor instanceof NextResponse) return actor;
+  const limit = await checkRateLimit(`persona:rebuild:${actor.userId}`, 10, 60_000);
+  if (!limit.allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+
   try {
-    const body = (await req.json()) as {
+    const body = (await req.json().catch(() => ({}))) as {
       userId?: string;
       outputText?: string;
-      useProfileSource?: boolean;
       username?: string;
     };
-    const userId = body.userId || IDENTITY_CONFIG.DEFAULT_USER_ID;
-    let text = body.outputText?.trim() ?? '';
 
-    if (!text && body.useProfileSource !== false) {
-      text = await collectProfileRebuildText(body.username ?? IDENTITY_CONFIG.HANDLE);
-    }
-
-    if (!text || text.length < 40) {
-      return NextResponse.json(
-        { status: 'blocked', reason: 'insufficient_source_text' },
-        { status: 400 },
-      );
-    }
-
-    const verified = await isVerifiedHuman({ userId, text });
-    if (!verified) {
-      return NextResponse.json(
-        { status: 'blocked', reason: 'ai_contamination_detected' },
-        { status: 422 },
-      );
-    }
-
-    const extracted = await extractPersonaEvidence({
-      userId,
-      outputText: text,
-      sourceLayer: 'L4',
-    });
-    const evolution = await evolvePersonaField({
-      userId,
-      field: 'writingStyle',
-      nextValue: extracted.writingStructure as unknown as Record<string, unknown>,
-      reason: 'persona_rebuild',
-      confidenceWeight: 0.6,
+    const result = await rebuildPersona({
+      userId: body.userId,
+      username: body.username,
+      outputText: body.outputText,
     });
 
-    return NextResponse.json({
-      status: 'ok',
-      sourceLength: text.length,
-      extracted,
-      evolution,
-    });
+    if (result.status === 'blocked') {
+      const code = result.reason === 'ai_contamination_detected' ? 422 : 400;
+      return NextResponse.json(result, { status: code });
+    }
+
+    return NextResponse.json(result);
   } catch (err) {
     console.error('[L4] rebuild POST error:', err);
     return NextResponse.json({ error: 'internal_error' }, { status: 500 });

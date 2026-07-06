@@ -596,7 +596,9 @@ const HistoryTab: React.FC = () => {
 
 /* ─── Root page ──────────────────────────────────────────── */
 export default function CognitivePage() {
-  const [mode, setMode]       = useState<Mode>('architect');
+  // Single-mode engine — the owner opted out of the architect/founder/operator
+  // selector. The API still accepts `mode`; everything runs as one brain.
+  const mode: Mode = 'operator';
   const [subTab, setSubTab]   = useState<SubTab>('decide');
 
   const SUB_TABS: Array<{ id: SubTab; label: string; icon: any }> = [
@@ -628,35 +630,6 @@ export default function CognitivePage() {
           </div>
         </div>
       </header>
-
-      {/* Mode selector */}
-      <div>
-        <p className="text-2xs font-black text-text-disabled uppercase tracking-[0.3em] mb-2">Mode</p>
-        <div className="flex gap-2 p-1.5 glass-panel rounded-[2rem] border border-border-secondary shadow-xl">
-          {(Object.keys(MODE_CONFIG) as Mode[]).map(m => {
-            const cfg = MODE_CONFIG[m];
-            const Icon = cfg.icon;
-            const active = mode === m;
-            return (
-              <button
-                key={m}
-                onClick={() => setMode(m)}
-                className={`flex-1 flex items-center justify-center gap-2.5 py-3 rounded-[1.5rem] text-2xs font-bold uppercase tracking-widest transition-all duration-200 ${
-                  active
-                    ? 'bg-text-primary text-bg-primary shadow-sm'
-                    : 'text-text-tertiary hover:bg-secondary hover:text-text-primary'
-                }`}
-              >
-                <Icon size={15} strokeWidth={active ? 2.5 : 2} />
-                <span className="hidden sm:block">{cfg.label}</span>
-              </button>
-            );
-          })}
-        </div>
-        <p className="text-2xs text-text-disabled mt-1.5 pl-1 font-mono">
-          {MODE_CONFIG[mode].desc}
-        </p>
-      </div>
 
       {/* Sub-tab nav */}
       <div className="flex gap-1 border-b border-border-secondary/60">

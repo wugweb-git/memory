@@ -371,6 +371,14 @@ function SanityShowcase() {
         {items.slice(0, 8).map((it: any) => {
           const body = (
             <>
+              {it.coverImage && (
+                <img
+                  src={`${it.coverImage}?w=800&h=420&fit=crop&auto=format`}
+                  alt={it.title}
+                  loading="lazy"
+                  className="w-full h-40 object-cover rounded-xl mb-4 border border-border-secondary"
+                />
+              )}
               <div className="flex items-center justify-between gap-3">
                 <span className="text-2xs font-bold text-accent">{it.kind}</span>
                 {it.url && <ArrowUpRight size={14} className="text-text-disabled group-hover:text-accent transition-colors" />}
@@ -382,6 +390,9 @@ function SanityShowcase() {
                 <p className="text-sm text-text-tertiary mt-1.5 line-clamp-3">
                   {String(it.summary ?? it.excerpt ?? '').slice(0, 180)}
                 </p>
+              )}
+              {it.client && (
+                <p className="text-2xs text-text-tertiary mt-1.5">Client: {it.client}</p>
               )}
               {Array.isArray(it.tags) && it.tags.length > 0 && (
                 <p className="text-2xs text-text-disabled mt-3">{it.tags.slice(0, 4).join(' · ')}</p>
