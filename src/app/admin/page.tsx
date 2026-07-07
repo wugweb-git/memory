@@ -1,287 +1,218 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import type { AdminChecklistItem } from '@/lib/admin/checklist';
-import { 
-  ShieldCheck, Database, Save, FileEdit, Settings, 
-  RefreshCcw, ChevronLeft, LayoutDashboard, Zap, 
-  Trash2, Plus, Search, HelpCircle, Activity,
-  Globe, Github, Youtube, Linkedin, Instagram,
-  Facebook, Twitter, Mail, CheckCircle2, X,
-  Calendar, Video, Folder, File, Grid, List,
-  ArrowUpRight, ExternalLink, MoreVertical,
-  Terminal, Sliders, Fingerprint, Sparkles,
-  Command, Power, Bell, User, Edit3, Brain, ArrowRight, MessageSquare, Menu
-} from 'lucide-react';
-import { JetBrains_Mono, Inter } from 'next/font/google';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
-import { IDENTITY_CONFIG, avatarFallbackUrl } from '@/config/identity';
-import { ADMIN_ONBOARDING_CHECKLIST } from '@/config/ui-content';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { M3Button, M3Card, M3Page, M3State } from '@/components/ui/m3';
+import { AppShell } from '@/app/component/AppShell';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
+import type { AdminChecklistItem } from '@/lib/admin/checklist';
 
-const jetBrains = JetBrains_Mono({ subsets: ['latin'] });
-const inter = Inter({ subsets: ['latin'] });
+type HealthRow = { name: string; status: string; ok: boolean };
+
+const HEALTH_ENDPOINTS: Array<{ name: string; path: string }> = [
+  { name: 'System', path: API_ENDPOINTS.admin.systemHealth.path },
+  { name: 'Models', path: API_ENDPOINTS.admin.modelHealth.path },
+  { name: 'Persona', path: API_ENDPOINTS.admin.personaHealth.path },
+  { name: 'Output', path: API_ENDPOINTS.admin.outputHealth.path },
+  { name: 'Publishing', path: API_ENDPOINTS.admin.publishingHealth.path },
+  { name: 'Provenance', path: API_ENDPOINTS.admin.provenanceHealth.path },
+  { name: 'Recommendation', path: API_ENDPOINTS.admin.recommendationHealth.path },
+];
+
+const SHORTCUTS = [
+  { href: '/system', label: 'Module switches', desc: 'Enable or disable app modules' },
+  { href: '/admin/memory', label: 'Memory admin', desc: 'Packet-level inspection' },
+  { href: '/admin/profile', label: 'Profile admin', desc: 'Public profile internals' },
+  { href: '/buffer', label: 'Buffer', desc: 'Intake queue & capture' },
+];
 
 export default function AdminConsole() {
-  const [targetBlock, setTargetBlock] = useState('Prism Overview');
-  const [isAuditing, setIsAuditing] = useState(false);
-  const [auditResults, setAuditResults] = useState<any>(null);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  
-  const [checklist, setChecklist] = useState<AdminChecklistItem[]>(
-    ADMIN_ONBOARDING_CHECKLIST.map((item) => ({
-      id: item.id,
-      text: item.text,
-      completed: Boolean(item.completed),
-    })),
-  );
+  const [health, setHealth] = useState<HealthRow[] | null>(null);
+  const [checklist, setChecklist] = useState<AdminChecklistItem[] | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [opResult, setOpResult] = useState<{ title: string; body: string } | null>(null);
+
+  const loadHealth = useCallback(async () => {
+    const rows = await Promise.all(
+      HEALTH_ENDPOINTS.map(async ({ name, path }): Promise<HealthRow> => {
+        try {
+          const res = await fetch(path, { credentials: 'include' });
+          const j = await res.json().catch(() => ({}));
+          const status = String(j.status ?? (res.ok ? 'ok' : `HTTP ${res.status}`));
+          return { name, status, ok: res.ok && !/broken|fail|error/i.test(status) };
+        } catch {
+          return { name, status: 'unreachable', ok: false };
+        }
+      }),
+    );
+    setHealth(rows);
+  }, []);
+
+  const loadChecklist = useCallback(async () => {
+    try {
+      const res = await fetch(API_ENDPOINTS.admin.checklist.path, { credentials: 'include' });
+      if (!res.ok) throw new Error();
+      setChecklist(await res.json());
+    } catch {
+      setChecklist(null);
+    }
+  }, []);
 
   useEffect(() => {
-    fetch('/api/admin/checklist')
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data.items) && data.items.length) setChecklist(data.items);
-      })
-      .catch(() => undefined);
-  }, []);
+    loadHealth();
+    loadChecklist();
+  }, [loadHealth, loadChecklist]);
 
-  const persistChecklist = useCallback(async (items: AdminChecklistItem[]) => {
+  async function runOp(key: string, title: string, fn: () => Promise<string>) {
+    setBusy(key);
+    setOpResult(null);
     try {
-      await fetch('/api/admin/checklist', {
+      const body = await fn();
+      setOpResult({ title, body });
+      toast.success(`${title} finished`);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : `${title} failed`);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const runDiagnostics = () =>
+    runOp('diagnose', 'Diagnostics', async () => {
+      const res = await fetch(API_ENDPOINTS.admin.diagnose.path, { method: 'POST', credentials: 'include' });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error ?? 'diagnostics failed');
+      const failures = (j.results ?? []).filter((r: any) => r.status === 'FAIL');
+      return [
+        `Passed ${j.summary?.passed ?? '?'} / ${j.summary?.total ?? '?'} checks.`,
+        ...failures.map((f: any) => `FAIL — ${f.name ?? f.check ?? 'unknown'}: ${f.detail ?? f.error ?? ''}`),
+      ].join('\n');
+    });
+
+  const runAudit = () =>
+    runOp('audit', 'Memory audit', async () => {
+      const res = await fetch(API_ENDPOINTS.memory.audit.path, { credentials: 'include' });
+      const j = await res.json();
+      const sectors = j.report?.sectors ?? {};
+      return Object.entries(sectors)
+        .map(([k, v]: [string, any]) => `${k}: ${v.status}${v.provider ? ` (${v.provider})` : ''}${v.error ? ` — ${String(v.error).slice(0, 80)}` : ''}${v.note ? ` — ${v.note}` : ''}`)
+        .join('\n') || 'No sectors reported.';
+    });
+
+  const runJobs = () =>
+    runOp('jobs', 'Jobs run', async () => {
+      const res = await fetch(API_ENDPOINTS.jobs.run.path, { credentials: 'include' });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error ?? 'jobs failed');
+      const q = j.queue ?? {};
+      return `Scheduler promoted ${j.scheduler?.processed ?? 0} (reclaimed ${j.scheduler?.reclaimed ?? 0}). Queue: ${q.published ?? 0} published, ${q.duplicates ?? 0} duplicates, ${q.retried ?? 0} retried, ${q.dead ?? 0} dead. Retention: ${j.retention?.deleted ?? j.retention?.removed ?? 0} rows cleaned.`;
+    });
+
+  async function toggleChecklist(item: AdminChecklistItem) {
+    if (!checklist) return;
+    const next = checklist.map((c) => (c.id === item.id ? { ...c, completed: !c.completed } : c));
+    setChecklist(next);
+    try {
+      await fetch(API_ENDPOINTS.admin.checklist.path, {
         method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items }),
+        body: JSON.stringify({ items: next }),
       });
     } catch {
-      /* local state remains authoritative in UI */
+      toast.error('Could not save checklist');
     }
-  }, []);
+  }
 
-  const toggleChecklistItem = (id: number) => {
-    setChecklist((prev) => {
-      const next = prev.map((c) => (c.id === id ? { ...c, completed: !c.completed } : c));
-      void persistChecklist(next);
-      return next;
-    });
-  };
-
-  const runAudit = async () => {
-    setIsAuditing(true);
-    try {
-      const res = await fetch(API_ENDPOINTS.admin.semanticDiagnose.path, { method: 'POST' });
-      const data = await res.json();
-      setAuditResults(data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsAuditing(false);
-    }
-  };
-
-  const sidebarItems = [
-    { section: 'Manage', items: [
-      { id: 'Home', icon: <Grid size={18} />, label: 'Home' },
-      { id: 'Memory', icon: <Database size={18} />, label: 'Memory' },
-      { id: 'Services', icon: <Database size={18} />, label: 'Services' },
-      { id: 'Calendar', icon: <Calendar size={18} />, label: 'Calendar' },
-    ]},
-    { section: 'Identity', items: [
-      { id: 'Edit Profile', icon: <User size={18} />, label: 'Edit Profile', href: '/admin/profile' },
-      { id: 'Settings', icon: <Settings size={18} />, label: 'Settings' },
-    ]}
-  ];
+  const done = checklist?.filter((c) => c.completed).length ?? 0;
 
   return (
-    <div className={`text-text-primary flex flex-col ${inter.className}`}>
-      <header className="h-20 border-b border-border-secondary bg-bg-elevated rounded-radius-xl mb-6 flex items-center justify-between px-4 md:px-10 shrink-0">
-         <div className="flex items-center gap-8">
-            <Link href="/" className="group flex items-center gap-3">
-               <div className="w-10 h-10 rounded-2xl bg-black flex items-center justify-center text-white shadow-xl group-hover:scale-110 transition-transform">
-                  <Command size={20} />
-               </div>
-               <div className="flex flex-col">
-                  <h1 className="text-sm font-black tracking-[0.2em] ">Creator Dashboard</h1>
-                  <p className={`text-2xs ${jetBrains.className} text-[#A0A09E] uppercase tracking-widest`}>Node: CONFIG_NODE_ALPHA</p>
-               </div>
-            </Link>
-         </div>
-         
-          <div className="flex items-center gap-3 md:gap-6">
-             <button
-               onClick={() => setMobileNavOpen((v) => !v)}
-               className="lg:hidden p-2 hover:bg-[#F5F5F3] rounded-xl transition-all"
-               aria-label="Toggle admin navigation"
-             >
-               <Menu size={20} className="text-[#666664]" />
-             </button>
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-full border text-2xs font-black tracking-widest  transition-all ${auditResults ? 'bg-success/5 border-success/20 text-success' : 'bg-[#F5F5F3] border-[#E0E0DE] text-[#1A1A1A]'}`}>
-               <ShieldCheck size={12} /> {auditResults ? 'Matrix_Aligned' : 'System_Secure'}
+    <AppShell>
+      <ToastContainer position="bottom-right" theme="light" />
+      <div className="max-w-3xl mx-auto px-4">
+        <M3Page title="Admin console" subtitle="Operations, health and setup — owner only">
+
+          <M3Card title="Operations">
+            <div className="flex flex-wrap gap-2">
+              <M3Button onClick={runDiagnostics} disabled={busy !== null}>
+                {busy === 'diagnose' ? 'Running…' : 'Run diagnostics'}
+              </M3Button>
+              <M3Button tone="secondary" onClick={runAudit} disabled={busy !== null}>
+                {busy === 'audit' ? 'Running…' : 'Memory audit'}
+              </M3Button>
+              <M3Button tone="secondary" onClick={runJobs} disabled={busy !== null}>
+                {busy === 'jobs' ? 'Running…' : 'Run jobs now'}
+              </M3Button>
             </div>
-             <div className="w-px h-8 bg-[#E0E0DE] hidden md:block" />
-            <button className="p-2 hover:bg-[#F5F5F3] rounded-xl transition-all relative">
-               <Bell size={20} className="text-[#888886]" />
-               <div className="absolute top-2 right-2 w-2 h-2 bg-accent rounded-full border-2 border-white" />
-            </button>
-            <button className="flex items-center gap-3 pl-2 pr-4 py-2 rounded-2xl bg-white border border-[#E0E0DE] hover:border-[#1A1A1A] transition-all group">
-               <div className="w-8 h-8 rounded-xl bg-[#F5F5F3] overflow-hidden border border-[#E0E0DE]">
-                  <img src={avatarFallbackUrl()} alt={IDENTITY_CONFIG.DISPLAY_NAME} />
-               </div>
-               <span className="text-2xs font-black uppercase tracking-widest hidden md:block">{IDENTITY_CONFIG.DISPLAY_NAME}</span>
-            </button>
-         </div>
-      </header>
+            {opResult && (
+              <div className="mt-3 rounded-2xl bg-bg-secondary border border-border-secondary p-4">
+                <p className="text-2xs font-bold uppercase tracking-widest text-text-tertiary mb-2">{opResult.title}</p>
+                <pre className="text-xs text-text-secondary whitespace-pre-wrap">{opResult.body}</pre>
+              </div>
+            )}
+          </M3Card>
 
-      <div className="flex-1 flex overflow-hidden">
-         <aside className={`${mobileNavOpen ? 'flex' : 'hidden'} lg:flex w-full lg:w-80 border-r border-[#F0F0EE] bg-white p-6 lg:p-10 flex-col gap-8 lg:gap-12 overflow-y-auto absolute lg:static inset-0 z-40 lg:z-auto`}>
-            <button onClick={runAudit} disabled={isAuditing} className="w-full py-4 bg-accent text-white rounded-2xl text-2xs font-black uppercase tracking-[0.2em] shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3">
-               {isAuditing ? <RefreshCcw size={16} className="animate-spin" /> : <Sparkles size={16} />} 
-               Run System Audit
-            </button>
+          <M3Card
+            title="Health"
+            action={<button onClick={loadHealth} className="text-2xs font-bold uppercase text-accent">Refresh</button>}
+          >
+            {health === null ? (
+              <M3State state="loading" message="Checking subsystems…" />
+            ) : (
+              <ul className="divide-y divide-border-secondary">
+                {health.map((row) => (
+                  <li key={row.name} className="flex items-center justify-between py-2">
+                    <span className="text-sm text-text-primary">{row.name}</span>
+                    <span className={`inline-flex items-center gap-1.5 text-2xs font-bold uppercase tracking-widest ${row.ok ? 'text-success' : 'text-danger'}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${row.ok ? 'bg-success' : 'bg-danger'}`} />
+                      {row.status}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </M3Card>
 
-            {sidebarItems.map(section => (
-               <div key={section.section} className="space-y-6">
-                  <h3 className="text-2xs font-black text-[#A0A09E] tracking-[0.4em] uppercase px-4">{section.section}</h3>
-                  <div className="space-y-2">
-                     {section.items.map(item => {
-                       const isActive = targetBlock === item.id;
-                       return (
-                         <div key={item.id} className="relative group">
-                           {item.href ? (
-                             <Link href={item.href} className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl text-2xs font-black tracking-widest uppercase transition-all ${isActive ? 'bg-[#F2F2ED] text-[#1A1A1A]' : 'text-[#666664] hover:bg-[#FBFBFA] hover:text-[#1A1A1A]'}`}>
-                                {item.icon} {item.label}
-                             </Link>
-                           ) : (
-                              <button onClick={() => { setTargetBlock(item.id); setMobileNavOpen(false); }} className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-2xs font-black tracking-widest uppercase transition-all ${isActive ? 'bg-[#F2F2ED] text-[#1A1A1A]' : 'text-[#666664] hover:bg-[#FBFBFA] hover:text-[#1A1A1A]'}`}>
-                                {item.icon} {item.label}
-                             </button>
-                           )}
-                         </div>
-                       );
-                     })}
-                  </div>
-               </div>
-            ))}
-         </aside>
+          <M3Card title={`Setup checklist${checklist ? ` (${done}/${checklist.length})` : ''}`}>
+            {checklist === null ? (
+              <M3State state="loading" message="Loading checklist…" />
+            ) : (
+              <ul className="divide-y divide-border-secondary">
+                {checklist.map((item) => (
+                  <li key={item.id}>
+                    <button
+                      onClick={() => toggleChecklist(item)}
+                      className="w-full flex items-center gap-3 py-2 text-left group"
+                    >
+                      <span className={`w-4 h-4 rounded border shrink-0 flex items-center justify-center text-2xs ${item.completed ? 'bg-text-primary border-text-primary text-bg-primary' : 'border-border-primary text-transparent group-hover:border-text-tertiary'}`}>
+                        ✓
+                      </span>
+                      <span className={`text-sm ${item.completed ? 'text-text-disabled line-through' : 'text-text-primary'}`}>{item.text}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </M3Card>
 
-         <main className="flex-1 overflow-y-auto bg-[#FBFBFA]">
-            <div className="max-w-[1200px] mx-auto p-5 md:p-12 lg:p-20 space-y-12 md:space-y-16 pb-32 md:pb-40">
-               <header className="flex flex-col md:flex-row md:items-end justify-between gap-8">
-                  <div className="space-y-2">
-                     <div className="flex items-center gap-3 text-accent mb-2">
-                        <div className="w-2 h-2 rounded-full bg-accent animate-ping" />
-                        <span className="text-2xs font-black uppercase tracking-[0.3em]">System.Status: Active</span>
-                     </div>
-                     <h2 className="text-4xl font-black  tracking-tighter uppercase leading-tight">{targetBlock}</h2>
-                     <p className="text-[#888886] text-xs font-bold uppercase tracking-widest">Node: {targetBlock.replace(' ', '_').toUpperCase()} // LAYER_ADMIN</p>
-                  </div>
-               </header>
-
-               <AnimatePresence mode="wait">
-                  <motion.div key={targetBlock} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-16">
-                     {targetBlock === 'Home' || targetBlock === 'Prism Overview' ? (
-                        <div className="space-y-16">
-                           <div className="bg-white rounded-[3rem] p-12 border border-[#E0E0DE] relative overflow-hidden shadow-2xl group">
-                              <div className="flex items-center gap-8 mb-16">
-                                 <div className="w-16 h-16 rounded-2xl bg-black flex items-center justify-center text-white shadow-xl">
-                                    <Sparkles size={32} />
-                                 </div>
-                                 <div className="space-y-1">
-                                    <h3 className="text-2xl font-black  tracking-tighter uppercase">Launch Sequence [14 Nodes]</h3>
-                                    <p className="text-[#888886] text-xs font-bold uppercase tracking-[0.3em]">Identity Alignment Progress</p>
-                                 </div>
-                              </div>
-
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                 {checklist.map(item => (
-                                    <button
-                                       key={item.id}
-                                       onClick={() => toggleChecklistItem(item.id)}
-                                       className="p-6 rounded-[1.5rem] bg-[#FDFDFB] border border-[#E0E0DE] flex items-center justify-between group/item hover:border-[#1A1A1A] transition-all text-left w-full">
-                                       <div className="flex items-center gap-5">
-                                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center border transition-all ${item.completed ? 'bg-success/10 border-success/40 text-success' : 'bg-white border-[#E0E0DE] text-[#E0E0DE]'}`}>
-                                             {item.completed ? <CheckCircle2 size={16} /> : <div className="w-4 h-4 rounded-full border-2 border-dashed border-[#E0E0DE]" />}
-                                          </div>
-                                          <span className={`text-2xs font-black uppercase tracking-wider ${item.completed ? 'text-[#A0A09E] line-through' : 'text-[#1A1A1A]'}`}>
-                                             {item.id.toString().padStart(2, '0')} // {item.text}
-                                          </span>
-                                       </div>
-                                       <ArrowUpRight size={14} className="text-[#E0E0DE] group-hover/item:text-[#1A1A1A]" />
-                                    </button>
-                                 ))}
-                              </div>
-                           </div>
-
-                           {/* 20-Point Diagnostic HUD */}
-                           {auditResults && (
-                             <div className="bg-[#1A1A1A] rounded-[3rem] p-12 text-white space-y-12 shadow-3xl border border-white/5 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-1/2 h-full bg-accent/5 blur-[120px] pointer-events-none" />
-                                <div className="flex items-center justify-between relative z-10">
-                                   <div className="space-y-2">
-                                      <h3 className="text-2xl font-black  tracking-tighter uppercase flex items-center gap-4">
-                                         <Activity className="text-accent" /> 20-Point Semantic Audit
-                                      </h3>
-                                      <p className="text-[#888886] text-2xs font-black uppercase tracking-[0.4em]">Audit_ID: {auditResults.audit_id}</p>
-                                   </div>
-                                   <div className="text-right">
-                                      <p className="text-4xl font-black  text-accent">{auditResults.passed}/20</p>
-                                      <p className="text-2xs font-black uppercase tracking-widest opacity-60">Nodes Verified</p>
-                                   </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4 relative z-10">
-                                   {auditResults.results.map((r: any, i: number) => (
-                                     <div key={i} className={`p-4 rounded-2xl border transition-all ${r.status === 'PASS' ? 'bg-white/5 border-white/10' : 'bg-danger/10 border-danger/20'}`}>
-                                        <div className="flex items-center justify-between mb-3">
-                                           <span className={`text-2xs font-black font-mono tracking-tighter ${r.status === 'PASS' ? 'text-accent' : 'text-danger'}`}>{i + 1}</span>
-                                           {r.status === 'PASS' ? <CheckCircle2 size={12} className="text-accent" /> : <X size={12} className="text-danger" />}
-                                        </div>
-                                        <p className="text-2xs font-black uppercase tracking-widest truncate leading-tight">{r.name}</p>
-                                     </div>
-                                   ))}
-                                </div>
-                             </div>
-                           )}
-
-                           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                               {[
-                                  { label: 'Uplink_Flux', val: '98.4%', icon: Zap, color: 'text-accent' },
-                                  { label: 'Memory_Matrix', val: `${auditResults?.metrics?.relationships_created || '4.2k'} Synapses`, icon: Database, color: 'text-[#444442]' },
-                                  { label: 'Pending_Queue', val: auditResults?.metrics?.pending_edges_created || '14', icon: Activity, color: 'text-success' },
-                               ].map(stat => (
-                                 <div key={stat.label} className="bg-white p-10 rounded-[2.5rem] border border-[#E0E0DE] space-y-6 shadow-sm hover:shadow-xl transition-all">
-                                     <div className="flex items-center justify-between">
-                                        <stat.icon size={24} className={stat.color} />
-                                        <div className="w-1 h-8 bg-[#F0F0EE] rounded-full" />
-                                     </div>
-                                     <div className="space-y-1">
-                                        <p className="text-2xs font-black text-[#A0A09E] tracking-[0.3em] uppercase">{stat.label}</p>
-                                        <p className="text-2xl font-black text-[#1A1A1A]  tracking-tighter">{stat.val}</p>
-                                     </div>
-                                 </div>
-                               ))}
-                           </div>
-                        </div>
-                     ) : (
-                        <div className="min-h-[500px] flex flex-col items-center justify-center text-center space-y-10">
-                           <div className="w-40 h-40 rounded-full bg-white border border-[#E0E0DE] flex items-center justify-center text-[#E0E0DE] relative overflow-hidden">
-                              <div className="absolute inset-0 bg-accent/5 blur-xl animate-pulse" />
-                              <Command size={60} className="relative z-10" />
-                           </div>
-                           <div className="space-y-4">
-                              <h3 className="text-2xl font-black  tracking-tighter ">{targetBlock} Sync</h3>
-                              <button onClick={() => setTargetBlock('Home')} className="px-10 py-4 bg-black text-white rounded-2xl text-2xs font-black uppercase tracking-widest hover:bg-accent transition-all">
-                                Establish Matrix Sync
-                              </button>
-                           </div>
-                        </div>
-                     )}
-                  </motion.div>
-               </AnimatePresence>
+          <M3Card title="Shortcuts">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {SHORTCUTS.map((s) => (
+                <Link
+                  key={s.href}
+                  href={s.href}
+                  className="rounded-2xl border border-border-secondary p-4 hover:border-border-primary transition-colors block"
+                >
+                  <p className="text-sm font-bold text-text-primary">{s.label}</p>
+                  <p className="text-2xs text-text-tertiary mt-0.5">{s.desc}</p>
+                </Link>
+              ))}
             </div>
-         </main>
+          </M3Card>
+        </M3Page>
       </div>
-    </div>
+    </AppShell>
   );
 }
-

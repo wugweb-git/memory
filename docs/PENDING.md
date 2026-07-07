@@ -70,11 +70,11 @@ What remains below is **unbuilt future scope**, not bugs. Execution order and ac
 criteria live in [`master-roadmap.md`](./master-roadmap.md).
 
 ## Security hardening
-- [ ] Distributed rate-limit store (Redis/Upstash) — currently an in-memory map
-- [ ] Global authz middleware enforcement across all privileged APIs
-- [ ] RBAC checks on every publish/admin path (partial today)
+- [x] Distributed rate-limit store — counters in Neon (`rate_limit_counters`, atomic upsert), fails open (2026-07)
+- [x] Authz middleware on admin paths — Edge-safe JWT middleware, header spoofing closed (2026-07)
+- [x] RBAC on publish/admin/ingest/cognitive/upload paths — `requireOwner` + `hasPermission` (2026-07)
 - [ ] Signed-webhook enforcement everywhere (primitive exists, not global)
-- [ ] Encryption-at-rest policy + validation
+- [ ] Encryption-at-rest policy + validation (Neon encrypts at rest by default; app-level policy doc pending)
 
 ## Performance & cost
 - [ ] Cache invalidation orchestration + hit-rate metrics (cache primitives exist)
@@ -93,22 +93,33 @@ criteria live in [`master-roadmap.md`](./master-roadmap.md).
 - [ ] Persona checkpoint/rollback + anomaly guards; twin contradiction alerts
 
 ## Execution (L5) & DR
-- [ ] Retry-worker / dead-letter wired end-to-end (job handlers are thin but functional)
-- [ ] Duplicate-publish prevention (idempotency keys)
+- [x] Retry-worker / dead-letter wired end-to-end — claim → backoff (2^n) → `dead` after 5 (2026-07)
+- [x] Duplicate-publish prevention — `publishOutput` idempotency on `published_outputs.outputId` (2026-07)
 - [ ] Backup/restore runbooks, migration rollback drills, queue replay tooling
 
 ## Data & DB hardening
-- [ ] Mongo retention / archival / compression lifecycle
-- [ ] Postgres partitioning strategy for high-volume execution/provenance logs
+- [x] ~~Mongo retention lifecycle~~ — obsolete: Mongo removed; Neon retention-cleanup job runs in `/api/jobs/run` (2026-07)
+- [~] Postgres partitioning — **deliberately deferred** (2026-07-07): log tables hold near-zero rows;
+      the retention job caps growth; native partitioning would require table recreation for no
+      current benefit. Revisit when `execution_audit_logs` exceeds ~5M rows.
 
 ## Testing
-- [ ] Load, provenance, publishing, persona-evolution, rollback, replay, hallucination suites
+- [x] Load smoke suite — `node scripts/load-test.mjs [base] [conc] [n]`: p50/p95/p99 + error-rate gate (2026-07)
+- [x] Acceptance tests (fetchers, recommendation primitives, flags, router) — 51 passing in `npm test`
+- [ ] Provenance / persona-evolution / rollback / replay / hallucination suites
 
 ## Expansion
-- [ ] Ingestion connectors (RSS / email / webhook / article)
-- [ ] Multi-tenant / org boundaries + agent arbitration & permissions
+- [x] Ingestion connectors — article (real fetch+extract), RSS/Atom (fetch+parse), Notion (token
+      integration, `/api/ingest/notion`), upload (PDF via unpdf), voice, pulse (2026-07).
+      Email remains payload-only until an inbound provider is chosen.
+- [~] Multi-tenant / org boundaries — **deliberately deferred** (2026-07-07): the product is
+      single-owner by design (see CLAUDE.md); tenancy contradicts the MVP. Requires an explicit
+      product decision before any work.
 
 ## Code cleanup (low-risk)
-- [ ] Remove unused deps: `multer`, `react-router-dom`, `pdf2json`, `pdfreader`, `pdfjs-dist`
-- [ ] Legacy Express layer removal per [`legacy-api.md`](./legacy-api.md) — audit callers first
-- [ ] OAuth callbacks for Behance/Dribbble when credentials are available
+- [x] Unused deps removed (multer, react-router-dom, pdf2json, pdfreader, pdfjs-dist, workflow,
+      express, mongoose, supertest, pdf-parse) (2026-07)
+- [x] Legacy Express layer retired after full reference audit — zero live imports; broken root
+      `api/*.js` functions removed from prod (2026-07-07, see `legacy-api.md`)
+- [ ] OAuth callbacks for Behance/Dribbble — **blocked on owner**: needs app registrations
+      (client id/secret) on both platforms; env contract ready when credentials exist

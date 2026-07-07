@@ -4,7 +4,8 @@
  * Single-database architecture: Neon/Postgres via brain_* vars (Mongo removed 2026-07).
  */
 
-import { INTERNAL_VAULT } from '../lib/internal-vault.js';
+// Legacy Express vault removed 2026-07 — env vars are the only source now.
+const INTERNAL_VAULT = {};
 
 const REQUIRED_VARS = ['AUTH_SECRET'];
 const POSTGRES_ALIASES = ['brain_POSTGRES_PRISMA_URL', 'DATABASE_URL'];

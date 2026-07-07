@@ -65,6 +65,7 @@ export const API_ENDPOINTS = {
     article: { path: '/api/ingest/article', methods: ['POST'] as const },
     email: { path: '/api/ingest/email', methods: ['POST'] as const },
     rss: { path: '/api/ingest/rss', methods: ['POST'] as const },
+    notion: { path: '/api/ingest/notion', methods: ['POST'] as const },
   },
   memory: {
     audit: { path: '/api/memory/audit', methods: ['GET'] as const },
