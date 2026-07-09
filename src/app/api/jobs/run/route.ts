@@ -3,6 +3,7 @@ import { runScheduledPublisher } from "@/jobs/scheduled-publisher";
 import { runPublishingQueueJob } from "@/jobs/publishing-queue";
 import { runRetryWorker } from "@/jobs/retry-worker";
 import { runRetentionCleanup } from "@/jobs/retention-cleanup";
+import { runSourceSync } from "@/jobs/source-sync";
 import { postgres } from "@/lib/db/postgres";
 import { getRequestUser } from "@/lib/security/auth";
 import { hasPermission } from "@/lib/security/roles";
@@ -21,12 +22,13 @@ function authorized(req: NextRequest): boolean {
 }
 
 async function runAll() {
-  // Order matters: promote due/scheduled items → publish pending → sweep retries.
+  // Order matters: pull new source items → promote due/scheduled → publish → sweep retries.
+  const sources = await runSourceSync();
   const scheduler = await runScheduledPublisher();
   const queue = await runPublishingQueueJob();
   const retries = await runRetryWorker();
   const retention = await runRetentionCleanup();
-  const result = { scheduler, queue, retries, retention, ranAt: new Date().toISOString() };
+  const result = { sources, scheduler, queue, retries, retention, ranAt: new Date().toISOString() };
 
   try {
     await postgres.executionAuditLog.create({

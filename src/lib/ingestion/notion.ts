@@ -90,12 +90,16 @@ function pageTitle(page: any): string {
 }
 
 export async function ingestNotion(
-  opts: { query?: string; autoPromote?: boolean } = {},
+  opts: { query?: string; autoPromote?: boolean; skipSeen?: string[] } = {},
 ) {
   const token = process.env.NOTION_TOKEN;
   if (!token) {
     throw new Error('NOTION_NOT_CONFIGURED: set NOTION_TOKEN (internal integration) and share pages with it');
   }
+
+  // Cross-run dedup: sourceId = notion:<pageId>:<lastEdited>, so an unchanged
+  // page is skipped and an edited page re-ingests as a new item.
+  const seen = new Set(opts.skipSeen ?? []);
 
   // Most recently edited pages the integration can see.
   const search = await notionFetch(token, '/search', {
@@ -108,22 +112,27 @@ export async function ingestNotion(
     }),
   });
 
-  const results: Array<{ page_id: string; title: string; blob_id?: string; skipped?: string; promoted: boolean }> = [];
+  const results: Array<{ page_id: string; source_id: string; title: string; blob_id?: string; skipped?: string; promoted: boolean }> = [];
 
   for (const page of search.results ?? []) {
     const title = pageTitle(page);
     const lastEdited = page.last_edited_time ?? '';
     const sourceId = `notion:${page.id}:${lastEdited}`;
 
+    if (seen.has(sourceId)) {
+      results.push({ page_id: page.id, source_id: sourceId, title, skipped: 'already_seen', promoted: false });
+      continue;
+    }
+
     let text = '';
     try {
       text = await pageText(token, page.id);
     } catch (err: any) {
-      results.push({ page_id: page.id, title, skipped: `blocks: ${err.message}`, promoted: false });
+      results.push({ page_id: page.id, source_id: sourceId, title, skipped: `blocks: ${err.message}`, promoted: false });
       continue;
     }
     if (!text || text.trim().length < 20) {
-      results.push({ page_id: page.id, title, skipped: 'no_extractable_text', promoted: false });
+      results.push({ page_id: page.id, source_id: sourceId, title, skipped: 'no_extractable_text', promoted: false });
       continue;
     }
 
@@ -152,7 +161,7 @@ export async function ingestNotion(
       await Promote_To_Memory(item.id);
       promoted = true;
     }
-    results.push({ page_id: page.id, title, blob_id: item.id, promoted });
+    results.push({ page_id: page.id, source_id: sourceId, title, blob_id: item.id, promoted });
   }
 
   return {

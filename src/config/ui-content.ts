@@ -91,6 +91,7 @@ const RAW_NAV_GROUPS: ReadonlyArray<NavGroup> = [
     items: [
       { href: '/memory', label: 'Memory', icon: Database, feature: 'memory' },
       { href: '/buffer', label: 'Buffer', icon: Archive, feature: 'buffer' },
+      { href: '/integrations', label: 'Integrations', icon: Link2 },
       { href: '/content', label: 'Content', icon: FileText },
       { href: '/history', label: 'History', icon: History, feature: 'history' },
     ],

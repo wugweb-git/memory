@@ -28,53 +28,43 @@
 
 ---
 
-## 🔴 THE BIG ONE — Real ingestion architecture (mostly NOT built)
+## 🟢 Real ingestion architecture — CORE BUILT (2026-07-09)
 
-The "long source list" exists today only as **decorative components that aren't mounted**
-(`NeuralConnections.tsx`, `IntegrationMatrix.tsx`, `InspirationHub.tsx`) + a `Source` table + a
-display-only mapper (`integrations/from-sources.ts`). `sync/platform-sync.ts` is a fake stub. There is
-**no connector framework, no Sources/Integrations screen, no auto-sync scheduler, no device
-permissions beyond mic.** Full build plan:
+The connector framework, real free connectors, sources API, auto-sync scheduler, and the
+`/integrations` screen are **built + build-green** (`npx tsc --noEmit` and `npm run build` both pass;
+GitHub `.atom` feed verified live/parseable). What's live:
 
-### 1. Connector framework — `src/lib/ingestion/connectors/`
-Registry of modules implementing:
-`{ id, label, category, kind: rss|api|oauth|manual|device, cadenceMins, requires: env|oauth|none,
-configured(): boolean, sync(source): {ingested, skipped} }`.
-Reuse `ingestion/fetchers.ts` (`fetchUrl`, `parseFeed`, `extractArticle`), `notion.ts`, `blobLayer.ts`.
+- **Connector framework** — `src/lib/ingestion/connectors/` (`types.ts`, `state.ts`, `feed.ts`,
+  `notion.ts`, `registry.ts`, `index.ts`). Each connector: `{ id, label, category, kind, requires,
+  cadenceMins, setupHint, configured(), sync() }`. Cross-run dedup + cadence state lives in the existing
+  `scheduler_state` table (key `connector:<id>`) — **no schema migration required**.
+- **Real free connectors** — GitHub (`{user}.atom`, user from `IDENTITY_CONFIG`/`GITHUB_USER`),
+  YouTube (`YOUTUBE_CHANNEL_ID`), Blog/Medium/Substack (`BLOG_RSS_URL`), Notion (wraps `notion.ts`,
+  dedup-aware). Manual surfaces (upload/voice/link/rss-url) registered for visibility.
+- **Honest OAuth placeholders** — Google Drive/Calendar, LinkedIn, X, Behance, Dribbble show
+  `configured: false` + a setup hint. **No fake sync** — `sync()` returns `NOT_CONFIGURED`.
+- **Sources API** — `GET /api/sources` (registry + live status), `POST /api/sources/[id]/sync`
+  ("Sync now", owner-guarded + rate-limited).
+- **Scheduler** — `src/jobs/source-sync.ts` runs every configured+due connector; wired into
+  `/api/jobs/run` (Vercel Cron; Hobby = daily). Manual "Sync now" always available.
+- **/integrations screen** — grouped (auto-sync / manual / needs-credentials) with live status dots,
+  last-sync + result, per-source Sync now. Added to nav (Data group). Not yet verified in a live
+  browser (local preview blocked by a sandbox `getcwd` error; verify on prod after deploy).
 
-### 2. Real free connectors (buildable now, no OAuth)
-- **GitHub** → `github.com/{user}.atom`
-- **YouTube** → `youtube.com/feeds/videos.xml?channel_id=…`
-- **Medium / Substack / blog** → RSS (`parseFeed` works)
-- **Notion** → wire existing `lib/ingestion/notion.ts` into framework + UI (needs `NOTION_TOKEN`)
-- **RSS / Article URL / Upload / Voice** → register the already-working paths
-
-### 3. OAuth/API-gated connectors (framework + honest "Connect" state — NO fake sync)
-- **Google Drive / Calendar** → OAuth2 (`/api/oauth/google/{start,callback}` stubs ready for client id/secret)
-- **LinkedIn, Twitter/X** → ⚠️ no free API/feed — cannot auto-sync without paid/OAuth
-- **Behance** → ⚠️ no public API/RSS
-- **Dribbble** → OAuth required
-  → all show "needs credentials", go live the moment creds exist.
-
-### 4. Source model + Neon migration (additive)
-Add to `Source`: `kind, url, cadence_mins, config Json?, enabled, last_error`. Seed one row per connector.
-
-### 5. Sources/Integrations screen — `/integrations` (feature-flagged)
-The "syncs" surface planned (`WORKSPACE_NAV: Integrations`) but never routed. Real manager: list every
-connector w/ live status, **Sync now** per source, last-sync + failures, enable/disable, connect.
-New `GET/POST /api/sources` + `POST /api/sources/[id]/sync`.
-
-### 6. Auto-sync scheduler — `src/jobs/source-sync.ts`
-For each enabled+configured Source past its cadence → run connector → buffer. Wire into cron
-(`api/jobs/run`). Manual "Sync now" always available (Hobby cron = daily).
-
-### 7. Device-permission capture (browser)
-Beyond voice (done): **geolocation** (location context), **clipboard** (on click), **notifications**
-(opt-in). Real `navigator.*` prompts writing `source=device` blobs. No silent capture.
-
-### 8. Email inbound
-Keep `/api/ingest/email` (payload). Add Postmark/Resend inbound-webhook parsing + signature verify
-(`webhooks/verify.ts`). Owner points a provider's inbound webhook at the route.
+### Still to build (follow-ups)
+1. **Full OAuth flows** — `/api/oauth/google/{start,callback}` + token store, then flip the Google/
+   Dribbble placeholders from `configured:false` to real `sync()`. LinkedIn/X/Behance have no free API.
+2. **Device-permission capture (browser)** — beyond voice (done): geolocation, clipboard (on click),
+   notifications (opt-in). Real `navigator.*` prompts writing `source=device` blobs. No silent capture.
+3. **Email inbound** — keep `/api/ingest/email` (payload); add Postmark/Resend inbound-webhook parsing
+   + signature verify (`webhooks/verify.ts`). Owner points a provider's inbound webhook at the route.
+4. **Optional `Source` table enrichment** — the framework runs off the code registry + `scheduler_state`.
+   If per-source DB rows are wanted (owner-editable feed URLs, enable/disable in DB), add
+   `kind, url, cadence_mins, config, enabled, last_error` to `Source` via additive Neon migration and
+   seed one row per connector. Deliberately deferred — not needed for the current single-owner flow.
+5. **Retire decorative components** — `NeuralConnections.tsx`, `IntegrationMatrix.tsx`,
+   `InspirationHub.tsx`, `sync/platform-sync.ts` (fake stub), display-only `integrations/from-sources.ts`
+   are now superseded by the real `/integrations` screen; remove after confirming nothing imports them.
 
 ---
 
