@@ -54,26 +54,30 @@ GitHub `.atom` feed verified live/parseable). What's live:
 ### Still to build (follow-ups)
 1. **Full OAuth flows** — `/api/oauth/google/{start,callback}` + token store, then flip the Google/
    Dribbble placeholders from `configured:false` to real `sync()`. LinkedIn/X/Behance have no free API.
-2. **Device-permission capture (browser)** — beyond voice (done): geolocation, clipboard (on click),
-   notifications (opt-in). Real `navigator.*` prompts writing `source=device` blobs. No silent capture.
-3. **Email inbound** — keep `/api/ingest/email` (payload); add Postmark/Resend inbound-webhook parsing
-   + signature verify (`webhooks/verify.ts`). Owner points a provider's inbound webhook at the route.
+2. ✅ **Device-permission capture (browser)** — DONE (2026-07-09). Buffer → **Device** tab: geolocation,
+   clipboard (on click), notifications (opt-in). Real `navigator.*` prompts → `source=device` blobs via
+   owner-guarded `POST /api/ingest/device` (`lib/ingestion/device.ts`). No silent capture.
+3. ✅ **Email inbound** — DONE (2026-07-09). `POST /api/webhooks/email` verifies a real HMAC-SHA256
+   signature (constant-time, hex/base64, `sha256=` prefix) **or** a shared token, then parses Postmark/
+   Resend/generic payloads (`lib/ingestion/email-inbound.ts`) → held-for-review blob. Refuses (503) if
+   neither `INBOUND_EMAIL_SECRET` nor `INBOUND_EMAIL_TOKEN` is set — never accepts unauthenticated writes.
+   Replaced the fake `webhooks/verify.ts` stub with genuine crypto.
 4. **Optional `Source` table enrichment** — the framework runs off the code registry + `scheduler_state`.
    If per-source DB rows are wanted (owner-editable feed URLs, enable/disable in DB), add
    `kind, url, cadence_mins, config, enabled, last_error` to `Source` via additive Neon migration and
    seed one row per connector. Deliberately deferred — not needed for the current single-owner flow.
-5. **Retire decorative components** — `NeuralConnections.tsx`, `IntegrationMatrix.tsx`,
-   `InspirationHub.tsx`, `sync/platform-sync.ts` (fake stub), display-only `integrations/from-sources.ts`
-   are now superseded by the real `/integrations` screen; remove after confirming nothing imports them.
+5. ✅ **Retire decorative components** — DONE (2026-07-09). Deleted `NeuralConnections.tsx`,
+   `IntegrationMatrix.tsx`, `InspirationHub.tsx`, `sync/platform-sync.ts` (all had zero importers).
+   Kept `integrations/from-sources.ts` — still used by `lib/health/system.ts`.
 
 ---
 
 ## 🟡 Other confirmed pending
 
 - **`/admin` redesign** — last screen still on the old dark SPA theme → M3/light.
-- **Stale-bundle crash** — the "Application error: client-side exception" seen after rapid deploys is a
-  stale JS chunk (a hard-refresh fixes it; current build verified healthy). Fix: emit
-  `NEXT_PUBLIC_BUILD_ID`, client toasts "New version — refresh" on chunk-load error.
+- ✅ **Stale-bundle crash** — DONE (2026-07-09). `ChunkReloadGuard` (mounted in root layout) catches
+  ChunkLoadError / failed dynamic-import errors and reloads once (60s throttle guards against loops).
+  `next.config.mjs` emits `NEXT_PUBLIC_BUILD_ID` from `VERCEL_GIT_COMMIT_SHA` + stable `generateBuildId`.
 - **Deep hardening (roadmap Phase 3/6):** load-test script; Postgres partitioning for
   `execution_audit_logs`/provenance; multi-tenant boundaries; immutable provenance ledger; persona
   checkpoint/anomaly guards; twin contradiction alerts.
@@ -91,7 +95,8 @@ GitHub `.atom` feed verified live/parseable). What's live:
 - [ ] **Google OAuth app** (client id/secret) → for Drive + Calendar connectors.
 - [ ] **Sanity admin token** → sanity.io/manage → API → Tokens → **Administrator** scope (current write
       token is Editor-only) → enables `sanity schema deploy` for Studio editing. In-app CMS works now.
-- [ ] **Email provider** (Postmark/Resend free tier) → point inbound webhook at `/api/ingest/email`.
+- [ ] **Email provider** (Postmark/Resend free tier) → set `INBOUND_EMAIL_SECRET` (HMAC) or
+      `INBOUND_EMAIL_TOKEN`, then point the provider's inbound webhook at `/api/webhooks/email`.
 - [ ] **Rotate** the API keys pasted in chat (Groq/OpenAI/Gemini/MiniMax) when convenient.
 - [ ] **Delete seeded `sample` content** after validating the profile UI.
 - [ ] **Vercel Pro** (optional) → publish queue faster than daily.

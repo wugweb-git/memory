@@ -24,6 +24,7 @@ import { VoiceIngestion } from '@/app/component/VoiceIngestion';
 import { KnowledgeSource } from '@/app/component/KnowledgeSource';
 import { PulseWidget } from '@/app/component/PulseWidget';
 import { UniversalSync } from '@/app/component/UniversalSync';
+import { DeviceCapture } from '@/app/component/DeviceCapture';
 
 interface BlobItem {
   id: string;
@@ -51,7 +52,7 @@ export default function BufferControlSurface() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'raw' | 'reviewed' | 'promoted'>('all');
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [captureMode, setCaptureMode] = useState<'upload' | 'voice' | 'knowledge' | 'link' | 'pulse'>('upload');
+  const [captureMode, setCaptureMode] = useState<'upload' | 'voice' | 'knowledge' | 'link' | 'pulse' | 'device'>('upload');
 
   // Stats & Ingestion Monitoring
   const fetchStats = useCallback(async () => {
@@ -189,13 +190,14 @@ export default function BufferControlSurface() {
             </div>
 
             <div className="p-5 rounded-2xl bg-secondary border border-border-secondary space-y-4">
-              <div className="grid grid-cols-5 gap-1">
+              <div className="grid grid-cols-6 gap-1">
                 {([
                   ['upload', 'Upload'],
                   ['voice', 'Voice'],
                   ['knowledge', 'Files'],
                   ['link', 'Link'],
                   ['pulse', 'Pulse'],
+                  ['device', 'Device'],
                 ] as const).map(([mode, label]) => (
                   <button
                     key={mode}
@@ -213,6 +215,7 @@ export default function BufferControlSurface() {
               {captureMode === 'knowledge' && <KnowledgeSource />}
               {captureMode === 'link' && <UniversalSync />}
               {captureMode === 'pulse' && <PulseWidget />}
+              {captureMode === 'device' && <DeviceCapture />}
             </div>
           </div>
 
