@@ -40,8 +40,8 @@ async function test() {
     console.log("RUN FAILED (Expected if Mongo is still unreachable)");
     console.error(err);
   } finally {
-    // Wait for langfuse to flush
-    // no-op facade in this repo currently has no flush/shutdown methods
+    // Flush any buffered Langfuse events (no-op unless keys are configured).
+    await langfuse.flush();
     process.exit();
   }
 }

@@ -111,5 +111,9 @@ export async function processDecision(params: {
     trace.event({ name: "error", input: err.message });
     console.error("[Orchestrator] Fatal Error:", err);
     throw err;
+  } finally {
+    // Serverless kills background sends on return — flush before the handler exits.
+    // No-op unless Langfuse keys are configured.
+    await langfuse.flush();
   }
 }

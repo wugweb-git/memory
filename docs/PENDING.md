@@ -88,11 +88,16 @@ GitHub `.atom` feed verified live/parseable). What's live:
 - ✅ **Stale-bundle crash** — DONE (2026-07-09). `ChunkReloadGuard` (mounted in root layout) catches
   ChunkLoadError / failed dynamic-import errors and reloads once (60s throttle guards against loops).
   `next.config.mjs` emits `NEXT_PUBLIC_BUILD_ID` from `VERCEL_GIT_COMMIT_SHA` + stable `generateBuildId`.
-- **Deep hardening (roadmap Phase 3/6):** load-test script; Postgres partitioning for
-  `execution_audit_logs`/provenance; multi-tenant boundaries; immutable provenance ledger; persona
-  checkpoint/anomaly guards; twin contradiction alerts.
-- **Langfuse tracing** — still a no-op facade; needs `LANGFUSE_PUBLIC_KEY` + `HOST`.
-- **Legacy Express layer** — dormant (`src/routes`, `src/models`, `src/server.js`); audit callers then retire.
+- **Deep hardening (roadmap Phase 3/6):** Postgres partitioning for `execution_audit_logs`/provenance;
+  multi-tenant boundaries; immutable provenance ledger; persona checkpoint/anomaly guards; twin
+  contradiction alerts. (Load-test script already shipped: `scripts/load-test.mjs`.) All roadmap-scale
+  and/or deferred-by-design (single-owner) — no quick wins left here.
+- ✅ **Langfuse tracing** — DONE (2026-07-09). `observability/langfuse.ts` now lazily loads the real SDK
+  (guarded `require`, build-safe) and traces for real when `LANGFUSE_PUBLIC_KEY` + `LANGFUSE_SECRET_KEY`
+  are set (else no-op). Added `flush()` (awaited in the orchestrator `finally`) so serverless actually
+  delivers events. **Owner:** add `LANGFUSE_PUBLIC_KEY` (+ optional `LANGFUSE_HOST`) to activate.
+- ✅ **Legacy Express layer** — already retired (`src/server.js`, `src/routes`, `src/models`,
+  `api/index.js` all removed; unused deps stripped). Nothing left to do.
 
 ---
 
@@ -109,6 +114,8 @@ GitHub `.atom` feed verified live/parseable). What's live:
       token is Editor-only) → enables `sanity schema deploy` for Studio editing. In-app CMS works now.
 - [ ] **Email provider** (Postmark/Resend free tier) → set `INBOUND_EMAIL_SECRET` (HMAC) or
       `INBOUND_EMAIL_TOKEN`, then point the provider's inbound webhook at `/api/webhooks/email`.
+- [ ] **Langfuse** → add `LANGFUSE_PUBLIC_KEY` (+ optional `LANGFUSE_HOST`) in Vercel to activate
+      real cognitive tracing (`LANGFUSE_SECRET_KEY` already set; SDK wired).
 - [ ] **Rotate** the API keys pasted in chat (Groq/OpenAI/Gemini/MiniMax) when convenient.
 - [ ] **Delete seeded `sample` content** after validating the profile UI.
 - [ ] **Vercel Pro** (optional) → publish queue faster than daily.
