@@ -12,6 +12,7 @@
 import { IDENTITY_CONFIG } from '@/config/identity';
 import { syncFeed } from './feed';
 import { notionConnector } from './notion';
+import { googleDriveConnector, googleCalendarConnector } from './google';
 import type { Connector, SyncResult } from './types';
 
 /** github.com/<user> → <user>; env override wins. */
@@ -139,9 +140,9 @@ export const CONNECTORS: Connector[] = [
   manualConnector({ id: 'link', label: 'Article URL', category: 'writing', setupHint: 'Paste a link in Buffer → Link to fetch + extract an article.' }),
   manualConnector({ id: 'rss-url', label: 'RSS (ad-hoc)', category: 'writing', setupHint: 'Paste a feed URL in Buffer → Link for a one-off pull.' }),
 
-  // ── Tier 3: OAuth/API-gated — honest disconnected state ─────────────────
-  oauthPlaceholder({ id: 'google-drive', label: 'Google Drive', category: 'files', setupHint: 'Needs a Google OAuth app (client id/secret). Framework ready; sync goes live when creds exist.' }),
-  oauthPlaceholder({ id: 'google-calendar', label: 'Google Calendar', category: 'knowledge', setupHint: 'Needs a Google OAuth app (client id/secret).' }),
+  // ── Tier 3: OAuth-gated — real flow (Google) or honest placeholder ──────
+  googleDriveConnector,
+  googleCalendarConnector,
   oauthPlaceholder({ id: 'linkedin', label: 'LinkedIn', category: 'social', setupHint: 'No free API/feed — needs LinkedIn OAuth (paid/approved app).' }),
   oauthPlaceholder({ id: 'twitter', label: 'X / Twitter', category: 'social', setupHint: 'No free API/feed — needs X API access.' }),
   oauthPlaceholder({ id: 'behance', label: 'Behance', category: 'design', setupHint: 'No public API/RSS — needs an app registration.' }),

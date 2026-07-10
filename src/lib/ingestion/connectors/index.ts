@@ -14,6 +14,8 @@ export async function listConnectorStatuses(): Promise<ConnectorStatus[]> {
   return Promise.all(
     CONNECTORS.map(async (c): Promise<ConnectorStatus> => {
       const state = await getConnectorState(c.id);
+      // OAuth connectors report an extra "connected" level (consent completed).
+      const connected = c.connected ? await c.connected().catch(() => false) : undefined;
       return {
         id: c.id,
         label: c.label,
@@ -23,6 +25,8 @@ export async function listConnectorStatuses(): Promise<ConnectorStatus[]> {
         cadenceMins: c.cadenceMins,
         setupHint: c.setupHint,
         configured: c.configured(),
+        connected,
+        authStartPath: c.authStartPath,
         lastSyncAt: state.lastSyncAt,
         lastError: state.lastError,
         lastResult: state.lastResult,
@@ -41,12 +45,15 @@ export async function syncConnector(
   return connector.sync(opts);
 }
 
-/** Connectors the scheduler may auto-run: real (rss/api), configured, and due. */
+/** Connectors the scheduler may auto-run: rss/api, or a connected OAuth source. */
 export async function dueConnectors(now = Date.now()): Promise<Connector[]> {
   const out: Connector[] = [];
   for (const c of CONNECTORS) {
-    if (c.kind !== 'rss' && c.kind !== 'api') continue;
+    const autoKind = c.kind === 'rss' || c.kind === 'api' || c.kind === 'oauth';
+    if (!autoKind) continue;
     if (!c.configured()) continue;
+    // OAuth sources must have completed consent before the scheduler runs them.
+    if (c.connected && !(await c.connected().catch(() => false))) continue;
     const state = await getConnectorState(c.id);
     if (isDue(state, c.cadenceMins, now)) out.push(c);
   }

@@ -52,8 +52,13 @@ GitHub `.atom` feed verified live/parseable). What's live:
   browser (local preview blocked by a sandbox `getcwd` error; verify on prod after deploy).
 
 ### Still to build (follow-ups)
-1. **Full OAuth flows** — `/api/oauth/google/{start,callback}` + token store, then flip the Google/
-   Dribbble placeholders from `configured:false` to real `sync()`. LinkedIn/X/Behance have no free API.
+1. **OAuth flows** — ✅ **Google DONE (2026-07-09).** Real authorization-code flow with refresh:
+   `lib/oauth/google.ts` (token store in `scheduler_state` key `oauth:google`, CSRF state, auto-refresh),
+   `GET /api/oauth/google/{start,callback}`, and real **Drive** + **Calendar** read-only connectors
+   (`connectors/google.ts`) that dedupe + hold review-first. `/integrations` shows Connect → Sync now
+   once consent completes. Inert until `GOOGLE_CLIENT_ID/SECRET` are set. **Still open:** Dribbble OAuth;
+   LinkedIn/X/Behance have no free API. Connector interface gained optional async `connected()` +
+   `authStartPath` to model the two-step (creds set → consent granted) readiness.
 2. ✅ **Device-permission capture (browser)** — DONE (2026-07-09). Buffer → **Device** tab: geolocation,
    clipboard (on click), notifications (opt-in). Real `navigator.*` prompts → `source=device` blobs via
    owner-guarded `POST /api/ingest/device` (`lib/ingestion/device.ts`). No silent capture.
@@ -97,7 +102,9 @@ GitHub `.atom` feed verified live/parseable). What's live:
       search + RAG-grounded chat + auto-embedding. (Provider already wired: `lib/memory/embeddings.ts`.)
 - [ ] **`NOTION_TOKEN`** → notion.so/my-integrations → internal integration → share pages → set in Vercel.
       Notion sync goes live immediately.
-- [ ] **Google OAuth app** (client id/secret) → for Drive + Calendar connectors.
+- [ ] **Google OAuth app** → console.cloud.google.com → OAuth client (Web). Set `GOOGLE_CLIENT_ID` +
+      `GOOGLE_CLIENT_SECRET` in Vercel; add redirect URI `https://<domain>/api/oauth/google/callback`
+      (or set `GOOGLE_REDIRECT_URI`). Then Connect from `/integrations` → Drive + Calendar sync live.
 - [ ] **Sanity admin token** → sanity.io/manage → API → Tokens → **Administrator** scope (current write
       token is Editor-only) → enables `sanity schema deploy` for Studio editing. In-app CMS works now.
 - [ ] **Email provider** (Postmark/Resend free tier) → set `INBOUND_EMAIL_SECRET` (HMAC) or

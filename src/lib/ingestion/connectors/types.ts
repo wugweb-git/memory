@@ -51,6 +51,14 @@ export interface Connector {
   setupHint: string;
   /** Cheap, synchronous readiness check (env var present, etc.). No network. */
   configured(): boolean;
+  /**
+   * OAuth-only: whether the owner has completed the consent flow and we hold a
+   * usable token. Async (reads the token store). Absent for non-OAuth connectors
+   * (treated as always-connected once `configured()`).
+   */
+  connected?(): Promise<boolean>;
+  /** OAuth-only: where the "Connect" button should send the owner. */
+  authStartPath?: string;
   /** Pull from the source into the blob buffer. Must dedupe across runs. */
   sync(opts?: { autoPromote?: boolean }): Promise<SyncResult>;
 }
@@ -65,6 +73,10 @@ export interface ConnectorStatus {
   cadenceMins: number;
   setupHint: string;
   configured: boolean;
+  /** OAuth-only: owner has completed consent (undefined for non-OAuth). */
+  connected?: boolean;
+  /** OAuth-only: where the "Connect" button links. */
+  authStartPath?: string;
   lastSyncAt: string | null;
   lastError: string | null;
   lastResult: { ingested: number; skipped: number; scanned?: number } | null;

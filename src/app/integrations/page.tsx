@@ -17,6 +17,8 @@ type ConnectorStatus = {
   cadenceMins: number;
   setupHint: string;
   configured: boolean;
+  connected?: boolean;
+  authStartPath?: string;
   lastSyncAt: string | null;
   lastError: string | null;
   lastResult: { ingested: number; skipped: number; scanned?: number } | null;
@@ -33,14 +35,21 @@ function relTime(iso: string | null): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+/** OAuth connectors need consent (connected) on top of configured (creds set). */
+function isReady(c: ConnectorStatus): boolean {
+  return c.configured && (c.connected ?? true);
+}
+
 function StatusDot({ c }: { c: ConnectorStatus }) {
   const [color, label] = c.lastError
     ? ['bg-danger', 'Error']
     : !c.configured
       ? ['bg-text-disabled', c.kind === 'manual' ? 'Manual' : 'Needs setup']
-      : c.lastSyncAt
-        ? ['bg-success', 'Synced']
-        : ['bg-warning', 'Ready'];
+      : !isReady(c)
+        ? ['bg-warning', 'Connect']
+        : c.lastSyncAt
+          ? ['bg-success', 'Synced']
+          : ['bg-warning', 'Ready'];
   return (
     <span className="inline-flex items-center gap-1.5">
       <span className={`h-2 w-2 rounded-full ${color}`} />
@@ -50,9 +59,9 @@ function StatusDot({ c }: { c: ConnectorStatus }) {
 }
 
 const KIND_GROUPS: Array<{ key: string; title: string; subtitle: string; match: (c: ConnectorStatus) => boolean }> = [
-  { key: 'auto', title: 'Auto-sync sources', subtitle: 'Fetched on a schedule — sync now anytime', match: (c) => c.kind === 'rss' || c.kind === 'api' },
+  { key: 'auto', title: 'Auto-sync sources', subtitle: 'Fetched on a schedule — sync now anytime', match: (c) => c.kind === 'rss' || c.kind === 'api' || (c.kind === 'oauth' && c.configured) },
   { key: 'manual', title: 'Manual capture', subtitle: 'Captured from the Buffer surface', match: (c) => c.kind === 'manual' },
-  { key: 'oauth', title: 'Needs credentials', subtitle: 'Go live the moment their keys exist — no fake sync', match: (c) => c.kind === 'oauth' || c.kind === 'device' },
+  { key: 'oauth', title: 'Needs credentials', subtitle: 'Go live the moment their keys exist — no fake sync', match: (c) => (c.kind === 'oauth' && !c.configured) || c.kind === 'device' },
 ];
 
 export default function IntegrationsPage() {
@@ -76,6 +85,23 @@ export default function IntegrationsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Surface the result of an OAuth round-trip (?google=connected|denied|error).
+  useEffect(() => {
+    const status = new URLSearchParams(window.location.search).get('google');
+    if (!status) return;
+    const messages: Record<string, [string, 'ok' | 'err']> = {
+      connected: ['Google connected — sources can sync now.', 'ok'],
+      denied: ['Google connection was denied.', 'err'],
+      error: ['Google connection failed — check the OAuth app config.', 'err'],
+      badstate: ['Google connection expired — try again.', 'err'],
+      nocode: ['Google returned no authorization code.', 'err'],
+    };
+    const [msg, tone] = messages[status] ?? [`Google: ${status}`, 'err'];
+    if (tone === 'ok') toast.success(msg);
+    else toast.error(msg);
+    window.history.replaceState({}, '', '/integrations');
+  }, []);
 
   async function syncNow(c: ConnectorStatus) {
     setSyncing(c.id);
@@ -119,7 +145,7 @@ export default function IntegrationsPage() {
                           </div>
                           {c.lastError ? (
                             <p className="text-2xs text-danger mt-0.5 line-clamp-2">{c.lastError}</p>
-                          ) : c.configured && c.kind !== 'manual' ? (
+                          ) : isReady(c) && c.kind !== 'manual' ? (
                             <p className="text-2xs text-text-tertiary mt-0.5">
                               Last sync {relTime(c.lastSyncAt)}
                               {c.lastResult ? ` · ${c.lastResult.ingested} in / ${c.lastResult.skipped} skipped` : ''}
@@ -129,20 +155,26 @@ export default function IntegrationsPage() {
                             <p className="text-2xs text-text-tertiary mt-0.5">{c.setupHint}</p>
                           )}
                         </div>
-                        {c.kind === 'rss' || c.kind === 'api' ? (
-                          <button
-                            onClick={() => syncNow(c)}
-                            disabled={!c.configured || syncing === c.id}
-                            className="text-2xs font-bold uppercase text-accent disabled:text-text-disabled"
-                          >
-                            {syncing === c.id ? 'Syncing…' : c.configured ? 'Sync now' : 'Needs setup'}
-                          </button>
-                        ) : c.kind === 'manual' ? (
+                        {c.kind === 'manual' ? (
                           <Link href="/buffer" className="text-2xs font-bold uppercase text-accent">
                             Capture
                           </Link>
+                        ) : !c.configured ? (
+                          <span className="text-2xs font-bold uppercase text-text-disabled">
+                            {c.kind === 'oauth' ? 'Connect' : 'Needs setup'}
+                          </span>
+                        ) : !isReady(c) && c.authStartPath ? (
+                          <a href={c.authStartPath} className="text-2xs font-bold uppercase text-accent">
+                            Connect
+                          </a>
                         ) : (
-                          <span className="text-2xs font-bold uppercase text-text-disabled">Connect</span>
+                          <button
+                            onClick={() => syncNow(c)}
+                            disabled={syncing === c.id}
+                            className="text-2xs font-bold uppercase text-accent disabled:text-text-disabled"
+                          >
+                            {syncing === c.id ? 'Syncing…' : 'Sync now'}
+                          </button>
                         )}
                       </li>
                     ))}
