@@ -4,6 +4,11 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import {
+  Code2, FileText, Video, BookOpen, Share2, Palette, File as FileIcon,
+  Smartphone, Mail, Calendar, HardDrive, Mic, Upload, Link2, Rss,
+  type LucideIcon,
+} from 'lucide-react';
 import { M3Card, M3Page, M3State } from '@/components/ui/m3';
 import { AppShell } from '@/app/component/AppShell';
 import { apiRequest } from '@/lib/ui/api-client';
@@ -40,23 +45,52 @@ function isReady(c: ConnectorStatus): boolean {
   return c.configured && (c.connected ?? true);
 }
 
-function StatusDot({ c }: { c: ConnectorStatus }) {
-  const [color, label] = c.lastError
-    ? ['bg-danger', 'Error']
-    : !c.configured
-      ? ['bg-text-disabled', c.kind === 'manual' ? 'Manual' : 'Needs setup']
-      : !isReady(c)
-        ? ['bg-warning', 'Connect']
-        : c.lastSyncAt
-          ? ['bg-success', 'Synced']
-          : ['bg-warning', 'Ready'];
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className={`h-2 w-2 rounded-full ${color}`} />
-      <span className="text-2xs text-text-tertiary">{label}</span>
-    </span>
-  );
+// Per-connector iconography — an id override where a clean icon fits, else by category.
+const ID_ICONS: Record<string, LucideIcon> = {
+  'google-calendar': Calendar,
+  'google-drive': HardDrive,
+  voice: Mic,
+  upload: Upload,
+  link: Link2,
+  'rss-url': Rss,
+};
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  code: Code2,
+  writing: FileText,
+  video: Video,
+  knowledge: BookOpen,
+  social: Share2,
+  design: Palette,
+  files: FileIcon,
+  device: Smartphone,
+  email: Mail,
+};
+function iconFor(c: ConnectorStatus): LucideIcon {
+  return ID_ICONS[c.id] ?? CATEGORY_ICONS[c.category] ?? FileIcon;
 }
+
+/** Colour-only status (the label lives in the calm secondary line / action). */
+function statusColor(c: ConnectorStatus): string {
+  if (c.lastError) return 'bg-danger';
+  if (!c.configured) return 'bg-text-disabled';
+  if (!isReady(c)) return 'bg-warning';
+  return c.lastSyncAt ? 'bg-success' : 'bg-warning';
+}
+
+/** One calm line; full sync metrics are tucked into the row's hover title. */
+function secondaryLine(c: ConnectorStatus): { text: string; title?: string; danger?: boolean } {
+  if (c.lastError) return { text: c.lastError, danger: true };
+  if (isReady(c) && c.kind !== 'manual') {
+    const cadence = c.cadenceMins >= 60 ? `${Math.round(c.cadenceMins / 60)}h` : `${c.cadenceMins}m`;
+    const detail = c.lastResult
+      ? `${c.lastResult.ingested} in / ${c.lastResult.skipped} skipped · every ${cadence}`
+      : `Syncs every ${cadence}`;
+    return { text: c.lastSyncAt ? `Synced ${relTime(c.lastSyncAt)}` : 'Ready to sync', title: detail };
+  }
+  return { text: c.setupHint };
+}
+
+const PILL = 'shrink-0 text-2xs font-bold rounded-lg px-2.5 py-1 transition-colors';
 
 const KIND_GROUPS: Array<{ key: string; title: string; subtitle: string; match: (c: ConnectorStatus) => boolean }> = [
   { key: 'auto', title: 'Auto-sync sources', subtitle: 'Fetched on a schedule — sync now anytime', match: (c) => c.kind === 'rss' || c.kind === 'api' || (c.kind === 'oauth' && c.configured) },
@@ -120,6 +154,27 @@ export default function IntegrationsPage() {
     }
   }
 
+  function renderAction(c: ConnectorStatus) {
+    if (c.kind === 'manual') {
+      return <Link href="/buffer" className={`${PILL} text-accent hover:bg-bg-tertiary`}>Capture</Link>;
+    }
+    if (!c.configured) {
+      return <span className={`${PILL} text-text-disabled`}>{c.kind === 'oauth' ? 'Connect' : 'Needs setup'}</span>;
+    }
+    if (!isReady(c) && c.authStartPath) {
+      return <a href={c.authStartPath} className={`${PILL} text-accent hover:bg-bg-tertiary`}>Connect</a>;
+    }
+    return (
+      <button
+        onClick={() => syncNow(c)}
+        disabled={syncing === c.id}
+        className={`${PILL} text-accent hover:bg-bg-tertiary disabled:text-text-disabled disabled:hover:bg-transparent`}
+      >
+        {syncing === c.id ? 'Syncing…' : 'Sync now'}
+      </button>
+    );
+  }
+
   return (
     <AppShell>
       <ToastContainer position="bottom-right" theme="light" />
@@ -135,49 +190,30 @@ export default function IntegrationsPage() {
               if (items.length === 0) return null;
               return (
                 <M3Card key={group.key} title={group.title} action={<span className="text-2xs text-text-disabled">{group.subtitle}</span>}>
-                  <ul className="divide-y divide-border-secondary">
-                    {items.map((c) => (
-                      <li key={c.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-3">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-bold text-text-primary">{c.label}</p>
-                            <StatusDot c={c} />
+                  <ul className="space-y-2">
+                    {items.map((c) => {
+                      const Icon = iconFor(c);
+                      const sec = secondaryLine(c);
+                      return (
+                        <li
+                          key={c.id}
+                          title={sec.title}
+                          className="flex items-center gap-3 rounded-xl border border-border-secondary bg-bg-primary p-3 hover:bg-bg-secondary transition-colors"
+                        >
+                          <div className="relative shrink-0">
+                            <div className="h-9 w-9 rounded-xl bg-bg-secondary flex items-center justify-center">
+                              <Icon className="h-4 w-4 text-text-secondary" />
+                            </div>
+                            <span className={`absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-bg-primary ${statusColor(c)}`} />
                           </div>
-                          {c.lastError ? (
-                            <p className="text-2xs text-danger mt-0.5 line-clamp-2">{c.lastError}</p>
-                          ) : isReady(c) && c.kind !== 'manual' ? (
-                            <p className="text-2xs text-text-tertiary mt-0.5">
-                              Last sync {relTime(c.lastSyncAt)}
-                              {c.lastResult ? ` · ${c.lastResult.ingested} in / ${c.lastResult.skipped} skipped` : ''}
-                              {` · every ${c.cadenceMins >= 60 ? `${Math.round(c.cadenceMins / 60)}h` : `${c.cadenceMins}m`}`}
-                            </p>
-                          ) : (
-                            <p className="text-2xs text-text-tertiary mt-0.5">{c.setupHint}</p>
-                          )}
-                        </div>
-                        {c.kind === 'manual' ? (
-                          <Link href="/buffer" className="text-2xs font-bold uppercase text-accent">
-                            Capture
-                          </Link>
-                        ) : !c.configured ? (
-                          <span className="text-2xs font-bold uppercase text-text-disabled">
-                            {c.kind === 'oauth' ? 'Connect' : 'Needs setup'}
-                          </span>
-                        ) : !isReady(c) && c.authStartPath ? (
-                          <a href={c.authStartPath} className="text-2xs font-bold uppercase text-accent">
-                            Connect
-                          </a>
-                        ) : (
-                          <button
-                            onClick={() => syncNow(c)}
-                            disabled={syncing === c.id}
-                            className="text-2xs font-bold uppercase text-accent disabled:text-text-disabled"
-                          >
-                            {syncing === c.id ? 'Syncing…' : 'Sync now'}
-                          </button>
-                        )}
-                      </li>
-                    ))}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-bold text-text-primary truncate">{c.label}</p>
+                            <p className={`text-2xs mt-0.5 ${sec.danger ? 'text-danger line-clamp-2' : 'text-text-tertiary'}`}>{sec.text}</p>
+                          </div>
+                          {renderAction(c)}
+                        </li>
+                      );
+                    })}
                   </ul>
                 </M3Card>
               );
