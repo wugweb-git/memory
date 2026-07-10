@@ -24,6 +24,8 @@ export function CsvImport({ onComplete }: { onComplete?: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Summary | null>(null);
 
+  const isDocx = !!file && file.name.toLowerCase().endsWith('.docx');
+
   async function run() {
     if (!file) return;
     setBusy(true);
@@ -32,8 +34,10 @@ export function CsvImport({ onComplete }: { onComplete?: () => void }) {
     try {
       const fd = new FormData();
       fd.append('file', file);
-      fd.append('type', type);
-      const res = await fetch('/api/ingest/csv', { method: 'POST', body: fd });
+      // .docx → case-study importer (splits on "Case Study N:"); .csv → row importer.
+      const endpoint = isDocx ? '/api/ingest/docx' : '/api/ingest/csv';
+      if (!isDocx) fd.append('type', type);
+      const res = await fetch(endpoint, { method: 'POST', body: fd });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error || `Import failed (${res.status})`);
       setResult(j as Summary);
@@ -48,33 +52,38 @@ export function CsvImport({ onComplete }: { onComplete?: () => void }) {
   return (
     <div className="space-y-3">
       <p className="text-2xs text-text-tertiary">
-        Import a CSV export of your posts — each row becomes one memory item (title, body, tags, date mapped
-        automatically; re-imports are de-duplicated).
+        Bulk-import your history — a <span className="font-mono">.csv</span> export (one row per post) or a
+        <span className="font-mono"> .docx</span> of case studies (split on each “Case Study N:”). Each becomes one
+        memory item; re-imports are de-duplicated.
       </p>
 
-      <div className="flex gap-2">
-        {(['blog', 'case_study'] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setType(t)}
-            className={`px-3 py-1.5 rounded-lg text-2xs font-bold transition-colors ${
-              type === t ? 'bg-text-primary text-bg-primary' : 'text-text-tertiary hover:bg-bg-secondary'
-            }`}
-          >
-            {t === 'blog' ? 'Blog' : 'Case study'}
-          </button>
-        ))}
-      </div>
+      {!isDocx && (
+        <div className="flex gap-2">
+          {(['blog', 'case_study'] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setType(t)}
+              className={`px-3 py-1.5 rounded-lg text-2xs font-bold transition-colors ${
+                type === t ? 'bg-text-primary text-bg-primary' : 'text-text-tertiary hover:bg-bg-secondary'
+              }`}
+            >
+              {t === 'blog' ? 'Blog' : 'Case study'}
+            </button>
+          ))}
+        </div>
+      )}
 
       <label className="flex items-center gap-3 rounded-xl border border-dashed border-border-primary p-4 cursor-pointer hover:bg-bg-secondary transition-colors">
         <FileSpreadsheet className="h-5 w-5 text-accent shrink-0" />
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-bold text-text-primary truncate">{file ? file.name : 'Choose a CSV file'}</span>
-          <span className="block text-2xs text-text-tertiary">{file ? `${(file.size / 1024).toFixed(0)} KB` : '.csv export from your blog / CMS'}</span>
+          <span className="block text-sm font-bold text-text-primary truncate">{file ? file.name : 'Choose a .csv or .docx file'}</span>
+          <span className="block text-2xs text-text-tertiary">
+            {file ? `${(file.size / 1024).toFixed(0)} KB · ${isDocx ? 'case studies' : 'CSV rows'}` : 'export from your blog / CMS / case-study doc'}
+          </span>
         </span>
         <input
           type="file"
-          accept=".csv,text/csv"
+          accept=".csv,text/csv,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
           className="hidden"
           onChange={(e) => { setFile(e.target.files?.[0] ?? null); setResult(null); setError(null); }}
         />

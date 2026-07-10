@@ -199,7 +199,7 @@ export default function BufferControlSurface() {
                   ['link', 'Link'],
                   ['pulse', 'Pulse'],
                   ['device', 'Device'],
-                  ['csv', 'CSV'],
+                  ['csv', 'Import'],
                 ] as const).map(([mode, label]) => (
                   <button
                     key={mode}
