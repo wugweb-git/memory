@@ -1,7 +1,14 @@
 # PENDING — Identity Prism OS
 
 > Single source of truth for what's live, what's not, and what to do next.
-> Last updated 2026-07-07. Prod: `memory-wugweb.vercel.app` (auto-deploys from `main`).
+> Last updated 2026-07-10. Prod: `memory-wugweb.vercel.app`.
+>
+> ⚠️ **Deploy workflow:** pushing to `main` builds a production deployment but does **NOT**
+> auto-advance the `memory-wugweb.vercel.app` alias — production is in **manual-promote** mode.
+> After a push, promote the newest READY deploy:
+> `npx vercel@latest promote <deployment-url> --yes --scope wugweb`.
+> Until promoted, only the branch alias `memory-git-main-wugweb.vercel.app` shows the latest.
+> Permanent fix (owner): enable auto-promotion in Vercel → Project → Settings.
 
 ---
 
