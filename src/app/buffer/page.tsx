@@ -25,6 +25,7 @@ import { KnowledgeSource } from '@/app/component/KnowledgeSource';
 import { PulseWidget } from '@/app/component/PulseWidget';
 import { UniversalSync } from '@/app/component/UniversalSync';
 import { DeviceCapture } from '@/app/component/DeviceCapture';
+import { CsvImport } from '@/app/component/CsvImport';
 
 interface BlobItem {
   id: string;
@@ -52,7 +53,7 @@ export default function BufferControlSurface() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'raw' | 'reviewed' | 'promoted'>('all');
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [captureMode, setCaptureMode] = useState<'upload' | 'voice' | 'knowledge' | 'link' | 'pulse' | 'device'>('upload');
+  const [captureMode, setCaptureMode] = useState<'upload' | 'voice' | 'knowledge' | 'link' | 'pulse' | 'device' | 'csv'>('upload');
 
   // Stats & Ingestion Monitoring
   const fetchStats = useCallback(async () => {
@@ -190,7 +191,7 @@ export default function BufferControlSurface() {
             </div>
 
             <div className="p-5 rounded-2xl bg-secondary border border-border-secondary space-y-4">
-              <div className="grid grid-cols-6 gap-1">
+              <div className="grid grid-cols-4 gap-1 sm:grid-cols-7">
                 {([
                   ['upload', 'Upload'],
                   ['voice', 'Voice'],
@@ -198,6 +199,7 @@ export default function BufferControlSurface() {
                   ['link', 'Link'],
                   ['pulse', 'Pulse'],
                   ['device', 'Device'],
+                  ['csv', 'CSV'],
                 ] as const).map(([mode, label]) => (
                   <button
                     key={mode}
@@ -216,6 +218,7 @@ export default function BufferControlSurface() {
               {captureMode === 'link' && <UniversalSync />}
               {captureMode === 'pulse' && <PulseWidget />}
               {captureMode === 'device' && <DeviceCapture />}
+              {captureMode === 'csv' && <CsvImport onComplete={() => fetchItems()} />}
             </div>
           </div>
 
