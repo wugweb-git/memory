@@ -74,7 +74,12 @@ GitHub `.atom` feed verified live/parseable). What's live:
 
 ## 🟡 Other confirmed pending
 
-- **`/admin` redesign** — last screen still on the old dark SPA theme → M3/light.
+- ✅ **`/admin` redesign** — DONE (2026-07-09). `/admin/memory` (the last dark full-screen SPA) now
+  renders inside `AppShell` with token-only colors (no hardcoded palette / neon glows / gradients),
+  sentence-case headings, and light-theme surfaces — across the page + all 9 child components
+  (`RagTester`, `MemoryExplorer`, `PacketInspector`, `IntelPanel`, `SemanticPanel`, `SignalTimeline`,
+  `IngestionMonitor`, `EmbeddingMonitor`, `ActivityLog`). `/admin` + `/admin/profile` were already M3.
+  Build-green + palette-grep clean; browser-verify on prod after deploy (local preview blocked).
 - ✅ **Stale-bundle crash** — DONE (2026-07-09). `ChunkReloadGuard` (mounted in root layout) catches
   ChunkLoadError / failed dynamic-import errors and reloads once (60s throttle guards against loops).
   `next.config.mjs` emits `NEXT_PUBLIC_BUILD_ID` from `VERCEL_GIT_COMMIT_SHA` + stable `generateBuildId`.

@@ -47,9 +47,9 @@ export default function IngestionMonitor({ testRunId = 'PROD' }: IngestionMonito
             <Activity className="w-5 h-5 text-success" />
             Ingestion Gate Monitor
           </h2>
-          <p className="text-sm text-gray-400 mt-1">Live decision stream from the memory gate.</p>
+          <p className="text-sm text-text-tertiary mt-1">Live decision stream from the memory gate.</p>
         </div>
-        <div className={`w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] ${isRefreshing ? 'animate-pulse' : ''}`} />
+        <div className={`w-2 h-2 rounded-full bg-success shadow-sm ${isRefreshing ? 'animate-pulse' : ''}`} />
       </div>
 
       <div className="space-y-3">
@@ -63,9 +63,9 @@ export default function IngestionMonitor({ testRunId = 'PROD' }: IngestionMonito
               className="group flex items-center gap-4 bg-secondary hover:bg-white/[0.08] transition-all p-3 rounded-lg border border-border-secondary"
             >
               <div className={`p-2 rounded-md ${
-                log.decision === 'ACCEPT' ? 'bg-emerald-500/10 text-success' :
-                log.decision === 'REJECT' ? 'bg-red-500/10 text-danger' :
-                'bg-amber-500/10 text-warning'
+                log.decision === 'ACCEPT' ? 'bg-bg-secondary text-success' :
+                log.decision === 'REJECT' ? 'bg-bg-secondary text-danger' :
+                'bg-bg-secondary text-warning'
               }`}>
                 {log.decision === 'ACCEPT' ? <ShieldCheck className="w-4 h-4" /> : <ShieldAlert className="w-4 h-4" />}
               </div>
@@ -73,21 +73,21 @@ export default function IngestionMonitor({ testRunId = 'PROD' }: IngestionMonito
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-text-primary tracking-wide uppercase">{log.decision}</span>
-                  <span className="text-2xs text-gray-500">•</span>
-                  <span className="text-2xs text-gray-400 font-mono translate-y-[1px]">
+                  <span className="text-2xs text-text-tertiary">•</span>
+                  <span className="text-2xs text-text-tertiary font-mono translate-y-[1px]">
                     {new Date(log.timestamp).toLocaleTimeString()}
                   </span>
                 </div>
-                <div className="text-sm text-gray-300 truncate mt-0.5">
+                <div className="text-sm text-text-secondary truncate mt-0.5">
                   {log.reason}
                 </div>
               </div>
 
               <div className="text-right flex items-center gap-3">
                 <div className="hidden group-hover:block transition-all">
-                  <ChevronRight className="w-4 h-4 text-gray-600" />
+                  <ChevronRight className="w-4 h-4 text-text-tertiary" />
                 </div>
-                <div className="px-2 py-0.5 rounded bg-bg-primary/40 text-2xs font-mono text-gray-500 uppercase">
+                <div className="px-2 py-0.5 rounded bg-bg-primary/40 text-2xs font-mono text-text-tertiary uppercase">
                   {log.source || 'system'}
                 </div>
               </div>
@@ -96,7 +96,7 @@ export default function IngestionMonitor({ testRunId = 'PROD' }: IngestionMonito
         </AnimatePresence>
       </div>
 
-      <button className="w-full mt-6 py-2 rounded-lg border border-border-secondary text-2xs font-bold text-gray-500 hover:text-text-primary hover:bg-secondary transition-all tracking-widest uppercase">
+      <button className="w-full mt-6 py-2 rounded-lg border border-border-secondary text-2xs font-bold text-text-tertiary hover:text-text-primary hover:bg-secondary transition-all tracking-widest uppercase">
         View Full Audit Log
       </button>
     </div>

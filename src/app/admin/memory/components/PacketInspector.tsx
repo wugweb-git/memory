@@ -48,28 +48,28 @@ export default function PacketInspector({ packetId, onClose }: PacketInspectorPr
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-end bg-bg-primary/80 backdrop-blur-md p-4">
-      <div className="w-full max-w-6xl h-full bg-[#0d0d0d] border-l border-border-secondary shadow-[0_0_50px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
+      <div className="w-full max-w-6xl h-full bg-[#0d0d0d] border-l border-border-secondary shadow-sm flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
         {/* Header */}
         <div className="p-6 border-b border-border-secondary flex items-center justify-between bg-white/[0.01]">
           <div className="flex items-center gap-5">
-            <div className="p-3 bg-purple-500/10 rounded-xl border border-purple-500/20 shadow-[0_0_15px_rgba(168,85,247,0.2)]">
-              <Activity className="w-7 h-7 text-purple-400" />
+            <div className="p-3 bg-bg-secondary rounded-xl border border-border-primary shadow-sm">
+              <Activity className="w-7 h-7 text-accent" />
             </div>
             <div>
               <h2 className="text-2xl font-black text-text-primary tracking-tighter uppercase">Packet Diagnostic</h2>
-              <p className="text-2xs text-gray-500 font-mono tracking-[0.2em] mt-1 uppercase">ID: {packetId}</p>
+              <p className="text-2xs text-text-tertiary font-mono tracking-[0.2em] mt-1 uppercase">ID: {packetId}</p>
             </div>
           </div>
           <button 
             onClick={onClose}
-            className="p-3 hover:bg-secondary rounded-full transition-all text-gray-400 hover:text-text-primary group"
+            className="p-3 hover:bg-secondary rounded-full transition-all text-text-tertiary hover:text-text-primary group"
           >
             <X className="w-7 h-7 group-hover:rotate-90 transition-transform duration-300" />
           </button>
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto p-8 bg-gradient-to-b from-transparent to-black/40">
+        <div className="flex-1 overflow-y-auto p-8 bg-bg-primary">
           <div className="grid grid-cols-12 gap-10">
             
             {/* Left: Raw Data & Ingestion Trace */}
@@ -83,7 +83,7 @@ export default function PacketInspector({ packetId, onClose }: PacketInspectorPr
                       className={`flex-1 py-2 px-3 rounded-md text-2xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
                         activeTab === tab 
                           ? 'bg-secondary text-text-primary shadow-inner' 
-                          : 'text-gray-500 hover:text-gray-300'
+                          : 'text-text-tertiary hover:text-text-secondary'
                       }`}
                     >
                       {tab === 'content' && <FileText className="w-3 h-3" />}
@@ -95,21 +95,21 @@ export default function PacketInspector({ packetId, onClose }: PacketInspectorPr
                 </div>
                 
                 <div className="bg-[#050505] rounded-2xl border border-border-secondary p-6 font-mono text-2xs overflow-x-auto min-h-[500px] shadow-inner relative group">
-                  <div className="absolute top-4 right-4 text-2xs text-gray-700 font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute top-4 right-4 text-2xs text-text-secondary font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
                     ReadOnly.raw
                   </div>
                   {activeTab === 'content' && (
-                    <pre className="text-gray-300 whitespace-pre-wrap leading-relaxed">
+                    <pre className="text-text-secondary whitespace-pre-wrap leading-relaxed">
                       {JSON.stringify(data?.packet?.content, null, 2)}
                     </pre>
                   )}
                   {activeTab === 'metadata' && (
-                    <pre className="text-gray-400 leading-relaxed">
+                    <pre className="text-text-tertiary leading-relaxed">
                       {JSON.stringify(data?.packet?.metadata, null, 2)}
                     </pre>
                   )}
                   {activeTab === 'trace' && (
-                    <pre className="text-gray-500  leading-relaxed">
+                    <pre className="text-text-tertiary  leading-relaxed">
                       {JSON.stringify(data?.packet?.trace, null, 2)}
                     </pre>
                   )}
@@ -123,11 +123,11 @@ export default function PacketInspector({ packetId, onClose }: PacketInspectorPr
               {/* L2 Pulse */}
               <div className="space-y-5">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-2xs font-black text-gray-500 uppercase tracking-[0.3em] flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
+                  <h3 className="text-2xs font-black text-text-tertiary uppercase tracking-[0.3em] flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-accent shadow-sm" />
                     Interpretation Pulse (2.0)
                   </h3>
-                  <div className="h-px flex-1 mx-6 bg-gradient-to-r from-blue-500/20 to-transparent" />
+                  <div className="h-px flex-1 mx-6 bg-border-secondary" />
                 </div>
                 <div className="grid grid-cols-1 gap-6">
                   <SignalTimeline signals={data?.signals} loading={loading} />
@@ -146,11 +146,11 @@ export default function PacketInspector({ packetId, onClose }: PacketInspectorPr
               {/* L2.5 Enrichment */}
               <div className="space-y-5">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-2xs font-black text-gray-500 uppercase tracking-[0.3em] flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.8)]" />
+                  <h3 className="text-2xs font-black text-text-tertiary uppercase tracking-[0.3em] flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-accent shadow-sm" />
                     Deep Semantic Layer (2.5)
                   </h3>
-                  <div className="h-px flex-1 mx-6 bg-gradient-to-r from-purple-500/20 to-transparent" />
+                  <div className="h-px flex-1 mx-6 bg-border-secondary" />
                 </div>
                 <SemanticPanel data={data?.semantic} loading={loading} />
               </div>
@@ -160,10 +160,10 @@ export default function PacketInspector({ packetId, onClose }: PacketInspectorPr
         </div>
         
         {/* Footer info */}
-        <div className="p-4 border-t border-border-secondary bg-bg-primary flex items-center justify-between text-2xs text-gray-600 font-bold uppercase tracking-widest px-8">
+        <div className="p-4 border-t border-border-secondary bg-bg-primary flex items-center justify-between text-2xs text-text-tertiary font-bold uppercase tracking-widest px-8">
            <div className="flex items-center gap-6">
-             <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Vault Integrity Verified</span>
-             <span className="flex items-center gap-2 text-blue-500/80 underline decoration-blue-500/20 cursor-pointer hover:text-accent">View Raw Trace Logs</span>
+             <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-success" /> Vault Integrity Verified</span>
+             <span className="flex items-center gap-2 text-accent underline decoration-blue-500/20 cursor-pointer hover:text-accent">View Raw Trace Logs</span>
            </div>
            <span>Identity Prism Diagnostic Tool v1.2</span>
         </div>

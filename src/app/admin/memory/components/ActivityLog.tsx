@@ -49,20 +49,20 @@ export default function ActivityLog({ testRunId = 'PROD' }: ActivityLogProps) {
   return (
     <div className="bg-bg-primary border border-border-secondary rounded-xl overflow-hidden h-[450px] flex flex-col shadow-2xl">
       <div className="py-4 px-6 border-b border-border-secondary flex flex-row items-center justify-between shrink-0 bg-white/[0.02]">
-        <h3 className="text-2xs font-bold uppercase tracking-[0.2em] flex items-center gap-2 text-gray-400">
+        <h3 className="text-2xs font-bold uppercase tracking-[0.2em] flex items-center gap-2 text-text-tertiary">
           <Terminal className="w-3.5 h-3.5" />
           Governance Activity Log
         </h3>
         <div className="flex items-center gap-2">
-          <div className="px-2 py-0.5 rounded border border-emerald-500/30 text-2xs font-bold text-success bg-emerald-500/5 uppercase tracking-widest flex items-center gap-1.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <div className="px-2 py-0.5 rounded border border-border-primary text-2xs font-bold text-success bg-bg-secondary uppercase tracking-widest flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
             Live Monitor
           </div>
         </div>
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
         {logs.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-gray-600 text-2xs uppercase font-bold tracking-widest py-20 opacity-30">
+          <div className="h-full flex flex-col items-center justify-center text-text-tertiary text-2xs uppercase font-bold tracking-widest py-20 opacity-30">
             <Shield className="w-8 h-8 mb-2" />
             Waiting for system telemetry
           </div>
@@ -70,8 +70,8 @@ export default function ActivityLog({ testRunId = 'PROD' }: ActivityLogProps) {
           <div key={log.id} className="flex gap-4 group">
             <div className="flex flex-col items-center pt-1 shrink-0">
               <div className={`w-1.5 h-1.5 rounded-full ${
-                log.level === 'error' ? 'bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)]' : 
-                log.level === 'warn' ? 'bg-amber-500 shadow-[0_0_5px_rgba(245,158,11,0.5)]' : 'bg-blue-500 shadow-[0_0_5px_rgba(59,130,246,0.5)]'
+                log.level === 'error' ? 'bg-danger shadow-sm' : 
+                log.level === 'warn' ? 'bg-warning shadow-sm' : 'bg-accent shadow-sm'
               }`} />
               <div className="w-px h-full bg-secondary my-1" />
             </div>
@@ -83,11 +83,11 @@ export default function ActivityLog({ testRunId = 'PROD' }: ActivityLogProps) {
                 }`}>
                   [{log.time}]
                 </span>
-                <span className="text-2xs text-gray-600 font-bold uppercase tracking-widest">
+                <span className="text-2xs text-text-tertiary font-bold uppercase tracking-widest">
                   sys::{log.target}
                 </span>
               </div>
-              <p className="text-2xs text-gray-300 leading-relaxed group-hover:text-text-primary transition-colors font-medium">
+              <p className="text-2xs text-text-secondary leading-relaxed group-hover:text-text-primary transition-colors font-medium">
                 {log.event}
               </p>
             </div>

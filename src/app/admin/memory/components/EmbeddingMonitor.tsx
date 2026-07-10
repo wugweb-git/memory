@@ -46,13 +46,13 @@ export default function EmbeddingMonitor({ testRunId = 'PROD' }: EmbeddingMonito
             <PieChart className="w-5 h-5 text-accent" />
             Embedding Pipeline
           </h2>
-          <p className="text-sm text-gray-400 mt-1">Real-time semantic indexing status.</p>
+          <p className="text-sm text-text-tertiary mt-1">Real-time semantic indexing status.</p>
         </div>
         <button 
           onClick={fetchStats}
           className={`p-2 hover:bg-secondary rounded-full transition-all ${isRefreshing ? 'animate-spin' : ''}`}
         >
-          <RefreshCw className="w-4 h-4 text-gray-400" />
+          <RefreshCw className="w-4 h-4 text-text-tertiary" />
         </button>
       </div>
 
@@ -92,7 +92,7 @@ export default function EmbeddingMonitor({ testRunId = 'PROD' }: EmbeddingMonito
 
       <div className="mt-2 p-4 bg-secondary rounded-lg border border-border-secondary">
         <div className="flex items-center justify-between text-xs mb-2">
-          <span className="text-gray-400">Memory Sync Progress</span>
+          <span className="text-text-tertiary">Memory Sync Progress</span>
           <span className="text-text-primary font-bold">
             {Math.round((stats.embedded / (stats.pending + stats.processing + stats.embedded + stats.failed || 1)) * 100)}%
           </span>
@@ -101,7 +101,7 @@ export default function EmbeddingMonitor({ testRunId = 'PROD' }: EmbeddingMonito
           <motion.div 
             initial={{ width: 0 }}
             animate={{ width: `${(stats.embedded / (stats.pending + stats.processing + stats.embedded + stats.failed || 1)) * 100}%` }}
-            className="h-full bg-gradient-to-r from-blue-500 to-emerald-500"
+            className="h-full bg-accent"
           />
         </div>
       </div>
@@ -111,10 +111,10 @@ export default function EmbeddingMonitor({ testRunId = 'PROD' }: EmbeddingMonito
 
 function StatusCard({ label, count, icon, color, action, subtext }: any) {
   const colors: any = {
-    amber: 'bg-amber-500/10 border-amber-500/20 text-warning',
-    blue: 'bg-blue-500/10 border-blue-500/20 text-accent',
-    emerald: 'bg-emerald-500/10 border-emerald-500/20 text-success',
-    red: 'bg-red-500/10 border-red-500/20 text-danger',
+    amber: 'bg-bg-secondary border-border-primary text-warning',
+    blue: 'bg-bg-secondary border-border-primary text-accent',
+    emerald: 'bg-bg-secondary border-border-primary text-success',
+    red: 'bg-bg-secondary border-border-primary text-danger',
   };
 
   return (
@@ -128,7 +128,7 @@ function StatusCard({ label, count, icon, color, action, subtext }: any) {
           {count > 999 ? `${(count / 1000).toFixed(1)}k` : count}
         </div>
         <div className="text-2xs uppercase font-bold tracking-widest opacity-60">{label}</div>
-        {subtext && <div className="text-2xs text-gray-500 mt-1 uppercase font-medium">{subtext}</div>}
+        {subtext && <div className="text-2xs text-text-tertiary mt-1 uppercase font-medium">{subtext}</div>}
       </div>
     </div>
   );

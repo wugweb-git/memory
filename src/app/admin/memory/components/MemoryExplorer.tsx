@@ -49,16 +49,16 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
       <div className="p-6 border-b border-border-secondary flex items-center justify-between bg-white/[0.02]">
         <div>
           <h2 className="text-xl font-semibold text-text-primary flex items-center gap-2">
-            <Database className="w-5 h-5 text-gray-400" />
+            <Database className="w-5 h-5 text-text-tertiary" />
             Memory Data Explorer
           </h2>
-          <p className="text-sm text-gray-500 mt-1">Direct access to the NoSQL memory packets.</p>
+          <p className="text-sm text-text-tertiary mt-1">Direct access to the NoSQL memory packets.</p>
         </div>
         <div className="flex gap-2">
           <select 
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="bg-bg-primary border border-border-secondary rounded-md px-3 py-1.5 text-xs text-gray-300 focus:outline-none focus:ring-1 focus:ring-white/20"
+            className="bg-bg-primary border border-border-secondary rounded-md px-3 py-1.5 text-xs text-text-secondary focus:outline-none focus:ring-1 focus:ring-white/20"
           >
             <option value="">All Types</option>
             <option value="email">Email</option>
@@ -73,13 +73,13 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-border-secondary bg-bg-primary">
-              <th className="px-6 py-4 text-2xs uppercase font-bold text-gray-500 tracking-widest">Packet ID</th>
-              <th className="px-6 py-4 text-2xs uppercase font-bold text-gray-500 tracking-widest">Source</th>
-              <th className="px-6 py-4 text-2xs uppercase font-bold text-gray-500 tracking-widest">Type</th>
-              <th className="px-6 py-4 text-2xs uppercase font-bold text-gray-500 tracking-widest">Status</th>
-              <th className="px-6 py-4 text-2xs uppercase font-bold text-gray-500 tracking-widest">Embed Status</th>
-              <th className="px-6 py-4 text-2xs uppercase font-bold text-gray-500 tracking-widest">Time</th>
-              <th className="px-6 py-4 text-2xs uppercase font-bold text-gray-500 tracking-widest"></th>
+              <th className="px-6 py-4 text-2xs uppercase font-bold text-text-tertiary tracking-widest">Packet ID</th>
+              <th className="px-6 py-4 text-2xs uppercase font-bold text-text-tertiary tracking-widest">Source</th>
+              <th className="px-6 py-4 text-2xs uppercase font-bold text-text-tertiary tracking-widest">Type</th>
+              <th className="px-6 py-4 text-2xs uppercase font-bold text-text-tertiary tracking-widest">Status</th>
+              <th className="px-6 py-4 text-2xs uppercase font-bold text-text-tertiary tracking-widest">Embed Status</th>
+              <th className="px-6 py-4 text-2xs uppercase font-bold text-text-tertiary tracking-widest">Time</th>
+              <th className="px-6 py-4 text-2xs uppercase font-bold text-text-tertiary tracking-widest"></th>
             </tr>
           </thead>
           <tbody>
@@ -93,20 +93,20 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
               <tr key={packet.id} className="border-b border-border-secondary hover:bg-white/[0.02] transition-all group">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
-                    <Hash className="w-3 h-3 text-gray-600" />
-                    <span className="text-xs font-mono text-gray-400 group-hover:text-text-primary transition-colors">
+                    <Hash className="w-3 h-3 text-text-tertiary" />
+                    <span className="text-xs font-mono text-text-tertiary group-hover:text-text-primary transition-colors">
                       {packet.id.slice(-8)}
                     </span>
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-2xs text-accent font-bold inline-block uppercase tracking-tight">
+                  <div className="px-2 py-0.5 rounded bg-bg-secondary border border-border-primary text-2xs text-accent font-bold inline-block uppercase tracking-tight">
                     {packet.source}
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="flex items-center gap-2 text-xs text-gray-300">
-                    <Tag className="w-3 h-3 text-gray-600" />
+                  <div className="flex items-center gap-2 text-xs text-text-secondary">
+                    <Tag className="w-3 h-3 text-text-tertiary" />
                     {packet.type}
                   </div>
                 </td>
@@ -116,13 +116,13 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
                 <td className="px-6 py-4">
                   <EmbedStatusBadge status={packet.embedding_status} />
                 </td>
-                <td className="px-6 py-4 text-xs text-gray-500">
+                <td className="px-6 py-4 text-xs text-text-tertiary">
                   {new Date(packet.ingestion_time).toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4 text-right">
                   <button 
                     onClick={() => setSelectedPacketId(packet.id)}
-                    className="p-2 hover:bg-secondary rounded-md transition-all text-gray-600 hover:text-text-primary"
+                    className="p-2 hover:bg-secondary rounded-md transition-all text-text-tertiary hover:text-text-primary"
                   >
                     <Eye className="w-4 h-4" />
                   </button>
@@ -133,7 +133,7 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
         </table>
       </div>
 
-      <div className="p-4 bg-bg-primary/50 border-t border-border-secondary flex items-center justify-between text-2xs text-gray-600 font-bold tracking-widest uppercase">
+      <div className="p-4 bg-bg-primary/50 border-t border-border-secondary flex items-center justify-between text-2xs text-text-tertiary font-bold tracking-widest uppercase">
         <div className="flex items-center gap-4">
           <span>Showing 10 records</span>
           <span className="flex items-center gap-1">
@@ -160,10 +160,10 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
 
 function StatusBadge({ status }: any) {
   const styles: any = {
-    active: 'text-success bg-emerald-500/10',
-    failed: 'text-danger bg-red-500/10',
-    partial: 'text-warning bg-amber-500/10',
-    archived: 'text-gray-400 bg-secondary'
+    active: 'text-success bg-bg-secondary',
+    failed: 'text-danger bg-bg-secondary',
+    partial: 'text-warning bg-bg-secondary',
+    archived: 'text-text-tertiary bg-secondary'
   };
   return (
     <span className={`px-2 py-0.5 rounded text-2xs font-bold uppercase tracking-wider ${styles[status] || styles.active}`}>
@@ -174,15 +174,15 @@ function StatusBadge({ status }: any) {
 
 function EmbedStatusBadge({ status }: any) {
   const styles: any = {
-    embedded: 'text-accent bg-blue-500/10',
-    pending: 'text-warning bg-amber-500/10',
+    embedded: 'text-accent bg-bg-secondary',
+    pending: 'text-warning bg-bg-secondary',
     processing: 'text-violet-400 bg-violet-500/10',
-    failed: 'text-danger bg-red-500/10'
+    failed: 'text-danger bg-bg-secondary'
   };
   return (
     <div className="flex items-center gap-2">
-      <div className={`w-1.5 h-1.5 rounded-full ${status === 'embedded' ? 'bg-blue-400' : 'bg-gray-600'} shadow-[0_0_5px_rgba(96,165,250,0.5)]`} />
-      <span className={`text-2xs font-bold uppercase tracking-wider ${styles[status] || 'text-gray-500'}`}>
+      <div className={`w-1.5 h-1.5 rounded-full ${status === 'embedded' ? 'bg-accent' : 'bg-bg-tertiary'} shadow-sm`} />
+      <span className={`text-2xs font-bold uppercase tracking-wider ${styles[status] || 'text-text-tertiary'}`}>
         {status}
       </span>
     </div>
