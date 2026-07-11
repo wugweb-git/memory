@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireOwner } from '@/lib/security/auth';
 import { checkRateLimit } from '@/lib/security/rate-limit';
 import { getRequestUserId } from '@/lib/identity/request';
-import { importCaseStudyDocx } from '@/lib/ingestion/docx-import';
+import { importDocx } from '@/lib/ingestion/docx-import';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -21,11 +21,12 @@ export async function POST(req: NextRequest) {
   try {
     const form = await req.formData();
     const file = form.get('file');
+    const type = String(form.get('type') || 'case_study');
     if (!(file instanceof File)) {
       return NextResponse.json({ error: 'No .docx file provided (form field "file").' }, { status: 400 });
     }
     const buffer = Buffer.from(await file.arrayBuffer());
-    const summary = await importCaseStudyDocx(buffer, getRequestUserId(req), file.name);
+    const summary = await importDocx(buffer, getRequestUserId(req), { type, fileName: file.name });
     return NextResponse.json(summary);
   } catch (err: any) {
     console.error('[API/Ingest/DOCX]', err);

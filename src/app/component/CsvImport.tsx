@@ -13,13 +13,30 @@ type Summary = {
   items: Array<{ title: string; status: string; reason?: string }>;
 };
 
+type ImportType = 'blog' | 'case_study' | 'client' | 'profile';
+const TYPES: Array<{ key: ImportType; label: string }> = [
+  { key: 'blog', label: 'Blog' },
+  { key: 'case_study', label: 'Case study' },
+  { key: 'client', label: 'Client' },
+  { key: 'profile', label: 'Profile' },
+];
+
+/** Best-guess the record type from the file name. */
+function guessType(name: string): ImportType {
+  const n = name.toLowerCase();
+  if (n.includes('client')) return 'client';
+  if (n.includes('profile') || n.includes('resume') || n.includes('cv') || n.includes('about')) return 'profile';
+  if (n.includes('case')) return 'case_study';
+  return 'blog';
+}
+
 /**
- * Bulk-import a blog / case-study CSV export into memory (one packet per row).
- * Posts to /api/ingest/csv. Owner session (cookie) authenticates the request.
+ * Bulk-import a .csv or .docx into memory (one packet per row / case-study /
+ * document). Posts to /api/ingest/{csv,docx}; owner session authenticates.
  */
 export function CsvImport({ onComplete }: { onComplete?: () => void }) {
   const [file, setFile] = useState<File | null>(null);
-  const [type, setType] = useState<'blog' | 'case_study'>('blog');
+  const [type, setType] = useState<ImportType>('blog');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Summary | null>(null);
@@ -34,9 +51,9 @@ export function CsvImport({ onComplete }: { onComplete?: () => void }) {
     try {
       const fd = new FormData();
       fd.append('file', file);
-      // .docx → case-study importer (splits on "Case Study N:"); .csv → row importer.
+      fd.append('type', type);
+      // .docx → case-study split (when type=case_study) or single-doc; .csv → per-row.
       const endpoint = isDocx ? '/api/ingest/docx' : '/api/ingest/csv';
-      if (!isDocx) fd.append('type', type);
       const res = await fetch(endpoint, { method: 'POST', body: fd });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error || `Import failed (${res.status})`);
@@ -52,40 +69,44 @@ export function CsvImport({ onComplete }: { onComplete?: () => void }) {
   return (
     <div className="space-y-3">
       <p className="text-2xs text-text-tertiary">
-        Bulk-import your history — a <span className="font-mono">.csv</span> export (one row per post) or a
-        <span className="font-mono"> .docx</span> of case studies (split on each “Case Study N:”). Each becomes one
-        memory item; re-imports are de-duplicated.
+        Bulk-import your history — a <span className="font-mono">.csv</span> (one row per record) or a
+        <span className="font-mono"> .docx</span> (case studies split on each “Case Study N:”, or a profile/doc as
+        one item). Each becomes one memory item; re-imports are de-duplicated.
       </p>
 
-      {!isDocx && (
-        <div className="flex gap-2">
-          {(['blog', 'case_study'] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setType(t)}
-              className={`px-3 py-1.5 rounded-lg text-2xs font-bold transition-colors ${
-                type === t ? 'bg-text-primary text-bg-primary' : 'text-text-tertiary hover:bg-bg-secondary'
-              }`}
-            >
-              {t === 'blog' ? 'Blog' : 'Case study'}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="flex flex-wrap gap-2">
+        {TYPES.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setType(t.key)}
+            className={`px-3 py-1.5 rounded-lg text-2xs font-bold transition-colors ${
+              type === t.key ? 'bg-text-primary text-bg-primary' : 'text-text-tertiary hover:bg-bg-secondary'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
       <label className="flex items-center gap-3 rounded-xl border border-dashed border-border-primary p-4 cursor-pointer hover:bg-bg-secondary transition-colors">
         <FileSpreadsheet className="h-5 w-5 text-accent shrink-0" />
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-bold text-text-primary truncate">{file ? file.name : 'Choose a .csv or .docx file'}</span>
           <span className="block text-2xs text-text-tertiary">
-            {file ? `${(file.size / 1024).toFixed(0)} KB · ${isDocx ? 'case studies' : 'CSV rows'}` : 'export from your blog / CMS / case-study doc'}
+            {file ? `${(file.size / 1024).toFixed(0)} KB · importing as ${type.replace('_', ' ')}` : 'CSV export or Word doc — blog, case studies, clients, profile'}
           </span>
         </span>
         <input
           type="file"
           accept=".csv,text/csv,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
           className="hidden"
-          onChange={(e) => { setFile(e.target.files?.[0] ?? null); setResult(null); setError(null); }}
+          onChange={(e) => {
+            const f = e.target.files?.[0] ?? null;
+            setFile(f);
+            if (f) setType(guessType(f.name));
+            setResult(null);
+            setError(null);
+          }}
         />
       </label>
 

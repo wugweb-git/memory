@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireOwner } from '@/lib/security/auth';
 import { checkRateLimit } from '@/lib/security/rate-limit';
 import { getRequestUserId } from '@/lib/identity/request';
-import { importBlogCsv } from '@/lib/ingestion/csv-import';
+import { importCsv } from '@/lib/ingestion/csv-import';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     }
 
     const text = new TextDecoder().decode(await file.arrayBuffer());
-    const summary = await importBlogCsv(text, getRequestUserId(req), { type });
+    const summary = await importCsv(text, getRequestUserId(req), { type });
     return NextResponse.json(summary);
   } catch (err: any) {
     console.error('[API/Ingest/CSV]', err);

@@ -64,65 +64,79 @@ function slugify(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
 }
 
-export async function importCaseStudyDocx(buffer: Buffer, userId: string, fileName = 'case-studies'): Promise<CsvImportSummary> {
-  const text = await extractDocxText(buffer);
-  let chunks = splitCaseStudies(text);
+async function ingestChunk(
+  cs: CaseStudyChunk,
+  userId: string,
+  type: string,
+  summary: CsvImportSummary,
+) {
+  if (!cs.title && !cs.body) {
+    summary.skipped++;
+    summary.items.push({ title: '(untitled)', status: 'skipped', reason: 'empty' });
+    return;
+  }
+  const slug = slugify(cs.title);
+  const content = [cs.title && `# ${cs.title}`, cs.meta.subtitle, cs.body].filter(Boolean).join('\n\n');
 
-  // No "Case Study N:" headings → treat the whole document as one case study.
-  if (chunks.length === 0 && text.trim()) {
-    chunks = [{ title: fileName.replace(/\.docx$/i, ''), meta: {}, body: text.trim() }];
+  try {
+    const res = await MemoryService.ingest(
+      {
+        source: 'docx_import',
+        source_id: `${type}:${slug}`,
+        type,
+        content,
+        metadata: { title: cs.title, ...cs.meta, ingestion_path: 'api/ingest/docx' },
+        trace: { origin: 'docx_import', ingestion_path: ['browser', 'api/ingest/docx', 'MemoryService'] },
+      },
+      userId,
+    );
+
+    if (res.status === 'ACCEPTED') {
+      summary.imported++;
+      summary.items.push({ title: cs.title, status: 'imported' });
+    } else if (res.reason === 'DUPLICATE_HASH' || res.status === 'IGNORE') {
+      summary.duplicates++;
+      summary.items.push({ title: cs.title, status: 'duplicate' });
+    } else {
+      summary.skipped++;
+      summary.items.push({ title: cs.title, status: String(res.status ?? 'skipped').toLowerCase(), reason: res.reason });
+    }
+  } catch (e: any) {
+    summary.failed++;
+    summary.items.push({ title: cs.title, status: 'failed', reason: e?.message });
+  }
+}
+
+/**
+ * Import a .docx into memory.
+ *  - type 'case_study': split on "Case Study N:" → one packet per study
+ *    (falls back to a single packet if no headings are found).
+ *  - any other type (e.g. 'profile'): the whole document → one packet of that
+ *    type, titled from its first line.
+ */
+export async function importDocx(
+  buffer: Buffer,
+  userId: string,
+  opts: { type?: string; fileName?: string } = {},
+): Promise<CsvImportSummary> {
+  const type = opts.type || 'case_study';
+  const fileName = (opts.fileName || 'document').replace(/\.docx$/i, '');
+  const text = await extractDocxText(buffer);
+
+  let chunks: CaseStudyChunk[];
+  if (type === 'case_study') {
+    chunks = splitCaseStudies(text);
+    if (chunks.length === 0 && text.trim()) {
+      chunks = [{ title: fileName, meta: {}, body: text.trim() }];
+    }
+  } else {
+    const firstLine = text.split('\n').map((l) => l.trim()).find(Boolean) || fileName;
+    chunks = [{ title: firstLine, meta: {}, body: text.trim() }];
   }
 
   const summary: CsvImportSummary = { total: chunks.length, imported: 0, duplicates: 0, skipped: 0, failed: 0, items: [] };
-
   for (const cs of chunks) {
-    if (!cs.title && !cs.body) {
-      summary.skipped++;
-      summary.items.push({ title: '(untitled)', status: 'skipped', reason: 'empty' });
-      continue;
-    }
-    const slug = slugify(cs.title);
-    const content = [cs.title && `# ${cs.title}`, cs.meta.subtitle, cs.body].filter(Boolean).join('\n\n');
-
-    try {
-      const res = await MemoryService.ingest(
-        {
-          source: 'docx_import',
-          source_id: `case_study:${slug}`,
-          type: 'case_study',
-          content,
-          metadata: {
-            title: cs.title,
-            subtitle: cs.meta.subtitle ?? '',
-            category: cs.meta.category ?? '',
-            tags: cs.meta.tags ?? '',
-            partner: cs.meta.partner ?? '',
-            client: cs.meta.client ?? '',
-            industry: cs.meta.industry ?? '',
-            disciplines: cs.meta.disciplines ?? '',
-            team: cs.meta.team ?? '',
-            ingestion_path: 'api/ingest/docx',
-          },
-          trace: { origin: 'docx_import', ingestion_path: ['browser', 'api/ingest/docx', 'MemoryService'] },
-        },
-        userId,
-      );
-
-      if (res.status === 'ACCEPTED') {
-        summary.imported++;
-        summary.items.push({ title: cs.title, status: 'imported' });
-      } else if (res.reason === 'DUPLICATE_HASH' || res.status === 'IGNORE') {
-        summary.duplicates++;
-        summary.items.push({ title: cs.title, status: 'duplicate' });
-      } else {
-        summary.skipped++;
-        summary.items.push({ title: cs.title, status: String(res.status ?? 'skipped').toLowerCase(), reason: res.reason });
-      }
-    } catch (e: any) {
-      summary.failed++;
-      summary.items.push({ title: cs.title, status: 'failed', reason: e?.message });
-    }
+    await ingestChunk(cs, userId, type, summary);
   }
-
   return summary;
 }
