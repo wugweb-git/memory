@@ -18,7 +18,7 @@ function base64urlDecode(input: string): string {
 export function signToken(
   payload: Omit<JwtPayload, 'exp'>,
   secret: string,
-  expiresInSec = 60 * 60 * 24 * 7,
+  expiresInSec = 60 * 60 * 24 * 90,
 ): string {
   const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   const body = base64url(

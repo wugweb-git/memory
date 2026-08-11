@@ -82,7 +82,7 @@ const RAW_NAV_GROUPS: ReadonlyArray<NavGroup> = [
   {
     group: 'Workspace',
     items: [
-      { href: '/', label: 'Console', icon: LayoutDashboard },
+      { href: '/console', label: 'Console', icon: LayoutDashboard },
       { href: '/ask', label: 'Ask', icon: MessageSquare, feature: 'ask' },
     ],
   },

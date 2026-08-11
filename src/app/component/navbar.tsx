@@ -12,7 +12,7 @@ const NavBar: React.FC = () => {
       className="fixed top-0 left-0 right-0 z-[60] h-14 bg-bg-elevated/90 backdrop-blur-xl border-b border-border-secondary flex items-center justify-between px-4 md:px-8 shadow-sm"
       aria-label="Primary"
     >
-      <Link href="/" className="flex items-center gap-3 group shrink-0">
+      <Link href="/console" className="flex items-center gap-3 group shrink-0">
         <div className="w-9 h-9 rounded-xl bg-text-primary flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
           <LogoIcon size={18} className="text-bg-primary" />
         </div>

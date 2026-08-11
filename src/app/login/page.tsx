@@ -12,7 +12,7 @@ type SessionUser = { id: string; email: string; role: string };
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get('next') || '/';
+  const next = params.get('next') || '/console';
 
   const [user, setUser] = useState<SessionUser | null>(null);
   const [checking, setChecking] = useState(true);
@@ -129,7 +129,7 @@ function LoginForm() {
         </div>
 
         <p className="text-2xs text-text-disabled text-center mt-6">
-          <Link href="/" className="hover:text-text-tertiary">Back to console</Link>
+          <Link href="/console" className="hover:text-text-tertiary">Back to console</Link>
         </p>
       </div>
     </main>

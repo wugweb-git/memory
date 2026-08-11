@@ -101,7 +101,7 @@ export function requireAdmin(req: NextRequest): RequestActor | NextResponse {
   return actor;
 }
 
-export function sessionCookie(token: string, maxAgeSec = 60 * 60 * 24 * 7): string {
+export function sessionCookie(token: string, maxAgeSec = 60 * 60 * 24 * 90): string {
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
   return `${SESSION_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSec}${secure}`;
 }

@@ -153,7 +153,7 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
           >
             <Menu size={20} />
           </button>
-          <Link href="/" className="md:hidden flex items-center gap-2">
+          <Link href="/console" className="md:hidden flex items-center gap-2">
             <div className="w-7 h-7 rounded-xl bg-text-primary flex items-center justify-center">
               <Command size={14} className="text-bg-primary" />
             </div>

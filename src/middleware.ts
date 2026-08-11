@@ -49,9 +49,19 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // The private app landing — any authenticated session may enter.
+  if (pathname === '/console' || pathname.startsWith('/console/')) {
+    const role = await actorRole(request);
+    if (!role) {
+      const login = new URL('/login', request.url);
+      login.searchParams.set('next', pathname);
+      return NextResponse.redirect(login);
+    }
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/api/admin/:path*', '/admin/:path*'],
+  matcher: ['/api/admin/:path*', '/admin/:path*', '/console', '/console/:path*'],
 };
