@@ -9,11 +9,19 @@ import { config } from "@/config";
  * Groq (OpenAI-compatible, fast Llama) is used when GROQ_API_KEY is set;
  * otherwise Gemini. Models overridable via GROQ_MODEL / GEMINI_MODEL.
  */
+// Generic OpenAI-compatible gateway (Command Code / Cline Pass / DeepSeek, …).
+// Set AI_GATEWAY_BASE_URL + AI_GATEWAY_API_KEY to route the brain through it;
+// takes priority over Groq/Gemini. No provider lock-in.
+const GATEWAY_BASE_URL = process.env.AI_GATEWAY_BASE_URL;
+const GATEWAY_API_KEY = process.env.AI_GATEWAY_API_KEY;
+const GATEWAY_MODEL = process.env.AI_GATEWAY_MODEL || "deepseek-chat";
+const GATEWAY_ON = Boolean(GATEWAY_BASE_URL && GATEWAY_API_KEY);
+
 const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
 const GROQ_DEFAULT_MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
 const GEMINI_DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 
-const DEFAULT_MODEL = config.groqApiKey ? GROQ_DEFAULT_MODEL : GEMINI_DEFAULT_MODEL;
+const DEFAULT_MODEL = GATEWAY_ON ? GATEWAY_MODEL : config.groqApiKey ? GROQ_DEFAULT_MODEL : GEMINI_DEFAULT_MODEL;
 
 const SYSTEM_PROMPT =
   "You are the Cognitive Engine of a Personal Operating System. Reason deeply and provide structured guidance.";
@@ -23,7 +31,14 @@ const _modelCache: Record<string, BaseChatModel> = {};
 function getModel(modelName: string = DEFAULT_MODEL, temperature = 0.1): BaseChatModel {
   const key = `${modelName}:${temperature}`;
   if (!_modelCache[key]) {
-    if (config.groqApiKey) {
+    if (GATEWAY_ON) {
+      _modelCache[key] = new ChatOpenAI({
+        modelName,
+        temperature,
+        apiKey: GATEWAY_API_KEY,
+        configuration: { baseURL: GATEWAY_BASE_URL },
+      });
+    } else if (config.groqApiKey) {
       _modelCache[key] = new ChatOpenAI({
         modelName,
         temperature,
@@ -37,7 +52,7 @@ function getModel(modelName: string = DEFAULT_MODEL, temperature = 0.1): BaseCha
         apiKey: config.geminiApiKey,
       });
     } else {
-      throw new Error("No cognitive LLM key configured (GROQ_API_KEY or GEMINI_API_KEY)");
+      throw new Error("No cognitive LLM configured (AI_GATEWAY_BASE_URL+AI_GATEWAY_API_KEY, GROQ_API_KEY, or GEMINI_API_KEY)");
     }
   }
   return _modelCache[key];

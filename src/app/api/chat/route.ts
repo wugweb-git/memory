@@ -30,11 +30,14 @@ function getLastUserText(messages: UIMessage[]): string {
  */
 export async function POST(req: Request) {
   try {
+    const gatewayBase = process.env.AI_GATEWAY_BASE_URL;
+    const gatewayKey = process.env.AI_GATEWAY_API_KEY;
+    const gatewayOn = Boolean(gatewayBase && gatewayKey);
     const groqKey = process.env.GROQ_API_KEY;
     const openaiKey = process.env.OPENAI_API_KEY;
-    if (!groqKey && !openaiKey) {
+    if (!gatewayOn && !groqKey && !openaiKey) {
       return NextResponse.json(
-        { message: 'No chat LLM configured (GROQ_API_KEY or OPENAI_API_KEY)' },
+        { message: 'No chat LLM configured (AI_GATEWAY_BASE_URL+AI_GATEWAY_API_KEY, GROQ_API_KEY, or OPENAI_API_KEY)' },
         { status: 401 },
       );
     }
@@ -70,13 +73,18 @@ export async function POST(req: Request) {
       console.warn('[Chat] retrieval unavailable, answering without memory context:', retrievalErr);
     }
 
-    // Groq (OpenAI-compatible) when configured; OpenAI otherwise.
-    const provider = groqKey
-      ? createOpenAI({ apiKey: groqKey, baseURL: 'https://api.groq.com/openai/v1' })
-      : createOpenAI({ apiKey: openaiKey });
-    const chatModel = groqKey
-      ? (process.env.GROQ_MODEL || 'llama-3.3-70b-versatile')
-      : 'gpt-4-turbo';
+    // Generic OpenAI-compatible gateway (Command Code / Cline Pass / DeepSeek)
+    // takes priority; then Groq; then OpenAI.
+    const provider = gatewayOn
+      ? createOpenAI({ apiKey: gatewayKey, baseURL: gatewayBase })
+      : groqKey
+        ? createOpenAI({ apiKey: groqKey, baseURL: 'https://api.groq.com/openai/v1' })
+        : createOpenAI({ apiKey: openaiKey });
+    const chatModel = gatewayOn
+      ? (process.env.AI_GATEWAY_MODEL || 'deepseek-chat')
+      : groqKey
+        ? (process.env.GROQ_MODEL || 'llama-3.3-70b-versatile')
+        : 'gpt-4-turbo';
     const result = streamText({
       // .chat() forces the chat-completions endpoint (Groq has no /responses API)
       model: provider.chat(chatModel) as unknown as Parameters<typeof streamText>[0]['model'],
