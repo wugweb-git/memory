@@ -2,6 +2,7 @@ import { postgres as prisma } from '@/lib/db/postgres';
 import { ingestionGate, generateHash, addProcessingError } from './gate';
 import { normalize } from './normalization';
 import { shouldFilter } from './noise-filter';
+import { stripNullBytes } from './sanitize';
 import { MemoryPacket, ProcessingError, EmbeddingStatus } from './types';
 import { encrypt, isEncryptionConfigured } from './encryption';
 
@@ -59,7 +60,7 @@ export class MemoryService {
             decision: gateReport.decision,
             reason: gateReport.reason,
             timestamp: new Date(),
-            raw_payload: raw
+            raw_payload: stripNullBytes(raw)
           }
         });
         return { status: gateReport.decision, log_id: log.id, reason: gateReport.reason };
@@ -67,7 +68,13 @@ export class MemoryService {
 
       // 4. Normalization
       const packetData = normalize(raw, userId);
-      
+
+      // 4b. Strip NUL / disallowed control chars — Postgres text/jsonb reject
+      //     them (22P05). Done before hashing so dedup stays stable.
+      packetData.content = stripNullBytes(packetData.content);
+      packetData.metadata = stripNullBytes(packetData.metadata);
+      packetData.trace = stripNullBytes(packetData.trace);
+
       // 5. Deduplication (Hash-based)
       packetData.hash = generateHash(packetData);
       const existing = await prisma.memoryPacket.findFirst({

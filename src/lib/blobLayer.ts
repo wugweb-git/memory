@@ -1,6 +1,7 @@
 import prisma from './prisma';
 import crypto from 'crypto';
 import type { Prisma } from '../generated/postgres';
+import { stripNullBytes } from './memory/sanitize';
 // Note: recursive import fixed below with a mock or internal logic if needed,
 // but for this audit we ensure stability.
 
@@ -69,7 +70,8 @@ async function upsertMemoryPacketFromBlob(
 }
 
 export async function Push_To_Blob(packet: any) {
-  const { type, source, source_id, raw_payload, file_ref, trace_json } = packet;
+  // Strip NUL / control chars up-front — Postgres jsonb rejects them (22P05).
+  const { type, source, source_id, raw_payload, file_ref, trace_json } = stripNullBytes(packet);
   const contentSize = sizeOf(raw_payload);
   const hash = computeHash(raw_payload);
 
