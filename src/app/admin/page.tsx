@@ -54,7 +54,16 @@ export default function AdminConsole() {
     try {
       const res = await fetch(API_ENDPOINTS.admin.checklist.path, { credentials: 'include' });
       if (!res.ok) throw new Error();
-      setChecklist(await res.json());
+      // GET /api/admin/checklist returns { items: [...] }, not a bare array.
+      // Storing the raw body here made `checklist` an object; every later
+      // `checklist.map(...)` / `checklist.filter(...)` in this component then
+      // threw "checklist.map is not a function" -- a pure client-side crash
+      // that never touches a server log, which is why it never showed up in
+      // Vercel's runtime error data. Confirmed by reading the route handler
+      // directly (src/app/api/admin/checklist/route.ts).
+      const body = await res.json();
+      const items = Array.isArray(body) ? body : Array.isArray(body?.items) ? body.items : [];
+      setChecklist(items);
     } catch {
       setChecklist(null);
     }
