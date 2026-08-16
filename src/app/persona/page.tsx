@@ -9,6 +9,74 @@ type EvolutionLog = { id: string; changedField: string | null; reason: string | 
 type AdaptiveProfile = { uiDensity: string; preferredMode: string | null; preferredOutputLength: string | null; preferredNavigationStyle: string | null };
 type PersonaProfile = { displayName?: string | null; confidenceScore?: number; communicationStyle?: unknown; writingStyle?: unknown; decisionStyle?: unknown };
 
+const STYLE_LABEL: Record<string, string> = {
+  communicationStyle: 'Communication',
+  writingStyle: 'Writing',
+  decisionStyle: 'Decision-making',
+};
+
+/** Human-readable label for a camelCase key: "toneWarmth" -> "Tone warmth". */
+function humanize(key: string): string {
+  const spaced = key.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/_/g, ' ');
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1).toLowerCase();
+}
+
+/** Renders an arbitrary style-profile value as readable UI instead of a raw
+ *  JSON dump — was the reason /persona read like a debug page. Numbers in
+ *  [0,1] render as a labeled bar (these are style scores), strings render as
+ *  prose, arrays as chips, nested objects recurse one level with indent. */
+function StyleValue({ value, depth = 0 }: { value: unknown; depth?: number }) {
+  if (value === null || value === undefined || value === '') return null;
+
+  if (typeof value === 'number') {
+    if (value >= 0 && value <= 1) {
+      return (
+        <div className="flex items-center gap-2">
+          <div className="h-1 flex-1 bg-secondary rounded-full overflow-hidden">
+            <div className="h-1 bg-text-primary rounded-full" style={{ width: `${value * 100}%` }} />
+          </div>
+          <span className="text-2xs font-bold text-text-tertiary w-9 text-right">{Math.round(value * 100)}%</span>
+        </div>
+      );
+    }
+    return <span className="text-sm text-text-primary">{value}</span>;
+  }
+
+  if (typeof value === 'string') {
+    return <p className="text-sm text-text-secondary leading-snug">{value}</p>;
+  }
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) return null;
+    return (
+      <div className="flex flex-wrap gap-1.5">
+        {value.map((v, i) => (
+          <span key={i} className="text-2xs font-medium px-2 py-0.5 rounded-full bg-bg-primary border border-border-secondary text-text-tertiary">
+            {typeof v === 'string' ? v : JSON.stringify(v)}
+          </span>
+        ))}
+      </div>
+    );
+  }
+
+  if (typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>).filter(([, v]) => v !== null && v !== undefined && v !== '');
+    if (entries.length === 0) return null;
+    return (
+      <div className={depth > 0 ? 'space-y-2 pl-3 border-l border-border-secondary' : 'space-y-2'}>
+        {entries.map(([k, v]) => (
+          <div key={k}>
+            <p className="text-2xs text-text-tertiary mb-0.5">{humanize(k)}</p>
+            <StyleValue value={v} depth={depth + 1} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return <span className="text-sm text-text-primary">{String(value)}</span>;
+}
+
 export default function PersonaIntelligencePage() {
   const [profile, setProfile] = useState<PersonaProfile | null>(null);
   const [traits, setTraits] = useState<Trait[]>([]);
@@ -182,13 +250,17 @@ export default function PersonaIntelligencePage() {
         <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
           <div className="h-1.5 bg-text-primary rounded-full transition-all" style={{ width: `${(profile?.confidenceScore ?? 0.5) * 100}%` }} />
         </div>
-        <div className="grid grid-cols-1 gap-2">
-          {(['communicationStyle', 'writingStyle', 'decisionStyle'] as const).map((key) => (
-            <div key={key} className="bg-secondary/40 rounded-xl p-3">
-              <p className="text-2xs uppercase tracking-widest text-text-tertiary mb-1">{key}</p>
-              <pre className="text-2xs overflow-auto">{JSON.stringify((profile as any)?.[key] || {}, null, 2)}</pre>
-            </div>
-          ))}
+        <div className="grid grid-cols-1 gap-3">
+          {(['communicationStyle', 'writingStyle', 'decisionStyle'] as const).map((key) => {
+            const val = (profile as any)?.[key];
+            const hasContent = val && typeof val === 'object' && Object.keys(val).length > 0;
+            return (
+              <div key={key} className="bg-secondary/40 rounded-xl p-3">
+                <p className="text-2xs font-bold uppercase tracking-widest text-text-tertiary mb-2">{STYLE_LABEL[key]}</p>
+                {hasContent ? <StyleValue value={val} /> : <p className="text-sm text-text-tertiary">Not enough signal yet.</p>}
+              </div>
+            );
+          })}
         </div>
       </section>
 

@@ -122,7 +122,12 @@ export default function OutputStudioPage() {
   async function loadDecisions() {
     try {
       const rows = await apiRequest<DecisionRow[]>(UI_API.cognitiveHistory);
-      setDecisions(Array.isArray(rows) ? rows.slice(0, 10) : []);
+      const list = Array.isArray(rows) ? rows.slice(0, 10) : [];
+      setDecisions(list);
+      // First-run UX: Compose is gated on a Decision ID with no default,
+      // which makes the whole page look dead until you know to paste one
+      // in. Default to the most recent decision instead.
+      if (list.length > 0) setDecisionId((current) => current || list[0].id);
     } catch { /* optional */ }
   }
   async function loadLive() {

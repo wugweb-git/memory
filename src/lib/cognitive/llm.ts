@@ -19,7 +19,12 @@ const GATEWAY_ON = Boolean(GATEWAY_BASE_URL && GATEWAY_API_KEY);
 
 const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
 const GROQ_DEFAULT_MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
-const GEMINI_DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+// gemini-2.0-flash-001 was shut down 2026-06-01 (confirmed live via Vercel
+// runtime error logs: 404 "This model models/gemini-2.0-flash is no longer
+// available"). gemini-2.5-flash is also on a deprecation clock (retires
+// 2026-10-16). gemini-3.5-flash has no announced shutdown date as of
+// 2026-08 — use that as the safe default; override with GEMINI_MODEL.
+const GEMINI_DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash";
 
 const DEFAULT_MODEL = GATEWAY_ON ? GATEWAY_MODEL : config.groqApiKey ? GROQ_DEFAULT_MODEL : GEMINI_DEFAULT_MODEL;
 
