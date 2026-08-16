@@ -25,7 +25,7 @@ const emptyForm = {
   title: "",
   company: "",
   date: "",
-  industries: "",
+  industries: [] as string[],
   originalLogic: "",
   perspective2026: "",
 };
@@ -36,10 +36,55 @@ function toForm(s: ExperienceSection) {
     title: s.title,
     company: String(c.company ?? ""),
     date: String(c.date ?? ""),
-    industries: Array.isArray(c.industries) ? c.industries.join(", ") : String(c.industry ?? ""),
+    industries: Array.isArray(c.industries) ? c.industries : (c.industry ? [String(c.industry)] : []),
     originalLogic: String(c.originalLogic ?? c.logic ?? ""),
     perspective2026: String(c.perspective2026 ?? c.perspective ?? ""),
   };
+}
+
+/** Simple chip/tag input — replaces a raw comma-separated text field
+ *  (error-prone, no visual feedback per item). Enter or comma commits the
+ *  current word as a chip; Backspace on an empty field removes the last. */
+function ChipInput({ values, onChange, placeholder }: { values: string[]; onChange: (next: string[]) => void; placeholder?: string }) {
+  const [draft, setDraft] = useState("");
+
+  function commit() {
+    const v = draft.trim();
+    if (v && !values.includes(v)) onChange([...values, v]);
+    setDraft("");
+  }
+
+  return (
+    <div className="w-full rounded-xl border border-border-primary p-2 flex flex-wrap gap-1.5 items-center">
+      {values.map((v) => (
+        <span key={v} className="inline-flex items-center gap-1 text-2xs font-medium px-2 py-1 rounded-lg bg-bg-secondary border border-border-secondary text-text-secondary">
+          {v}
+          <button type="button" onClick={() => onChange(values.filter((x) => x !== v))} aria-label={`Remove ${v}`} className="text-text-disabled hover:text-danger">×</button>
+        </span>
+      ))}
+      <input
+        className="flex-1 min-w-[8ch] text-sm outline-none bg-transparent"
+        value={draft}
+        placeholder={values.length === 0 ? placeholder : ""}
+        onChange={(e) => {
+          if (e.target.value.endsWith(",")) {
+            const v = e.target.value.slice(0, -1).trim();
+            if (v && !values.includes(v)) onChange([...values, v]);
+            setDraft("");
+          } else {
+            setDraft(e.target.value);
+          }
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") { e.preventDefault(); commit(); }
+          else if (e.key === "Backspace" && draft === "" && values.length > 0) {
+            onChange(values.slice(0, -1));
+          }
+        }}
+        onBlur={commit}
+      />
+    </div>
+  );
 }
 
 export default function CareerPage() {
@@ -82,7 +127,7 @@ export default function CareerPage() {
     const content = {
       company: form.company.trim(),
       date: form.date.trim(),
-      industries: form.industries.split(",").map((i) => i.trim()).filter(Boolean),
+      industries: form.industries,
       originalLogic: form.originalLogic.trim(),
       perspective2026: form.perspective2026.trim(),
     };
@@ -137,15 +182,33 @@ export default function CareerPage() {
             }
           >
             {showForm && (
-              <div className="space-y-2 rounded-2xl border border-border-secondary bg-bg-secondary p-3 mb-3">
-                <input className="w-full rounded-xl border border-border-primary p-2 text-sm" placeholder="Role title (e.g. Founder & Systems Architect)" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-                <div className="grid grid-cols-2 gap-2">
-                  <input className="rounded-xl border border-border-primary p-2 text-sm" placeholder="Company" value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} />
-                  <input className="rounded-xl border border-border-primary p-2 text-sm" placeholder="Dates (e.g. 2020 — Present)" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+              <div className="space-y-3 rounded-2xl border border-border-secondary bg-bg-secondary p-3 mb-3">
+                <div>
+                  <label htmlFor="role-title" className="block text-2xs font-bold uppercase tracking-wide text-text-tertiary mb-1">Role title</label>
+                  <input id="role-title" className="w-full rounded-xl border border-border-primary p-2 text-sm" placeholder="e.g. Founder & Systems Architect" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
                 </div>
-                <input className="w-full rounded-xl border border-border-primary p-2 text-sm" placeholder="Industries (comma-separated)" value={form.industries} onChange={(e) => setForm({ ...form, industries: e.target.value })} />
-                <textarea className="w-full rounded-xl border border-border-primary p-2 text-sm" placeholder="What you did — the original logic" value={form.originalLogic} onChange={(e) => setForm({ ...form, originalLogic: e.target.value })} />
-                <textarea className="w-full rounded-xl border border-border-primary p-2 text-sm" placeholder="What it means now — today's perspective" value={form.perspective2026} onChange={(e) => setForm({ ...form, perspective2026: e.target.value })} />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label htmlFor="role-company" className="block text-2xs font-bold uppercase tracking-wide text-text-tertiary mb-1">Company</label>
+                    <input id="role-company" className="w-full rounded-xl border border-border-primary p-2 text-sm" placeholder="Company name" value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} />
+                  </div>
+                  <div>
+                    <label htmlFor="role-date" className="block text-2xs font-bold uppercase tracking-wide text-text-tertiary mb-1">Dates</label>
+                    <input id="role-date" className="w-full rounded-xl border border-border-primary p-2 text-sm" placeholder="e.g. 2020 — Present" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-2xs font-bold uppercase tracking-wide text-text-tertiary mb-1">Industries</label>
+                  <ChipInput values={form.industries} onChange={(industries) => setForm({ ...form, industries })} placeholder="Type an industry, press Enter" />
+                </div>
+                <div>
+                  <label htmlFor="role-logic" className="block text-2xs font-bold uppercase tracking-wide text-text-tertiary mb-1">What you did — the original logic</label>
+                  <textarea id="role-logic" className="w-full rounded-xl border border-border-primary p-2 text-sm" placeholder="What you did — the original logic" value={form.originalLogic} onChange={(e) => setForm({ ...form, originalLogic: e.target.value })} />
+                </div>
+                <div>
+                  <label htmlFor="role-perspective" className="block text-2xs font-bold uppercase tracking-wide text-text-tertiary mb-1">What it means now</label>
+                  <textarea id="role-perspective" className="w-full rounded-xl border border-border-primary p-2 text-sm" placeholder="Today's perspective on that role" value={form.perspective2026} onChange={(e) => setForm({ ...form, perspective2026: e.target.value })} />
+                </div>
                 <M3Button onClick={save} disabled={saving}>{saving ? "Saving…" : editingId ? "Save changes" : "Add to career tree"}</M3Button>
               </div>
             )}
@@ -178,9 +241,15 @@ export default function CareerPage() {
             )}
           </M3Card>
 
-          {/* Job pipeline + opportunities (component library, L0-backed) */}
-          <JobPipeline />
-          <JobSearchAgent />
+          {/* Job pipeline + opportunities — visually separated from the career
+              tree above since these are two different tools sharing a page. */}
+          <div className="pt-2 mt-2 border-t border-border-secondary">
+            <p className="text-2xs font-black text-text-tertiary uppercase tracking-[0.3em] mb-3 px-1">Job search</p>
+            <div className="space-y-4">
+              <JobPipeline />
+              <JobSearchAgent />
+            </div>
+          </div>
         </M3Page>
       </div>
     </AppShell>

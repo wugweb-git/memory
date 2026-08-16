@@ -80,11 +80,20 @@ export async function POST(req: Request) {
       : groqKey
         ? createOpenAI({ apiKey: groqKey, baseURL: 'https://api.groq.com/openai/v1' })
         : createOpenAI({ apiKey: openaiKey });
+    // Confirmed live via Vercel runtime error logs (2026-08-16): the old
+    // hardcoded 'gpt-4-turbo' 404s — "The model `gpt-4-turbo` does not exist
+    // or you do not have access to it." OpenAI's GPT-4 line was deprecated
+    // through 2026; model IDs are churning fast enough that hardcoding one
+    // is risky. Default to gpt-4o-mini but make it override-able —
+    // if this also 404s, either set OPENAI_CHAT_MODEL to whatever
+    // https://platform.openai.com/docs/models currently lists, or set
+    // GROQ_API_KEY instead (stable model naming, generous free tier,
+    // already fully wired below).
     const chatModel = gatewayOn
       ? (process.env.AI_GATEWAY_MODEL || 'deepseek-chat')
       : groqKey
         ? (process.env.GROQ_MODEL || 'llama-3.3-70b-versatile')
-        : 'gpt-4-turbo';
+        : (process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini');
     const result = streamText({
       // .chat() forces the chat-completions endpoint (Groq has no /responses API)
       model: provider.chat(chatModel) as unknown as Parameters<typeof streamText>[0]['model'],
