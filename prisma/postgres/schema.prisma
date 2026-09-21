@@ -671,7 +671,11 @@ model Entity {
   @@index([test_run_id])
   @@index([processing_state])
   @@index([verified])
-  @@map("entities")
+  // Renamed from "entities" (2026-09-21): the shared Neon DB already has a
+  // public.entities table owned by wugweb-site (owner registry: vedanshu |
+  // wugweb | both, FK target of content_items.owner). Two apps cannot share
+  // one table name with different shapes.
+  @@map("graph_entities")
 }
 
 model EntityAlias {
