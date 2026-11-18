@@ -21,9 +21,10 @@ import {
  * Drafted from the public profile (ventures, experience, writing).
  */
 const STARTER_QUESTIONS: readonly string[] = [
-  'What is Vedanshu building with Identity Prism?',
-  'What has he done in fintech?',
-  'Which articles has he published?',
+  'What is Vedanshu working on?',
+  'What has he written about?',
+  'What kind of projects has he built?',
+  'What are his main areas of expertise?',
 ];
 
 const FIRST_NAME = IDENTITY_CONFIG.DISPLAY_NAME.split(' ')[0];

@@ -165,3 +165,160 @@ export async function runJob(job: JobName, messages: ChatMessage[], opts: RunJob
   }
   throw new JobFailedError(job, attempts);
 }
+
+export interface StreamJobOptions extends Omit<RunJobOptions, 'json'> {
+  /** Called once with the model that produced the first token, before the first delta is yielded. */
+  onModel?: (model: string) => void;
+  /** Called with the attempt log when the stream finishes or fails. */
+  onAttempts?: (attempts: Attempt[]) => void;
+}
+
+/** Pull the text delta out of one parsed SSE payload ('' if none). */
+function extractDelta(data: any): string {
+  const c = data?.choices?.[0]?.delta?.content;
+  if (typeof c === 'string') return c;
+  if (Array.isArray(c)) return c.map((p: any) => (typeof p?.text === 'string' ? p.text : '')).join('');
+  return '';
+}
+
+/**
+ * Stream a job's answer as text deltas (OpenRouter OpenAI-compatible SSE).
+ * Fallback rule: a model that fails (non-2xx, 429, timeout, network, empty
+ * stream, upstream error) BEFORE its first token moves to the next model in
+ * the chain. Once a token has been yielded the model is never switched; a
+ * later failure just ends the stream with what was already sent.
+ * Throws JobFailedError only when every model failed before any token.
+ * Budget: timeoutMs per attempt to first token, budgetMs total.
+ */
+export async function* streamJob(
+  job: JobName,
+  messages: ChatMessage[],
+  opts: StreamJobOptions = {},
+): AsyncGenerator<string, void, void> {
+  const env = opts.env ?? process.env;
+  const key = env.OPENROUTER_API_KEY;
+  if (!key) throw new Error('OPENROUTER_API_KEY not set');
+  const doFetch = opts.fetchImpl ?? fetch;
+  const chain = getChain(job, env);
+  const timeoutMs = opts.timeoutMs ?? 18000;
+  const budgetMs = opts.budgetMs ?? 52000;
+  const chainStart = Date.now();
+  const attempts: Attempt[] = [];
+
+  try {
+    for (const model of chain) {
+      if (opts.signal?.aborted) break;
+      const remaining = budgetMs - (Date.now() - chainStart);
+      if (remaining < 3000) break;
+      const started = Date.now();
+      const record = (a: Omit<Attempt, 'model' | 'ms'>) =>
+        attempts.push({ model, ms: Date.now() - started, ...a });
+      const ctrl = new AbortController();
+      let timer: ReturnType<typeof setTimeout> | undefined = setTimeout(() => ctrl.abort(), Math.min(timeoutMs, remaining));
+      const onAbort = () => ctrl.abort();
+      opts.signal?.addEventListener('abort', onAbort, { once: true });
+      let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+      let emitted = false;
+      try {
+        const body: Record<string, unknown> = {
+          model,
+          messages,
+          stream: true,
+          temperature: opts.temperature ?? 0.7,
+        };
+        if (opts.maxTokens) body.max_tokens = opts.maxTokens;
+
+        const res = await doFetch(ENDPOINT, {
+          method: 'POST',
+          signal: ctrl.signal,
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${key}`,
+            'HTTP-Referer': env.OPENROUTER_REFERER || REFERER,
+            'X-Title': TITLE,
+          },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          record({ ok: false, status: res.status, reason: res.status === 429 ? 'rate_limited' : `http_${res.status}` });
+          continue;
+        }
+        if (!res.body) {
+          record({ ok: false, status: res.status, reason: 'empty' });
+          continue;
+        }
+        reader = res.body.getReader();
+        // A stalled body must not outlive the timers/abort signal: cancelling the reader ends the pending read.
+        const activeReader = reader;
+        const stopRead = () => void activeReader.cancel().catch(() => {});
+        if (ctrl.signal.aborted) stopRead();
+        else ctrl.signal.addEventListener('abort', stopRead, { once: true });
+        const decoder = new TextDecoder();
+        let buf = '';
+        let done = false;
+        while (!done) {
+          const chunk = await reader.read();
+          if (chunk.done) break;
+          buf += decoder.decode(chunk.value, { stream: true });
+          let nl: number;
+          while ((nl = buf.indexOf('\n')) !== -1) {
+            const line = buf.slice(0, nl).replace(/\r$/, '').trim();
+            buf = buf.slice(nl + 1);
+            if (!line.startsWith('data:')) continue; // blank lines, ': OPENROUTER PROCESSING' comments
+            const payload = line.slice(5).trim();
+            if (payload === '[DONE]') {
+              done = true;
+              break;
+            }
+            let parsed: any;
+            try {
+              parsed = JSON.parse(payload);
+            } catch {
+              continue;
+            }
+            if (parsed?.error) {
+              if (!emitted) throw new Error('upstream_error');
+              done = true; // mid-stream error: keep what was sent
+              break;
+            }
+            const delta = extractDelta(parsed);
+            if (!delta) continue;
+            if (!emitted) {
+              emitted = true;
+              // First token: the per-attempt timer is done; only the total budget applies now.
+              if (timer) clearTimeout(timer);
+              timer = setTimeout(() => ctrl.abort(), Math.max(0, budgetMs - (Date.now() - chainStart)));
+              record({ ok: true, status: res.status });
+              opts.onModel?.(model);
+            }
+            yield delta;
+          }
+        }
+        if (!emitted) {
+          record({ ok: false, status: res.status, reason: ctrl.signal.aborted ? 'timeout' : 'empty' });
+          continue;
+        }
+        return;
+      } catch (err: any) {
+        if (emitted) return; // never switch models after a token; end with what was sent
+        record({
+          ok: false,
+          reason: err?.name === 'AbortError' ? 'timeout' : err?.message === 'upstream_error' ? 'upstream_error' : 'network',
+        });
+      } finally {
+        if (timer) clearTimeout(timer);
+        opts.signal?.removeEventListener('abort', onAbort);
+        if (reader) {
+          try {
+            await reader.cancel();
+          } catch {
+            /* already closed */
+          }
+        }
+      }
+    }
+    throw new JobFailedError(job, attempts);
+  } finally {
+    opts.onAttempts?.(attempts);
+  }
+}

@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 import { convertToModelMessages, createUIMessageStream, createUIMessageStreamResponse, streamText, type UIMessage } from 'ai';
-import { isOpenRouterEnabled, runJob, type ChatMessage } from '@/lib/ai/openrouter';
+import { isOpenRouterEnabled, streamJob, type ChatMessage } from '@/lib/ai/openrouter';
 import { createOpenAI } from '@ai-sdk/openai';
 import { NextResponse } from 'next/server';
 import { retrieve } from '@/lib/memory/rag';
@@ -87,7 +87,7 @@ export async function POST(req: Request) {
     const systemText = `${SYSTEM_PROMPT}\n\nContext nodes:\n${context || emptyContextText(admin)}${styleHints ? `\n\n${styleHints}` : ''}`;
 
     // Per-job routing: OPENROUTER_API_KEY set -> `ask` chain (free models, fallback
-    // on 429/5xx). Not streamed upstream; the answer is replayed as a UI stream.
+    // on 429/5xx). Streamed token by token.
     const otherProvider = gatewayOn || Boolean(groqKey) || Boolean(openaiKey);
     let routed: Response | null = null;
     if (openrouterOn) {
@@ -101,15 +101,31 @@ export async function POST(req: Request) {
           .join('');
         if (text.trim()) chat.push({ role: m.role, content: text });
       }
-      const job = await runJob('ask', chat, { temperature });
+      // Real token streaming. Pull the first delta before building the response so a
+      // whole-chain failure (before any token) can still fall back to the old provider,
+      // and so X-Model is only set when it is known before streaming starts.
+      let model: string | undefined;
+      const iterator = streamJob('ask', chat, { temperature, onModel: (m) => (model = m) })[Symbol.asyncIterator]();
+      const first = await iterator.next();
+      if (first.done) throw new Error('OPENROUTER_EMPTY_STREAM');
       const stream = createUIMessageStream({
-        execute: ({ writer }) => {
+        execute: async ({ writer }) => {
           writer.write({ type: 'text-start', id: 'ask' });
-          writer.write({ type: 'text-delta', id: 'ask', delta: job.text });
-          writer.write({ type: 'text-end', id: 'ask' });
+          writer.write({ type: 'text-delta', id: 'ask', delta: first.value });
+          try {
+            for (let next = await iterator.next(); !next.done; next = await iterator.next()) {
+              writer.write({ type: 'text-delta', id: 'ask', delta: next.value });
+            }
+          } catch (streamErr) {
+            // Tokens already sent: end the message with what we have.
+            console.error('[chat] stream ended early:', streamErr instanceof Error ? streamErr.message : streamErr);
+          } finally {
+            await iterator.return?.();
+            writer.write({ type: 'text-end', id: 'ask' });
+          }
         },
       });
-      routed = createUIMessageStreamResponse({ stream, headers: { 'X-Model': job.model } });
+      routed = createUIMessageStreamResponse({ stream, headers: model ? { 'X-Model': model } : undefined });
       } catch (err) {
         // Whole free chain failed (e.g. daily cap): fall back to the old provider if one is set.
         if (!otherProvider) throw err;
