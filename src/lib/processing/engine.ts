@@ -98,7 +98,7 @@ export class ProcessingEngine {
 
       return { success: true, signalCount: signals.length };
     } catch (err: any) {
-      console.error(`[ProcessingEngine] Core failure for ${packetId}:`, err);
+      console.error('[ProcessingEngine] Core failure for %s:', String(packetId), err);
       throw err; // Let scheduler handle status update
     }
   }

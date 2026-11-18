@@ -43,7 +43,14 @@ export async function POST(req: NextRequest) {
       }
     } else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) {
       const text = new TextDecoder().decode(fileContent);
-      parsedText = text.replace(/<[^>]*>?/gm, ''); // Basic HTML strip
+      // Strip tags repeatedly so nested/overlapping fragments like "<<b>script>" cannot survive one pass.
+      let stripped = text;
+      let previous: string;
+      do {
+        previous = stripped;
+        stripped = stripped.replace(/<[^>]*>?/gm, '');
+      } while (stripped !== previous);
+      parsedText = stripped;
     } else {
       parsedText = new TextDecoder().decode(fileContent); // Default to Text
     }
