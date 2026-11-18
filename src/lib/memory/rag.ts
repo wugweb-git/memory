@@ -3,7 +3,7 @@ import { postgres as prisma } from '@/lib/db/postgres';
 import { Prisma } from '../../generated/postgres';
 import { addProcessingError } from './gate';
 import { EmbeddingStatus, ProcessingError } from './types';
-import { getEmbeddings, embeddingModelName, embedChunksTolerant } from './embeddings';
+import { getEmbeddings, embeddingModelName, embedChunksTolerant, isPermanentEmbedFailure } from './embeddings';
 
 /** pgvector text literal: '[0.1,0.2,…]' — bound as a parameter, cast with ::vector. */
 function toVectorLiteral(vec: number[]): string {
@@ -159,8 +159,9 @@ export async function processEmbedding(packetId: string) {
           embedding_status: 'failed',
           processing_errors: updatedErrors as any,
           last_retried_at: new Date(),
-          // Permanent reasons (content never changes): stop the daily requeue retrying forever.
-          ...(/^(GATED|LOW_SIGNAL|CONTENT_MODERATED)/.test(String(err.message)) ? { is_embeddable: false } : {}),
+          // Permanent reasons (content/config never changes): content moderation, gating,
+          // or a vector-dimension mismatch. Stop the daily requeue retrying these forever.
+          ...(isPermanentEmbedFailure(String(err.message)) ? { is_embeddable: false } : {}),
         }
       });
     } catch (logErr) {
@@ -170,8 +171,10 @@ export async function processEmbedding(packetId: string) {
 }
 
 /**
- * Retrieval Logic with Pre-filtering, 50 -> 10 re-ranking, and Recency Boosting.
- * pgvector cosine search (HNSW index `embeddings_embedding_hnsw`).
+ * Retrieval: pgvector cosine search (HNSW index `embeddings_embedding_hnsw`) with
+ * pre-filtering (type / source / sensitivity, plus public-only visibility), then the
+ * top-50 rows are grouped by packet and sorted by max cosine score -> top 10.
+ * NOTE: no MMR diversity re-ranking or recency boosting is applied (score only).
  */
 export async function retrieve(query: string, filters: any = {}) {
   // 1. QUERY VALIDATION

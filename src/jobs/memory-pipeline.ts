@@ -14,6 +14,7 @@
 import { postgres as prisma } from '@/lib/db/postgres';
 import { processEmbedding } from '@/lib/memory/rag';
 import { SettingsController } from '@/lib/memory/settings';
+import { IntelligenceEngine } from '@/lib/processing/intelligence';
 import { ProcessingEngine } from '@/lib/processing/engine';
 import { SemanticEngine } from '@/lib/processing/semantic';
 
@@ -35,6 +36,7 @@ const PIPELINE_BUDGET_MS = 50_000;
 const EMBED_MIN_REMAINING_MS = 12_000;
 const SEMANTIC_MIN_REMAINING_MS = 25_000;
 const L2_MIN_REMAINING_MS = 5_000;
+const INTEL_MIN_REMAINING_MS = 4_000;
 
 /** Rejects when the shared deadline passes so one stuck call cannot hold the whole function. */
 function withDeadline<T>(work: Promise<T>, deadline: number, label: string): Promise<T> {
@@ -237,6 +239,24 @@ export async function runL25Processing(batchSize = 20, deadline = Infinity) {
   return { scanned: targets.length, completed, failed };
 }
 
+/**
+ * L2 — intelligence refresh: recomputes signal relative-intensity (30-day
+ * baseline + time decay) and peak-activity patterns. Both are heuristic, with no
+ * LLM calls, so they are cheap; only skipped when the budget is nearly spent.
+ */
+export async function runL2Intelligence(deadline = Infinity) {
+  if (deadline - Date.now() < INTEL_MIN_REMAINING_MS) return { ran: false, skipped: 'deadline' as const };
+  try {
+    await withDeadline(IntelligenceEngine.scoringEngine('PROD'), deadline, 'l2-intel-scoring');
+    if (deadline - Date.now() >= INTEL_MIN_REMAINING_MS) {
+      await withDeadline(IntelligenceEngine.detectPatterns('PROD'), deadline, 'l2-intel-patterns');
+    }
+    return { ran: true };
+  } catch (err: any) {
+    return { ran: true, error: err?.message as string | undefined };
+  }
+}
+
 /** Runs the full L1 -> L2 -> L2.5 pass once. Order matters: embedding doesn't
  *  block L2/L2.5 (independent state machines), but running L2 before L2.5 in
  *  the same pass lets a packet flow all the way through in one invocation. */
@@ -245,6 +265,7 @@ export async function runMemoryPipeline() {
   const locks = await clearStaleLocks();
   const embedding = await runEmbeddingWorker(undefined, deadline);
   const l2 = await runL2Processing(undefined, deadline);
+  const intelligence = await runL2Intelligence(deadline);
   const l25 = await runL25Processing(undefined, deadline);
-  return { locks, embedding, l2, l25, ranAt: new Date().toISOString() };
+  return { locks, embedding, l2, intelligence, l25, ranAt: new Date().toISOString() };
 }

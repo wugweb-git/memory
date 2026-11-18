@@ -37,9 +37,13 @@ export function extractSignals(packet: MemoryPacket): Signal[] {
   const source = packet.source.toLowerCase();
   const packetId = packet.id!;
   const testRunId = (packet as any).test_run_id || 'PROD';
+  // Inbound mail arrives as source 'email' (the email connector), while some
+  // connectors historically used 'gmail'. Treat both as mail or these rules are
+  // dead on real data.
+  const isEmail = source === 'gmail' || source === 'email';
 
   // Rule: Work Activity
-  if (source === 'github' || (source === 'gmail' && /work|project|meeting|sprint|task/i.test((packet.metadata as any).subject || ''))) {
+  if (source === 'github' || (isEmail && /work|project|meeting|sprint|task/i.test((packet.metadata as any).subject || ''))) {
     detected.push({
       packet_id: packetId,
       type: 'work_activity',
@@ -77,7 +81,7 @@ export function extractSignals(packet: MemoryPacket): Signal[] {
   }
 
   // Rule: Communication
-  if (source === 'gmail') {
+  if (isEmail) {
     const isReply = !!(packet.metadata as any).thread_id;
     detected.push({
       packet_id: packetId,
@@ -88,10 +92,10 @@ export function extractSignals(packet: MemoryPacket): Signal[] {
       confidence: 0.95,
       source_trust: packet.confidence,
       timestamp: packet.event_time,
-      metadata: { 
-        extraction_rule: 'communication_gmail_interaction',
+      metadata: {
+        extraction_rule: 'communication_email_interaction',
         rule_version: RULE_VERSION,
-        thread_id: (packet.metadata as any).thread_id 
+        thread_id: (packet.metadata as any).thread_id
       }
     });
   }

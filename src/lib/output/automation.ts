@@ -4,6 +4,7 @@ import { IDENTITY_CONFIG } from '@/config/identity';
 import { createGeneratedOutput } from '@/lib/cms/queries';
 import { routeDistribution } from '@/lib/distribution/router';
 import { publishNow } from '@/lib/publishing/publisher';
+import type { PlatformPublishResult } from '@/lib/publishing/platforms';
 
 export type PublishMode = 'published' | 'skipped' | 'duplicate';
 
@@ -13,7 +14,12 @@ export type PublishResult = {
   platform: string;
   /** Platform-formatted distribution payload (from the platform adapter). */
   payload: unknown;
-  platformResult?: { platform: string; status: string; externalId: string };
+  /**
+   * Result of the platform dispatch. `status` is no longer always 'published'
+   * — an unconfigured external platform reports 'not_configured' with a null
+   * externalId and delivered:false, rather than a fabricated success.
+   */
+  platformResult?: PlatformPublishResult;
   profilePublished: boolean;
   profileUsername?: string;
   sanitySynced: boolean;
@@ -64,7 +70,9 @@ export async function publishOutput(
   let platformResult: PublishResult['platformResult'];
   try {
     payload = routeDistribution({ platform: output.platform, content });
-    platformResult = await publishNow({ platform: output.platform, content });
+    // Thread the BUILT payload through to the platform dispatch — do not
+    // discard it and re-send raw content.
+    platformResult = await publishNow({ platform: output.platform, content, payload });
   } catch (err) {
     console.error('[Publish] Distribution routing failed:', err);
   }

@@ -14,9 +14,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'packet_id is required' }, { status: 400 });
     }
 
+    // Replay = re-run the full pipeline on this packet. The workers only pick up
+    // rows with status 'active' and the *_status fields at 'pending', so reset them
+    // all (and re-enable embedding + clear any stuck lock) — otherwise 'replay'
+    // silently does nothing and the packet never re-processes.
     await prisma.memoryPacket.update({
       where: { id: packet_id },
-      data: { status: 'accepted', ingestion_time: new Date() }
+      data: {
+        status: 'active',
+        embedding_status: 'pending',
+        processing_status: 'pending',
+        semantic_status: 'pending',
+        is_embeddable: true,
+        processing_lock: false,
+        ingestion_time: new Date(),
+      }
     });
 
     return NextResponse.json({ ok: true });

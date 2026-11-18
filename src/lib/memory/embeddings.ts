@@ -82,6 +82,19 @@ export function isModerationError(msg: string): boolean {
   return /\b422\b|content[-_ ]?safety|moderat|rejected by content/i.test(msg || '');
 }
 
+/** A failure that will never succeed on retry for the SAME content/config, so the
+ *  packet should be marked is_embeddable=false instead of being requeued forever.
+ *  Covers content-moderation / gating reasons AND a vector-dimension mismatch
+ *  (the embedder returns a width the pgvector column can't accept — re-running the
+ *  same model gives the same width, so the 24h requeue would loop indefinitely). */
+export function isPermanentEmbedFailure(msg: string): boolean {
+  const m = msg || '';
+  return (
+    /^(GATED|LOW_SIGNAL|CONTENT_MODERATED)/.test(m) ||
+    /expected \d+ dimensions|different vector dimensions|dimensions,? not \d+|vector dimension|has \d+ dimensions/i.test(m)
+  );
+}
+
 type ChunkEmbedder = {
   embedDocuments(texts: string[]): Promise<number[][]>;
   embedQuery(text: string): Promise<number[]>;

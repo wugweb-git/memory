@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isModerationError, embedChunksTolerant } from '../../src/lib/memory/embeddings';
+import { isModerationError, embedChunksTolerant, isPermanentEmbedFailure } from '../../src/lib/memory/embeddings';
 
 test('isModerationError flags 422 / content-safety wording only', () => {
   assert.equal(isModerationError('422 HTTP 422: input rejected by content safety screening'), true);
@@ -85,4 +85,18 @@ test('non-moderation error during salvage aborts as LLM_UNAVAILABLE', async () =
     ),
     /LLM_UNAVAILABLE/,
   );
+});
+
+test('isPermanentEmbedFailure flags moderation/gating and dimension mismatch, not transient', () => {
+  // permanent: content never clears / same model gives same width
+  assert.equal(isPermanentEmbedFailure('CONTENT_MODERATED: all chunks rejected'), true);
+  assert.equal(isPermanentEmbedFailure('GATED: blocked'), true);
+  assert.equal(isPermanentEmbedFailure('LOW_SIGNAL: too short'), true);
+  assert.equal(isPermanentEmbedFailure('expected 1536 dimensions, not 2048'), true);
+  assert.equal(isPermanentEmbedFailure('different vector dimensions 1536 and 1024'), true);
+  assert.equal(isPermanentEmbedFailure('column has 2048 dimensions'), true);
+  // transient: should keep retrying, is_embeddable stays true
+  assert.equal(isPermanentEmbedFailure('LLM_UNAVAILABLE: 429 Too Many Requests'), false);
+  assert.equal(isPermanentEmbedFailure('network timeout'), false);
+  assert.equal(isPermanentEmbedFailure(''), false);
 });
