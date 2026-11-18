@@ -57,12 +57,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    const isAdmin = INTERNAL_VAULT.ADMIN_EMAIL && normalized === INTERNAL_VAULT.ADMIN_EMAIL.toLowerCase();
-    const role = isAdmin ? 'admin' : user.role;
-
-    if (role !== user.role) {
-      await postgres.user.update({ where: { id: user.id }, data: { role } });
-    }
+    // Single-owner system: admin is ONLY ever granted by the env-credential
+    // branch above. A database account (which public signup could create in
+    // the past) never gets an admin session, whatever its stored role or email.
+    const role = user.role === 'admin' ? 'user' : user.role;
 
     const token = signToken(
       { sub: user.id, email: user.email, role },
