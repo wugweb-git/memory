@@ -1,26 +1,23 @@
 {
+  "id": "/console",
   "name": "Identity Prism OS",
   "short_name": "Prism OS",
-  "description": "Neural Identity Operating System & Digital Twin",
+  "description": "Personal cognitive operating system: memory, signals and decisions.",
+  "scope": "/",
   "start_url": "/console",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#F5F5F0",
-  "theme_color": "#00AAFF",
+  "theme_color": "#F5F5F0",
+  "categories": ["productivity"],
   "icons": [
-    {
-      "src": "/favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
-    },
-    {
-      "src": "/bot.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/bot.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Dashboard", "url": "/console", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Ask", "url": "/ask", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Memory", "url": "/memory", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
   ]
 }

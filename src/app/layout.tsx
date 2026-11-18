@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "./component/ThemeProvider";
 import { ChunkReloadGuard } from "./component/ChunkReloadGuard";
+import { ServiceWorkerRegister } from "./component/ServiceWorkerRegister";
 import { Analytics } from "@vercel/analytics/next";
 import { IDENTITY_CONFIG } from "@/config/identity";
 
@@ -50,6 +51,8 @@ export const metadata: Metadata = {
     images: [`${IDENTITY_CONFIG.SITE_URL}/og-image.png`],
     creator: IDENTITY_CONFIG.X_HANDLE,
   },
+  manifest: "/manifest.json",
+  appleWebApp: { capable: true, title: "Prism OS", statusBarStyle: "default" },
   icons: {
     icon: "/favicon.ico",
     apple: "/apple-touch-icon.png",
@@ -57,7 +60,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#000000",
+  themeColor: "#F5F5F0",
+  viewportFit: "cover",
   width: "device-width",
   initialScale: 1,
 };
@@ -85,6 +89,7 @@ export default function RootLayout({
       <body className={`${inter.variable} ${jetbrains.variable} font-sans`}>
         <ThemeProvider>
           <ChunkReloadGuard />
+          <ServiceWorkerRegister />
           {children}
           <Analytics />
         </ThemeProvider>
