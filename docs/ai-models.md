@@ -105,3 +105,9 @@ column). OpenRouter lists these free NVIDIA embedders (`/api/v1/embeddings/model
    allowed: add a NEW nullable column (e.g. `embedding_v2 vector(N)`) plus its own HNSW index via an
    additive migration (`ADD COLUMN IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`), write/query both
    columns during backfill, then flip reads. Never alter or drop the existing `vector(1536)` column or index.
+
+## Bench results (19 Nov 2026, free tier, 14 requests)
+
+Passed: nemotron-3.5-lightning, particle-1 (ask); nemotron-3-ultra, ling-3.2-flash (decision, valid JSON); lfm-3-1.7b, flint, nemotron-3-nano-omni (signals, valid JSON); ling-3.2-flash (summary); north-mini-code, dots-3-note (ingest, valid JSON).
+`google/gemma-4-26b` and `gemma-4-31b` returned 429 on every call (upstream rate limit); chains fall through to the next model. Live check: `/api/chat` answered via nemotron-3.5-lightning.
+Chain budget: 18s per attempt, 52s total (inside the 60s function limit).

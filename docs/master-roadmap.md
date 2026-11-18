@@ -5,7 +5,7 @@
 
 ### Tasks
 - Validate Vercel env separation (dev/stage/prod)
-- Verify Mongo + Postgres connectivity and Prisma split
+- Verify Postgres connectivity and Prisma client
 - Verify all critical API routes and build reproducibility
 - Produce unresolved issues register
 
@@ -59,7 +59,7 @@
 **Goal:** predictable scaling under growth.
 
 ### Tasks
-- Mongo retention/archival/compression policies
+- Postgres retention/archival/compression policies
 - Postgres migration governance + rollback scripts
 - Partitioning strategy design for large execution/provenance logs
 - Query/index audit with optimization backlog

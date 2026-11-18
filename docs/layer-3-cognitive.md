@@ -18,7 +18,7 @@ Context Builder (L3.0)
   ↓
 Prompt Builder
   ↓
-LLM Reasoning Pass (gpt-4o-mini via LangChain)
+LLM Reasoning Pass (Gemini via LangChain; Groq fallback; OpenAI-compatible AI Gateway and per-job OpenRouter routing override)
   ↓
 Sanitize (schema enforcement + output limits)
   ↓
@@ -41,9 +41,9 @@ Pulls from all lower layers in a single parallel `Promise.all`:
 
 | Source | Data | Layer |
 |---|---|---|
-| `mongo.entity` | Verified entities, occurrences, confidence | L2.5 |
-| `mongo.relationship` | Verified entity relationships | L2.5 |
-| `mongo.signal` | Recent signals, intensity, category | L2 |
+| `graph_entities` (Postgres) | Verified entities, occurrences, confidence | L2.5 |
+| `relationships` (Postgres) | Verified entity relationships | L2.5 |
+| `signals` (Postgres) | Recent signals, intensity, category | L2 |
 | `postgres.decisionLog` | Last 3 decisions for dedup | L3 history |
 | `PersonaResolver.resolve()` | Traits, preferences, style weights | L4 |
 
@@ -181,7 +181,7 @@ L3 never writes to: `memory_packets`, `entities`, `relationships`, `signals`, `p
 
 ## Scheduled Invocations (L3.8)
 
-Defined in `src/lib/memory/scheduler.ts`:
+Run by the daily Vercel crons (`/api/jobs/run`), implemented under `src/jobs/` (the old `src/lib/memory/scheduler.ts` was removed):
 
 | Job | Schedule | Mode | Scope |
 |---|---|---|---|
@@ -215,6 +215,6 @@ Feedback submitted to `/api/cognitive/feedback` triggers `EvolutionEngine.evolve
 | Phase | Status | Scope |
 |---|---|---|
 | Phase 1 — Core | ✅ Complete | Context builder, single LLM, sanitize, dedup, logging, `/decide` |
-| Phase 2 — Harden | ✅ Complete | Critic gate, confidence penalty, langfuse tracing, feedback API |
+| Phase 2 — Harden | ✅ Complete | Critic gate, confidence penalty, feedback API (Langfuse is a no-op facade by owner decision) |
 | Phase 3 — Expand | ✅ Complete | `/evaluate`, `/gaps`, `/prioritize`, `opportunity_evaluations` table, scheduled crons |
-| Phase 4 — Scale | 🕒 Pending | Multi-agent split, internal orchestration, event-triggered decisions |
+| Phase 4 — Scale | 🟡 Built, opt-in | Multi-agent split, cost routing, signal trigger behind `COGNITIVE_MULTI_AGENT`, `COGNITIVE_MODEL_FLOOR`, `COGNITIVE_SIGNAL_TRIGGER`; default is the verified single pass |

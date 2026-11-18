@@ -4,7 +4,7 @@
 Layer 4 stores **derived intelligence only** (not raw memory) and refines output quality through persona-aware enforcement.
 
 ## Storage
-- PostgreSQL / Supabase / Neon
+- Neon/Postgres
 - New tables:
   - `persona_profiles`
   - `behavioral_traits`
