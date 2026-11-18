@@ -1,14 +1,35 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Brain, User, Search, RefreshCcw, Sparkles, ArrowUpRight } from 'lucide-react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
+import { ArrowLeft, MoreVertical, SendHorizontal, Square } from 'lucide-react';
 import type { UIMessage } from 'ai';
 import { usePrismChat } from '@/hooks/usePrismChat';
-import { PublicFrame } from '../component/PublicFrame';
 import { UI_API } from '@/lib/api/endpoints';
-import { CHAT_HIGHLIGHT_KEYWORDS } from '@/config/ui-content';
+import { IDENTITY_CONFIG, avatarFallbackUrl } from '@/config/identity';
 import { haptic, prefersReducedMotion } from '@/lib/pwa/browser';
+import {
+  clampTextareaHeight,
+  createTimestampStore,
+  enterKeyAction,
+  formatMessageTime,
+  isNearBottom,
+} from '@/lib/chat/ask-helpers';
+
+/**
+ * Starter questions shown on the empty state. Edit this list to change them.
+ * Drafted from the public profile (ventures, experience, writing).
+ */
+const STARTER_QUESTIONS: readonly string[] = [
+  'What is Vedanshu building with Identity Prism?',
+  'What has he done in fintech?',
+  'Which articles has he published?',
+];
+
+const FIRST_NAME = IDENTITY_CONFIG.DISPLAY_NAME.split(' ')[0];
+const LINE_HEIGHT_PX = 24; // matches leading-6 on the textarea
+const TEXTAREA_PADDING_PX = 16; // py-2 top and bottom
+const FALLBACK_ERROR = 'Could not get an answer. Try again.';
 
 function messageText(message: UIMessage): string {
   return message.parts
@@ -17,187 +38,397 @@ function messageText(message: UIMessage): string {
     .join('');
 }
 
-export default function AskNeuralInterface() {
-  const [input, setInput] = useState('');
-  const { messages, sendMessage, status, setMessages } = usePrismChat(UI_API.chat);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const isLoading = status === 'submitted' || status === 'streaming';
+function isCoarsePointer(): boolean {
+  try {
+    return typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+  } catch {
+    return false;
+  }
+}
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "end" });
-  }, [messages]);
-
-  const highlightKeywords = (text: string) => {
-    const keywords = [...CHAT_HIGHLIGHT_KEYWORDS];
-    const parts = text.split(new RegExp(`(${keywords.join('|')})`, 'gi'));
-    return parts.map((part, i) => 
-      keywords.some(k => k.toLowerCase() === part.toLowerCase()) 
-        ? <span key={i} className="text-accent font-bold">{part}</span> 
-        : part
+function Avatar() {
+  const [failed, setFailed] = useState(false);
+  const initials = IDENTITY_CONFIG.DISPLAY_NAME.split(/\s+/)
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 2);
+  if (failed) {
+    return (
+      <span
+        aria-hidden="true"
+        className="h-10 w-10 shrink-0 rounded-full bg-bg-tertiary text-text-primary text-sm font-semibold flex items-center justify-center"
+      >
+        {initials}
+      </span>
     );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={avatarFallbackUrl(96)}
+      alt=""
+      width={40}
+      height={40}
+      onError={() => setFailed(true)}
+      className="h-10 w-10 shrink-0 rounded-full bg-bg-tertiary"
+    />
+  );
+}
+
+function TypingDots() {
+  return (
+    <div role="status" aria-label={`${FIRST_NAME} is replying`} className="flex justify-start">
+      <div className="rounded-2xl rounded-bl-md border border-border-primary bg-bg-elevated px-4 py-3 flex items-center gap-1.5">
+        {[0, 150, 300].map((delay) => (
+          <span
+            key={delay}
+            aria-hidden="true"
+            className="h-2 w-2 rounded-full bg-text-tertiary motion-safe:animate-pulse"
+            style={{ animationDelay: `${delay}ms` }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function AskPage() {
+  const [input, setInput] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState<number | null>(null);
+  const { messages, sendMessage, status, setMessages, stop, regenerate, clearError } = usePrismChat(UI_API.chat);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const nearBottomRef = useRef(true);
+  const stamps = useRef(createTimestampStore());
+
+  const isLoading = status === 'submitted' || status === 'streaming';
+  const hasError = status === 'error';
+  const lastMessage = messages[messages.length - 1];
+  const showTyping =
+    status === 'submitted' ||
+    (status === 'streaming' && lastMessage?.role === 'assistant' && messageText(lastMessage as UIMessage) === '');
+
+  const lastText = lastMessage ? messageText(lastMessage as UIMessage) : '';
+
+  const scrollToBottom = useCallback((force = false) => {
+    const el = scrollRef.current;
+    if (!el || (!force && !nearBottomRef.current)) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: prefersReducedMotion() || force ? 'auto' : 'smooth' });
+  }, []);
+
+  // Follow new content only while the reader is already near the bottom.
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages.length, lastText, showTyping, hasError, scrollToBottom]);
+
+  // Keep the composer above the on-screen keyboard (installed PWAs do not resize dvh).
+  useEffect(() => {
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+    if (!vv) return;
+    const update = () => {
+      setViewportHeight(vv.height);
+      window.scrollTo(0, 0);
+      scrollToBottom();
+    };
+    vv.addEventListener('resize', update);
+    return () => vv.removeEventListener('resize', update);
+  }, [scrollToBottom]);
+
+  // Auto-grow the textarea up to four lines.
+  useLayoutEffect(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = 'auto';
+    ta.style.height = `${clampTextareaHeight(ta.scrollHeight, LINE_HEIGHT_PX, 4, TEXTAREA_PADDING_PX)}px`;
+  }, [input]);
+
+  // Close the overflow menu on outside click or Escape.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDown = (e: MouseEvent | TouchEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('touchstart', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('touchstart', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [menuOpen]);
+
+  const send = useCallback(
+    (raw: string) => {
+      const text = raw.trim();
+      if (!text || isLoading) return;
+      haptic('tap');
+      nearBottomRef.current = true;
+      sendMessage({ text });
+      setInput('');
+      requestAnimationFrame(() => scrollToBottom(true));
+    },
+    [isLoading, sendMessage, scrollToBottom],
+  );
+
+  const retry = () => {
+    haptic('tap');
+    nearBottomRef.current = true;
+    if (regenerate) {
+      regenerate();
+      return;
+    }
+    const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+    if (lastUser) sendMessage({ text: messageText(lastUser as UIMessage) });
   };
 
-  const handleSend = (e?: React.FormEvent) => {
-    e?.preventDefault();
-    const text = input.trim();
-    if (!text || isLoading) return;
-    haptic('tap');
-    sendMessage({ text });
-    setInput('');
+  const clearChat = () => {
+    stop?.();
+    clearError?.();
+    setMessages([]);
+    stamps.current.clear();
+    nearBottomRef.current = true;
+    dialogRef.current?.close();
   };
+
+  const openClearDialog = () => {
+    setMenuOpen(false);
+    dialogRef.current?.showModal();
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const action = enterKeyAction({
+      key: e.key,
+      shiftKey: e.shiftKey,
+      isComposing: e.nativeEvent.isComposing,
+      coarsePointer: isCoarsePointer(),
+    });
+    if (e.key === 'Enter' && action === 'send') {
+      e.preventDefault();
+      send(input);
+    }
+  };
+
+  const rows = useMemo(
+    () =>
+      messages.map((m) => ({
+        id: m.id,
+        role: m.role,
+        text: messageText(m as UIMessage),
+        time: formatMessageTime(stamps.current.stamp(m.id)),
+      })),
+    [messages],
+  );
+
+  const profileHref = `/p/${IDENTITY_CONFIG.HANDLE}`;
+  const canSend = input.trim() !== '' && !isLoading;
 
   return (
-    <PublicFrame>
-      <div className="min-h-[calc(100dvh-4rem)] bg-bg-primary text-text-primary flex flex-col selection:bg-accent/30 transition-colors duration-1000 relative">
-      {/* Background Interactivity */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
-        <div className="absolute inset-0 grid-bg opacity-10" />
-        <div className="absolute top-[10%] left-[5%] w-[60vw] h-[60vh] bg-accent/5 rounded-full blur-[150px]" />
-        <div className="scanline" />
-      </div>
-
-      <main className="flex-1 flex flex-col relative z-10 pb-64 md:pb-80">
-        <div className="max-w-5xl mx-auto w-full px-4 md:px-6 space-y-10 md:space-y-16">
-          
-          {/* Header Section */}
-          <section className="space-y-6 text-center lg:text-left">
-             <div className="flex items-center gap-3 text-accent mb-6 justify-center lg:justify-start">
-                <Brain size={22} />
-                <span className="text-2xs font-bold uppercase tracking-widest">Digital twin</span>
-             </div>
-             <h1 className="text-4xl md:text-5xl font-black tracking-tight text-text-primary break-words">
-                Ask
-             </h1>
-             <p className="max-w-2xl text-lg font-medium text-text-tertiary leading-relaxed">
-                Ask anything — answers are grounded in your own memory, not the open internet.
-             </p>
-          </section>
-
-          {/* Chat Container */}
-          <div className="glass-panel rounded-[2rem] md:rounded-[3rem] min-h-[60dvh] flex flex-col p-4 md:p-12 relative overflow-hidden group border-white/5 shadow-3xl">
-             <div role="log" aria-live="polite" aria-relevant="additions text" aria-label="Conversation" className="contents">
-             <AnimatePresence mode="popLayout">
-               {messages.length === 0 ? (
-                 <motion.div 
-                   initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                   className="flex flex-col items-center justify-center flex-1 text-center py-20"
-                 >
-                   <div className="w-24 h-24 rounded-full bg-accent/10 flex items-center justify-center mb-10 border border-accent/20 shadow-[0_0_50px_rgba(0,170,255,0.1)]">
-                      <Sparkles size={40} className="text-accent" />
-                   </div>
-                   <h2 className="text-3xl font-black text-text-primary mb-3 tracking-tight">Start a conversation</h2>
-                   <p className="text-sm text-text-tertiary">Try &ldquo;What am I building right now?&rdquo; or &ldquo;Summarize my week.&rdquo;</p>
-                 </motion.div>
-               ) : (
-                 <div className="space-y-8 md:space-y-16 relative z-10">
-                   {messages.map((m) => {
-                     const text = messageText(m as UIMessage);
-                     return (
-                     <motion.div 
-                       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                       key={m.id}
-                       className={`flex gap-3 md:gap-10 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}
-                     >
-                       <div className={`w-10 h-10 md:w-14 md:h-14 rounded-2xl md:rounded-3xl flex items-center justify-center shrink-0 border-2 transition-all duration-500 ${
-                         m.role === 'user' 
-                           ? 'bg-accent/10 border-accent/40 text-accent shadow-[0_0_30px_rgba(0,170,255,0.2)]' 
-                           : 'bg-bg-secondary border-border-primary text-text-tertiary shadow-2xl'
-                       }`}>
-                         {m.role === 'user' ? <User size={26} /> : <Brain size={26} />}
-                       </div>
-                       <div className={`flex flex-col min-w-0 max-w-[85%] ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
-                         <div className={`p-4 md:p-10 rounded-3xl md:rounded-[2.5rem] text-base md:text-lg font-medium leading-relaxed shadow-3xl break-words ${
-                           m.role === 'user' 
-                           ? 'bg-bg-secondary border-2 border-border-primary text-text-primary rounded-tr-none' 
-                           : 'bg-bg-elevated border-2 border-border-primary text-text-primary rounded-tl-none backdrop-blur-3xl'
-                         }`}>
-                           <div className="kinetic-text">
-                             {m.role !== 'user' ? highlightKeywords(text) : text}
-                           </div>
-                         </div>
-                         <span className="text-2xs mt-4 font-medium text-text-disabled">
-                           {m.role === 'user' ? 'You' : 'Twin'} · {new Date().toLocaleTimeString()}
-                         </span>
-                       </div>
-                     </motion.div>
-                   );})}
-                   {isLoading && (
-                     <div className="flex gap-3 md:gap-10 motion-safe:animate-pulse" role="status" aria-label="Twin is replying">
-                       <div className="w-10 h-10 md:w-14 md:h-14 rounded-2xl md:rounded-3xl bg-bg-secondary border-2 border-border-primary flex items-center justify-center">
-                          <RefreshCcw size={22} className="text-accent motion-safe:animate-spin" aria-hidden="true" />
-                       </div>
-                       <div className="space-y-5 w-[70%]">
-                          <div className="h-5 bg-bg-elevated rounded-full w-1/4" />
-                          <div className="h-24 bg-bg-elevated rounded-[1.5rem] w-full" />
-                       </div>
-                     </div>
-                   )}
-                 </div>
-               )}
-             </AnimatePresence>
-             </div>
-             <div ref={messagesEndRef} />
-             
-             {/* Decorative Corner Gradients */}
-             <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-[60px] pointer-events-none" />
-             <div className="absolute bottom-0 left-0 w-32 h-32 bg-accent/5 blur-[60px] pointer-events-none" />
-          </div>
+    <div
+      className="fixed inset-x-0 top-0 flex flex-col bg-bg-primary text-text-primary h-screen"
+      style={{ height: viewportHeight ? `${viewportHeight}px` : '100dvh' }}
+    >
+      <header className="shrink-0 flex items-center gap-2 border-b border-border-primary bg-bg-elevated px-2 pt-[env(safe-area-inset-top)]">
+        <Link
+          href={profileHref}
+          aria-label={`Back to ${FIRST_NAME}'s profile`}
+          className="min-h-11 min-w-11 flex items-center justify-center rounded-full text-text-secondary hover:text-text-primary"
+        >
+          <ArrowLeft size={22} aria-hidden="true" />
+        </Link>
+        <Avatar />
+        <div className="min-w-0 flex-1 py-2">
+          <h1 className="text-base font-semibold leading-tight truncate">{IDENTITY_CONFIG.DISPLAY_NAME}</h1>
+          <p className="text-xs text-text-tertiary leading-tight truncate">{`Ask about ${FIRST_NAME}'s work`}</p>
         </div>
-      </main>
-
-      {/* Neural Command Dock */}
-      <motion.section 
-        initial={{ y: 200, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-        className="fixed bottom-0 left-0 right-0 p-3 md:p-12 bg-gradient-to-t from-bg-primary via-bg-primary/95 to-transparent z-[55] safe-navbar"
-      >
-      <div className="max-w-4xl mx-auto">
-        <form onSubmit={handleSend} aria-label="Ask your twin" className="group relative glass-panel rounded-[2.5rem] border-white/5 focus-within:border-accent/50 transition-all duration-700 shadow-3xl overflow-hidden">
-          
-          <div className="p-4 md:p-8">
-            <div className="rounded-[1.25rem] md:rounded-[1.5rem] border border-border-secondary bg-bg-primary/40 px-4 md:px-10 py-4 md:py-8 flex items-start gap-4 md:gap-8 shadow-inner transition-all focus-within:bg-bg-primary/60">
-              <Search size={24} className="mt-3 text-text-disabled shrink-0" aria-hidden="true" />
-              <label htmlFor="ask-input" className="sr-only">Your question</label>
-              <textarea
-                id="ask-input"
-                enterKeyHint="send"
-                autoComplete="off"
-                autoCapitalize="sentences"
-                rows={3}
-                aria-busy={isLoading}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
-                placeholder="Ask anything…"
-                className="w-full h-24 md:h-32 p-2 bg-transparent text-base md:text-2xl font-bold text-text-primary placeholder:text-text-disabled placeholder: focus:outline-none resize-none scrollbar-hide kinetic-text"
-              />
-            </div>
-          </div>
-
-          <div className="px-4 md:px-10 py-4 md:py-10 flex items-center justify-between border-t border-border-secondary bg-white/[0.02]">
-            <div className="flex gap-6">
-               <button type="button" aria-label="Clear conversation" onClick={() => setMessages([])} className="min-h-11 min-w-11 flex items-center justify-center p-3 md:p-5 rounded-2xl bg-bg-elevated border border-border-secondary text-text-tertiary hover:text-danger transition-all group motion-safe:hover:scale-110">
-                  <RefreshCcw size={20} className="group-hover:rotate-180 transition-transform duration-500" />
-               </button>
-               
-            </div>
-            <button 
-              type="submit"
-              disabled={isLoading || input.trim() === ''}
-              className="min-h-11 px-5 md:px-16 py-3 md:py-5 rounded-[1.25rem] md:rounded-[1.5rem] font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-text-primary text-bg-primary shadow-2xl flex items-center gap-2 md:gap-4 group"
+        <div className="relative" ref={menuRef}>
+          <button
+            type="button"
+            aria-label="More options"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((v) => !v)}
+            className="min-h-11 min-w-11 flex items-center justify-center rounded-full text-text-secondary hover:text-text-primary"
+          >
+            <MoreVertical size={22} aria-hidden="true" />
+          </button>
+          {menuOpen && (
+            <div
+              role="menu"
+              className="absolute right-0 top-full z-10 mt-1 min-w-40 rounded-xl border border-border-primary bg-bg-elevated py-1 shadow-lg"
             >
-              <span className="relative z-10">{isLoading ? 'Thinking…' : 'Send'}</span>
-              <ArrowUpRight size={20} aria-hidden="true" />
-            </button>
+              <button
+                type="button"
+                role="menuitem"
+                disabled={messages.length === 0}
+                onClick={openClearDialog}
+                className="min-h-11 w-full px-4 text-left text-sm text-text-primary hover:bg-bg-secondary disabled:text-text-tertiary disabled:hover:bg-transparent"
+              >
+                Clear chat
+              </button>
+            </div>
+          )}
+        </div>
+      </header>
+
+      <div
+        ref={scrollRef}
+        onScroll={(e) => {
+          nearBottomRef.current = isNearBottom(e.currentTarget);
+        }}
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions text"
+        aria-label="Conversation"
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-4"
+      >
+        {rows.length === 0 && !hasError ? (
+          <div className="flex min-h-full flex-col items-center justify-center gap-4 text-center">
+            <p className="max-w-xs text-sm text-text-tertiary">
+              {`Ask a question about ${FIRST_NAME}'s work. Pick one to start.`}
+            </p>
+            <div className="flex w-full max-w-sm flex-col gap-2">
+              {STARTER_QUESTIONS.map((q) => (
+                <button
+                  key={q}
+                  type="button"
+                  onClick={() => send(q)}
+                  className="min-h-11 rounded-2xl border border-border-primary bg-bg-elevated px-4 py-2 text-left text-sm text-text-primary hover:bg-bg-secondary"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
           </div>
+        ) : (
+          <ul className="mx-auto flex w-full max-w-2xl flex-col gap-3">
+            {rows.map((r) => {
+              const mine = r.role === 'user';
+              if (!mine && r.text === '') return null;
+              return (
+                <li key={r.id} className={`flex flex-col ${mine ? 'items-end' : 'items-start'}`}>
+                  <div
+                    className={`max-w-[85%] whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2 text-base leading-snug ${
+                      mine
+                        ? 'rounded-br-md bg-bg-tertiary text-text-primary'
+                        : 'rounded-bl-md border border-border-primary bg-bg-elevated text-text-primary'
+                    }`}
+                  >
+                    {r.text}
+                  </div>
+                  <span className="mt-1 px-1 text-2xs text-text-tertiary">
+                    <span className="sr-only">{mine ? 'You, ' : `${FIRST_NAME}, `}</span>
+                    {r.time}
+                  </span>
+                </li>
+              );
+            })}
+            {showTyping && (
+              <li>
+                <TypingDots />
+              </li>
+            )}
+            {hasError && (
+              <li role="alert" className="flex flex-col items-start gap-2">
+                <div className="max-w-[85%] rounded-2xl rounded-bl-md border border-danger bg-bg-elevated px-3.5 py-2 text-base text-text-primary">
+                  {FALLBACK_ERROR}
+                </div>
+                <button
+                  type="button"
+                  onClick={retry}
+                  className="min-h-11 rounded-full border border-border-primary bg-bg-elevated px-4 text-sm font-medium text-text-primary hover:bg-bg-secondary"
+                >
+                  Retry
+                </button>
+              </li>
+            )}
+          </ul>
+        )}
+      </div>
+
+      <div className="shrink-0 border-t border-border-primary bg-bg-elevated px-3 pt-2 pb-[max(env(safe-area-inset-bottom),0.5rem)]">
+        <form
+          aria-label={`Ask ${FIRST_NAME}`}
+          onSubmit={(e) => {
+            e.preventDefault();
+            send(input);
+          }}
+          className="mx-auto flex w-full max-w-2xl items-end gap-2"
+        >
+          <label htmlFor="ask-input" className="sr-only">
+            Your question
+          </label>
+          <textarea
+            ref={textareaRef}
+            id="ask-input"
+            rows={1}
+            enterKeyHint="send"
+            autoComplete="off"
+            autoCapitalize="sentences"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder="Type a question"
+            className="min-h-11 flex-1 resize-none rounded-2xl border border-border-primary bg-bg-primary px-4 py-2 text-base leading-6 text-text-primary placeholder:text-text-tertiary"
+          />
+          {isLoading && stop ? (
+            <button
+              type="button"
+              onClick={() => stop()}
+              aria-label="Stop answer"
+              className="h-11 w-11 shrink-0 rounded-full border border-border-primary bg-bg-elevated text-text-primary flex items-center justify-center hover:bg-bg-secondary"
+            >
+              <Square size={16} aria-hidden="true" />
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={!canSend}
+              aria-label="Send"
+              className="h-11 w-11 shrink-0 rounded-full bg-text-primary text-bg-primary flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <SendHorizontal size={20} aria-hidden="true" />
+            </button>
+          )}
         </form>
+        <p className="mx-auto mt-1.5 max-w-2xl text-center text-2xs text-text-tertiary">
+          {`Answers are generated from ${FIRST_NAME}'s notes and may be wrong.`}
+        </p>
       </div>
-      </motion.section>
-      </div>
-    </PublicFrame>
+
+      <dialog
+        ref={dialogRef}
+        aria-labelledby="clear-title"
+        className="m-auto w-[min(90vw,22rem)] rounded-2xl border border-border-primary bg-bg-elevated p-5 text-text-primary backdrop:bg-text-primary/40"
+      >
+        <h2 id="clear-title" className="text-lg font-semibold">
+          Clear this chat?
+        </h2>
+        <p className="mt-1 text-sm text-text-tertiary">This removes every message from this screen.</p>
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => dialogRef.current?.close()}
+            className="min-h-11 rounded-full border border-border-primary px-4 text-sm font-medium hover:bg-bg-secondary"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={clearChat}
+            className="min-h-11 rounded-full bg-danger px-4 text-sm font-medium text-bg-elevated"
+          >
+            Clear chat
+          </button>
+        </div>
+      </dialog>
+    </div>
   );
 }
