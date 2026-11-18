@@ -21,6 +21,8 @@ A Personal Cognitive Operating System (POS). Not a dashboard — a Decision Cons
 | L3 | Reasoning + decisions | Neon (Postgres) |
 | L4 | Digital Twin (traits, style, persona) | Neon (Postgres) |
 
+The app is an installable PWA (opens on `/console`, offline page at `/offline`). Canonical domain: `https://www.vedanshusrivastava.com`.
+
 One-line truth: **L1 = memory. L2 = signals. L2.5 = meaning. L3 = thinking. L4 = who you are becoming.**
 
 ---

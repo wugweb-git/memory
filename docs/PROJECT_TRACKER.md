@@ -25,6 +25,11 @@ Primary tracking document for bugs, architectural resolutions, and pending work.
 | BUG-015 | `scripts/scan-secrets.sh` silently passed without `rg` | `git grep` fallback, Postgres/Neon patterns, hard-fail if no scanner | ✅ Fixed 2026-11-18 |
 | BUG-016 | CodeQL alerts (SSRF, format string, HTML strip, rate-limit) | Live ones fixed (repeat-until-stable HTML strip, constant log format, orphaned SSRF files removed); 10 stale alerts for deleted files dismissed | ✅ Fixed 2026-11-18 |
 | BUG-017 | npm vulnerabilities (67; 4 critical) | `npm audit fix`, removed unused `@vercel/sandbox` (pinned `latest`), `overrides` for brace-expansion / nanoid / minimatch → 37 (0 critical, 0 moderate) | ✅ Fixed 2026-11-18 (remaining 37: see TSK-008) |
+| BUG-018 | Login did not reliably land on the dashboard after sign-in | Hard navigation to `/console` after sign-in | ✅ Fixed 2026-11-18 |
+| BUG-019 | Public domain wrong (`wugweb.com`) | Canonical `https://www.vedanshusrivastava.com` in `src/config/identity.ts`; display name Vedanshu Srivastava, handle `system_user` kept | ✅ Fixed 2026-11-18 |
+| BUG-020 | Blank or crashing `/system`, `/admin`, `/history`, `/cognitive`, `/persona` on fetch failure; `/content` hardcoded colours | Error and empty states added; `/content` uses tokens | ✅ Fixed 2026-11-18 |
+| BUG-021 | Persona style, fingerprint length penalty and pipeline confidence wrong | `style.ts` fixed, smoothed length penalty in `fingerprint.ts`, pipeline reports real confidence | ✅ Fixed 2026-11-18 |
+| BUG-022 | Persona jobs and behavioural reconciliation not run daily; evolution and fingerprint jobs used weak evidence | `/api/jobs/run` runs all three with `safeJob` and a 40s budget; jobs use real text evidence | ✅ Fixed 2026-11-18 |
 
 ---
 
@@ -66,6 +71,10 @@ Primary tracking document for bugs, architectural resolutions, and pending work.
 | TSK-C19 | Sidebar navigation — 11 sections, human-readable labels | UI | ✅ |
 | TSK-C20 | TopNav — breadcrumb, command palette (⌘K), all 11 sections + 5 quick actions | UI | ✅ |
 | TSK-C21 | Memory Vault upload — drag-drop → POST /api/upload → progress → list | UI/L1 | ✅ |
+| TSK-C22 | PWA: `manifest.json` (start `/console`), `sw.js`, `/offline`, icons via `scripts/generate-pwa-icons.py` | UI | ✅ 2026-11-18 |
+| TSK-C23 | `/ask` persona style hints (`styleHints.ts`, fail-safe) | L4/L3 | ✅ 2026-11-18 |
+| TSK-C24 | `/career` accessible `RoleForm` | UI | ✅ 2026-11-18 |
+| TSK-C25 | `/cognitive` five tabs under `_components` with distinct layouts and states | UI/L3 | ✅ 2026-11-18 |
 
 ---
 
@@ -82,6 +91,11 @@ Primary tracking document for bugs, architectural resolutions, and pending work.
 | TSK-007 | Cost routing — gpt-4o for complex, gpt-4o-mini for simple | LOW | L3 Phase 4 | 🕒 Backlog |
 | TSK-008 | Remaining 37 npm vulnerabilities: need major bumps (prisma 7, tailwind 4); mostly CLI/build tooling, several suggested "fixes" are downgrades | LOW | Security | 🕒 Deferred |
 | TSK-009 | Decide auto-promotion vs manual promote on Vercel (manual currently blocks bad builds going live) | MEDIUM | Deploy | 🕒 Owner decision |
+| TSK-010 | Final promote of newest `main` build (production is manual-promote) | HIGH | Deploy | 🕒 Open |
+| TSK-011 | Memory embeddings failing (30 failed, 14 pending, 0 embedded); check Vercel function logs, likely embedding provider quota | HIGH | L1 | 🕒 Owner decision |
+| TSK-012 | GitHub 5-minute schedule (`memory-pipeline.yml`) has not fired on its own yet | MEDIUM | Deploy | 🕒 Open |
+| TSK-013 | `M3Button` / `M3Card` still use all-caps and `bg-black`; design-token cleanup | LOW | UI | 🕒 Open |
+| TSK-014 | Docs are not mapped one-to-one to Notion | LOW | Docs | 🕒 Open |
 
 ---
 

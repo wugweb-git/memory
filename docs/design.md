@@ -3,8 +3,7 @@
 Identity Prism UI is **mobile-first, light-first**, action-prioritized, and output-driven.
 
 > Note: earlier revisions of this doc said "dark-first." That is obsolete — the
-> product is light-first (porcelain/earthy light theme). Any remaining dark
-> surfaces (`/memory`, `/buffer`) are legacy and slated for retheme.
+> product is light-first (porcelain/earthy light theme). `/memory` and `/buffer` have since been rethemed to light.
 
 ## Principles
 - Decisions over dashboards
@@ -26,3 +25,10 @@ Identity Prism UI is **mobile-first, light-first**, action-prioritized, and outp
   bottom dock) drives every internal route. Public profile (`/p/*`) is the only
   surface outside the shell.
 - **Surfaces:** `glass-panel` cards, `rounded-radius-xl`, `border-border-secondary`.
+
+## Known debt (2026-11-18)
+- `M3Button` and `M3Card` still use all-caps labels and `bg-black`, which break the sentence-case and token rules above. Tracked as TSK-013.
+
+## PWA
+- The app is installable: `public/manifest.json` (`start_url` `/console`, standalone), `public/sw.js`, offline page at `/offline`,
+  icons from `scripts/generate-pwa-icons.py`. Theme and background colour match the light porcelain surface.
