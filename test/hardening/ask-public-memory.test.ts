@@ -28,7 +28,7 @@ describe('/ask retrieval limited to public memory', () => {
     const src = read('src/app/api/chat/route.ts');
     assert.match(src, /isAdminRequest\(req\)/);
     assert.match(src, /retrieve\(question, chatRetrievalFilters\(admin\)\)/);
-    assert.match(src, /runJob\('ask'/);
+    assert.match(src, /streamJob\('ask'/);
   });
 
   it('retrieve filters by is_public with a constant parameterised fragment', () => {
