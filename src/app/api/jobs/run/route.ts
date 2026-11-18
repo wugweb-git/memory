@@ -4,6 +4,7 @@ import { runPublishingQueueJob } from "@/jobs/publishing-queue";
 import { runRetryWorker } from "@/jobs/retry-worker";
 import { runRetentionCleanup } from "@/jobs/retention-cleanup";
 import { runSourceSync } from "@/jobs/source-sync";
+import { runBehavioralReconciliationJob } from "@/jobs/behavioral-reconciliation";
 import { postgres } from "@/lib/db/postgres";
 import { getRequestUser } from "@/lib/security/auth";
 import { hasPermission } from "@/lib/security/roles";
@@ -21,14 +22,36 @@ function authorized(req: NextRequest): boolean {
   return hasPermission(actor.role, "admin:read");
 }
 
+/** Skip optional persona jobs once this much of the 60s budget is used. */
+const PERSONA_BUDGET_MS = 40_000;
+
+/** Run a job so a failure is reported instead of aborting the whole run. */
+async function safeJob<T>(fn: () => Promise<T>): Promise<T | { error: string }> {
+  try {
+    return await fn();
+  } catch (err) {
+    return { error: (err as Error).message };
+  }
+}
+
 async function runAll() {
+  const startedAt = Date.now();
   // Order matters: pull new source items → promote due/scheduled → publish → sweep retries.
   const sources = await runSourceSync();
   const scheduler = await runScheduledPublisher();
   const queue = await runPublishingQueueJob();
   const retries = await runRetryWorker();
+  // L4 persona jobs: after publishing, before retention, only if budget allows.
+  // persona-evolution and fingerprint-validation are deliberately NOT wired: both
+  // re-derive from the stored styleVector (a length number / "x" repeated) rather
+  // than real text, so a daily run would write garbage into the persona and
+  // overwrite verifiedHuman flags. Fix those jobs before enabling them here.
+  const behavioral =
+    Date.now() - startedAt > PERSONA_BUDGET_MS
+      ? { skipped: "time budget" }
+      : await safeJob(() => runBehavioralReconciliationJob());
   const retention = await runRetentionCleanup();
-  const result = { sources, scheduler, queue, retries, retention, ranAt: new Date().toISOString() };
+  const result = { sources, scheduler, queue, retries, behavioral, retention, ranAt: new Date().toISOString() };
 
   try {
     await postgres.executionAuditLog.create({
