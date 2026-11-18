@@ -169,8 +169,8 @@ export default function MemoryControlSurface() {
               <h3 className="text-sm font-bold uppercase tracking-widest text-text-secondary">Ingestion Matrix</h3>
             </div>
             <div className="flex gap-2">
-              <input className="px-3 py-1.5 rounded-lg bg-bg-primary border border-border-secondary text-xs text-text-primary focus:border-accent/50 transition-colors" placeholder="Filter status..." value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} />
-              <input className="px-3 py-1.5 rounded-lg bg-bg-primary border border-border-secondary text-xs text-text-primary focus:border-accent/50 transition-colors" placeholder="Filter source..." value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} />
+              <input className="px-3 py-1.5 rounded-lg bg-bg-primary border border-border-secondary text-xs text-text-primary focus:border-accent/50 transition-colors" aria-label="Filter status" placeholder="Filter status..." value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} />
+              <input className="px-3 py-1.5 rounded-lg bg-bg-primary border border-border-secondary text-xs text-text-primary focus:border-accent/50 transition-colors" aria-label="Filter source" placeholder="Filter source..." value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} />
             </div>
           </div>
 

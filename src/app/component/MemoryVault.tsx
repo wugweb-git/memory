@@ -151,7 +151,7 @@ export const MemoryVault = ({ onRequestUpload }: MemoryVaultProps) => {
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-text-disabled group-focus-within:text-accent transition-colors" size={20} />
             <input
               type="text"
-              placeholder="Query persistent fragments..."
+              aria-label="Query persistent fragments" placeholder="Query persistent fragments..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-bg-secondary/30 border-2 border-border-primary/50 rounded-2xl pl-14 pr-6 py-5 text-sm font-black text-text-primary focus:border-accent/40 outline-none transition-all  shadow-inner"

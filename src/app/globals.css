@@ -180,4 +180,93 @@ body {
   .touch-manipulation {
     touch-action: manipulation;
   }
+
+  /* Full-height surfaces: dynamic viewport so mobile browser bars do not clip content. */
+  .min-h-dvh-fallback {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+}
+
+/* ── Mobile / accessibility baseline ───────────────────────────── */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  overscroll-behavior-y: none; /* no rubber-band flash on the porcelain background */
+}
+
+/* Visible keyboard focus everywhere (WCAG 2.4.7 / 2.4.11). Taps stay clean. */
+:focus-visible {
+  outline: 2px solid rgb(var(--accent));
+  outline-offset: 2px;
+}
+
+/* Form controls must be at least 16px on phones or iOS zooms the page on focus. */
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  textarea,
+  select {
+    font-size: max(16px, 1em);
+  }
+}
+
+/* 44px touch targets for buttons and form controls on touch screens (WCAG 2.5.8). */
+@media (pointer: coarse) {
+  button,
+  select,
+  summary,
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='hidden']) {
+    min-height: 44px;
+  }
+  button:has(> svg:only-child) {
+    min-width: 44px;
+  }
+  /* Nothing may depend on hover on touch screens. */
+  .glass-card:hover {
+    transform: none;
+  }
+}
+
+/* Installed app: keep UI chrome from being text-selected by accident. */
+@media (display-mode: standalone) {
+  body {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  input,
+  textarea,
+  [contenteditable],
+  p,
+  pre,
+  code {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+}
+
+/* Blur is costly and hurts legibility for some users. */
+@media (prefers-reduced-transparency: reduce) {
+  .glass-panel {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: var(--bg-elevated);
+  }
+}
+
+/* Reduced motion: no decorative animation, no smooth scroll, no long transitions. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .scanline {
+    display: none;
+  }
 }

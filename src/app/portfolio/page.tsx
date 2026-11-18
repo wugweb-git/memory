@@ -120,22 +120,22 @@ export default function PortfolioPage() {
               <>
                 {showForm && (
                   <div className="space-y-2 rounded-2xl border border-border-secondary bg-bg-secondary p-3 mb-3">
-                    <input className="w-full rounded-xl border border-border-primary p-2 text-sm" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+                    <input className="w-full rounded-xl border border-border-primary p-2 text-sm" aria-label="Title" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
                     {tab === "blogPost" ? (
-                      <textarea className="w-full rounded-xl border border-border-primary p-2 text-sm" placeholder="Excerpt" value={form.excerpt} onChange={(e) => setForm({ ...form, excerpt: e.target.value })} />
+                      <textarea className="w-full rounded-xl border border-border-primary p-2 text-sm" aria-label="Excerpt" placeholder="Excerpt" value={form.excerpt} onChange={(e) => setForm({ ...form, excerpt: e.target.value })} />
                     ) : (
-                      <textarea className="w-full rounded-xl border border-border-primary p-2 text-sm" placeholder="Summary" value={form.summary} onChange={(e) => setForm({ ...form, summary: e.target.value })} />
+                      <textarea className="w-full rounded-xl border border-border-primary p-2 text-sm" aria-label="Summary" placeholder="Summary" value={form.summary} onChange={(e) => setForm({ ...form, summary: e.target.value })} />
                     )}
                     {tab === "caseStudy" && (
                       <>
-                        <input className="w-full rounded-xl border border-border-primary p-2 text-sm" placeholder="Client" value={form.client} onChange={(e) => setForm({ ...form, client: e.target.value })} />
-                        <input className="w-full rounded-xl border border-border-primary p-2 text-sm" placeholder="Outcome" value={form.outcome} onChange={(e) => setForm({ ...form, outcome: e.target.value })} />
+                        <input className="w-full rounded-xl border border-border-primary p-2 text-sm" aria-label="Client" placeholder="Client" value={form.client} onChange={(e) => setForm({ ...form, client: e.target.value })} />
+                        <input className="w-full rounded-xl border border-border-primary p-2 text-sm" aria-label="Outcome" placeholder="Outcome" value={form.outcome} onChange={(e) => setForm({ ...form, outcome: e.target.value })} />
                       </>
                     )}
                     {tab === "project" && (
-                      <input className="w-full rounded-xl border border-border-primary p-2 text-sm" placeholder="URL (optional)" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} />
+                      <input className="w-full rounded-xl border border-border-primary p-2 text-sm" aria-label="URL (optional)" placeholder="URL (optional)" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} />
                     )}
-                    <input className="w-full rounded-xl border border-border-primary p-2 text-sm" placeholder="Tags (comma-separated)" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} />
+                    <input className="w-full rounded-xl border border-border-primary p-2 text-sm" aria-label="Tags (comma-separated)" placeholder="Tags (comma-separated)" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} />
                     <M3Button onClick={create} disabled={saving}>{saving ? "Publishing…" : "Publish to showcase"}</M3Button>
                   </div>
                 )}

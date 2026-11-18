@@ -8,6 +8,7 @@ import {
 import { IDENTITY_CONFIG, avatarFallbackUrl } from '@/config/identity';
 import { useProfileData } from '@/hooks/useProfileData';
 import type { ProfileSection } from '@/lib/profile/types';
+import { ShareButton } from '@/app/component/ShareButton';
 
 /* ── helpers ─────────────────────────────────────────────────────── */
 
@@ -61,15 +62,15 @@ export function PublicProfileView({ username }: { username: string }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin text-text-disabled" size={28} />
+      <div className="min-h-dvh-fallback flex items-center justify-center">
+        <Loader2 className="animate-spin text-text-disabled" size={28} role="img" aria-label="Loading profile" />
       </div>
     );
   }
 
   if (error && !profile) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-3 px-6 text-center">
+      <div role="alert" className="min-h-dvh-fallback flex flex-col items-center justify-center gap-3 px-6 text-center">
         <p className="text-lg font-bold text-text-primary">This profile isn&rsquo;t live yet</p>
         <p className="text-sm text-text-tertiary">Check the link, or come back soon.</p>
       </div>
@@ -105,10 +106,11 @@ export function PublicProfileView({ username }: { username: string }) {
 
         {(socials.length > 0 || isOwner) && (
           <div className="flex flex-wrap items-center gap-2">
+            <ShareButton title={`${displayName} on Identity Prism`} text={role ?? undefined} />
             {isOwner && (
               <a
                 href={`mailto:${IDENTITY_CONFIG.EMAIL}`}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-text-primary text-bg-primary text-sm font-bold hover:bg-text-secondary transition-colors"
+                className="inline-flex min-h-11 items-center gap-2 px-4 rounded-xl bg-text-primary text-bg-primary text-sm font-bold hover:bg-text-secondary transition-colors"
               >
                 <Mail size={15} /> Get in touch
               </a>
@@ -122,7 +124,7 @@ export function PublicProfileView({ username }: { username: string }) {
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-border-secondary text-sm font-medium text-text-secondary hover:border-border-primary hover:text-text-primary transition-colors"
+                  className="inline-flex min-h-11 items-center gap-2 px-3.5 rounded-xl border border-border-secondary text-sm font-medium text-text-secondary hover:border-border-primary hover:text-text-primary transition-colors"
                 >
                   <Icon size={15} className="text-text-tertiary" />
                   {link.platform}

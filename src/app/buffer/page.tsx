@@ -230,7 +230,7 @@ export default function BufferControlSurface() {
                   <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-disabled" />
                   <input 
                     type="text" 
-                    placeholder="Search by ID or Source..." 
+                    aria-label="Search by ID or Source" placeholder="Search by ID or Source..." 
                     className="bg-secondary border border-border-secondary rounded-full pl-10 pr-4 py-2 text-sm text-text-primary focus:outline-none focus:border-accent/50 w-64 lg:w-80 transition-all shadow-xl"
                   />
                 </div>

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
+import { MotionConfig } from 'framer-motion';
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
@@ -11,5 +12,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('theme', 'light');
   }, []);
 
-  return <>{children}</>;
+  // reducedMotion="user": framer-motion skips transform/layout animation when the OS asks for reduced motion.
+  return <MotionConfig reducedMotion="user">{children}</MotionConfig>;
 }
