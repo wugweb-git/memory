@@ -83,7 +83,10 @@ export async function POST(req: Request) {
 
     // Per-job routing: OPENROUTER_API_KEY set -> `ask` chain (free models, fallback
     // on 429/5xx). Not streamed upstream; the answer is replayed as a UI stream.
+    const otherProvider = gatewayOn || Boolean(groqKey) || Boolean(openaiKey);
+    let routed: Response | null = null;
     if (openrouterOn) {
+      try {
       const chat: ChatMessage[] = [{ role: 'system', content: systemText }];
       for (const m of messages) {
         if (m.role !== 'user' && m.role !== 'assistant') continue;
@@ -101,8 +104,14 @@ export async function POST(req: Request) {
           writer.write({ type: 'text-end', id: 'ask' });
         },
       });
-      return createUIMessageStreamResponse({ stream, headers: { 'X-Model': job.model } });
+      routed = createUIMessageStreamResponse({ stream, headers: { 'X-Model': job.model } });
+      } catch (err) {
+        // Whole free chain failed (e.g. daily cap): fall back to the old provider if one is set.
+        if (!otherProvider) throw err;
+        console.error('[chat] OpenRouter chain failed, falling back:', err instanceof Error ? err.message : err);
+      }
     }
+    if (routed) return routed;
 
     // Generic OpenAI-compatible gateway (Command Code / Cline Pass / DeepSeek)
     // takes priority; then Groq; then OpenAI.
