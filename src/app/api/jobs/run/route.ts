@@ -5,6 +5,8 @@ import { runRetryWorker } from "@/jobs/retry-worker";
 import { runRetentionCleanup } from "@/jobs/retention-cleanup";
 import { runSourceSync } from "@/jobs/source-sync";
 import { runBehavioralReconciliationJob } from "@/jobs/behavioral-reconciliation";
+import { runPersonaEvolutionJob } from "@/jobs/persona-evolution";
+import { runFingerprintValidationJob } from "@/jobs/fingerprint-validation";
 import { postgres } from "@/lib/db/postgres";
 import { getRequestUser } from "@/lib/security/auth";
 import { hasPermission } from "@/lib/security/roles";
@@ -42,16 +44,15 @@ async function runAll() {
   const queue = await runPublishingQueueJob();
   const retries = await runRetryWorker();
   // L4 persona jobs: after publishing, before retention, only if budget allows.
-  // persona-evolution and fingerprint-validation are deliberately NOT wired: both
-  // re-derive from the stored styleVector (a length number / "x" repeated) rather
-  // than real text, so a daily run would write garbage into the persona and
-  // overwrite verifiedHuman flags. Fix those jobs before enabling them here.
   const behavioral =
     Date.now() - startedAt > PERSONA_BUDGET_MS
       ? { skipped: "time budget" }
       : await safeJob(() => runBehavioralReconciliationJob());
+  const overBudget = () => Date.now() - startedAt > PERSONA_BUDGET_MS;
+  const personaEvolution = overBudget() ? { skipped: "time budget" } : await safeJob(() => runPersonaEvolutionJob());
+  const fingerprints = overBudget() ? { skipped: "time budget" } : await safeJob(() => runFingerprintValidationJob());
   const retention = await runRetentionCleanup();
-  const result = { sources, scheduler, queue, retries, behavioral, retention, ranAt: new Date().toISOString() };
+  const result = { sources, scheduler, queue, retries, behavioral, personaEvolution, fingerprints, retention, ranAt: new Date().toISOString() };
 
   try {
     await postgres.executionAuditLog.create({
