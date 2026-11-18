@@ -30,6 +30,15 @@ Primary tracking document for bugs, architectural resolutions, and pending work.
 | BUG-020 | Blank or crashing `/system`, `/admin`, `/history`, `/cognitive`, `/persona` on fetch failure; `/content` hardcoded colours | Error and empty states added; `/content` uses tokens | ✅ Fixed 2026-11-18 |
 | BUG-021 | Persona style, fingerprint length penalty and pipeline confidence wrong | `style.ts` fixed, smoothed length penalty in `fingerprint.ts`, pipeline reports real confidence | ✅ Fixed 2026-11-18 |
 | BUG-022 | Persona jobs and behavioural reconciliation not run daily; evolution and fingerprint jobs used weak evidence | `/api/jobs/run` runs all three with `safeJob` and a 40s budget; jobs use real text evidence | ✅ Fixed 2026-11-18 |
+| BUG-023 | `BlobBuffer` posted `content` where `/api/blob` reads `raw_payload` (note text silently ignored; component unused by any page) | `BlobBuffer` now posts `raw_payload` | ✅ Fixed 2026-11-19 |
+| BUG-024 | `/api/blob` returned 400 for every internal error, so the offline capture queue retried genuine validation errors | 400 only for invalid input, 500 for internal errors; the queue drops 400 and retries 5xx | ✅ Fixed 2026-11-19 |
+| BUG-025 | Stale `failed` embedding packets were never retried | Added `requeueStaleFailed` (≤5 per run, once per 24h each) | ✅ Fixed 2026-11-19 |
+| BUG-026 | Rows killed mid-embed stayed in `processing` forever | `clearStaleLocks` resets `processing` rows older than 10 min to `pending` | ✅ Fixed 2026-11-19 |
+| BUG-027 | Embedding rows tagged `metadata.model = text-embedding-3-small` regardless of the real model | Tagged with the resolved model via `embeddingModelName()` | ✅ Fixed 2026-11-19 |
+| BUG-028 | `/api/jobs/process` returned 504 FUNCTION_INVOCATION_TIMEOUT once real embedding work existed (SDK default 6 retries, 10-min timeout) | Embeddings client 15s timeout, 0 retries; 50s whole-pipeline budget + per-packet deadline race | ✅ Fixed 2026-11-19 |
+| BUG-029 | `validate-live` login check read raw HTML and false-failed ("Keep me signed in" is client-rendered) | The login check was removed | ✅ Fixed 2026-11-19 |
+| BUG-030 | Console "Sync Status" card always said "All layers nominal" even when degraded | Now shows "Some layers need attention" in amber when degraded | ✅ Fixed 2026-11-19 |
+| BUG-031 | Embeddings backfill embedded 0/8 on first prod run: packets hit `422 input rejected by content safety screening` from `nvidia/nemotron-3.5-embed-8b:free`. Root cause: the 8B embedder works fine at `dimensions:1536` (verified HTTP 200, 1536-dim, several inputs) — the 422 is per-packet CONTENT moderation, not a blanket block. Fix: `embedChunksTolerant` salvages the chunks that pass so one flagged chunk no longer sinks a packet; a wholly-moderated packet → `CONTENT_MODERATED` + `is_embeddable=false` (stops the daily requeue). Free-embedder scan (owner key): 8B OK@1536; `nemotron-3-embed-1b:free` OK but 2048-dim only (needs a `vector(2048)` column, not adopted); `nemotron-3.5-embed-1b:free` 503-overloaded. | ✅ Fixed 2026-11-19 (verify embedded counts next prod run) |
 
 ---
 
@@ -91,9 +100,9 @@ Primary tracking document for bugs, architectural resolutions, and pending work.
 | TSK-007 | Cost routing — gpt-4o for complex, gpt-4o-mini for simple | LOW | L3 Phase 4 | 🕒 Backlog |
 | TSK-008 | Remaining 37 npm vulnerabilities: need major bumps (prisma 7, tailwind 4); mostly CLI/build tooling, several suggested "fixes" are downgrades | LOW | Security | 🕒 Deferred |
 | TSK-009 | Decide auto-promotion vs manual promote on Vercel (manual currently blocks bad builds going live) | MEDIUM | Deploy | 🕒 Owner decision |
-| TSK-010 | Final promote of newest `main` build (production is manual-promote) | HIGH | Deploy | 🕒 Open |
-| TSK-011 | Memory embeddings failing (30 failed, 14 pending, 0 embedded); check Vercel function logs, likely embedding provider quota | HIGH | L1 | 🕒 Owner decision |
-| TSK-012 | GitHub 5-minute schedule (`memory-pipeline.yml`) has not fired on its own yet | MEDIUM | Deploy | 🕒 Open |
+| TSK-010 | Final promote of newest `main` build (production is manual-promote) | HIGH | Deploy | ✅ Done 2026-11-19 (`cf5de9d` promoted and live) |
+| TSK-011 | Memory embeddings: 8B embedder works at 1536; per-packet content-safety 422s now salvaged per chunk (see BUG-031); verify embedded counts climb on prod | HIGH | L1 | ✅ Mitigated — verify on prod |
+| TSK-012 | GitHub 5-minute schedule (`memory-pipeline.yml`, `schedule: */5`) has still never fired on its own; only manual `workflow_dispatch` runs have run, and dispatch works | MEDIUM | Deploy | 🕒 Open |
 | TSK-013 | `M3Button` / `M3Card` still use all-caps and `bg-black`; design-token cleanup | LOW | UI | 🕒 Open |
 | TSK-014 | Docs are not mapped one-to-one to Notion | LOW | Docs | 🕒 Open |
 
@@ -110,4 +119,4 @@ audit snapshots were moved to [`archive/`](./archive/) to stop them reading as o
 Forward-looking work is consolidated in [`PENDING.md`](./PENDING.md) and
 [`master-roadmap.md`](./master-roadmap.md).
 
-*Last updated: 2026-11-18*
+*Last updated: 2026-11-19*

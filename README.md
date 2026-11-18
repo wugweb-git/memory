@@ -186,10 +186,10 @@ npm run prisma:migrate:pg     # create a new migration locally (prisma migrate d
 
 ## Deployment
 
-Hosted on Vercel. Every push to `main` triggers a production deploy.
+Hosted on Vercel (Hobby plan, **manual-promote**). A push to `main` builds a production deployment, but does **not** auto-advance the live alias — someone promotes the READY build.
 
 Project: `https://vercel.com/wugweb/memory`
-Live URL: `https://memory-git-main-wugweb.vercel.app` (stable `main` alias)
+Live URL: `https://www.vedanshusrivastava.com` (canonical production). `https://memory-git-main-wugweb.vercel.app` is only the pre-promote branch alias (latest build before promotion), not the live site.
 
 Most API routes set `export const dynamic = 'force-dynamic'` to prevent static collection at build time. Routes that read request data (`req.json()`, query params, cookies) are inferred as dynamic by Next.js even without the explicit export.
 

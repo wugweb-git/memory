@@ -3,7 +3,7 @@ import { postgres as prisma } from '@/lib/db/postgres';
 import { Prisma } from '../../generated/postgres';
 import { addProcessingError } from './gate';
 import { EmbeddingStatus, ProcessingError } from './types';
-import { getEmbeddings, embeddingModelName } from './embeddings';
+import { getEmbeddings, embeddingModelName, embedChunksTolerant } from './embeddings';
 
 /** pgvector text literal: '[0.1,0.2,…]' — bound as a parameter, cast with ::vector. */
 function toVectorLiteral(vec: number[]): string {
@@ -88,13 +88,10 @@ export async function processEmbedding(packetId: string) {
     const estimatedTokens = Math.ceil(contentStr.length / 4);
     console.log(`[RAG] Generating ${chunks.length} embeddings (~${estimatedTokens} tokens) for packet ${packetId}...`);
     
-    let vectorResults;
-    try {
-      vectorResults = await embeddings.embedDocuments(chunks);
-    } catch (apiErr: any) {
-      console.error(`[RAG] OpenAI Embedding Failure:`, apiErr.message);
-      throw new Error(`LLM_UNAVAILABLE: ${apiErr.message}`);
-    }
+    // Batch first (one request); on a content-safety rejection, salvage per chunk
+    // so one flagged chunk does not fail the whole packet. Throws LLM_UNAVAILABLE
+    // for transient errors and CONTENT_MODERATED when every chunk is rejected.
+    const vectorResults = await embedChunksTolerant(embeddings, chunks);
 
     // 5. VECTOR STORE SYNC (Delete stale first if any)
     // CRITICAL: Verify packet still exists before writing to prevent orphans
@@ -108,7 +105,11 @@ export async function processEmbedding(packetId: string) {
 
     // 6. PERSIST VECTORS — raw SQL because Prisma can't bind pgvector columns.
     // Chunk counts per packet are small, so per-row parameterized inserts are fine.
+    // A null vector is a chunk that content-safety rejected during salvage: skip it.
+    let stored = 0;
     for (let index = 0; index < chunks.length; index++) {
+      const vec = vectorResults[index];
+      if (!vec) continue;
       const metadata = JSON.stringify({
         model: embeddingModelName(),
         version: EMBEDDING_VERSION,
@@ -119,9 +120,13 @@ export async function processEmbedding(packetId: string) {
       });
       await prisma.$executeRaw`
         INSERT INTO embeddings (id, packet_id, embedding, text_chunk, metadata, test_run_id)
-        VALUES (gen_random_uuid(), ${packetId}, ${toVectorLiteral(vectorResults[index])}::vector,
+        VALUES (gen_random_uuid(), ${packetId}, ${toVectorLiteral(vec)}::vector,
                 ${chunks[index]}, ${metadata}::jsonb, ${packet.test_run_id})
       `;
+      stored += 1;
+    }
+    if (stored === 0) {
+      throw new Error('CONTENT_MODERATED: no chunks embedded (all rejected by content-safety screening)');
     }
 
     // 7. SUCCESS: Move to embedded state
@@ -154,8 +159,8 @@ export async function processEmbedding(packetId: string) {
           embedding_status: 'failed',
           processing_errors: updatedErrors as any,
           last_retried_at: new Date(),
-          // Permanent reasons: stop the daily requeue from retrying them forever.
-          ...(/^(GATED|LOW_SIGNAL)/.test(String(err.message)) ? { is_embeddable: false } : {}),
+          // Permanent reasons (content never changes): stop the daily requeue retrying forever.
+          ...(/^(GATED|LOW_SIGNAL|CONTENT_MODERATED)/.test(String(err.message)) ? { is_embeddable: false } : {}),
         }
       });
     } catch (logErr) {

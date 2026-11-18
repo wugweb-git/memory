@@ -12,7 +12,7 @@ One-line truth: **L1=memory · L2=signals · L2.5=meaning · L3=thinking · L4=w
 Layer boundaries are enforced by code modules (layer contracts), not by separate databases.
 
 ## Tech stack
-- **Next.js 15 App Router, React 18, TypeScript, Tailwind.** Deployed on **Vercel** (every push to `main` = prod deploy → `memory-git-main-wugweb.vercel.app`).
+- **Next.js 15 App Router, React 18, TypeScript, Tailwind.** Deployed on **Vercel** (Hobby, **manual-promote**: a push to `main` builds a production deployment that is then promoted; canonical live URL `https://www.vedanshusrivastava.com` — `memory-git-main-wugweb.vercel.app` is only the pre-promote branch alias).
 - **One database, one Prisma client:** `import { postgres } from '@/lib/db/postgres'`
   (schema `prisma/postgres/schema.prisma`, generated `src/generated/postgres`; `npm run prisma:generate`).
   Embeddings use **pgvector** (`vector(1536)` + HNSW cosine index; written/queried via `$queryRaw` — Prisma can't bind `Unsupported` columns).
@@ -38,6 +38,7 @@ Pipeline (`src/lib/cognitive/orchestrator.ts`): `buildContext → buildPrompt �
 
 ## Env vars (live in Vercel; `vercel env pull .env.local` for local)
 `brain_POSTGRES_PRISMA_URL` + `brain_POSTGRES_URL_NON_POOLING` (Neon; no plain DATABASE_URL), `OPENAI_API_KEY` (embeddings), `GEMINI_API_KEY` (cognitive LLM; optional `GEMINI_MODEL`, default `gemini-2.0-flash`), `LANGFUSE_PUBLIC_KEY/SECRET_KEY/HOST`, `BLOB_READ_WRITE_TOKEN`, `SANITY_PROJECT_ID`/`SANITY_DATASET`/`SANITY_API_TOKEN`, `AUTH_SECRET`, `ADMIN_EMAIL`/`ADMIN_PASSWORD` (owner login).
+- **Live AI provider path: `OPENROUTER_API_KEY`** — when set (it is, in Vercel prod), every LLM call runs through per-job free-model chains (jobs: ask/decision/signals/summary/ingest; overrides `ASK_MODELS` etc.), with the free embedder default `nvidia/nemotron-3.5-embed-8b:free` at 1536 dims (overridable via `EMBEDDINGS_MODEL`/`EMBEDDINGS_DIMENSIONS`). The `OPENAI_API_KEY`/`GEMINI_API_KEY`/`GROQ_API_KEY`/`AI_GATEWAY_*` keys are the **legacy fallback**, used only when `OPENROUTER_API_KEY` is absent.
 
 ## Commands & verification
 - `npm run dev` · `npm run build` · `npx tsc --noEmit` · `npm run lint`

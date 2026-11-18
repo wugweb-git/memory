@@ -1,28 +1,29 @@
 # PENDING — Identity Prism OS
 
 > Single source of truth for what's live, what's not, and what to do next.
-> Last updated 2026-11-19 (checked against git, code and `npm test` 138/138). Prod: `www.vedanshusrivastava.com` (`memory-wugweb.vercel.app`).
+> Last updated 2026-11-19 (checked against git, code and `npm test` 169/169). Prod: `www.vedanshusrivastava.com` (`memory-wugweb.vercel.app`).
 >
-> 🔴 **Status 2026-11-18 (checked against git + Vercel):**
-> - **Live:** production alias is promoted to the newest `main` build (see PROJECT_TRACKER). Health, `/api/semantic/graph`,
->   `/p/system_user`, `/login` all 200; the `entities.processing_state` error is gone.
-> - **Memory pipeline running:** `.github/workflows/memory-pipeline.yml` is ENABLED (every 5 min); first run embedded 20 /
->   completed 30 / 20 semantic. Check `/api/health/system` → `processing_distribution` until no packets are `pending`.
+> 🟢 **Status 2026-11-19 (checked against git + Vercel):**
+> - **Live:** production is promoted to commit `cf5de9d` on `www.vedanshusrivastava.com`. `validate-live.mjs` is 11/11 on
+>   the live build, the service worker is v3, and `/ask` streams live. Health, `/api/semantic/graph`, `/p/system_user`,
+>   `/login` all 200; the `entities.processing_state` error is gone.
+> - **Memory pipeline:** the `*/5` schedule in `.github/workflows/memory-pipeline.yml` has NEVER fired on its own — only
+>   manual `workflow_dispatch` runs have run (dispatch works). Backfill: the 8B embedder works at 1536; per-packet content-safety 422s are now salvaged per chunk (BUG-031).
 > - **Hobby only, never Vercel Pro (owner rule).** The old "Deployment failed" on `0b4da3f` was the `*/5` cron
 >   rejected on Hobby. Fixed: Vercel crons are daily; the sub-daily pipeline trigger is
->   `.github/workflows/memory-pipeline.yml` (enabled; `CRON_SECRET`/`JOB_SECRET` set 2026-11-18).
+>   `.github/workflows/memory-pipeline.yml` (`CRON_SECRET`/`JOB_SECRET` set 2026-11-18).
 > - **Builds run `prisma migrate deploy`** against the Neon DB. On 2026-11-18 that applied `20260816070800`
 >   (grafted 15 columns onto the table named `entities`), 3 layer4/5 migrations, and created `graph_entities`.
 >   The 15 grafted columns were dropped by `20261118160000_drop_foreign_entities_columns` (applied 2026-11-18).
 >   Comparison with other repos is **on hold** (owner instruction). Use `main`; the old local branch
 >   `fix/graph-entities-table` is a superseded duplicate.
 >
-> ⚠️ **Deploy workflow:** pushing to `main` builds a production deployment but does **NOT**
-> auto-advance the `memory-wugweb.vercel.app` alias — production is in **manual-promote** mode.
+> ⚠️ **Deploy workflow (still manual-promote):** pushing to `main` builds a production deployment but does **NOT**
+> auto-advance the live alias — production is in **manual-promote** mode (TSK-009 is the auto-vs-manual decision).
 > After a push, promote the newest READY deploy:
 > `npx vercel@latest promote <deployment-url> --yes --scope wugweb`.
-> Until promoted, only the branch alias `memory-git-main-wugweb.vercel.app` shows the latest.
-> Permanent fix (owner): enable auto-promotion in Vercel → Project → Settings.
+> Until promoted, only the branch alias `memory-git-main-wugweb.vercel.app` shows the latest;
+> the canonical live URL is `https://www.vedanshusrivastava.com`.
 
 > ### Audit 2026-11-18 (Vercel + GitHub)
 > - **Cron auth (resolved 2026-11-18):** the routes only accept `CRON_SECRET`/`JOB_SECRET` bearers or an admin session, and
@@ -38,9 +39,9 @@
 >   3 live alerts fixed, 10 stale alerts (deleted files) dismissed. Secret scan fixed (`rg`-less fallback). No open PRs/issues.
 > - Canonical domain: `https://www.vedanshusrivastava.com` (`SITE_URL`/`PORTFOLIO_URL`, commit `7b3d654`).
 > - Vercel runtime: no errors since the promote (only the pre-fix `processing_state` entry from 14:01).
-> - **Shipped after that audit (2026-11-18, on `main`, not yet promoted):** PWA, login hard-navigation, display name, error/empty
+> - **Shipped after that audit (2026-11-18, since promoted):** PWA, login hard-navigation, display name, error/empty
 >   states, persona fixes, `/ask` style hints, daily persona jobs, `/career` role form, `/cognitive` tabs (details in
->   "Shipped 2026-11-18" below). Production stays in manual-promote mode, so the final promote is still open.
+>   "Shipped 2026-11-18" below). These, and all 19 Nov work, are live on `cf5de9d`. Production stays in manual-promote mode.
 
 ### Shipped 2026-11-18 (final sync)
 - **PWA:** `public/manifest.json` (`start_url` `/console`), `public/sw.js`, offline page `src/app/offline`, `ServiceWorkerRegister`,
@@ -62,7 +63,7 @@
 ### Still open (2026-11-18)
 - ~~**Final promote**~~ done 2026-11-19 (`410e1b4` promoted).
 - **37 npm vulnerabilities** need major bumps. Deferred; owner rule: only safe changes (TSK-008).
-- **Memory embeddings:** default switched 2026-11-19 to free nemotron-3.5-embed-8b at 1536 dims (live, commit 74c920d). Rows still need embedding in small batches (free cap ~50/day shared with chat); count not yet verified.
+- **Memory embeddings:** free nemotron-3.5-embed-8b at 1536 dims (live, works). Some packets hit per-packet content-safety 422s; now salvaged per chunk (see BUG-031). Backfill proceeds for non-flagged content; verify embedded counts on prod.
 - **Shared components:** `M3Button` and `M3Card` still use all-caps text and `bg-black`; needs a design-token cleanup (see `docs/design.md`).
 - **Docs and Notion:** the repo docs are not mapped one-to-one to Notion pages.
 
@@ -75,10 +76,12 @@
 - **`/ask`** uses a minimal public frame (no owner menu); the app shell shows the real session with sign out.
 - **Mobile and PWA:** accessibility pass, install prompt on private pages, share button on the public profile, offline toast,
   service worker v2 (never caches HTML or `/api/*`).
-- **Pipeline trigger:** `memory-pipeline.yml` is manual only; the 5-minute trigger is an external cron on `/api/jobs/process`.
+- **Pipeline trigger:** `.github/workflows/memory-pipeline.yml` has BOTH `schedule: */5 * * * *` AND `workflow_dispatch`; there is
+  no external cron. The `*/5` schedule has NEVER fired on its own — only manual `workflow_dispatch` runs have run. `vercel.json`
+  keeps two DAILY crons (`/api/jobs/run` at 0 3, `/api/jobs/process` at 30 3) as a fallback.
 
 ### Shipped 2026-11-19 (final: AI routing, Decider, scripts, env cleanup)
-All live on `www.vedanshusrivastava.com` (commit `410e1b4` promoted; docs commit `8c70c97` on `main`).
+All live on `www.vedanshusrivastava.com` (superseded by `cf5de9d`, now promoted).
 - **Per-job OpenRouter model routing** (`src/lib/ai/models.ts`, `openrouter.ts`): jobs `ask`, `decision`, `signals`, `summary`, `ingest`
   each have an ordered free-model fallback chain. Env overrides: `ASK_MODELS`, `DECISION_MODELS`, `SIGNALS_MODELS`,
   `SUMMARY_MODELS`, `INGEST_MODELS`. Chain budget 18s per attempt, 52s total. `OPENROUTER_API_KEY` is set in Vercel.
@@ -92,7 +95,7 @@ All live on `www.vedanshusrivastava.com` (commit `410e1b4` promoted; docs commit
   only, `requireAdmin` in handlers, `/ask` limited to public notes (`memory_packets.is_public`).
 - **Env cleanup:** removed `CLINE`, `MEMORY`, `SANITY_API_READ_TOKEN` from Vercel. Passkeys and remember-me live. The pipeline
   GitHub run succeeds (`JOB_SECRET` matches).
-- **Tests:** 138 passing; `tsc` clean.
+- **Tests:** 169 passing; `tsc` clean; `npm run lint` 0 errors (1 pre-existing warning in `login/page.tsx`).
 
 ### Shipped 2026-11-19 (hardening decisions, now live)
 - **Profile write whitelist:** `src/lib/profile/validate.ts`. Profile and section writes accept only known fields (unknown stripped,
@@ -109,7 +112,7 @@ All live on `www.vedanshusrivastava.com` (commit `410e1b4` promoted; docs commit
   With nothing public, `/ask` says "No public notes yet". Mark items with `POST /api/memory/public { ids, isPublic }`.
   **Owner action:** the migration applies on the next deploy (`prisma migrate deploy` in build); then mark notes public.
 
-### Built 2026-11-19 (on `main`, pushed; build exists, not promoted until the owner says)
+### Shipped 2026-11-19 (streaming, PWA offline, embedding pipeline — now live on `cf5de9d`)
 - **`/ask` streaming:** `streamJob` in `src/lib/ai/openrouter.ts` streams tokens; fallback to the next model only before the first
   token. Route `src/app/api/chat/route.ts` reads the first delta, then writes the UI message stream. 10 tests in `ai-stream.test.ts`.
 - **Starter questions** rewritten (4, public-facing) in `src/app/ask/page.tsx`.
@@ -120,19 +123,28 @@ All live on `www.vedanshusrivastava.com` (commit `410e1b4` promoted; docs commit
   vectors tagged with the real model name, `EMBEDDINGS_DIMENSIONS` pinned to 1536, failures stamp `last_retried_at`, permanent
   reasons (`GATED`, `LOW_SIGNAL`) set `is_embeddable=false`, worker stats count failures correctly.
 - **Admin notes screen:** `/admin/memory/public` (mark notes public or private, restricted notes never listed).
-- **Live check:** `node scripts/validate-live.mjs` (14 checks, refuses `*.vercel.app`; see `docs/validate-live.md`).
+- **Live check:** `node scripts/validate-live.mjs` (11/11 real checks PASS on the live build; the false-failing login check was removed, BUG-029; refuses `*.vercel.app`; see `docs/validate-live.md`).
 - **Console:** the "Sync Status" sub-label no longer says "All layers nominal" when the status is degraded.
 
 ### Still open (2026-11-19)
-- **Pipeline timeout (found live 2026-11-19, still 504 after the 50s cap):** root cause was the embeddings client (SDK default 6 retries, 10 minute timeout). Now 15s timeout, no retries, and each packet is raced against the pipeline deadline. Earlier note: the first manual run after promotion returned 504 (`FUNCTION_INVOCATION_TIMEOUT`) once real embedding work existed. Fixed on `main` (50s pass budget; embedding and semantic loops stop starting packets when time is short); ships in the final batched push. Re-dispatch the pipeline after that deploy and confirm embedded counts.
-- **Promoted 2026-11-19:** build for `a816077` is live (service worker v3, new starter questions, `/ask` streams, `x-model` header set). Remaining verification: live is still the older build. After promotion verify `/ask` streaming at
-  phone width, run `scripts/validate-live.mjs` (two response shapes are guesses: `/api/profile/system_user`, `/api/jobs/process`),
-  dispatch the pipeline and confirm embedded counts, check the service worker and offline page, re-measure `/memory` and `/console`
-  at 375px.
+- ✅ **BUG-031 — embeddings per-packet content moderation, now salvaged (fixed 2026-11-19):** `/api/jobs/process` returns 200
+  (504 fixed). A first prod run embedded 0/8 — every one of those packets hit `422 input rejected by content safety screening` from
+  `nvidia/nemotron-3.5-embed-8b:free`. Root cause (probed with the owner's key): the 8B embedder **works** at `dimensions:1536`
+  (HTTP 200, 1536-dim, verified on several benign inputs) — the 422 is **per-packet CONTENT moderation**, not a blanket block.
+  Fix: `embedChunksTolerant` (`src/lib/memory/embeddings.ts`) does the batch call first (unchanged cost) and, only on a
+  content-safety rejection, retries chunk by chunk — good chunks are stored, rejected chunks skipped, so one flagged chunk no longer
+  sinks a whole packet. A packet whose every chunk is rejected is marked `CONTENT_MODERATED` with `is_embeddable=false` so the daily
+  requeue stops. Free-embedder scan: 8B OK @1536; `nvidia/nemotron-3-embed-1b:free` OK but **2048-dim only** (would need an additive
+  `vector(2048)` column — not adopted); `nvidia/nemotron-3.5-embed-1b:free` was 503-overloaded (unreliable). **Operational follow-up:**
+  after this deploy, re-run the pipeline and confirm embedded counts climb; genuinely-flagged packets stay skipped by design.
+- **Pipeline 504 (fixed):** the first manual run after promotion returned 504 (`FUNCTION_INVOCATION_TIMEOUT`) once real embedding work
+  existed — the embeddings client used the SDK default (6 retries, 10-min timeout). Now 15s timeout, 0 retries, a 50s whole-pipeline
+  budget and a per-packet deadline race (BUG-028). Live on `cf5de9d`; `/api/jobs/process` returns 200.
+- **Post-deploy verification DONE on `cf5de9d`:** `validate-live.mjs` 11/11, `/ask` streams live, service worker v3.
 - **On a real phone (owner):** install flow (Android and iOS), haptics, app badge, offline sync replay.
 - **Owner marks notes public** at `/admin/memory/public`; until then `/ask` answers "No public notes yet".
-- **Memory embeddings:** free embedder live in code; backfill verified only after the pipeline runs on the new build.
-- **GitHub 5-minute schedule** (`memory-pipeline.yml`) has never fired on its own; only manual dispatch runs. Recheck.
+- **GitHub 5-minute schedule** (`memory-pipeline.yml`, `schedule: */5`) has still never fired on its own; only manual
+  `workflow_dispatch` runs (dispatch works). Recheck.
 - **Decider flags** (`DECIDER_SIGNALS`, `DECIDER_MODE`): turned ON in Vercel production by the owner's decision (19 Nov). One free request per ingested packet for signals; watch the shared ~50/day cap. Unverified live until a build with the env applies.
 - **Push notifications:** not built. Owner steps (VAPID keys, env vars, subscription table) are in `docs/pwa.md`.
 - **Embedding retrieval quality:** nemotron embedders may want a query/passage prefix; LangChain sends the same payload for both.
@@ -149,12 +161,12 @@ All live on `www.vedanshusrivastava.com` (commit `410e1b4` promoted; docs commit
 
 - **DB:** single Neon/Postgres (Mongo removed; pgvector + HNSW for embeddings). ~46 tables.
 - **Auth:** owner login via env `ADMIN_EMAIL`/`ADMIN_PASSWORD`, Edge-safe JWT middleware, RBAC on `/admin` + admin APIs. Login hard-navigates to `/console`; PWA `start_url` is `/console`.
-- **Cognitive (L3):** decide / evaluate / gaps / prioritize — **Groq** (`llama-3.3-70b-versatile`).
-  Mode selector removed (single brain). LLM provider is pluggable: a generic OpenAI-compatible
-  gateway (`AI_GA…` env, commit `8d920d4`, live) takes priority over Groq → Gemini/OpenAI.
-  16 Aug: dead model IDs fixed (`gpt-4o-mini`, `gemini-3.5-flash`; overridable via env) — live.
-- **Persona (L4):** (see `docs/layer-4-persona-module.md`) full rebuild pipeline (evidence → traits → Groq voice synthesis → confidence-gated
-  evolution, reversible). Verified: confidence 0.5 → 0.62.
+- **Cognitive (L3):** decide / evaluate / gaps / prioritize. **Live path = the OpenRouter `decision` free-model chain**
+  (`OPENROUTER_API_KEY` set in prod; see "Shipped 2026-11-19" for per-job routing). Groq (`llama-3.3-70b-versatile`),
+  Gemini, OpenAI and the `AI_GATEWAY_*` gateway are the **legacy fallback**, used only when `OPENROUTER_API_KEY` is absent.
+  Mode selector removed (single brain).
+- **Persona (L4):** (see `docs/layer-4-persona-module.md`) full rebuild pipeline (evidence → traits → LLM voice synthesis via the
+  OpenRouter `summary`/`decision` chain, legacy Groq fallback → confidence-gated evolution, reversible). Verified: confidence 0.5 → 0.62.
 - **Output (L5):** Output studio (generate → edit → publish), publishing queue w/ retry + DLQ +
   idempotency, direct publish (no n8n), Sanity CMS sync.
 - **Profile / exhibition:** `/p/[handle]` renders every section (ventures, career tree, writing,
@@ -168,9 +180,9 @@ All live on `www.vedanshusrivastava.com` (commit `410e1b4` promoted; docs commit
 - **Ingestion additions (Jul–Aug):** bulk CSV / `.docx` import (blog, case study, client, profile);
   NUL/control-char strip before Postgres writes (`8492b27`, live).
 - **Routing (live, `ae22657`):** root → public profile; private app at `/console`; 90-day sessions.
-- **Memory pipeline (16 Aug, deployed 2026-11-18; trigger pending `JOB_SECRET`):** L1/L2/L2.5 revived via `/api/jobs/process`
-  (Vercel cron is daily; 5-min trigger via GitHub Actions, never Pro);
-  34/34 packets were stuck `pending`. See `docs/audit/AUDIT_2026-08-16.md`.
+- **Memory pipeline:** L1/L2/L2.5 revived via `/api/jobs/process` (returns 200). Triggers: `vercel.json` DAILY crons
+  (`/api/jobs/run` 0 3, `/api/jobs/process` 30 3) plus `memory-pipeline.yml` `workflow_dispatch` (the `*/5` schedule has never
+  fired on its own, never Pro). Backfill: embedder works at 1536; per-packet 422s salvaged per chunk (BUG-031). See `docs/audit/AUDIT_2026-08-16.md`.
 - **Career:** `/career` (career tree editor + job pipeline). **Recommendation engine** wired to Console
   "Next best actions". **System → Modules** feature toggles.
 
@@ -268,4 +280,3 @@ Framework → free connectors → Source model+migration → `/integrations` scr
 device capture → OAuth stubs → email → admin redesign → deep items. Deploy+verify after the
 connector/screen/scheduler core, then again after the rest. Every connector must **really fetch or
 honestly show "needs credentials"** — nothing decorative.
-- **GitHub 5-minute schedule:** no scheduled run has fired yet (only manual runs seen on 19 Nov). Check again later; manual `workflow_dispatch` works.

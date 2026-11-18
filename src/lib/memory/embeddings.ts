@@ -75,3 +75,49 @@ export function getEmbeddings(): OpenAIEmbeddings {
   }
   return _instance;
 }
+
+/** A 422 / content-safety rejection is deterministic for the same input; anything else
+ *  (429, network, 5xx) is a transient provider problem. */
+export function isModerationError(msg: string): boolean {
+  return /\b422\b|content[-_ ]?safety|moderat|rejected by content/i.test(msg || '');
+}
+
+type ChunkEmbedder = {
+  embedDocuments(texts: string[]): Promise<number[][]>;
+  embedQuery(text: string): Promise<number[]>;
+};
+
+/**
+ * Embed a packet's chunks, tolerating per-chunk content-safety rejections.
+ * The fast path is one batch call (unchanged cost). Only when the batch is
+ * moderation-rejected do we retry chunk by chunk, so one flagged chunk cannot
+ * sink a whole packet: good chunks are kept (their vector), rejected chunks are
+ * returned as null for the caller to skip. Non-moderation failures (429, network)
+ * are re-thrown as LLM_UNAVAILABLE so the pipeline retries later. If every chunk
+ * is rejected, throws CONTENT_MODERATED (permanent — the content never changes).
+ */
+export async function embedChunksTolerant(
+  embedder: ChunkEmbedder,
+  chunks: string[],
+): Promise<(number[] | null)[]> {
+  try {
+    return await embedder.embedDocuments(chunks);
+  } catch (batchErr: any) {
+    const bmsg = batchErr?.message || String(batchErr);
+    if (!isModerationError(bmsg)) throw new Error(`LLM_UNAVAILABLE: ${bmsg}`);
+    const out: (number[] | null)[] = [];
+    for (const chunk of chunks) {
+      try {
+        out.push(await embedder.embedQuery(chunk));
+      } catch (chunkErr: any) {
+        const cmsg = chunkErr?.message || String(chunkErr);
+        if (!isModerationError(cmsg)) throw new Error(`LLM_UNAVAILABLE: ${cmsg}`);
+        out.push(null);
+      }
+    }
+    if (!out.some(Boolean)) {
+      throw new Error(`CONTENT_MODERATED: all ${chunks.length} chunk(s) rejected by content-safety screening`);
+    }
+    return out;
+  }
+}
