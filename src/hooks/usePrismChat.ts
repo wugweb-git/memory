@@ -8,6 +8,13 @@ export type PrismChatHelpers = {
   sendMessage: (message: { text: string }) => void;
   status: string;
   setMessages: (messages: UIMessage[]) => void;
+  /** Stops the current streamed answer. */
+  stop?: () => void;
+  /** Asks again for the last answer. */
+  regenerate?: () => void;
+  /** Clears an error state. */
+  clearError?: () => void;
+  error?: Error;
 };
 
 /** Typed wrapper around AI SDK chat hooks (SDK types lag runtime API). */
