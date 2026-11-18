@@ -79,7 +79,6 @@
 - **Pipeline trigger:** `memory-pipeline.yml` is manual only; the 5-minute trigger is an external cron on `/api/jobs/process`.
 
 ### Open decisions (2026-11-19)
-- Rotate `AUTH_SECRET` (signup was open, so an earlier admin session could still be valid).
 - Restrict `/ask` retrieval to items marked public (today it can quote any non-restricted memory).
 - Audit follow-ups: whitelist fields on profile writes, filter unpublished profile sections on read, remove header and query identity
   fallbacks in `src/lib/security/auth.ts`, add `requireAdmin` inside memory, blob, persona and admin route handlers.
