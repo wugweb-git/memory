@@ -1,7 +1,23 @@
 # PENDING — Identity Prism OS
 
 > Single source of truth for what's live, what's not, and what to do next.
-> Last updated 2026-07-10. Prod: `memory-wugweb.vercel.app`.
+> Last updated 2026-11-18 (checked against git + Vercel). Prod: `memory-wugweb.vercel.app`.
+>
+> 🔴 **Status 2026-11-18 (checked against git + Vercel):**
+> - Alias `memory-wugweb.vercel.app` → `dpl_Favvx84J` (`8d920d4`, AI gateway).
+> - `main` = `bd18194` (cron fix `7002706` + `graph_entities` move). Build `dpl_J84i7uy3` /
+>   `memory-mp1ax9yzl-wugweb.vercel.app` is **READY but NOT promoted**; `/api/health/system`, `/api/semantic/graph`,
+>   `/p/system_user` all return 200 on it. Promote: `npx vercel@latest promote memory-mp1ax9yzl-wugweb.vercel.app --yes --scope wugweb`
+>   (the agent's promote call was denied by the permission classifier — owner runs it).
+> - Earlier "Deployment failed" on `0b4da3f` = `*/5` cron rejected on Hobby. **Owner rule: never Vercel Pro.**
+>   Fixed: Vercel cron is daily; sub-daily pipeline runs from `.github/workflows/memory-pipeline.yml`
+>   (currently **disabled** — enable after the `JOB_SECRET` repo secret is set and the new build is promoted).
+> - `/api/jobs/process` has not run in prod: health shows 46 memory packets all `pending`.
+> - Builds run `prisma migrate deploy` against the shared Neon DB (this happened on 2026-11-18 for
+>   `20260816070800` and 3 layer4/5 migrations; `graph_entities` created in the `bd18194` build).
+>   The 16 Aug migration added 15 columns to the table named `entities` before it was made a no-op; they are
+>   left in place — dropping is an owner decision. Shared-DB comparison with other repos is **on hold** (owner).
+> - Local branch `fix/graph-entities-table` holds a stale duplicate of the `graph_entities` commit; use `main`.
 >
 > ⚠️ **Deploy workflow:** pushing to `main` builds a production deployment but does **NOT**
 > auto-advance the `memory-wugweb.vercel.app` alias — production is in **manual-promote** mode.
@@ -17,7 +33,9 @@
 - **DB:** single Neon/Postgres (Mongo removed; pgvector + HNSW for embeddings). ~46 tables.
 - **Auth:** owner login (`admin@wugweb.com`), Edge-safe JWT middleware, RBAC on `/admin` + admin APIs.
 - **Cognitive (L3):** decide / evaluate / gaps / prioritize — **Groq** (`llama-3.3-70b-versatile`).
-  Mode selector removed (single brain). LLM provider is pluggable (Groq → Gemini fallback).
+  Mode selector removed (single brain). LLM provider is pluggable: a generic OpenAI-compatible
+  gateway (`AI_GA…` env, commit `8d920d4`, built but not promoted) takes priority over Groq → Gemini/OpenAI.
+  16 Aug: dead model IDs fixed (`gpt-4o-mini`, `gemini-3.5-flash`; overridable via env) — on `main`, not deployed.
 - **Persona (L4):** full rebuild pipeline (evidence → traits → Groq voice synthesis → confidence-gated
   evolution, reversible). Verified: confidence 0.5 → 0.62.
 - **Output (L5):** Output studio (generate → edit → publish), publishing queue w/ retry + DLQ +
@@ -30,6 +48,12 @@
   Upload / Voice / Files / Link / Pulse.
 - **Security:** owner-guarded + rate-limited ingest/cognitive/upload routes; distributed rate-limit in
   Neon; dependabot **0 vulnerabilities**.
+- **Ingestion additions (Jul–Aug):** bulk CSV / `.docx` import (blog, case study, client, profile);
+  NUL/control-char strip before Postgres writes (`8492b27`, live).
+- **Routing (live, `ae22657`):** root → public profile; private app at `/console`; 90-day sessions.
+- **Memory pipeline (16 Aug, on `main`, NOT deployed):** L1/L2/L2.5 revived via `/api/jobs/process`
+  (cron every 5 min in `vercel.json` BREAKS the Hobby deploy — move to a free external trigger, never Pro);
+  34/34 packets were stuck `pending`. See `docs/audit/AUDIT_2026-08-16.md`.
 - **Career:** `/career` (career tree editor + job pipeline). **Recommendation engine** wired to Console
   "Next best actions". **System → Modules** feature toggles.
 
@@ -125,7 +149,7 @@ GitHub `.atom` feed verified live/parseable). What's live:
       real cognitive tracing (`LANGFUSE_SECRET_KEY` already set; SDK wired).
 - [ ] **Rotate** the API keys pasted in chat (Groq/OpenAI/Gemini/MiniMax) when convenient.
 - [ ] **Delete seeded `sample` content** after validating the profile UI.
-- [ ] **Vercel Pro** (optional) → publish queue faster than daily.
+- ~~Vercel Pro~~ — **never** (owner decision 2026-11-18). Stay on Hobby; use free external triggers for sub-daily jobs.
 
 ---
 
