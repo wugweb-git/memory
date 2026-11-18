@@ -61,7 +61,7 @@
 ### Still open (2026-11-18)
 - ~~**Final promote**~~ done 2026-11-19 (`410e1b4` promoted).
 - **37 npm vulnerabilities** need major bumps. Deferred; owner rule: only safe changes (TSK-008).
-- **Memory embeddings:** under review (2026-11-19).
+- **Memory embeddings:** default switched 2026-11-19 to free nemotron-3.5-embed-8b at 1536 dims (live, commit 74c920d). Rows still need embedding in small batches (free cap ~50/day shared with chat); count not yet verified.
 - **Shared components:** `M3Button` and `M3Card` still use all-caps text and `bg-black`; needs a design-token cleanup (see `docs/design.md`).
 - **Docs and Notion:** the repo docs are not mapped one-to-one to Notion pages.
 
@@ -110,7 +110,7 @@ All live on `www.vedanshusrivastava.com` (commit `410e1b4` promoted; docs commit
 
 ### Still open (2026-11-19)
 - **Owner marks notes public:** until then `/ask` answers "No public notes yet" (`GET/POST /api/memory/public`).
-- **Memory embeddings:** under review (a separate check is running).
+- **Memory embeddings:** free embedder live; verify rows start embedding; backfill slowly.
 - **Decider flags** (`DECIDER_SIGNALS`, `DECIDER_MODE`) are unverified live; both stay OFF.
 - **`/ask` answers are replayed, not streamed.**
 - **37 npm vulnerabilities** deferred (need major upgrades).
@@ -244,3 +244,4 @@ Framework → free connectors → Source model+migration → `/integrations` scr
 device capture → OAuth stubs → email → admin redesign → deep items. Deploy+verify after the
 connector/screen/scheduler core, then again after the rest. Every connector must **really fetch or
 honestly show "needs credentials"** — nothing decorative.
+- **GitHub 5-minute schedule:** no scheduled run has fired yet (only manual runs seen on 19 Nov). Check again later; manual `workflow_dispatch` works.
