@@ -124,7 +124,8 @@ All live on `www.vedanshusrivastava.com` (commit `410e1b4` promoted; docs commit
 - **Console:** the "Sync Status" sub-label no longer says "All layers nominal" when the status is degraded.
 
 ### Still open (2026-11-19)
-- **Promote and verify live (needs the owner's word):** live is still the older build. After promotion verify `/ask` streaming at
+- **Pipeline timeout (found live 2026-11-19):** the first manual run after promotion returned 504 (`FUNCTION_INVOCATION_TIMEOUT`) once real embedding work existed. Fixed on `main` (50s pass budget; embedding and semantic loops stop starting packets when time is short) but not yet pushed or promoted. Re-dispatch the pipeline after that deploy and confirm embedded counts.
+- **Promoted 2026-11-19:** build for `a816077` is live (service worker v3, new starter questions, `/ask` streams, `x-model` header set). Remaining verification: live is still the older build. After promotion verify `/ask` streaming at
   phone width, run `scripts/validate-live.mjs` (two response shapes are guesses: `/api/profile/system_user`, `/api/jobs/process`),
   dispatch the pipeline and confirm embedded counts, check the service worker and offline page, re-measure `/memory` and `/console`
   at 375px.

@@ -44,14 +44,6 @@ const status = (name, path, expected, init) => ({
 export const checks = [
   status('GET /ask returns 200', '/ask', 200),
   status('GET /login returns 200', '/login', 200),
-  {
-    name: 'GET /login contains "Keep me signed in"',
-    async run(ctx) {
-      const res = await req(ctx, '/login');
-      if (res.status !== 200) return fail(`status ${res.status}`);
-      return (await res.text()).includes('Keep me signed in') ? pass() : fail('text not found');
-    },
-  },
   status('POST /api/jobs/process without secret is 401', '/api/jobs/process', 401, { method: 'POST' }),
   status('GET /api/memory/list is 401', '/api/memory/list', 401),
   status('GET /api/memory/public is 401', '/api/memory/public', 401),

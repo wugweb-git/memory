@@ -30,6 +30,11 @@ function getNextRetryAt(retryCount: number): Date {
   return new Date(Date.now() + delay);
 }
 
+/** The process route allows 60s; keep the whole pass inside 50s and never start work that cannot finish. */
+const PIPELINE_BUDGET_MS = 50_000;
+const EMBED_MIN_REMAINING_MS = 12_000;
+const SEMANTIC_MIN_REMAINING_MS = 25_000;
+
 /** Clears processing locks stuck for >10 minutes (crashed/timed-out workers). */
 export async function clearStaleLocks() {
   const staleThreshold = new Date(Date.now() - 10 * 60 * 1000);
@@ -46,7 +51,10 @@ export async function clearStaleLocks() {
 }
 
 /** L1 — embeds pending memory packets (priority: fresh > backlog, capped batch). */
-export async function runEmbeddingWorker(batchSize = process.env.OPENROUTER_API_KEY ? 8 : 20) {
+export async function runEmbeddingWorker(
+  batchSize = process.env.OPENROUTER_API_KEY ? 8 : 20,
+  deadline = Infinity,
+) {
   const config = await SettingsController.getSettings();
   if (!config.rag_enabled) return { skipped: 'rag_disabled', embedded: 0, failed: 0 };
 
@@ -67,6 +75,8 @@ export async function runEmbeddingWorker(batchSize = process.env.OPENROUTER_API_
   let embedded = 0;
   let failed = 0;
   for (const packet of targets) {
+    // Stop starting new packets when the function budget is nearly spent; the rest wait for the next run.
+    if (deadline - Date.now() < EMBED_MIN_REMAINING_MS) break;
     try {
       await processEmbedding(packet.id);
       // processEmbedding records its own failures and does not throw; read the outcome back.
@@ -167,7 +177,7 @@ export async function runL2Processing(batchSize = 50) {
 }
 
 /** L2.5 — semantic graph extraction for packets that finished L2. */
-export async function runL25Processing(batchSize = 20) {
+export async function runL25Processing(batchSize = 20, deadline = Infinity) {
   const config = await SettingsController.getSettings();
   if (!config.semantic_enabled) return { skipped: 'semantic_disabled', completed: 0, failed: 0 };
 
@@ -186,6 +196,8 @@ export async function runL25Processing(batchSize = 20) {
   let completed = 0;
   let failed = 0;
   for (const packet of targets) {
+    // One semantic pass can use a full LLM chain budget, so only start one with enough time left.
+    if (deadline - Date.now() < SEMANTIC_MIN_REMAINING_MS) break;
     try {
       const result = await SemanticEngine.processSemantic(packet.id, { testRunId: 'PROD' });
       await prisma.memoryPacket.update({
@@ -216,9 +228,10 @@ export async function runL25Processing(batchSize = 20) {
  *  block L2/L2.5 (independent state machines), but running L2 before L2.5 in
  *  the same pass lets a packet flow all the way through in one invocation. */
 export async function runMemoryPipeline() {
+  const deadline = Date.now() + PIPELINE_BUDGET_MS;
   const locks = await clearStaleLocks();
-  const embedding = await runEmbeddingWorker();
+  const embedding = await runEmbeddingWorker(undefined, deadline);
   const l2 = await runL2Processing();
-  const l25 = await runL25Processing();
+  const l25 = await runL25Processing(undefined, deadline);
   return { locks, embedding, l2, l25, ranAt: new Date().toISOString() };
 }
