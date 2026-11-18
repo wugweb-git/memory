@@ -814,3 +814,17 @@ model PulseCheckin {
   @@index([userId, createdAt])
   @@map("pulse_checkins")
 }
+
+// Owner passkeys (WebAuthn). Public key only, never a private key.
+model PasskeyCredential {
+  id           String    @id @default(uuid())
+  credentialId String    @unique
+  publicKey    Bytes
+  counter      Int       @default(0)
+  transports   String[]
+  deviceName   String
+  createdAt    DateTime  @default(now())
+  lastUsedAt   DateTime?
+
+  @@map("memory_passkey_credentials")
+}

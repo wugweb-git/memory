@@ -8,6 +8,12 @@ export const API_ENDPOINTS = {
     login: { path: '/api/auth/login', methods: ['POST'] as const },
     logout: { path: '/api/auth/logout', methods: ['POST'] as const },
     me: { path: '/api/auth/me', methods: ['GET'] as const },
+    passkeyRegisterOptions: { path: '/api/auth/passkey/register-options', methods: ['POST'] as const },
+    passkeyRegisterVerify: { path: '/api/auth/passkey/register-verify', methods: ['POST'] as const },
+    passkeyLoginOptions: { path: '/api/auth/passkey/login-options', methods: ['POST'] as const },
+    passkeyLoginVerify: { path: '/api/auth/passkey/login-verify', methods: ['POST'] as const },
+    passkeyList: { path: '/api/auth/passkey/list', methods: ['GET'] as const },
+    passkeyDelete: { path: '/api/auth/passkey/delete', methods: ['DELETE'] as const },
   },
   health: {
     system: { path: '/api/health/system', methods: ['GET'] as const },
@@ -209,6 +215,12 @@ export const UI_API = {
   authLogin: API_ENDPOINTS.auth.login.path,
   authSignup: API_ENDPOINTS.auth.signup.path,
   authLogout: API_ENDPOINTS.auth.logout.path,
+  passkeyRegisterOptions: API_ENDPOINTS.auth.passkeyRegisterOptions.path,
+  passkeyRegisterVerify: API_ENDPOINTS.auth.passkeyRegisterVerify.path,
+  passkeyLoginOptions: API_ENDPOINTS.auth.passkeyLoginOptions.path,
+  passkeyLoginVerify: API_ENDPOINTS.auth.passkeyLoginVerify.path,
+  passkeyList: API_ENDPOINTS.auth.passkeyList.path,
+  passkeyDelete: API_ENDPOINTS.auth.passkeyDelete.path,
 } as const;
 
 export function profilePath(username: string, sub?: 'sections' | 'publish') {

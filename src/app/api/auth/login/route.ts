@@ -4,13 +4,13 @@ import { postgres } from '@/lib/db/postgres';
 import { INTERNAL_VAULT } from '@/config/vault';
 import { IDENTITY_CONFIG } from '@/config/identity';
 import { signToken } from '@/lib/security/jwt';
-import { sessionCookie } from '@/lib/security/auth';
+import { rememberedSessionCookie } from '@/lib/security/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password } = await req.json();
+    const { email, password, remember } = await req.json();
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
     }
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
         access_token: token,
         user: { id: IDENTITY_CONFIG.DEFAULT_USER_ID, email: normalized, role: 'admin' },
       });
-      res.headers.set('Set-Cookie', sessionCookie(token));
+      res.headers.set('Set-Cookie', rememberedSessionCookie(token, remember));
       return res;
     }
 
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
       access_token: token,
       user: { id: user.id, email: user.email, role },
     });
-    res.headers.set('Set-Cookie', sessionCookie(token));
+    res.headers.set('Set-Cookie', rememberedSessionCookie(token, remember));
     return res;
   } catch (error: unknown) {
     console.error('[Auth Login]', error);

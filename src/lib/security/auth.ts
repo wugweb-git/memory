@@ -101,7 +101,19 @@ export function requireAdmin(req: NextRequest): RequestActor | NextResponse {
   return actor;
 }
 
-export function sessionCookie(token: string, maxAgeSec = 60 * 60 * 24 * 90): string {
+export const SESSION_MAX_AGE_SEC = 60 * 60 * 24 * 90;
+
+/**
+ * Session cookie. A number sets a persistent cookie; `null` omits Max-Age so
+ * it ends when the browser closes.
+ */
+export function sessionCookie(token: string, maxAgeSec: number | null = SESSION_MAX_AGE_SEC): string {
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-  return `${SESSION_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSec}${secure}`;
+  const age = maxAgeSec === null ? '' : `; Max-Age=${maxAgeSec}`;
+  return `${SESSION_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax${age}${secure}`;
+}
+
+/** Cookie for the "keep me signed in" choice. Only an explicit false drops persistence. */
+export function rememberedSessionCookie(token: string, remember: unknown): string {
+  return sessionCookie(token, remember === false ? null : SESSION_MAX_AGE_SEC);
 }
