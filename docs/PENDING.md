@@ -28,10 +28,11 @@
 > - **Cron auth (resolved 2026-11-18):** the routes only accept `CRON_SECRET`/`JOB_SECRET` bearers or an admin session, and
 >   neither secret existed (crons were 401). `CRON_SECRET` is now set in Vercel production and `JOB_SECRET` as a GitHub repo
 >   secret (same value). It takes effect only in builds created after that — promote one, then enable `memory-pipeline.yml`.
-> - **Env gaps vs this file:** no `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `NOTION_TOKEN`, `GOOGLE_CLIENT_ID/SECRET`,
->   `INBOUND_EMAIL_*` in project env (only Gemini, OpenAI, `CLINE`, `MEMORY`, Sanity, Neon, auth).
->   So "Groq brain" below is not what prod runs on — verify which key the AI gateway actually uses.
->   (Team-level shared env vars were not checked.)
+> - **Env gaps vs this file (as of 18 Nov; updated 19 Nov):** at audit time `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `NOTION_TOKEN`,
+>   `GOOGLE_CLIENT_ID/SECRET`, `INBOUND_EMAIL_*` were not in project env. Since then `OPENROUTER_API_KEY` has been added (the AI
+>   gateway now runs on OpenRouter, see "Shipped 2026-11-19"); the stale `CLINE`, `MEMORY` and `SANITY_API_READ_TOKEN` entries were
+>   removed. Still absent: `GROQ_API_KEY`, `NOTION_TOKEN`, `GOOGLE_CLIENT_ID/SECRET`, `INBOUND_EMAIL_*`, so "Groq brain" below is not
+>   what prod runs on. (Team-level shared env vars were not checked.)
 > - **GitHub security:** Dependabot is OFF (owner: no Dependabot / paid GitHub services). `npm audit fix` took
 >   npm vulns 67 → 37 (0 critical, 0 moderate): `npm audit fix`, unused `@vercel/sandbox` removed, `overrides` for brace-expansion, nanoid, minimatch. The remaining 37 (high, mostly CLI tooling) need majors (prisma 7, tailwind 4), have no patch (picomatch), or risk Prisma/Sanity tooling (deepmerge-ts) — intentionally not forced. CodeQL:
 >   3 live alerts fixed, 10 stale alerts (deleted files) dismissed. Secret scan fixed (`rg`-less fallback). No open PRs/issues.
@@ -84,7 +85,7 @@ All live on `www.vedanshusrivastava.com` (commit `410e1b4` promoted; docs commit
   Every LLM call site is routed (`runLLM`, `runAgentLLM`, `runTextLLM`, `ArtifactGenerator`, `SemanticEngine` via `job-client.ts`).
   `signals` and `summary` have no LLM call sites yet (reserved).
 - **Perplexity Decider client** `src/lib/ai/decider.ts` (Decisions API `/api/alpha/decisions`, Alpha). Optional flags
-  `DECIDER_SIGNALS=1` and `DECIDER_MODE=1`, both default OFF; not verified live.
+  `DECIDER_SIGNALS=1` and `DECIDER_MODE=1`, both default OFF; the free flash model verified live with a real call (see docs/ai-models.md).
 - **Scripts:** `scripts/embedder-check.mjs` and `scripts/model-bench.mjs`. Bench 19 Nov: 11 models passed; gemma-4 26b/31b returned
   429 (they fall through the chain).
 - **Security follow-ups now live** (the hardening block below): profile write whitelist, unpublished filter, identity from session
