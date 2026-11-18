@@ -5,6 +5,7 @@ import { convertToModelMessages, streamText, type UIMessage } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { NextResponse } from 'next/server';
 import { retrieve } from '@/lib/memory/rag';
+import { loadStyleHints } from '@/lib/persona/styleHintsLoader';
 
 const SYSTEM_PROMPT = `IDENTITY: You are the Antigravity AI integrated into the Identity Prism OS.
 MISSION: Ground all responses strictly in the provided context nodes (Memory).
@@ -73,6 +74,9 @@ export async function POST(req: Request) {
       console.warn('[Chat] retrieval unavailable, answering without memory context:', retrievalErr);
     }
 
+    // L4 persona style hints: soft, best-effort, time-boxed; '' on any failure.
+    const styleHints = await loadStyleHints();
+
     // Generic OpenAI-compatible gateway (Command Code / Cline Pass / DeepSeek)
     // takes priority; then Groq; then OpenAI.
     const provider = gatewayOn
@@ -98,7 +102,7 @@ export async function POST(req: Request) {
       // .chat() forces the chat-completions endpoint (Groq has no /responses API)
       model: provider.chat(chatModel) as unknown as Parameters<typeof streamText>[0]['model'],
       temperature,
-      system: `${SYSTEM_PROMPT}\n\nContext nodes:\n${context || '(no indexed clusters matched)'}`,
+      system: `${SYSTEM_PROMPT}\n\nContext nodes:\n${context || '(no indexed clusters matched)'}${styleHints ? `\n\n${styleHints}` : ''}`,
       messages: await convertToModelMessages(messages),
     });
 
