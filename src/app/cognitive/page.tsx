@@ -56,15 +56,22 @@ const ConfidenceBar: React.FC<{ value: number }> = ({ value }) => (
 
 const FeedbackBar: React.FC<{ decisionId: string }> = ({ decisionId }) => {
   const [sent, setSent] = useState(false);
+  const [failed, setFailed] = useState(false);
   const { userId } = resolveUserId();
 
   async function submit(type: string) {
-    await fetch('/api/cognitive/feedback', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ decisionId, userId, feedbackType: type })
-    });
-    setSent(true);
+    setFailed(false);
+    try {
+      const res = await fetch('/api/cognitive/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decisionId, userId, feedbackType: type })
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      setSent(true);
+    } catch {
+      setFailed(true);
+    }
   }
 
   if (sent) return (
@@ -74,6 +81,8 @@ const FeedbackBar: React.FC<{ decisionId: string }> = ({ decisionId }) => {
   );
 
   return (
+    <div className="space-y-1">
+    {failed ? <p className="text-2xs text-danger">Could not record feedback. Try again.</p> : null}
     <div className="flex gap-2">
       {[
         { key: 'accepted', label: 'Accept',  color: 'hover:bg-success/10 hover:text-success hover:border-success/30' },
@@ -88,6 +97,7 @@ const FeedbackBar: React.FC<{ decisionId: string }> = ({ decisionId }) => {
           {f.label}
         </button>
       ))}
+    </div>
     </div>
   );
 };
@@ -494,13 +504,14 @@ const HistoryTab: React.FC = () => {
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [historyError, setHistoryError] = useState<string | null>(null);
 
   useEffect(() => {
     const { userId } = resolveUserId();
-    fetch(`/api/cognitive/history?userId=${userId}`)
-      .then(r => r.json())
+    fetch(`/api/cognitive/history?userId=${encodeURIComponent(userId)}`)
+      .then(r => { if (!r.ok) throw new Error(`History request failed (${r.status})`); return r.json(); })
       .then(d => setHistory(Array.isArray(d) ? d : []))
-      .catch(() => setHistory([]))
+      .catch((e) => { setHistory([]); setHistoryError(e?.message || 'Failed to load history'); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -508,6 +519,12 @@ const HistoryTab: React.FC = () => {
     <div className="flex items-center justify-center py-20 gap-3 text-text-tertiary">
       <RefreshCw size={18} className="animate-spin" />
       <span className="text-sm">Loading history…</span>
+    </div>
+  );
+
+  if (historyError) return (
+    <div className="glass-panel rounded-[2rem] border border-border-secondary p-12 text-center shadow-xl">
+      <p className="text-sm font-semibold text-danger">{historyError}</p>
     </div>
   );
 

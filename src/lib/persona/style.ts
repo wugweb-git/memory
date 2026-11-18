@@ -21,15 +21,11 @@ export function enforcePersonaStyle(input: StyleEnforcementInput): StyleEnforcem
 
   let output = input.content;
 
-  // Rule 1: Reduce passive voice
+  // Rule 1: Flag passive voice. Auto-rewriting is unsafe: deleting the auxiliary
+  // ("was") yields ungrammatical text ("report was approved" -> "report approved"),
+  // so we only report it and leave the content untouched.
   const passiveMatches = output.match(PASSIVE_REGEX);
-  if (passiveMatches && passiveMatches.length > 0) {
-    output = output.replace(PASSIVE_REGEX, (match) => {
-      const verb = match.replace(/\b(was|were|is|are|been|being)\s+/i, "");
-      return verb;
-    });
-    changes.push(`removed_${passiveMatches.length}_passive_constructions`);
-  }
+  const flaggedPassive = passiveMatches ? passiveMatches.length : 0;
 
   // Rule 2: Collapse excessive whitespace
   if (output.match(/\n{3,}/)) {
@@ -62,10 +58,13 @@ export function enforcePersonaStyle(input: StyleEnforcementInput): StyleEnforcem
     if (output.length < before) changes.push("trimmed_filler_phrases");
   }
 
+  const applied = changes.length > 0;
+  if (flaggedPassive > 0) changes.push(`flagged_${flaggedPassive}_passive_constructions`);
+
   return {
     content: output,
-    applied: changes.length > 0,
-    reason: changes.length > 0 ? "style_enforced" : "no_changes_needed",
+    applied,
+    reason: applied ? "style_enforced" : "no_changes_needed",
     changes,
   };
 }

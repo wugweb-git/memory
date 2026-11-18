@@ -31,6 +31,7 @@ const SHORTCUTS = [
 export default function AdminConsole() {
   const [health, setHealth] = useState<HealthRow[] | null>(null);
   const [checklist, setChecklist] = useState<AdminChecklistItem[] | null>(null);
+  const [checklistError, setChecklistError] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [opResult, setOpResult] = useState<{ title: string; body: string } | null>(null);
 
@@ -64,8 +65,10 @@ export default function AdminConsole() {
       const body = await res.json();
       const items = Array.isArray(body) ? body : Array.isArray(body?.items) ? body.items : [];
       setChecklist(items);
+      setChecklistError(false);
     } catch {
       setChecklist(null);
+      setChecklistError(true);
     }
   }, []);
 
@@ -103,7 +106,8 @@ export default function AdminConsole() {
   const runAudit = () =>
     runOp('audit', 'Memory audit', async () => {
       const res = await fetch(API_ENDPOINTS.memory.audit.path, { credentials: 'include' });
-      const j = await res.json();
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j.error ?? `audit failed (${res.status})`);
       const sectors = j.report?.sectors ?? {};
       return Object.entries(sectors)
         .map(([k, v]: [string, any]) => `${k}: ${v.status}${v.provider ? ` (${v.provider})` : ''}${v.error ? ` — ${String(v.error).slice(0, 80)}` : ''}${v.note ? ` — ${v.note}` : ''}`)
@@ -124,13 +128,15 @@ export default function AdminConsole() {
     const next = checklist.map((c) => (c.id === item.id ? { ...c, completed: !c.completed } : c));
     setChecklist(next);
     try {
-      await fetch(API_ENDPOINTS.admin.checklist.path, {
+      const res = await fetch(API_ENDPOINTS.admin.checklist.path, {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items: next }),
       });
+      if (!res.ok) throw new Error(String(res.status));
     } catch {
+      setChecklist(checklist); // roll back optimistic update
       toast.error('Could not save checklist');
     }
   }
@@ -186,7 +192,11 @@ export default function AdminConsole() {
 
           <M3Card title={`Setup checklist${checklist ? ` (${done}/${checklist.length})` : ''}`}>
             {checklist === null ? (
-              <M3State state="loading" message="Loading checklist…" />
+              checklistError ? (
+                <M3State state="error" message="Could not load checklist. Log in as admin and refresh." />
+              ) : (
+                <M3State state="loading" message="Loading checklist…" />
+              )
             ) : (
               <ul className="divide-y divide-border-secondary">
                 {checklist.map((item) => (

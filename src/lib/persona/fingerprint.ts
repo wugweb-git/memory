@@ -44,8 +44,9 @@ export function scoreAiContamination(text: string): FingerprintResult {
   const repeatedWords = (text.match(/(\b\w+\b)(?:\s+\1){2,}/gi) || []).length;
   const repetitionScore = Math.min(1, repeatedWords * 0.15);
 
-  // 3. Burst probability: unusually long, dense text
-  const burstScore = text.length > 1400 ? 0.15 + Math.min(0.2, (text.length - 1400) / 5000) : Math.max(0, text.length / 14000);
+  // 3. Length contribution: small and capped, so long human text is not blocked on
+  // length alone (the old step at 1400 chars made anything >~1550 chars always fail).
+  const burstScore = Math.min(0.1, text.length / 14000);
 
   // 4. Stylometric: average word length (AI tends toward longer, more uniform)
   const words = text.split(/\s+/).filter(Boolean);

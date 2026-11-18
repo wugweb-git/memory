@@ -98,18 +98,24 @@ export default function PersonaIntelligencePage() {
     try {
       setLoading(true);
       setError(null);
+      const q = encodeURIComponent(uid);
+      const getJson = (path: string) =>
+        fetch(`${path}?userId=${q}`).then((r) => {
+          if (!r.ok) throw new Error(`${path} failed (${r.status})`);
+          return r.json();
+        });
       const [p, t, a, d] = await Promise.all([
-        fetch(`/api/persona/profile?userId=${uid}`).then((r) => r.json()),
-        fetch(`/api/persona/traits?userId=${uid}`).then((r) => r.json()),
-        fetch(`/api/persona/adaptive-ui?userId=${uid}`).then((r) => r.json()),
-        fetch(`/api/persona/drift?userId=${uid}`).then((r) => r.json()),
+        getJson('/api/persona/profile'),
+        getJson('/api/persona/traits'),
+        getJson('/api/persona/adaptive-ui'),
+        getJson('/api/persona/drift'),
       ]);
       setProfile(p);
       setTraits(Array.isArray(t) ? t : []);
       setAdaptive(a);
       setTimeline(Array.isArray(d?.timeline) ? d.timeline : []);
     } catch (e) {
-      setError('Failed to load persona data');
+      setError(e instanceof Error ? `Failed to load persona data: ${e.message}` : 'Failed to load persona data');
     } finally {
       setLoading(false);
     }
@@ -174,12 +180,15 @@ export default function PersonaIntelligencePage() {
   async function sendFeedback() {
     setSaving(true);
     try {
-      await fetch('/api/persona/feedback', {
+      const res = await fetch('/api/persona/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, feedbackType, targetType: 'persona' }),
       });
+      if (!res.ok) throw new Error(`Feedback failed (${res.status})`);
       await fetchData(userId);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Feedback failed');
     } finally {
       setSaving(false);
     }
@@ -188,12 +197,15 @@ export default function PersonaIntelligencePage() {
   async function updateAdaptive(field: keyof AdaptiveProfile, value: string) {
     setSaving(true);
     try {
-      await fetch(`/api/persona/adaptive-ui?userId=${userId}`, {
+      const res = await fetch(`/api/persona/adaptive-ui?userId=${encodeURIComponent(userId)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [field]: value }),
       });
+      if (!res.ok) throw new Error(`Update failed (${res.status})`);
       await fetchData(userId);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Update failed');
     } finally {
       setSaving(false);
     }
@@ -214,7 +226,7 @@ export default function PersonaIntelligencePage() {
       <AppShell>
         <div className="w-full min-h-[50vh] flex items-center justify-center px-4">
           <div className="text-center space-y-2">
-            <p className="text-sm text-red-500">{error}</p>
+            <p className="text-sm text-danger">{error}</p>
             <button onClick={() => fetchData(userId)} className="px-4 py-2 rounded-xl bg-text-primary text-bg-primary text-xs font-bold uppercase">Retry</button>
           </div>
         </div>

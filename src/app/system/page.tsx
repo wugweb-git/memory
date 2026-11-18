@@ -28,20 +28,33 @@ export default function SystemPage() {
   const [features, setFeatures] = useState<Record<string, boolean> | null>(null);
   const [savingKey, setSavingKey] = useState<string | null>(null);
 
+  const [featuresError, setFeaturesError] = useState<string | null>(null);
+
   useEffect(() => {
-    Promise.all([
-      fetch(UI_API.healthSystem).then((r) => r.json()),
-      fetch(UI_API.healthPersona).then((r) => r.json()),
-      fetch(UI_API.healthOutput).then((r) => r.json()),
-      fetch(UI_API.healthRecommendation).then((r) => r.json()),
-    ])
-      .then(([system, persona, output, recommendation]) => setHealth({ system, persona, output, recommendation }))
-      .catch((e) => setError(e?.message || "Failed to load health"))
+    const sources: Record<string, string> = {
+      system: UI_API.healthSystem,
+      persona: UI_API.healthPersona,
+      output: UI_API.healthOutput,
+      recommendation: UI_API.healthRecommendation,
+    };
+    // allSettled: one failing health endpoint must not blank the other cards
+    Promise.allSettled(Object.values(sources).map((u) => apiRequest<Record<string, unknown>>(u, { retries: 0 })))
+      .then((results) => {
+        const next: Record<string, any> = {};
+        const failed: string[] = [];
+        Object.keys(sources).forEach((k, i) => {
+          const r = results[i];
+          if (r.status === "fulfilled") next[k] = r.value;
+          else failed.push(k);
+        });
+        setHealth(next);
+        if (failed.length) setError(`Could not load: ${failed.join(", ")}`);
+      })
       .finally(() => setLoading(false));
 
     apiRequest<{ features: Record<string, boolean> }>(UI_API.systemFeatures)
       .then((j) => setFeatures(j.features))
-      .catch(() => setFeatures(null));
+      .catch((e) => setFeaturesError(e instanceof Error ? e.message : "Failed to load module flags"));
   }, []);
 
   async function toggle(key: string) {
@@ -70,7 +83,11 @@ export default function SystemPage() {
         <M3Page title="System" subtitle="Module switches, operational checks and runtime status">
           <M3Card title="Modules">
             {features === null ? (
-              <M3State state="loading" message="Loading module flags…" />
+              featuresError ? (
+                <M3State state="error" message={`Module flags unavailable: ${featuresError}`} />
+              ) : (
+                <M3State state="loading" message="Loading module flags…" />
+              )
             ) : (
               <ul className="divide-y divide-border-secondary">
                 {Object.entries(MODULE_LABELS).map(([key, label]) => {
@@ -85,10 +102,10 @@ export default function SystemPage() {
                         onClick={() => toggle(key)}
                         disabled={savingKey === key}
                         aria-label={`Toggle ${label}`}
-                        className={`relative w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${on ? "bg-black" : "bg-border-primary"}`}
+                        className={`relative w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${on ? "bg-accent" : "bg-border-primary"}`}
                       >
                         <span
-                          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${on ? "translate-x-[22px]" : "translate-x-0.5"}`}
+                          className={`absolute top-0.5 h-5 w-5 rounded-full bg-bg-primary shadow transition-transform ${on ? "translate-x-[22px]" : "translate-x-0.5"}`}
                         />
                       </button>
                     </li>

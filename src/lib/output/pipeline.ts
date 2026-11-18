@@ -10,6 +10,7 @@ import { scoreOutputQuality } from "./scoring";
 import { enforcePersonaStyle } from "@/lib/persona/style";
 import { isVerifiedHuman, persistFingerprint } from "@/lib/persona/fingerprint";
 import { resolvePersona } from "./persona";
+import { postgres } from "@/lib/db/postgres";
 import { extractPersonaEvidence } from "@/lib/persona/extractor";
 import { evolvePersonaField } from "@/lib/persona/evolution";
 
@@ -43,9 +44,16 @@ export async function runOutputPipeline(params: PipelineParams): Promise<Pipelin
 
   // Step 3: Resolve persona and enforce style
   const personaText = await resolvePersona(userId);
+  let personaConfidence = 0.65; // fallback when no persona profile exists yet
+  try {
+    const profile = await postgres.personaProfile.findUnique({ where: { userId } });
+    if (typeof profile?.confidenceScore === "number") personaConfidence = profile.confidenceScore;
+  } catch {
+    // keep fallback
+  }
   const styleResult = enforcePersonaStyle({
     content: formatted,
-    confidence: 0.65,
+    confidence: personaConfidence,
     style: {
       verbosity: "short",
       structure: platform === "linkedin" ? "paragraph" : "hybrid",
