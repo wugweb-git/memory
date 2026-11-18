@@ -69,7 +69,13 @@ export async function runEmbeddingWorker(batchSize = process.env.OPENROUTER_API_
   for (const packet of targets) {
     try {
       await processEmbedding(packet.id);
-      embedded += 1;
+      // processEmbedding records its own failures and does not throw; read the outcome back.
+      const after = await prisma.memoryPacket.findUnique({
+        where: { id: packet.id },
+        select: { embedding_status: true },
+      });
+      if (after?.embedding_status === 'failed') failed += 1;
+      else embedded += 1;
     } catch (err: any) {
       failed += 1;
       const type = classifyError(err);

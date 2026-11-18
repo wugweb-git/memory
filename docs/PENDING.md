@@ -109,13 +109,36 @@ All live on `www.vedanshusrivastava.com` (commit `410e1b4` promoted; docs commit
   With nothing public, `/ask` says "No public notes yet". Mark items with `POST /api/memory/public { ids, isPublic }`.
   **Owner action:** the migration applies on the next deploy (`prisma migrate deploy` in build); then mark notes public.
 
+### Built 2026-11-19 (on `main`, pushed; build exists, not promoted until the owner says)
+- **`/ask` streaming:** `streamJob` in `src/lib/ai/openrouter.ts` streams tokens; fallback to the next model only before the first
+  token. Route `src/app/api/chat/route.ts` reads the first delta, then writes the UI message stream. 10 tests in `ai-stream.test.ts`.
+- **Starter questions** rewritten (4, public-facing) in `src/app/ask/page.tsx`.
+- **PWA and mobile (`docs/pwa.md`):** offline note-capture queue (IndexedDB, Background Sync replay in `public/sw.js` v3, "Saved
+  offline, will sync" chip), haptics on sign-in and capture, app badge, 44px touch targets, safe-area padding, dvh, 375px overflow
+  fixes on `/console`, `/memory`, `/career`, `/buffer`. `BlobBuffer` now posts `raw_payload`.
+- **Embedding pipeline:** requeue of stale failed packets (5 per run, once per 24h), stuck `processing` rows reset after 10 minutes,
+  vectors tagged with the real model name, `EMBEDDINGS_DIMENSIONS` pinned to 1536, failures stamp `last_retried_at`, permanent
+  reasons (`GATED`, `LOW_SIGNAL`) set `is_embeddable=false`, worker stats count failures correctly.
+- **Admin notes screen:** `/admin/memory/public` (mark notes public or private, restricted notes never listed).
+- **Live check:** `node scripts/validate-live.mjs` (14 checks, refuses `*.vercel.app`; see `docs/validate-live.md`).
+- **Console:** the "Sync Status" sub-label no longer says "All layers nominal" when the status is degraded.
+
 ### Still open (2026-11-19)
-- **Owner marks notes public:** until then `/ask` answers "No public notes yet" (`GET/POST /api/memory/public`).
-- **Memory embeddings:** free embedder live; verify rows start embedding; backfill slowly.
-- **Decider flags** (`DECIDER_SIGNALS`, `DECIDER_MODE`) are unverified live; both stay OFF.
-- **`/ask` answers are replayed, not streamed.**
-- **37 npm vulnerabilities** deferred (need major upgrades).
-- **Review `STARTER_QUESTIONS`** in `src/app/ask/page.tsx`.
+- **Promote and verify live (needs the owner's word):** live is still the older build. After promotion verify `/ask` streaming at
+  phone width, run `scripts/validate-live.mjs` (two response shapes are guesses: `/api/profile/system_user`, `/api/jobs/process`),
+  dispatch the pipeline and confirm embedded counts, check the service worker and offline page, re-measure `/memory` and `/console`
+  at 375px.
+- **On a real phone (owner):** install flow (Android and iOS), haptics, app badge, offline sync replay.
+- **Owner marks notes public** at `/admin/memory/public`; until then `/ask` answers "No public notes yet".
+- **Memory embeddings:** free embedder live in code; backfill verified only after the pipeline runs on the new build.
+- **GitHub 5-minute schedule** (`memory-pipeline.yml`) has never fired on its own; only manual dispatch runs. Recheck.
+- **Decider flags** (`DECIDER_SIGNALS`, `DECIDER_MODE`) unverified live; both stay OFF (`DECIDER_SIGNALS` burns the free cap).
+- **Push notifications:** not built. Owner steps (VAPID keys, env vars, subscription table) are in `docs/pwa.md`.
+- **Embedding retrieval quality:** nemotron embedders may want a query/passage prefix; LangChain sends the same payload for both.
+  Consistent, so correct, but possibly below the model's best. Revisit only if answers look weak.
+- **Online capture 400:** a genuine validation error on `/api/blob` is queued and shows "Saved offline" (the route returns 400 for
+  any internal error, so 400 is retried up to 8 times).
+- **3 high npm vulnerabilities** remain (Prisma major upgrade needed); deferred.
 
 ### Deferred by owner
 - All rate-limit work (`/ask` and `/api/chat` per-visitor limits, login attempt lockout). Not to be raised again unless asked.

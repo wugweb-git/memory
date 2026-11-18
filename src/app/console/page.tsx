@@ -177,7 +177,7 @@ export default function ConsolePage() {
           ) : (
             <>
               <StatCard label="Memory Packets" value={String(stats.memoryPackets)} sub="Total indexed" icon={<Database size={18} className="text-accent" />} />
-              <StatCard label="Sync Status" value={String(stats.syncStatus)} sub="All layers nominal" color="text-success" icon={<ShieldCheck size={18} className="text-success" />} />
+              <StatCard label="Sync Status" value={String(stats.syncStatus)} sub={String(stats.syncStatus).toLowerCase() === "degraded" ? "Some layers need attention" : "All layers nominal"} color={String(stats.syncStatus).toLowerCase() === "degraded" ? "text-warning" : "text-success"} icon={<ShieldCheck size={18} className={String(stats.syncStatus).toLowerCase() === "degraded" ? "text-warning" : "text-success"} />} />
               <StatCard label="Buffer Queue" value={String(stats.bufferQueue)} sub="Pending review" icon={<Archive size={18} className="text-warning" />} />
               <StatCard label="Uplink" value={String(stats.uplink)} sub="Last 24h" icon={<Zap size={18} className="text-accent" />} />
             </>

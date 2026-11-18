@@ -49,7 +49,10 @@ All IDs carry the `:free` suffix. Overrides are comma-separated, e.g.
   tolerantly from text (code fences and surrounding prose stripped).
 - The answering model is returned (`runJob` -> `{text, model, attempts}`); the orchestrator
   passes it to the Langfuse generation. `/api/chat` sets an `X-Model` response header.
-- `/api/chat` with OpenRouter is not streamed upstream: the full answer is replayed as a UI message stream.
+- `/api/chat` with OpenRouter streams upstream (`streamJob`, `stream: true`). A model is skipped before its first token on
+  non-2xx, 429, timeout, network error, an upstream error frame or an empty stream. After the first token the answer never
+  switches models; a later error or stall ends the stream with what was already sent. 18s per attempt to first token, 52s total.
+  If every model fails before any token, the route falls back to the legacy provider.
 - Sends `HTTP-Referer` (site URL) and `X-Title` headers. Keys are never logged.
 
 ## Free-tier limits
@@ -130,8 +133,7 @@ Reviewed in code on 19 Nov 2026; no wiring was added because no site is clearly 
 with chat: backfill existing rows in small batches over several days. Old vectors came from a different
 model, so re-embed before trusting similarity.
 
-Embeddings stay on the current provider (`src/lib/memory/embeddings.ts`, 1536 dims for the pgvector
-column). OpenRouter lists these free NVIDIA embedders (`/api/v1/embeddings/models`):
+Embeddings stay in `src/lib/memory/embeddings.ts` (1536 dims for the pgvector column; `EMBEDDINGS_DIMENSIONS` is honoured only when it is 1536; each vector's `metadata.model` records the model actually used). OpenRouter lists these free NVIDIA embedders (`/api/v1/embeddings/models`):
 `nvidia/nemotron-3.5-embed-1b:free`, `nvidia/nemotron-3.5-embed-8b:free`, `nvidia/nemotron-3-embed-1b:free`.
 
 1. Check dimensions: `node scripts/embedder-check.mjs --dry` (plan), then with the key

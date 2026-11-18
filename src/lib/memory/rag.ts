@@ -152,7 +152,10 @@ export async function processEmbedding(packetId: string) {
         where: { id: packetId },
         data: { 
           embedding_status: 'failed',
-          processing_errors: updatedErrors as any
+          processing_errors: updatedErrors as any,
+          last_retried_at: new Date(),
+          // Permanent reasons: stop the daily requeue from retrying them forever.
+          ...(/^(GATED|LOW_SIGNAL)/.test(String(err.message)) ? { is_embeddable: false } : {}),
         }
       });
     } catch (logErr) {
