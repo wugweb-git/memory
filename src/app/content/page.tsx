@@ -269,7 +269,7 @@ export default function OutputStudioPage() {
                 <div className="space-y-2">
                   <input
                     className="w-full rounded-2xl border border-border-primary p-3 text-sm"
-                    placeholder="Decision ID (required)"
+                    aria-label="Decision ID (required)" placeholder="Decision ID (required)"
                     value={decisionId}
                     onChange={(e) => setDecisionId(e.target.value)}
                   />

@@ -32,3 +32,4 @@ Identity Prism UI is **mobile-first, light-first**, action-prioritized, and outp
 ## PWA
 - The app is installable: `public/manifest.json` (`start_url` `/console`, standalone), `public/sw.js`, offline page at `/offline`,
   icons from `scripts/generate-pwa-icons.py`. Theme and background colour match the light porcelain surface.
+- Mobile baseline (globals.css): focus-visible ring, 16px form controls on phones, 44px touch targets on coarse pointers, reduced-motion/transparency, `min-h-dvh-fallback` for full-height pages. `src/lib/pwa/*` holds feature-detected helpers (share, haptics, badge); `InstallPrompt` and `ConnectivityToast` mount in the root layout (install prompt private pages only). Service worker v2: static assets cache-first (`/_next/static`) or stale-while-revalidate; HTML and `/api/*` are never cached.

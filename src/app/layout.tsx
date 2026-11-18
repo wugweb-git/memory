@@ -4,6 +4,8 @@ import "./globals.css";
 import { ThemeProvider } from "./component/ThemeProvider";
 import { ChunkReloadGuard } from "./component/ChunkReloadGuard";
 import { ServiceWorkerRegister } from "./component/ServiceWorkerRegister";
+import { InstallPrompt } from "./component/InstallPrompt";
+import { ConnectivityToast } from "./component/ConnectivityToast";
 import { Analytics } from "@vercel/analytics/next";
 import { IDENTITY_CONFIG } from "@/config/identity";
 
@@ -53,6 +55,7 @@ export const metadata: Metadata = {
   },
   manifest: "/manifest.json",
   appleWebApp: { capable: true, title: "Prism OS", statusBarStyle: "default" },
+  formatDetection: { telephone: false },
   icons: {
     icon: "/favicon.ico",
     apple: "/apple-touch-icon.png",
@@ -60,10 +63,16 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#F5F5F0",
+  // The app is light-only (data-theme is forced to light), so both schemes use the porcelain surface.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F5F5F0" },
+    { media: "(prefers-color-scheme: dark)", color: "#F5F5F0" },
+  ],
   viewportFit: "cover",
   width: "device-width",
   initialScale: 1,
+  // Android Chrome resizes the layout when the keyboard opens, so fixed bars stay above it.
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({
@@ -90,7 +99,9 @@ export default function RootLayout({
         <ThemeProvider>
           <ChunkReloadGuard />
           <ServiceWorkerRegister />
+          <ConnectivityToast />
           {children}
+          <InstallPrompt />
           <Analytics />
         </ThemeProvider>
       </body>

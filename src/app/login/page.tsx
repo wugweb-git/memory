@@ -66,7 +66,7 @@ function LoginForm() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-5">
+    <main className="min-h-dvh-fallback flex items-center justify-center px-5">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-black tracking-tight text-text-primary">{APP_BRAND.name}</h1>
@@ -76,7 +76,7 @@ function LoginForm() {
         <div className="rounded-3xl bg-white border border-border-secondary shadow-sm p-6">
           {checking ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="animate-spin text-text-disabled" size={22} />
+              <Loader2 className="animate-spin text-text-disabled" size={22} aria-label="Checking session" role="img" />
             </div>
           ) : user ? (
             <div className="space-y-4 text-center">
@@ -87,14 +87,14 @@ function LoginForm() {
               <div className="flex gap-2 justify-center">
                 <Link
                   href={next}
-                  className="px-4 py-2 rounded-xl bg-text-primary text-bg-primary text-sm font-bold"
+                  className="inline-flex min-h-11 items-center px-4 rounded-xl bg-text-primary text-bg-primary text-sm font-bold"
                 >
                   Continue
                 </Link>
                 <button
                   onClick={logout}
                   disabled={busy}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-border-primary text-sm font-bold text-text-secondary disabled:opacity-50"
+                  className="inline-flex min-h-11 items-center gap-1.5 px-4 rounded-xl border border-border-primary text-sm font-bold text-text-secondary disabled:opacity-50"
                 >
                   <LogOut size={14} /> Log out
                 </button>
@@ -102,29 +102,39 @@ function LoginForm() {
             </div>
           ) : (
             <form onSubmit={login} className="space-y-3">
+              <label htmlFor="login-email" className="sr-only">Email</label>
               <input
+                id="login-email"
                 type="email"
                 required
-                autoComplete="email"
-                className="w-full rounded-2xl border border-border-primary p-3 text-sm"
-                placeholder="Email"
+                autoComplete="username"
+                inputMode="email"
+                enterKeyHint="next"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                className="w-full min-h-11 rounded-2xl border border-border-primary p-3 text-base"
+                aria-label="Email" placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
+              <label htmlFor="login-password" className="sr-only">Password</label>
               <input
+                id="login-password"
                 type="password"
                 required
                 autoComplete="current-password"
-                className="w-full rounded-2xl border border-border-primary p-3 text-sm"
-                placeholder="Password"
+                enterKeyHint="go"
+                className="w-full min-h-11 rounded-2xl border border-border-primary p-3 text-base"
+                aria-label="Password" placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-              {error && <p className="text-sm text-danger">{error}</p>}
+              {error && <p role="alert" className="text-sm text-danger">{error}</p>}
               <button
                 type="submit"
                 disabled={busy || !email || !password}
-                className="w-full py-3 rounded-2xl bg-text-primary text-bg-primary text-sm font-bold disabled:opacity-40"
+                className="w-full min-h-11 py-3 rounded-2xl bg-text-primary text-bg-primary text-sm font-bold disabled:opacity-40"
               >
                 {busy ? 'Signing in…' : 'Sign in'}
               </button>
@@ -133,7 +143,7 @@ function LoginForm() {
         </div>
 
         <p className="text-2xs text-text-disabled text-center mt-6">
-          <Link href="/console" className="hover:text-text-tertiary">Back to console</Link>
+          <Link href="/console" className="inline-flex min-h-11 items-center hover:text-text-tertiary">Back to console</Link>
         </p>
       </div>
     </main>
@@ -142,7 +152,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-bg-primary text-text-primary">
+    <div className="min-h-dvh-fallback bg-bg-primary text-text-primary">
       <Suspense>
         <LoginForm />
       </Suspense>

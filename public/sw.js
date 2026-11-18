@@ -1,10 +1,11 @@
 /* Identity Prism OS service worker.
- * - Static assets (/_next/static, /icons, images, fonts): cache-first.
+ * - /_next/static (content-hashed, immutable): cache-first.
+ * - Icons, images, fonts: stale-while-revalidate (serve cached, refresh in background).
  * - Page navigations: network-first; only the /offline fallback is ever stored.
  *   Authenticated HTML is NEVER cached.
  * - /api/* (incl. /api/auth): never touched, always straight to the network.
  */
-const VERSION = 'v1';
+const VERSION = 'v2';
 const STATIC_CACHE = `prism-static-${VERSION}`;
 const OFFLINE_URL = '/offline';
 
@@ -47,18 +48,36 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (isStaticAsset(url)) {
+  if (!isStaticAsset(url)) return;
+
+  const store = (res, copy) => {
+    if (res.ok && res.type === 'basic') caches.open(STATIC_CACHE).then((c) => c.put(req, copy));
+  };
+
+  if (url.pathname.startsWith('/_next/static/')) {
     event.respondWith(
-      caches.match(req).then((hit) => {
-        if (hit) return hit;
-        return fetch(req).then((res) => {
-          if (res.ok && res.type === 'basic') {
-            const copy = res.clone();
-            caches.open(STATIC_CACHE).then((c) => c.put(req, copy));
-          }
-          return res;
-        });
-      })
+      caches.match(req).then(
+        (hit) =>
+          hit ||
+          fetch(req).then((res) => {
+            store(res, res.clone());
+            return res;
+          })
+      )
     );
+    return;
   }
+
+  // Stale-while-revalidate for other static files (same-origin, non-API only).
+  event.respondWith(
+    caches.match(req).then((hit) => {
+      const network = fetch(req)
+        .then((res) => {
+          store(res, res.clone());
+          return res;
+        })
+        .catch(() => hit || Response.error());
+      return hit || network;
+    })
+  );
 });

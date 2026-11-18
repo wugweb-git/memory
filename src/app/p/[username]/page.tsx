@@ -8,7 +8,7 @@ export default function PublicProfilePage() {
   const username = params.username as string;
 
   return (
-    <div className="min-h-screen bg-bg-primary text-text-primary selection:bg-accent/20">
+    <div className="min-h-dvh-fallback bg-bg-primary text-text-primary selection:bg-accent/20">
       <PublicProfileView username={username} />
     </div>
   );

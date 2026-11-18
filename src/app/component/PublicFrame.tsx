@@ -10,8 +10,8 @@ import { IDENTITY_CONFIG } from '@/config/identity';
  */
 export function PublicFrame({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-bg-primary text-text-primary">
-      <header className="h-16 px-5 flex items-center justify-between border-b border-border-subtle">
+    <div className="min-h-dvh-fallback bg-bg-primary text-text-primary">
+      <header className="h-16 px-5 flex items-center justify-between border-b border-border-secondary">
         <span className="text-sm font-bold tracking-tight">{APP_BRAND.name}</span>
         <Link
           href={`/p/${IDENTITY_CONFIG.HANDLE}`}
