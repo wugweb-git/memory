@@ -5,6 +5,8 @@ import { postgres } from '@/lib/db/postgres';
 import { isUniqueError } from '@/lib/prisma';
 import crypto from 'crypto';
 import { ReconciliationEngine } from '../memory/semantic/reconciliation';
+import { isOpenRouterEnabled } from '@/lib/ai/models';
+import { createJobClient, type JobClient } from '@/lib/ai/job-client';
 
 const defaultModel = new ChatOpenAI({
   modelName: 'gpt-4o-mini',
@@ -65,8 +67,11 @@ export class SemanticEngine {
     packetId: string, 
     options: { llmClient?: any; testRunId?: string } = {}
   ): Promise<{ success: boolean; entityCount: number; fallback: boolean }> {
-    const { llmClient = defaultModel, testRunId = 'PROD' } = options;
-    const model = llmClient;
+    const { testRunId = 'PROD' } = options;
+    // Per-job routing: structured extraction uses the `ingest` chain when OPENROUTER_API_KEY
+    // is set (unless a client is injected, e.g. diagnostics). Otherwise the existing OpenAI model.
+    const jobClient: JobClient | null = !options.llmClient && isOpenRouterEnabled() ? createJobClient('ingest') : null;
+    const model = options.llmClient ?? jobClient ?? defaultModel;
     try {
       // 1. Settings & Kill Switch
       const config = await SettingsController.getSettings();
@@ -218,7 +223,7 @@ export class SemanticEngine {
           confidence: isFallback ? 0.3 : (data.entities?.length > 0 ? data.entities[0].confidence : 1.0),
           verification_status: isFallback ? 'unverified' : 'verified',
           fallback: isFallback,
-          model: isFallback ? 'rule-based' : 'gpt-4o-mini',
+          model: isFallback ? 'rule-based' : jobClient?.lastModel ?? 'gpt-4o-mini',
           test_run_id: testRunId,
           processing_state: "complete"
         }

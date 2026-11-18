@@ -1,5 +1,6 @@
 import { postgres as prisma } from '@/lib/db/postgres';
 import { extractSignals } from './signals';
+import { applySignalImportance } from './signal-importance';
 import { MemoryPacket } from '../memory/types';
 
 
@@ -26,7 +27,12 @@ export class ProcessingEngine {
       ]);
 
       // 3. Extract Signals
-      const signals = extractSignals(packet as any);
+      let signals = extractSignals(packet as any);
+      // Optional (DECIDER_SIGNALS=1): drop signals the Decider rates unimportant.
+      if (process.env.DECIDER_SIGNALS === '1') {
+        const content = typeof packet.content === 'string' ? packet.content : JSON.stringify(packet.content);
+        signals = await applySignalImportance(content, signals);
+      }
 
       // 4. Persistence
       if (signals.length > 0) {

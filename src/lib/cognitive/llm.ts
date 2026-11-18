@@ -73,7 +73,22 @@ export async function runAgentLLM(
   modelName = DEFAULT_MODEL,
   system = SYSTEM_PROMPT,
   temperature = 0.1,
+  /** OpenRouter path only: `json:false` for prose agents (reasoner). */
+  routeOpts: { json?: boolean } = {},
 ): Promise<string> {
+  // Per-job routing: reasoner/decision agents use the `decision` chain when OPENROUTER_API_KEY is set.
+  if (isOpenRouterEnabled()) {
+    try {
+      const r = await runJob("decision", [
+        { role: "system", content: system },
+        { role: "user", content: prompt },
+      ], { temperature, json: routeOpts.json });
+      return r.text;
+    } catch (err: any) {
+      console.error("[LLM/Agent/OpenRouter] Execution Failure:", err.message);
+      throw new Error(`LLM_FAILURE: ${err.message}`);
+    }
+  }
   try {
     const response = await getModel(modelName, temperature).invoke([
       new SystemMessage(system),
@@ -132,6 +147,16 @@ export async function runLLMWithMeta(prompt: string): Promise<{ text: string; mo
  * Used for content generation (posts, memos) where plain prose is required.
  */
 export async function runTextLLM(prompt: string): Promise<string> {
+  // Per-job routing: prose generation uses the `ask` chain when OPENROUTER_API_KEY is set.
+  if (isOpenRouterEnabled()) {
+    try {
+      const r = await runJob("ask", [{ role: "user", content: prompt }], { temperature: 0.6 });
+      return r.text.trim();
+    } catch (err: any) {
+      console.error("[LLM/Text/OpenRouter] Execution Failure:", err.message);
+      throw new Error(`LLM_CALL_FAILED: ${err.message}`);
+    }
+  }
   try {
     const response = await getModel(DEFAULT_MODEL, 0.6).invoke([
       new HumanMessage(prompt),

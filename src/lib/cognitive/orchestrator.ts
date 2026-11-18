@@ -11,6 +11,7 @@ import { dedup } from "./dedup";
 import { logDecisionNeon } from "./logging/neon";
 import { runCritic } from "./output/critic";
 import { getModeInstruction } from "./mode/mode";
+import { resolveMode } from "./mode/decider-mode";
 import { selectModel } from "./routing";
 import { runReasoner } from "./agents/reasoner";
 import { runDecisionAgent } from "./agents/decision";
@@ -21,7 +22,8 @@ export async function processDecision(params: {
   mode: any;
   external_input?: string | null;
 }) {
-  const { userId, mode, external_input } = params;
+  const { userId, external_input } = params;
+  let mode = params.mode;
 
   const trace = langfuse.trace({
     name: "cognitive_decide",
@@ -44,6 +46,17 @@ export async function processDecision(params: {
         status: "insufficient_data",
         message: "Not enough memory data to generate a decision. Ingest more packets first."
       };
+    }
+
+    // Optional (DECIDER_MODE=1): route to a mode via the Decider when none was chosen.
+    if (process.env.DECIDER_MODE === "1") {
+      const routed = await resolveMode(mode, {
+        externalInput: external_input,
+        entities: context.entities,
+        signals: context.signals,
+      });
+      mode = routed.mode;
+      trace.event({ name: "mode_routed", input: { mode: routed.mode, routed: routed.routed } });
     }
 
     // 2. Build prompt with mode instruction + history

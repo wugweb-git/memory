@@ -31,5 +31,6 @@ Return a concise analysis (4-6 sentences).`;
     modelName,
     'You are the Reasoner agent. Analyze only; never decide.',
     0.2,
+    { json: false },
   );
 }
