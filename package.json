@@ -37,7 +37,6 @@
     "@vercel/analytics": "latest",
     "@vercel/blob": "^2.4.0",
     "@vercel/functions": "^3.4.3",
-    "@vercel/sandbox": "latest",
     "@web-std/file": "^3.0.3",
     "ai": "^6.0.188",
     "axios": "^1.6.7",
