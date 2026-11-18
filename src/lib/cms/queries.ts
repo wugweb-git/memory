@@ -1,46 +1,58 @@
 import { sanityClient, sanityWriteClient } from './sanity';
+import { showcaseFilter } from './showcase-filters';
 
 /* ── GROQ ──────────────────────────────────────────────────────── */
-const PROJECTS = `*[_type == "project" && !(_id in path("drafts.**"))] | order(featured desc, publishedAt desc){
+const PROJECT_FIELDS = `{
   _id, title, "slug": slug.current, summary, tags, url, featured, publishedAt,
   "coverImage": coverImage.asset->url
 }`;
-
-const CASE_STUDIES = `*[_type == "caseStudy" && !(_id in path("drafts.**"))] | order(publishedAt desc){
+const CASE_STUDY_FIELDS = `{
   _id, title, "slug": slug.current, client, summary, outcome, tags, publishedAt,
   "coverImage": coverImage.asset->url
 }`;
-
-const BLOG_POSTS = `*[_type == "blogPost" && !(_id in path("drafts.**"))] | order(publishedAt desc){
+const BLOG_POST_FIELDS = `{
   _id, title, "slug": slug.current, excerpt, tags, publishedAt,
   "coverImage": coverImage.asset->url
 }`;
 
+const projectsQuery = (all: boolean) =>
+  `*[${showcaseFilter('project', all)}] | order(featured desc, publishedAt desc)${PROJECT_FIELDS}`;
+const caseStudiesQuery = (all: boolean) =>
+  `*[${showcaseFilter('caseStudy', all)}] | order(publishedAt desc)${CASE_STUDY_FIELDS}`;
+const blogPostsQuery = (all: boolean) =>
+  `*[${showcaseFilter('blogPost', all)}] | order(publishedAt desc)${BLOG_POST_FIELDS}`;
+
 /* ── Reads (public showcase) ───────────────────────────────────── */
 export async function getProjects() {
   if (!sanityClient) return [];
-  return sanityClient.fetch(PROJECTS);
+  return sanityClient.fetch(projectsQuery(false));
 }
 
 export async function getCaseStudies() {
   if (!sanityClient) return [];
-  return sanityClient.fetch(CASE_STUDIES);
+  return sanityClient.fetch(caseStudiesQuery(false));
 }
 
 export async function getBlogPosts() {
   if (!sanityClient) return [];
-  return sanityClient.fetch(BLOG_POSTS);
+  return sanityClient.fetch(blogPostsQuery(false));
 }
 
-/** Single call for the public profile/showcase surface. */
-export async function getShowcase() {
-  if (!sanityClient) {
+/**
+ * Single call for the public profile/showcase surface. Public callers get
+ * published items only; pass includeUnpublished for the owner's view.
+ */
+export async function getShowcase(opts: { includeUnpublished?: boolean } = {}) {
+  const all = Boolean(opts.includeUnpublished);
+  // Owner view reads through the non-CDN client so drafts are visible.
+  const client = all ? (sanityWriteClient ?? sanityClient) : sanityClient;
+  if (!client) {
     return { enabled: false, projects: [], caseStudies: [], blogPosts: [] };
   }
   const [projects, caseStudies, blogPosts] = await Promise.all([
-    sanityClient.fetch(PROJECTS),
-    sanityClient.fetch(CASE_STUDIES),
-    sanityClient.fetch(BLOG_POSTS),
+    client.fetch(projectsQuery(all)),
+    client.fetch(caseStudiesQuery(all)),
+    client.fetch(blogPostsQuery(all)),
   ]);
   return { enabled: true, projects, caseStudies, blogPosts };
 }

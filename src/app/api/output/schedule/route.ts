@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   if (!hasPermission(actor.role, "schedule")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const body = await req.json();
   const entry = await enqueuePublishing({
-    userId: body.userId || actor.userId,
+    userId: actor.userId,
     outputId: body.outputId,
     platform: body.platform,
     scheduledAt: body.scheduledAt ? new Date(body.scheduledAt) : null,

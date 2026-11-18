@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { publishContentToProfile } from '@/lib/profile/store';
-import { IDENTITY_CONFIG } from '@/config/identity';
+import { requireAdmin } from '@/lib/security/auth';
 import { getRequestUserId } from '@/lib/identity/request';
 
 export const dynamic = 'force-dynamic';
@@ -12,10 +12,12 @@ type RouteContext = { params: Promise<{ username: string }> };
  * Body: { outputId? } from Output Studio, or { title, body, platform?, url?, tags? } for manual posts.
  */
 export async function POST(req: NextRequest, { params }: RouteContext) {
+  const adminGate = requireAdmin(req);
+  if (adminGate instanceof NextResponse) return adminGate;
   try {
     const { username } = await params;
     const body = await req.json();
-    const userId = body.userId ?? getRequestUserId(req) ?? IDENTITY_CONFIG.DEFAULT_USER_ID;
+    const userId = getRequestUserId(req);
 
     if (!body.outputId && !body.body && !body.title) {
       return NextResponse.json(

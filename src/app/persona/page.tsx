@@ -98,9 +98,8 @@ export default function PersonaIntelligencePage() {
     try {
       setLoading(true);
       setError(null);
-      const q = encodeURIComponent(uid);
       const getJson = (path: string) =>
-        fetch(`${path}?userId=${q}`).then((r) => {
+        fetch(path).then((r) => {
           if (!r.ok) throw new Error(`${path} failed (${r.status})`);
           return r.json();
         });
@@ -197,7 +196,7 @@ export default function PersonaIntelligencePage() {
   async function updateAdaptive(field: keyof AdaptiveProfile, value: string) {
     setSaving(true);
     try {
-      const res = await fetch(`/api/persona/adaptive-ui?userId=${encodeURIComponent(userId)}`, {
+      const res = await fetch('/api/persona/adaptive-ui', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [field]: value }),

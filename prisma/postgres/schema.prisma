@@ -426,6 +426,10 @@ model MemoryPacket {
   processing_errors Json?    // Array of error objects [{ time, reason, level }]
   semantic_errors   Json?    // Array of error objects [{ time, reason, level }]
 
+  // Owner-curated visibility: only packets with is_public = true may ground the
+  // visitor-facing /ask chat. Default false (nothing is public until marked).
+  is_public         Boolean  @default(false)
+
   test_run_id       String   @default("PROD")
 
   @@index([source])
@@ -438,6 +442,7 @@ model MemoryPacket {
   @@index([test_run_id])
   @@index([processing_lock])
   @@index([hash])
+  @@index([is_public])
   @@map("memory_packets")
 }
 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/security/auth';
 import { SemanticEngine } from '@/lib/processing/semantic';
 import { randomUUID } from 'crypto';
 import { postgres as prisma } from '@/lib/db/postgres';
@@ -11,6 +12,8 @@ export const dynamic = 'force-dynamic';
  * 20-Point Certification Suite for Environment Isolation, Concurrency, and Graph Integrity.
  */
 export async function POST(req: NextRequest) {
+  const adminGate = requireAdmin(req);
+  if (adminGate instanceof NextResponse) return adminGate;
   const auditId = `TEST_AUDIT_${randomUUID().slice(0, 8)}`;
   const results: { name: string; status: 'PASS' | 'FAIL'; message?: string }[] = [];
   const metrics = {

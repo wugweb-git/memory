@@ -28,7 +28,7 @@ export const HistoryTab: React.FC = () => {
     setItems(null);
     setError(null);
     try {
-      const res = await fetch(`/api/cognitive/history?userId=${encodeURIComponent(currentUserId())}`);
+      const res = await fetch('/api/cognitive/history');
       if (!res.ok) throw new Error(`Could not load history (${res.status})`);
       const d = await res.json();
       setItems(Array.isArray(d) ? d : []);

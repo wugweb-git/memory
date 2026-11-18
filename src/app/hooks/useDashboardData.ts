@@ -126,8 +126,7 @@ export function usePersonaTraits() {
   useEffect(() => {
     let cancelled = false;
 
-    const uid = resolveUserId().userId;
-    fetch(`/api/persona/traits?userId=${encodeURIComponent(uid)}`)
+    fetch('/api/persona/traits')
       .then(r => r.ok ? r.json() : [])
       .then(traitList => {
         if (!cancelled) {

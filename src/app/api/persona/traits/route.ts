@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getRequestUserId } from '@/lib/identity/request';
+import { requireAdmin } from '@/lib/security/auth';
 import { getTopTraits } from "@/lib/persona/behavior";
-import { IDENTITY_CONFIG } from "@/config/identity";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
+  const adminGate = requireAdmin(req);
+  if (adminGate instanceof NextResponse) return adminGate;
   try {
-    const userId = req.nextUrl.searchParams.get("userId") || IDENTITY_CONFIG.DEFAULT_USER_ID;
+    const userId = getRequestUserId(req);
     const traits = await getTopTraits(userId, 20);
     return NextResponse.json(traits);
   } catch (err) {

@@ -83,6 +83,7 @@ export const API_ENDPOINTS = {
     monitor: { path: '/api/memory/monitor', methods: ['GET'] as const },
     packetAction: { path: '/api/memory/packet/action', methods: ['POST'] as const },
     packets: { path: '/api/memory/packets', methods: ['GET'] as const },
+    public: { path: '/api/memory/public', methods: ['GET', 'POST'] as const },
     replay: { path: '/api/memory/replay', methods: ['POST'] as const },
     retrieve: { path: '/api/memory/retrieve', methods: ['POST'] as const },
     signals: { path: '/api/memory/signals', methods: ['GET'] as const },

@@ -13,18 +13,37 @@ export type RequestActor = {
   authenticated: boolean;
 };
 
-function readBearer(req: NextRequest): string | null {
+type AnyRequest = NextRequest | Request;
+
+function readBearer(req: AnyRequest): string | null {
   const header = req.headers.get('authorization');
   if (!header?.startsWith('Bearer ')) return null;
   return header.slice(7).trim();
 }
 
-function readSessionToken(req: NextRequest): string | null {
-  return req.cookies.get(SESSION_COOKIE)?.value ?? readBearer(req);
+function readCookie(req: AnyRequest, name: string): string | null {
+  const jar = (req as NextRequest).cookies;
+  if (jar && typeof jar.get === 'function') return jar.get(name)?.value ?? null;
+  const raw = req.headers.get('cookie');
+  if (!raw) return null;
+  for (const part of raw.split(';')) {
+    const i = part.indexOf('=');
+    if (i > 0 && part.slice(0, i).trim() === name) return part.slice(i + 1).trim();
+  }
+  return null;
 }
 
-/** Resolve the acting user from JWT cookie/header, dev headers, or fallback. */
-export function getRequestUser(req: NextRequest): RequestActor {
+function readSessionToken(req: AnyRequest): string | null {
+  return readCookie(req, SESSION_COOKIE) ?? readBearer(req);
+}
+
+/**
+ * Resolve the acting user. Identity comes ONLY from the signed session
+ * (JWT cookie or bearer token). x-user-id / x-user-role headers and ?userId
+ * query params are never honoured. An unauthenticated request resolves to
+ * the anonymous default actor (role 'user', authenticated: false).
+ */
+export function getRequestUser(req: AnyRequest): RequestActor {
   const token = readSessionToken(req);
   if (token) {
     const payload = verifyToken(token, INTERNAL_VAULT.AUTH_SECRET);
@@ -38,33 +57,18 @@ export function getRequestUser(req: NextRequest): RequestActor {
     }
   }
 
-  const headerUserId = req.headers.get('x-user-id');
-  const headerRole = req.headers.get('x-user-role');
-  if (headerUserId) {
-    return {
-      userId: headerUserId,
-      email: null,
-      role: headerRole || 'user',
-      authenticated: false,
-    };
-  }
-
-  const queryUserId = req.nextUrl.searchParams.get('userId');
-  if (queryUserId?.trim()) {
-    return {
-      userId: queryUserId.trim(),
-      email: null,
-      role: 'user',
-      authenticated: false,
-    };
-  }
-
   return {
     userId: IDENTITY_CONFIG.DEFAULT_USER_ID,
     email: IDENTITY_CONFIG.EMAIL,
     role: 'user',
     authenticated: false,
   };
+}
+
+/** True only for a validly signed session whose role has admin:read. */
+export function isAdminRequest(req: AnyRequest): boolean {
+  const actor = getRequestUser(req);
+  return actor.authenticated && hasPermission(actor.role, 'admin:read');
 }
 
 /**
@@ -93,10 +97,17 @@ export function requirePermission(req: NextRequest, permission: string): Request
   return actor;
 }
 
-export function requireAdmin(req: NextRequest): RequestActor | NextResponse {
+/**
+ * Defence in depth inside route handlers (middleware is the first gate).
+ * 401 when there is no valid session, 403 when signed in without admin rights.
+ */
+export function requireAdmin(req: NextRequest | Request): RequestActor | NextResponse {
   const actor = getRequestUser(req);
+  if (!actor.authenticated) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+  }
   if (!hasPermission(actor.role, 'admin:read')) {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 401 });
+    return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
   }
   return actor;
 }

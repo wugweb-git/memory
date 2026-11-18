@@ -41,8 +41,8 @@ Base path: `/api`. All routes use App Router unless noted.
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| GET | `/analytics/content` | Content analytics (`?userId=`) |
-| GET | `/automation/rules` | Automation rules (`?userId=`) |
+| GET | `/analytics/content` | Content analytics |
+| GET | `/automation/rules` | Automation rules |
 
 ## Blob (L0)
 
@@ -76,7 +76,7 @@ Base path: `/api`. All routes use App Router unless noted.
 | POST | `/cognitive/evaluate` | Opportunity evaluation |
 | POST | `/cognitive/feedback` | Decision feedback |
 | POST | `/cognitive/gaps` | Profile gap analysis |
-| GET | `/cognitive/history` | Decision history (`?userId=`) |
+| GET | `/cognitive/history` | Decision history |
 | POST | `/cognitive/prioritize` | Rank recommendations |
 | GET | `/cognitive/traces` | Recent decision traces |
 
@@ -100,7 +100,7 @@ Base path: `/api`. All routes use App Router unless noted.
 | Method | Path | Purpose |
 |--------|------|---------|
 | POST | `/output/generate` | Generate artifact |
-| GET | `/output/history` | Published outputs (`?userId=`) |
+| GET | `/output/history` | Published outputs |
 | POST | `/output/publish` | Publish output |
 | POST | `/output/schedule` | Schedule publishing |
 

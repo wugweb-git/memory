@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/security/auth';
 import { Push_To_Blob, getBlobStats, cleanupExpiredBlobItems } from '@/lib/blobLayer';
 import { postgres as prisma } from '@/lib/db/postgres';
 
@@ -9,6 +10,8 @@ export const dynamic = 'force-dynamic';
  * Lists blob items with filtering.
  */
 export async function GET(req: NextRequest) {
+  const adminGate = requireAdmin(req);
+  if (adminGate instanceof NextResponse) return adminGate;
   const { searchParams } = new URL(req.url);
   const type = searchParams.get('type') || undefined;
   const source = searchParams.get('source') || undefined;
@@ -48,6 +51,8 @@ export async function GET(req: NextRequest) {
  * Handles new ingestion into Layer 0.
  */
 export async function POST(req: NextRequest) {
+  const adminGate = requireAdmin(req);
+  if (adminGate instanceof NextResponse) return adminGate;
   try {
     const body = await req.json();
 
@@ -79,7 +84,9 @@ export async function POST(req: NextRequest) {
  * DELETE /api/blob
  * Trigger cleanup of expired items.
  */
-export async function DELETE() {
+export async function DELETE(req: NextRequest) {
+  const adminGate = requireAdmin(req);
+  if (adminGate instanceof NextResponse) return adminGate;
   try {
     const removed = await cleanupExpiredBlobItems();
     return NextResponse.json({ success: true, expired_removed: removed });

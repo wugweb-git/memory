@@ -6,6 +6,8 @@ import { isOpenRouterEnabled, runJob, type ChatMessage } from '@/lib/ai/openrout
 import { createOpenAI } from '@ai-sdk/openai';
 import { NextResponse } from 'next/server';
 import { retrieve } from '@/lib/memory/rag';
+import { chatRetrievalFilters, emptyContextText } from '@/lib/memory/visibility';
+import { isAdminRequest } from '@/lib/security/auth';
 import { loadStyleHints } from '@/lib/persona/styleHintsLoader';
 
 const SYSTEM_PROMPT = `IDENTITY: You are the Antigravity AI integrated into the Identity Prism OS.
@@ -54,6 +56,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'SIG_EMPTY: Awaiting signal spark.' }, { status: 400 });
     }
 
+    // Owner console chat (admin session) keeps full memory; /ask visitors only see public notes.
+    const admin = isAdminRequest(req);
+
     const question = getLastUserText(messages);
     if (!question) {
       return NextResponse.json({ message: 'SIG_EMPTY: Awaiting signal spark.' }, { status: 400 });
@@ -66,7 +71,7 @@ export async function POST(req: Request) {
     void searchMode;
     let context = '';
     try {
-      const retrieved = await retrieve(question);
+      const retrieved = await retrieve(question, chatRetrievalFilters(admin));
       const packets = Array.isArray(retrieved) ? retrieved : [];
       context = packets
         .map((p: any) => (Array.isArray(p.context) ? p.context.join('\n') : ''))
@@ -79,7 +84,7 @@ export async function POST(req: Request) {
     // L4 persona style hints: soft, best-effort, time-boxed; '' on any failure.
     const styleHints = await loadStyleHints();
 
-    const systemText = `${SYSTEM_PROMPT}\n\nContext nodes:\n${context || '(no indexed clusters matched)'}${styleHints ? `\n\n${styleHints}` : ''}`;
+    const systemText = `${SYSTEM_PROMPT}\n\nContext nodes:\n${context || emptyContextText(admin)}${styleHints ? `\n\n${styleHints}` : ''}`;
 
     // Per-job routing: OPENROUTER_API_KEY set -> `ask` chain (free models, fallback
     // on 429/5xx). Not streamed upstream; the answer is replayed as a UI stream.
