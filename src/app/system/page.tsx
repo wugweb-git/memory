@@ -7,6 +7,7 @@ import { M3Card, M3Page, M3State } from "@/components/ui/m3";
 import { UI_API } from "@/lib/ui/contracts";
 import { apiRequest } from "@/lib/ui/api-client";
 import { AppShell } from "@/app/component/AppShell";
+import { PasskeyCard } from "./PasskeyCard";
 
 const MODULE_LABELS: Record<string, string> = {
   ask: "Ask / chat",
@@ -117,6 +118,8 @@ export default function SystemPage() {
               Toggles are stored in Neon and apply app-wide. Admin login required to change them.
             </p>
           </M3Card>
+
+          <PasskeyCard />
 
           {loading ? <M3State state="loading" message="Loading health systems..." /> : null}
           {error ? <M3State state="error" message={error} /> : null}

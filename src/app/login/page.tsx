@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, LogOut } from 'lucide-react';
 import { UI_API } from '@/lib/api/endpoints';
 import { APP_BRAND } from '@/config/ui-content';
+import { hasDevicePasskey, platformPasskeySupported, signInWithPasskey } from '@/lib/passkey-client';
 
 type SessionUser = { id: string; email: string; role: string };
 
@@ -20,6 +21,31 @@ function LoginForm() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [remember, setRemember] = useState(true);
+  const [bioReady, setBioReady] = useState(false);
+  const [bioBusy, setBioBusy] = useState(false);
+  const [status, setStatus] = useState('');
+
+  const safeNext = next.startsWith('/') && !next.startsWith('//') ? next : '/console';
+
+  useEffect(() => {
+    platformPasskeySupported().then((ok) => setBioReady(ok && hasDevicePasskey()));
+  }, []);
+
+  async function biometricLogin() {
+    setBioBusy(true);
+    setError(null);
+    setStatus('Waiting for Face ID or fingerprint');
+    try {
+      await signInWithPasskey(remember);
+      setStatus('Signed in');
+      window.location.assign(safeNext);
+    } catch (err: unknown) {
+      setStatus('');
+      setError(err instanceof Error ? err.message : 'Biometric sign-in failed');
+      setBioBusy(false);
+    }
+  }
 
   useEffect(() => {
     fetch(UI_API.authMe, { credentials: 'include' })
@@ -41,7 +67,7 @@ function LoginForm() {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, remember }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Login failed');
@@ -107,7 +133,7 @@ function LoginForm() {
                 id="login-email"
                 type="email"
                 required
-                autoComplete="username"
+                autoComplete="username webauthn"
                 inputMode="email"
                 enterKeyHint="next"
                 autoCapitalize="none"
@@ -130,14 +156,37 @@ function LoginForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+              <label htmlFor="login-remember" className="flex min-h-11 items-center gap-3 text-sm text-text-secondary">
+                <input
+                  id="login-remember"
+                  type="checkbox"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                  className="h-5 w-5 accent-accent"
+                />
+                Keep me signed in on this device
+              </label>
+              <p role="status" aria-live="polite" className="sr-only">{status}</p>
               {error && <p role="alert" className="text-sm text-danger">{error}</p>}
               <button
                 type="submit"
-                disabled={busy || !email || !password}
+                disabled={busy || bioBusy || !email || !password}
                 className="w-full min-h-11 py-3 rounded-2xl bg-text-primary text-bg-primary text-sm font-bold disabled:opacity-40"
               >
                 {busy ? 'Signing in…' : 'Sign in'}
               </button>
+              {bioReady ? (
+                <button
+                  type="button"
+                  onClick={biometricLogin}
+                  disabled={busy || bioBusy}
+                  className="w-full min-h-11 py-3 rounded-2xl border border-border-primary text-sm font-bold text-text-primary disabled:opacity-40"
+                >
+                  {bioBusy ? 'Waiting for your device…' : 'Sign in with Face ID or fingerprint'}
+                </button>
+              ) : (
+                <p className="text-2xs text-text-tertiary text-center">Set up biometrics after you sign in</p>
+              )}
             </form>
           )}
         </div>
