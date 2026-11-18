@@ -1,7 +1,7 @@
 # PENDING — Identity Prism OS
 
 > Single source of truth for what's live, what's not, and what to do next.
-> Last updated 2026-11-18 (final sync, checked against git, code and `npm test` 64/64). Prod: `memory-wugweb.vercel.app`.
+> Last updated 2026-11-19 (checked against git, code and `npm test` 138/138). Prod: `www.vedanshusrivastava.com` (`memory-wugweb.vercel.app`).
 >
 > 🔴 **Status 2026-11-18 (checked against git + Vercel):**
 > - **Live:** production alias is promoted to the newest `main` build (see PROJECT_TRACKER). Health, `/api/semantic/graph`,
@@ -59,11 +59,9 @@
 - **Docs:** `AGENTS.md` mirrors `CLAUDE.md`; `docs/layer-4-persona-module.md` added.
 
 ### Still open (2026-11-18)
-- **Final promote:** production is manual-promote; promote the newest READY `main` deployment (see Deploy workflow above).
+- ~~**Final promote**~~ done 2026-11-19 (`410e1b4` promoted).
 - **37 npm vulnerabilities** need major bumps. Deferred; owner rule: only safe changes (TSK-008).
-- **Memory embeddings failing:** 30 failed, 14 pending, 0 embedded. Check Vercel function logs; the likely cause is the embedding
-  provider quota. Owner decision on provider or billing.
-- **GitHub 5-minute schedule** (`memory-pipeline.yml`) has not fired on its own yet; only manual runs so far.
+- **Memory embeddings:** under review (2026-11-19).
 - **Shared components:** `M3Button` and `M3Card` still use all-caps text and `bg-black`; needs a design-token cleanup (see `docs/design.md`).
 - **Docs and Notion:** the repo docs are not mapped one-to-one to Notion pages.
 
@@ -78,7 +76,24 @@
   service worker v2 (never caches HTML or `/api/*`).
 - **Pipeline trigger:** `memory-pipeline.yml` is manual only; the 5-minute trigger is an external cron on `/api/jobs/process`.
 
-### Shipped 2026-11-19 (hardening decisions, branch-only until promoted)
+### Shipped 2026-11-19 (final: AI routing, Decider, scripts, env cleanup)
+All live on `www.vedanshusrivastava.com` (commit `410e1b4` promoted; docs commit `8c70c97` on `main`).
+- **Per-job OpenRouter model routing** (`src/lib/ai/models.ts`, `openrouter.ts`): jobs `ask`, `decision`, `signals`, `summary`, `ingest`
+  each have an ordered free-model fallback chain. Env overrides: `ASK_MODELS`, `DECISION_MODELS`, `SIGNALS_MODELS`,
+  `SUMMARY_MODELS`, `INGEST_MODELS`. Chain budget 18s per attempt, 52s total. `OPENROUTER_API_KEY` is set in Vercel.
+  Every LLM call site is routed (`runLLM`, `runAgentLLM`, `runTextLLM`, `ArtifactGenerator`, `SemanticEngine` via `job-client.ts`).
+  `signals` and `summary` have no LLM call sites yet (reserved).
+- **Perplexity Decider client** `src/lib/ai/decider.ts` (Decisions API `/api/alpha/decisions`, Alpha). Optional flags
+  `DECIDER_SIGNALS=1` and `DECIDER_MODE=1`, both default OFF; not verified live.
+- **Scripts:** `scripts/embedder-check.mjs` and `scripts/model-bench.mjs`. Bench 19 Nov: 11 models passed; gemma-4 26b/31b returned
+  429 (they fall through the chain).
+- **Security follow-ups now live** (the hardening block below): profile write whitelist, unpublished filter, identity from session
+  only, `requireAdmin` in handlers, `/ask` limited to public notes (`memory_packets.is_public`).
+- **Env cleanup:** removed `CLINE`, `MEMORY`, `SANITY_API_READ_TOKEN` from Vercel. Passkeys and remember-me live. The pipeline
+  GitHub run succeeds (`JOB_SECRET` matches).
+- **Tests:** 138 passing; `tsc` clean.
+
+### Shipped 2026-11-19 (hardening decisions, now live)
 - **Profile write whitelist:** `src/lib/profile/validate.ts`. Profile and section writes accept only known fields (unknown stripped,
   wrong types or oversize rejected with 400), admin-only; the store also picks whitelisted keys.
 - **Unpublished filter:** public `GET /api/profile/*` returns 404 for an unpublished profile and drops draft sections
@@ -92,6 +107,14 @@
   default false + index). Visitors retrieve only `is_public` packets (never restricted); the owner's console chat keeps everything.
   With nothing public, `/ask` says "No public notes yet". Mark items with `POST /api/memory/public { ids, isPublic }`.
   **Owner action:** the migration applies on the next deploy (`prisma migrate deploy` in build); then mark notes public.
+
+### Still open (2026-11-19)
+- **Owner marks notes public:** until then `/ask` answers "No public notes yet" (`GET/POST /api/memory/public`).
+- **Memory embeddings:** under review (a separate check is running).
+- **Decider flags** (`DECIDER_SIGNALS`, `DECIDER_MODE`) are unverified live; both stay OFF.
+- **`/ask` answers are replayed, not streamed.**
+- **37 npm vulnerabilities** deferred (need major upgrades).
+- **Review `STARTER_QUESTIONS`** in `src/app/ask/page.tsx`.
 
 ### Deferred by owner
 - All rate-limit work (`/ask` and `/api/chat` per-visitor limits, login attempt lockout). Not to be raised again unless asked.
@@ -201,8 +224,7 @@ GitHub `.atom` feed verified live/parseable). What's live:
 
 ## 👤 OWNER ACTION ITEMS (only you can do these)
 
-- [ ] **OpenRouter key** → buy embedding tokens, set `OPENROUTER_API_KEY` in Vercel. Unblocks memory
-      search + RAG-grounded chat + auto-embedding. (Provider already wired: `lib/memory/embeddings.ts`.)
+- [ ] **Mark notes public** (`GET/POST /api/memory/public`) so `/ask` has public notes to answer from.
 - [ ] **`NOTION_TOKEN`** → notion.so/my-integrations → internal integration → share pages → set in Vercel.
       Notion sync goes live immediately.
 - [ ] **Google OAuth app** → console.cloud.google.com → OAuth client (Web). Set `GOOGLE_CLIENT_ID` +
@@ -212,7 +234,6 @@ GitHub `.atom` feed verified live/parseable). What's live:
       token is Editor-only) → enables `sanity schema deploy` for Studio editing. In-app CMS works now.
 - [ ] **Email provider** (Postmark/Resend free tier) → set `INBOUND_EMAIL_SECRET` (HMAC) or
       `INBOUND_EMAIL_TOKEN`, then point the provider's inbound webhook at `/api/webhooks/email`.
-- [ ] **Rotate** the API keys pasted in chat (Groq/OpenAI/Gemini/MiniMax) when convenient.
 - [ ] **Delete seeded `sample` content** after validating the profile UI.
 - ~~Vercel Pro~~ — **never** (owner decision 2026-11-18). Stay on Hobby; use free external triggers for sub-daily jobs.
 
