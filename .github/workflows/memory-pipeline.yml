@@ -1,10 +1,10 @@
 name: Memory pipeline trigger
 
 # Vercel Hobby only allows daily crons, so the sub-daily L1/L2/L2.5 pipeline is
-# triggered from here (free). vercel.json keeps a daily fallback run.
+# triggered by an external free cron (cron-job.org, every 5 minutes, POST
+# /api/jobs/process with a Bearer JOB_SECRET). GitHub's own schedule was
+# unreliable, so this workflow is manual only. vercel.json keeps a daily run.
 on:
-  schedule:
-    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 permissions: {}
