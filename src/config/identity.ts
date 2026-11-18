@@ -15,7 +15,7 @@ export const IDENTITY_CONFIG = {
   QUERY_PARAM_USER_ID: 'userId',
 
   /** Display metadata used by UI surfaces */
-  DISPLAY_NAME: 'System User',
+  DISPLAY_NAME: 'Vedanshu Srivastava',
   HANDLE: 'system_user',
   EMAIL: 'system@identity-prism.local',
   ROLE: 'Systems Architect',
