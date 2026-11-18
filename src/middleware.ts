@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { verifyTokenEdge } from '@/lib/security/jwt-edge';
 import { hasPermission } from '@/lib/security/roles';
+import { isPublicRoute } from '@/lib/security/route-access';
 
 /**
  * Edge middleware — admin-path RBAC.
@@ -33,35 +34,30 @@ async function actorRole(request: NextRequest): Promise<string | null> {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (pathname.startsWith('/api/admin')) {
-    const role = await actorRole(request);
-    if (!role || !hasPermission(role, 'admin:read')) {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 401 });
-    }
+  // Default-deny: only the routes in route-access.ts are public. Everything
+  // else is the owner's private app and needs an admin session (single-owner
+  // product; a self-service signup account must not reach private data).
+  if (isPublicRoute(pathname, request.method)) {
+    return NextResponse.next();
   }
 
-  if (pathname.startsWith('/admin')) {
-    const role = await actorRole(request);
-    if (!role || !hasPermission(role, 'admin:read')) {
-      const login = new URL('/login', request.url);
-      login.searchParams.set('next', pathname);
-      return NextResponse.redirect(login);
-    }
+  const role = await actorRole(request);
+  if (role && hasPermission(role, 'admin:read')) {
+    return NextResponse.next();
   }
 
-  // The private app landing — any authenticated session may enter.
-  if (pathname === '/console' || pathname.startsWith('/console/')) {
-    const role = await actorRole(request);
-    if (!role) {
-      const login = new URL('/login', request.url);
-      login.searchParams.set('next', pathname);
-      return NextResponse.redirect(login);
-    }
+  if (pathname.startsWith('/api/')) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   }
 
-  return NextResponse.next();
+  const login = new URL('/login', request.url);
+  login.searchParams.set('next', pathname);
+  return NextResponse.redirect(login);
 }
 
+// Run on everything except Next internals and static files (public assets).
 export const config = {
-  matcher: ['/api/admin/:path*', '/admin/:path*', '/console', '/console/:path*'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|apple-touch-icon.png|og-image.png|robots.txt|sitemap.xml|icons/|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico|css|js|map|txt|woff2?)$).*)',
+  ],
 };
