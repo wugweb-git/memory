@@ -4,6 +4,7 @@ import { Mic, MicOff, CheckCircle2, X, Waves, Brain, Loader2, AlertCircle } from
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { resolveUserId } from '@/config/identity';
+import { captureToBuffer } from '@/lib/pwa/capture-client';
 
 type Stage = 'idle' | 'recording' | 'processing' | 'review' | 'anchoring' | 'error';
 
@@ -133,10 +134,9 @@ export const VoiceIngestion = () => {
     if (!parsed) return;
     setStage('anchoring');
     try {
-      const res = await fetch('/api/blob', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      // Queues in IndexedDB when offline and replays later (Background Sync / online event).
+      const out = await captureToBuffer({
+        body: {
           type:   'voice_note',
           source: 'voice_ingestion',
           raw_payload: {
@@ -152,12 +152,13 @@ export const VoiceIngestion = () => {
             ingestion_path: 'buffer/voice',
             received_at: new Date().toISOString(),
           },
-        }),
+        },
       });
 
-      if (!res.ok) throw new Error('Blob write failed');
+      if (out.kind === 'rejected') throw new Error('Blob write failed');
 
-      toast.success('Signal anchored to buffer queue for review.');
+      if (out.kind === 'queued') toast.info('Saved offline, will sync when you are back online.');
+      else toast.success('Signal anchored to buffer queue for review.');
       setParsed(null);
       setTranscript('');
       setStage('idle');

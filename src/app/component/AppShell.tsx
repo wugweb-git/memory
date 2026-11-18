@@ -76,7 +76,7 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
                 key={href}
                 href={href}
                 onClick={onNavigate}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-medium transition-all duration-150 mb-0.5 ${
+                className={`w-full flex items-center gap-3 px-3 min-h-11 rounded-2xl text-sm font-medium transition-all duration-150 mb-0.5 ${
                   active
                     ? 'bg-accent-high text-bg-primary shadow-sm'
                     : 'text-text-tertiary hover:bg-secondary hover:text-text-primary'
@@ -166,9 +166,9 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
   );
 
   return (
-    <div className="min-h-screen bg-bg-primary text-text-primary">
+    <div className="min-h-dvh bg-bg-primary text-text-primary">
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex fixed top-0 left-0 h-screen w-60 flex-col z-40 select-none bg-bg-elevated border-r border-border-secondary">
+      <aside className="hidden md:flex fixed top-0 left-0 h-dvh w-60 flex-col z-40 select-none bg-bg-elevated border-r border-border-secondary">
         <SidebarInner />
       </aside>
 
@@ -181,14 +181,14 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
             className="md:hidden fixed inset-0 z-50 bg-text-primary/30 backdrop-blur-sm"
             onClick={() => setDrawerOpen(false)}
           />
-          <aside className="md:hidden fixed top-0 left-0 h-screen w-64 flex flex-col z-[60] bg-bg-elevated border-r border-border-secondary">
+          <aside className="md:hidden fixed top-0 left-0 h-dvh w-64 flex flex-col z-[60] pt-[env(safe-area-inset-top)] bg-bg-elevated border-r border-border-secondary">
             <SidebarInner onNavigate={() => setDrawerOpen(false)} />
           </aside>
         </>
       )}
 
       {/* Top bar */}
-      <header className="fixed top-0 right-0 left-0 md:left-60 z-30 h-14 bg-bg-elevated/90 backdrop-blur-xl border-b border-border-secondary flex items-center justify-between px-4 md:px-8">
+      <header className="fixed top-0 right-0 left-0 md:left-60 z-30 h-[calc(3.5rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] bg-bg-elevated/90 backdrop-blur-xl border-b border-border-secondary flex items-center justify-between px-4 md:px-8">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -198,7 +198,7 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
           >
             <Menu size={20} />
           </button>
-          <Link href="/console" className="md:hidden flex items-center gap-2">
+          <Link href="/console" className="md:hidden flex min-h-11 items-center gap-2">
             <div className="w-7 h-7 rounded-xl bg-text-primary flex items-center justify-center">
               <Command size={14} className="text-bg-primary" />
             </div>
@@ -224,7 +224,7 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
       </header>
 
       {/* Content */}
-      <main className={`md:pl-60 pt-14 ${bottomDock ? 'pb-44 md:pb-12' : 'pb-24 md:pb-12'}`}>
+      <main className={`md:pl-60 pt-[calc(3.5rem+env(safe-area-inset-top))]${bottomDock ? 'pb-44 md:pb-12' : 'pb-24 md:pb-12'}`}>
         <div className="max-w-6xl mx-auto px-4 md:px-8 py-6 md:py-8">
           {children}
         </div>

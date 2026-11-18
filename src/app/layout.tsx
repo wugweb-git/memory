@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "./component/ThemeProvider";
 import { ChunkReloadGuard } from "./component/ChunkReloadGuard";
+import { CaptureSyncStatus } from "./component/CaptureSyncStatus";
 import { ServiceWorkerRegister } from "./component/ServiceWorkerRegister";
 import { InstallPrompt } from "./component/InstallPrompt";
 import { ConnectivityToast } from "./component/ConnectivityToast";
@@ -100,6 +101,7 @@ export default function RootLayout({
           <ChunkReloadGuard />
           <ServiceWorkerRegister />
           <ConnectivityToast />
+          <CaptureSyncStatus />
           {children}
           <InstallPrompt />
           <Analytics />

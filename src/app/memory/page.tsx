@@ -163,14 +163,14 @@ export default function MemoryControlSurface() {
       {/* Intelligence Hub */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <section className="lg:col-span-2 glass-panel rounded-radius-xl border border-border-secondary overflow-hidden flex flex-col">
-          <div className="px-6 py-5 border-b border-border-secondary flex items-center justify-between">
+          <div className="px-6 py-5 border-b border-border-secondary flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-1.5 h-1.5 rounded-full bg-accent" />
               <h3 className="text-sm font-bold uppercase tracking-widest text-text-secondary">Ingestion Matrix</h3>
             </div>
-            <div className="flex gap-2">
-              <input className="px-3 py-1.5 rounded-lg bg-bg-primary border border-border-secondary text-xs text-text-primary focus:border-accent/50 transition-colors" aria-label="Filter status" placeholder="Filter status..." value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} />
-              <input className="px-3 py-1.5 rounded-lg bg-bg-primary border border-border-secondary text-xs text-text-primary focus:border-accent/50 transition-colors" aria-label="Filter source" placeholder="Filter source..." value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} />
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+              <input className="min-h-11 w-full min-w-0 px-3 py-1.5 rounded-lg bg-bg-primary border border-border-secondary text-xs text-text-primary focus:border-accent/50 transition-colors" aria-label="Filter status" placeholder="Filter status..." value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} />
+              <input className="min-h-11 w-full min-w-0 px-3 py-1.5 rounded-lg bg-bg-primary border border-border-secondary text-xs text-text-primary focus:border-accent/50 transition-colors" aria-label="Filter source" placeholder="Filter source..." value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} />
             </div>
           </div>
 

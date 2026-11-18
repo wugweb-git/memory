@@ -38,10 +38,10 @@ const Label: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 
 const StatCard: React.FC<{ label: string; value: string; sub?: string; color?: string; icon: React.ReactNode }> =
 ({ label, value, sub, color = 'text-text-primary', icon }) => (
-  <div className="glass-panel rounded-radius-xl p-6 border border-border-secondary flex items-start justify-between">
-    <div>
+  <div className="glass-panel rounded-radius-xl p-4 md:p-6 border border-border-secondary flex items-start justify-between gap-2">
+    <div className="min-w-0">
       <p className="text-2xs font-black text-text-tertiary uppercase tracking-widest mb-1">{label}</p>
-      <p className={`text-2xl font-black tracking-tight ${color}`}>{value}</p>
+      <p className={`text-2xl font-black tracking-tight break-words ${color}`}>{value}</p>
       {sub && <p className="text-2xs text-text-disabled mt-1 font-bold">{sub}</p>}
     </div>
     <div className="w-10 h-10 rounded-2xl bg-secondary border border-border-primary flex items-center justify-center shrink-0">
