@@ -3,9 +3,9 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Command, Menu, X, Bell } from 'lucide-react';
+import { Command, Menu, LogOut, LogIn } from 'lucide-react';
 import { APP_BRAND, NAV_GROUPS, MOBILE_DOCK_ITEMS, SIDEBAR_STATS } from '@/config/ui-content';
-import { IDENTITY_CONFIG, avatarFallbackUrl } from '@/config/identity';
+import { toSessionView } from '@/lib/auth/session-view';
 import { UI_API } from '@/lib/api/endpoints';
 
 type AppShellProps = {
@@ -37,6 +37,7 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
 
   // Session state for the topbar account entry.
   const [session, setSession] = useState<{ email: string; role: string } | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
   const [sessionChecked, setSessionChecked] = useState(false);
   useEffect(() => {
     fetch(UI_API.authMe, { credentials: 'include' })
@@ -45,6 +46,17 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
       .catch(() => setSession(null))
       .finally(() => setSessionChecked(true));
   }, []);
+  const view = toSessionView(sessionChecked, session);
+  const signOut = async () => {
+    setSigningOut(true);
+    try {
+      await fetch(UI_API.authLogout, { method: 'POST', credentials: 'include' });
+    } catch {
+      /* fall through to login either way */
+    }
+    window.location.assign('/login');
+  };
+  const loginHref = `/login?next=${encodeURIComponent(pathname)}`;
   const navGroups = NAV_GROUPS
     .map((g) => ({ ...g, items: g.items.filter((i) => featureOn(i.feature)) }))
     .filter((g) => g.items.length > 0);
@@ -107,15 +119,48 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
         ))}
       </div>
 
-      <div className="px-3 py-3 border-t border-border-secondary">
-        <div className="flex items-center gap-3 p-2.5 rounded-2xl hover:bg-secondary transition-colors">
-          <img src={avatarFallbackUrl(64)} alt={IDENTITY_CONFIG.DISPLAY_NAME} className="w-8 h-8 rounded-full border border-border-primary" />
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-text-primary truncate">{IDENTITY_CONFIG.DISPLAY_NAME}</p>
-            <p className="text-2xs text-text-tertiary truncate">{IDENTITY_CONFIG.ROLE}</p>
+      <div className="px-3 py-3 border-t border-border-secondary space-y-1">
+        {view.state === 'loading' && (
+          <div className="flex items-center gap-3 p-2.5 min-h-[44px]" aria-busy="true" aria-label="Checking session">
+            <div className="w-8 h-8 rounded-full bg-secondary animate-pulse" />
+            <div className="flex-1 space-y-1.5">
+              <div className="h-2.5 w-24 rounded bg-secondary animate-pulse" />
+              <div className="h-2 w-14 rounded bg-secondary animate-pulse" />
+            </div>
           </div>
-          <Bell size={14} className="text-text-disabled" />
-        </div>
+        )}
+        {view.state === 'signed-in' && (
+          <>
+            <div className="flex items-center gap-3 p-2.5 min-h-[44px]">
+              <span className="w-8 h-8 shrink-0 rounded-full bg-text-primary text-bg-primary text-xs font-bold flex items-center justify-center">
+                {view.initial}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-text-primary truncate">{view.email}</p>
+                <p className="text-2xs text-text-tertiary truncate">{view.role}</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={signOut}
+              disabled={signingOut}
+              className="w-full flex items-center gap-3 px-3 min-h-[44px] rounded-2xl text-sm font-medium text-text-secondary hover:bg-secondary hover:text-text-primary transition-colors disabled:opacity-60"
+            >
+              <LogOut size={16} />
+              <span>{signingOut ? 'Signing out…' : 'Sign out'}</span>
+            </button>
+          </>
+        )}
+        {view.state === 'signed-out' && (
+          <Link
+            href={loginHref}
+            onClick={onNavigate}
+            className="w-full flex items-center gap-3 px-3 min-h-[44px] rounded-2xl text-sm font-medium text-text-primary hover:bg-secondary transition-colors"
+          >
+            <LogIn size={16} />
+            <span>Sign in</span>
+          </Link>
+        )}
       </div>
     </>
   );
@@ -148,7 +193,7 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
           <button
             type="button"
             aria-label="Open menu"
-            className="md:hidden p-2 -ml-2 text-text-secondary hover:text-text-primary"
+            className="md:hidden min-w-[44px] min-h-[44px] -ml-2 flex items-center justify-center text-text-secondary hover:text-text-primary"
             onClick={() => setDrawerOpen(true)}
           >
             <Menu size={20} />
@@ -160,23 +205,22 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
             <span className="text-sm font-bold tracking-tight text-text-primary">{APP_BRAND.name}</span>
           </Link>
         </div>
-        <Link
-          href={`/login?next=${encodeURIComponent(pathname)}`}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary border border-border-secondary hover:border-border-primary transition-colors"
-        >
-          {session ? (
-            <>
-              <span className="w-5 h-5 rounded-full bg-text-primary text-bg-primary text-2xs font-bold flex items-center justify-center">
-                {session.email.charAt(0).toUpperCase()}
-              </span>
-              <span className="text-2xs font-bold text-text-tertiary hidden sm:block">{session.role}</span>
-            </>
-          ) : (
-            <span className="text-2xs font-bold text-text-tertiary">
-              {sessionChecked ? 'Sign in' : '…'}
+        {view.state === 'signed-in' && (
+          <div className="flex items-center gap-2 px-3 min-h-[44px]">
+            <span className="w-6 h-6 rounded-full bg-text-primary text-bg-primary text-2xs font-bold flex items-center justify-center">
+              {view.initial}
             </span>
-          )}
-        </Link>
+            <span className="text-xs font-semibold text-text-secondary hidden sm:block">{view.role}</span>
+          </div>
+        )}
+        {view.state === 'signed-out' && (
+          <Link
+            href={loginHref}
+            className="flex items-center min-h-[44px] px-4 rounded-full bg-text-primary text-bg-primary text-sm font-semibold hover:opacity-90 transition-opacity"
+          >
+            Sign in
+          </Link>
+        )}
       </header>
 
       {/* Content */}
