@@ -19,8 +19,8 @@ Every LLM call site is mapped to a job below. Without the key each site keeps it
 | `runTextLLM` (`src/lib/output/generator.ts`, L5 content) | ask | prose |
 | `ArtifactGenerator` (`src/lib/intelligence/generator.ts`) | ask | prose |
 | `SemanticEngine` entity/intent/topic extraction (`src/lib/processing/semantic.ts`, cron `memory-pipeline`) | ingest | JSON, via `createJobClient('ingest')`; an injected `llmClient` (diagnostics) still wins |
-| Signal extraction (`src/lib/processing/signals.ts`) | signals | rule-based today, no LLM call; the job is reserved for LLM classification |
-| Summarising / compressing | summary | no such call site exists today; reserved |
+| Signal extraction (`src/lib/processing/signals.ts`) | signals | rule-based by design, no LLM call; job stays reserved (see "Why signals and summary stay reserved") |
+| Summarising / compressing | summary | no clear low-risk call site exists; reserved (see below) |
 | Signal importance (opt-in `DECIDER_SIGNALS=1`) | Decider API | see below |
 | Mode routing (opt-in `DECIDER_MODE=1`) | Decider API | see below |
 
@@ -77,9 +77,18 @@ OpenRouter's OpenAPI spec (`https://openrouter.ai/openapi.json`, `POST /api/alph
 marked Alpha, so it may change): body `{model, state, questions}`; question types `noul` (yes/no,
 answer `noul` = P(true)), `choice` (`criteria` = option -> description, answer `choice` +
 `probabilities`), `score` (`criteria` = ordered rubric array, answer `score` + `probabilities`);
-a question can come back as `refusal`. Verified from the spec only; the free `pplx-decider-*:free`
-model IDs were not exercised live (no key used) and do not appear in `/api/v1/models`, so confirm
-with one real call before relying on them.
+a question can come back as `refusal`.
+
+**Verified live 19 Nov 2026 (2 real requests, both HTTP 200, cost 0).** Model `perplexity/pplx-decider-flash-v1.3:free`
+works with the existing client unchanged; no parsing fix was needed. Observed shapes:
+
+- `noul`: `{"model":"perplexity/pplx-decider-flash-v1.3-20261112","answers":{"q":{"type":"noul","noul":0.9952}},"usage":{"input_tokens":85,"output_tokens":1,"cost":0,"is_byok":false,...},"id":"gen-dec-...","provider":"Perplexity"}`.
+  No `confidence` field on `noul` (the client treats it as optional). `noul` is P(true) in 0..1.
+- `choice` + `score` in one request (two questions, keys `a` and `b`): `a` = `{"type":"choice","choice":"hiring","probabilities":{"hiring":0.998,"travel":0.002},"confidence":0.996}`;
+  `b` = `{"type":"score","score":0.384,"legend":{"0":"not urgent","1":"somewhat urgent","2":"very urgent"},"probabilities":{"0":0.636,"1":0.343,"2":0.020},"confidence":0.616}`.
+  `score` is an expected value over rubric indexes (0 = first rubric entry), so it is a float, not an integer.
+- The response `model` is the resolved dated id (`...-v1.3-20261112`), not the requested `:free` id; the client already reports it. Output tokens are 1-2, latency is low.
+- The second default model (`pplx-decider-v1.3:free`) was not called (request budget); it is only tried when the flash model fails.
 
 - Models tried in order, each once: `perplexity/pplx-decider-flash-v1.3:free`,
   `perplexity/pplx-decider-v1.3:free` (override with `DECIDER_MODELS`).
@@ -89,6 +98,28 @@ with one real call before relying on them.
   `metadata.decider_importance`. Failures keep all signals.
 - `DECIDER_MODE=1` (default off): when the caller passes no valid mode (missing, `auto`, unknown),
   the orchestrator picks architect/founder/operator via `choice`. An explicit valid mode is never overridden.
+
+**Safe to enable?** Both flags stay default OFF in code. Technically they are safe to turn on: the call works, the shapes
+parse, every helper returns a fallback and never throws, `DECIDER_SIGNALS` keeps all signals on failure, and `DECIDER_MODE`
+never overrides an explicit mode. The cost is quota, not correctness: each request counts against the shared ~50/day `:free`
+cap, `DECIDER_SIGNALS` makes one request per ingested packet (a bulk import would exhaust the day and starve `/ask` and the
+brain), and it makes signal output non-deterministic (a signal's survival depends on a model score). So: `DECIDER_MODE=1`
+is low risk (one request per auto-mode decision); keep `DECIDER_SIGNALS` off until there is a per-day budget guard or a
+non-free key. Not enabled by this change.
+
+## Why signals and summary stay reserved
+
+Reviewed in code on 19 Nov 2026; no wiring was added because no site is clearly low risk.
+
+- **signals:** `extractSignals` (`src/lib/processing/signals.ts`) is the L2 contract: deterministic, idempotent (signal hash
+  from packet id + type + rule version), purely descriptive and rule-versioned; the admin console advertises "Deterministic
+  signals". An LLM classifier would make the same packet produce different signals over time and break hash idempotency and
+  replay/rollback tests. The one acceptable AI touch, importance thresholding, already exists via the Decider (`DECIDER_SIGNALS`).
+- **summary:** the only summary-like outputs are source-provided feed summaries (copied, not generated) and the persona
+  voice summary in `src/lib/persona/rebuild.ts`, which already runs through the `decision` job as part of a JSON synthesis
+  (splitting it out would add a request for no gain). There is no memory-packet summary or compression feature to attach to.
+  A packet summary would be a new feature (new field, UI, backfill), not a routing change.
+- The jobs and their `SIGNALS_MODELS` / `SUMMARY_MODELS` chains remain valid for when such a site is added.
 
 ## Embeddings: checking and switching
 

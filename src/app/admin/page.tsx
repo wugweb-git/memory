@@ -24,6 +24,7 @@ const HEALTH_ENDPOINTS: Array<{ name: string; path: string }> = [
 const SHORTCUTS = [
   { href: '/system', label: 'Module switches', desc: 'Enable or disable app modules' },
   { href: '/admin/memory', label: 'Memory admin', desc: 'Packet-level inspection' },
+  { href: '/admin/memory/public', label: 'Public notes', desc: 'Choose what Ask may quote' },
   { href: '/admin/profile', label: 'Profile admin', desc: 'Public profile internals' },
   { href: '/buffer', label: 'Buffer', desc: 'Intake queue & capture' },
 ];
