@@ -66,6 +66,9 @@ export const API_ENDPOINTS = {
     email: { path: '/api/ingest/email', methods: ['POST'] as const },
     rss: { path: '/api/ingest/rss', methods: ['POST'] as const },
     notion: { path: '/api/ingest/notion', methods: ['POST'] as const },
+    csv: { path: '/api/ingest/csv', methods: ['POST'] as const },
+    docx: { path: '/api/ingest/docx', methods: ['POST'] as const },
+    device: { path: '/api/ingest/device', methods: ['POST'] as const },
   },
   memory: {
     audit: { path: '/api/memory/audit', methods: ['GET'] as const },
@@ -127,6 +130,18 @@ export const API_ENDPOINTS = {
   },
   jobs: {
     run: { path: '/api/jobs/run', methods: ['GET', 'POST'] as const },
+    process: { path: '/api/jobs/process', methods: ['GET', 'POST'] as const },
+  },
+  sources: {
+    list: { path: '/api/sources', methods: ['GET'] as const },
+    sync: { path: '/api/sources/[id]/sync', methods: ['POST'] as const },
+  },
+  oauth: {
+    googleStart: { path: '/api/oauth/google/start', methods: ['GET'] as const },
+    googleCallback: { path: '/api/oauth/google/callback', methods: ['GET'] as const },
+  },
+  webhooks: {
+    email: { path: '/api/webhooks/email', methods: ['POST'] as const },
   },
   workflows: {
     logs: { path: '/api/workflows/logs', methods: ['GET'] as const },
