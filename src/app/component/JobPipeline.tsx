@@ -93,9 +93,9 @@ export const JobPipeline = () => {
             Pipeline &amp; status
           </p>
         </div>
-        <div className="flex gap-3 items-center">
+        <div className="flex flex-wrap gap-3 items-center">
           <button onClick={load} disabled={loading}
-            className="p-2 rounded-xl border border-border-secondary text-text-disabled hover:text-accent hover:border-accent/30 transition-colors"
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-border-secondary text-text-disabled hover:text-accent hover:border-accent/30 transition-colors"
             aria-label="Refresh pipeline">
             <RefreshCcw size={15} className={loading ? 'animate-spin' : ''} />
           </button>

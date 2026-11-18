@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, LogOut } from 'lucide-react';
 import { UI_API } from '@/lib/api/endpoints';
+import { haptic } from '@/lib/pwa/browser';
 import { APP_BRAND } from '@/config/ui-content';
 import { hasDevicePasskey, platformPasskeySupported, signInWithPasskey } from '@/lib/passkey-client';
 
@@ -39,6 +40,7 @@ function LoginForm() {
     try {
       await signInWithPasskey(remember);
       setStatus('Signed in');
+      haptic('success');
       window.location.assign(safeNext);
     } catch (err: unknown) {
       setStatus('');
@@ -71,6 +73,7 @@ function LoginForm() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Login failed');
+      haptic('success');
       // Hard navigation so the fresh session cookie is sent and the dashboard
       // (and PWA shell) loads with it.
       window.location.assign(next.startsWith('/') && !next.startsWith('//') ? next : '/console');

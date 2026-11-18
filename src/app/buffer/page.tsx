@@ -150,16 +150,17 @@ export default function BufferControlSurface() {
             </div>
           </div>
           
-          <div className="flex items-center gap-6">
-            <div className="w-48 h-1.5 bg-secondary rounded-full overflow-hidden">
+          <div className="flex w-full min-w-0 items-center gap-4 md:w-auto md:gap-6">
+            <div className="h-1.5 min-w-0 flex-1 md:w-48 md:flex-none bg-secondary rounded-full overflow-hidden">
               <div 
                 className={`h-full transition-all duration-1000 ease-out ${stats ? getStatusColor(stats.status) : 'bg-text-disabled'}`}
                 style={{ width: `${stats?.usage_percent || 0}%` }}
               />
             </div>
             <button 
+              aria-label="Refresh buffer"
               onClick={() => { fetchItems(); fetchStats(); }}
-              className="p-2 rounded-lg hover:bg-secondary text-text-tertiary hover:text-text-primary transition-colors"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg hover:bg-secondary text-text-tertiary hover:text-text-primary transition-colors"
             >
               <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
             </button>

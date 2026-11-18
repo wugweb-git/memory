@@ -85,12 +85,12 @@ export const JobSearchAgent = () => {
             Leads &amp; outreach
           </p>
         </div>
-        <div className="flex gap-4 items-center">
+        <div className="flex flex-wrap gap-4 items-center">
           <button
             type="button"
             onClick={load}
             disabled={loading}
-            className="p-2 rounded-xl border border-border-secondary text-text-disabled hover:text-accent transition-colors"
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-border-secondary text-text-disabled hover:text-accent transition-colors"
             aria-label="Refresh leads"
           >
             <RefreshCcw size={15} className={loading ? 'animate-spin' : ''} />
@@ -121,9 +121,9 @@ export const JobSearchAgent = () => {
                 transition={{ delay: idx * 0.1 }}
                 role="listitem"
               >
-                <article className="glass-panel p-8 rounded-[2.5rem] border border-border-secondary hover:border-border-primary hover:shadow-2xl transition-all duration-700 group relative overflow-hidden">
-                  <div className="flex items-center justify-between flex-wrap md:flex-nowrap gap-8 relative z-10">
-                    <div className="flex items-center gap-8">
+                <article className="glass-panel p-5 md:p-8 rounded-[2.5rem] border border-border-secondary hover:border-border-primary hover:shadow-2xl transition-all duration-700 group relative overflow-hidden">
+                  <div className="flex items-center justify-between flex-wrap md:flex-nowrap gap-4 md:gap-8 relative z-10">
+                    <div className="flex min-w-0 items-center gap-4 md:gap-8">
                       <div className="relative w-16 h-16 flex items-center justify-center shrink-0">
                         <span className="text-2xs font-black text-accent">{lead.score}%</span>
                       </div>
@@ -136,7 +136,7 @@ export const JobSearchAgent = () => {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-6 ml-auto">
+                    <div className="flex flex-wrap items-center gap-3 md:gap-6 md:ml-auto">
                       <span className={`px-4 py-1.5 rounded-full border text-2xs font-black uppercase tracking-widest flex items-center gap-2 ${statusCfg.color}`}>
                         <StatusIcon size={12} /> {statusCfg.label}
                       </span>
@@ -145,7 +145,7 @@ export const JobSearchAgent = () => {
                           href={lead.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-2xs font-black text-accent uppercase tracking-widest hover:underline"
+                          className="inline-flex min-h-11 items-center text-2xs font-black text-accent uppercase tracking-widest hover:underline"
                         >
                           View_Nexus
                         </a>
@@ -154,7 +154,7 @@ export const JobSearchAgent = () => {
                           href={IDENTITY_CONFIG.LINKEDIN_JOBS_URL}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-2xs font-black text-accent uppercase tracking-widest hover:underline"
+                          className="inline-flex min-h-11 items-center text-2xs font-black text-accent uppercase tracking-widest hover:underline"
                         >
                           Find_Roles
                         </a>
@@ -162,7 +162,7 @@ export const JobSearchAgent = () => {
                       <time className="text-2xs font-mono text-text-tertiary">{lead.date}</time>
                       <button
                         type="button"
-                        className="w-11 h-11 rounded-2xl bg-bg-elevated border border-border-secondary flex items-center justify-center hover:bg-black hover:text-bg-primary transition-all"
+                        className="w-11 h-11 rounded-2xl bg-bg-elevated border border-border-secondary flex items-center justify-center hover:bg-text-primary hover:text-bg-primary transition-all"
                         aria-label="Open lead"
                       >
                         <ArrowRight size={20} />

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Archive, Check, Database, Pin, RefreshCw, ShieldAlert, Trash2, UploadCloud, Layers } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { captureToBuffer } from '@/lib/pwa/capture-client';
 
 type BlobItem = {
   id: string;
@@ -69,11 +70,8 @@ export function BlobBuffer() {
       await new Promise((r) => setTimeout(r, 160));
       setUploadProgress(stage);
     }
-    await fetch('/api/blob', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ type, source, content })
-    });
+    // Queued locally when offline; /api/blob expects the text under raw_payload.
+    await captureToBuffer({ body: { type, source, raw_payload: { content } } });
     setUploadProgress(100);
     setTimeout(() => setUploadProgress(null), 400);
     setContent('');
