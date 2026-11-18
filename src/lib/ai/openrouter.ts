@@ -20,8 +20,10 @@ export interface ChatMessage {
 export interface RunJobOptions {
   temperature?: number;
   maxTokens?: number;
-  /** Per-attempt timeout in ms (default 25000). */
+  /** Per-attempt timeout in ms (default 18000). */
   timeoutMs?: number;
+  /** Total time budget across the whole chain in ms (default 52000, inside a 60s function limit). */
+  budgetMs?: number;
   /** Override fetch (tests). */
   fetchImpl?: typeof fetch;
   /** Override env (tests). */
@@ -97,16 +99,22 @@ export async function runJob(job: JobName, messages: ChatMessage[], opts: RunJob
   const doFetch = opts.fetchImpl ?? fetch;
   const chain = getChain(job, env);
   const wantJson = opts.json ?? jobNeedsJson(job);
-  const timeoutMs = opts.timeoutMs ?? 25000;
+  const timeoutMs = opts.timeoutMs ?? 18000;
+  const budgetMs = opts.budgetMs ?? 52000;
+  const chainStart = Date.now();
   const attempts: Attempt[] = [];
 
   for (const model of chain) {
+    if (opts.signal?.aborted) break;
+    const remaining = budgetMs - (Date.now() - chainStart);
+    if (remaining < 3000) break; // not enough time left for a useful attempt
     const started = Date.now();
     const record = (a: Omit<Attempt, 'model' | 'ms'>) =>
       attempts.push({ model, ms: Date.now() - started, ...a });
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-    opts.signal?.addEventListener('abort', () => ctrl.abort(), { once: true });
+    const timer = setTimeout(() => ctrl.abort(), Math.min(timeoutMs, remaining));
+    const onAbort = () => ctrl.abort();
+    opts.signal?.addEventListener('abort', onAbort, { once: true });
     try {
       const body: Record<string, unknown> = {
         model,
@@ -152,6 +160,7 @@ export async function runJob(job: JobName, messages: ChatMessage[], opts: RunJob
       record({ ok: false, reason: err?.name === 'AbortError' ? 'timeout' : 'network' });
     } finally {
       clearTimeout(timer);
+      opts.signal?.removeEventListener('abort', onAbort);
     }
   }
   throw new JobFailedError(job, attempts);

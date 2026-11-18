@@ -12,6 +12,7 @@ import { logDecisionNeon } from "./logging/neon";
 import { runCritic } from "./output/critic";
 import { getModeInstruction } from "./mode/mode";
 import { resolveMode } from "./mode/decider-mode";
+import { isOpenRouterEnabled } from "@/lib/ai/openrouter";
 import { selectModel } from "./routing";
 import { runReasoner } from "./agents/reasoner";
 import { runDecisionAgent } from "./agents/decision";
@@ -89,7 +90,7 @@ export async function processDecision(params: {
       rawOutput = await runDecisionAgent({ analysis, context, mode, externalInput: external_input, modelName: tier });
       decideGen.end({ output: rawOutput });
     } else {
-      const generation = trace.generation({ name: "reasoning_pass", model: "gpt-4o-mini", input: prompt });
+      const generation = trace.generation({ name: "reasoning_pass", model: isOpenRouterEnabled() ? "openrouter:decision-chain" : "gpt-4o-mini", input: prompt });
       const llmResult = await runLLMWithMeta(prompt);
       rawOutput = llmResult.text;
       generation.end({ output: rawOutput, model: llmResult.model });
