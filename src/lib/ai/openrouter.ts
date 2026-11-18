@@ -27,6 +27,8 @@ export interface RunJobOptions {
   /** Override env (tests). */
   env?: NodeJS.ProcessEnv;
   signal?: AbortSignal;
+  /** Force JSON (true) or plain-text (false) handling regardless of the job default. */
+  json?: boolean;
 }
 
 export interface Attempt {
@@ -94,7 +96,7 @@ export async function runJob(job: JobName, messages: ChatMessage[], opts: RunJob
   if (!key) throw new Error('OPENROUTER_API_KEY not set');
   const doFetch = opts.fetchImpl ?? fetch;
   const chain = getChain(job, env);
-  const wantJson = jobNeedsJson(job);
+  const wantJson = opts.json ?? jobNeedsJson(job);
   const timeoutMs = opts.timeoutMs ?? 25000;
   const attempts: Attempt[] = [];
 

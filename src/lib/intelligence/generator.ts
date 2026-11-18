@@ -1,6 +1,8 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 import { PersonaResolver } from "./resolver";
+import { isOpenRouterEnabled } from "@/lib/ai/models";
+import { runJob } from "@/lib/ai/openrouter";
 
 const model = new ChatOpenAI({
   modelName: "gpt-4o", // Higher fidelity for content generation
@@ -37,13 +39,17 @@ export class ArtifactGenerator {
       - NO generic opening ("I'm excited to share", "Reflecting on").
     `;
 
-    const response = await model.invoke([
-      new SystemMessage(`You are a high-fidelity content generator. Your voice is ${persona.style_weights.voice}.`),
-      new HumanMessage(prompt)
-    ]);
+    const systemText = `You are a high-fidelity content generator. Your voice is ${persona.style_weights.voice}.`;
+    // Per-job routing: prose generation uses the `ask` chain when OPENROUTER_API_KEY is set.
+    const content: unknown = isOpenRouterEnabled()
+      ? (await runJob("ask", [
+          { role: "system", content: systemText },
+          { role: "user", content: prompt },
+        ], { temperature: 0.7 })).text
+      : (await model.invoke([new SystemMessage(systemText), new HumanMessage(prompt)])).content;
 
     return {
-      content: response.content,
+      content,
       type,
       generated_at: new Date(),
       persona_applied: true
