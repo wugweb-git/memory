@@ -67,6 +67,26 @@
 - **Shared components:** `M3Button` and `M3Card` still use all-caps text and `bg-black`; needs a design-token cleanup (see `docs/design.md`).
 - **Docs and Notion:** the repo docs are not mapped one-to-one to Notion pages.
 
+### Shipped 2026-11-19
+- **Access control:** default-deny middleware (`src/middleware.ts`, `src/lib/security/route-access.ts`). Only `/`, `/login`, `/ask`,
+  `/p/*`, `/offline`, `/api/chat`, public profile and showcase reads, `/api/auth/*` and the self-authenticating job, webhook and OAuth
+  callback routes are reachable without the owner session.
+- **Signup closed** (403). Admin is only ever granted by the `ADMIN_EMAIL` / `ADMIN_PASSWORD` environment credentials; login trims
+  stray whitespace from both.
+- **`/ask`** uses a minimal public frame (no owner menu); the app shell shows the real session with sign out.
+- **Mobile and PWA:** accessibility pass, install prompt on private pages, share button on the public profile, offline toast,
+  service worker v2 (never caches HTML or `/api/*`).
+- **Pipeline trigger:** `memory-pipeline.yml` is manual only; the 5-minute trigger is an external cron on `/api/jobs/process`.
+
+### Open decisions (2026-11-19)
+- Rotate `AUTH_SECRET` (signup was open, so an earlier admin session could still be valid).
+- Restrict `/ask` retrieval to items marked public (today it can quote any non-restricted memory).
+- Audit follow-ups: whitelist fields on profile writes, filter unpublished profile sections on read, remove header and query identity
+  fallbacks in `src/lib/security/auth.ts`, add `requireAdmin` inside memory, blob, persona and admin route handlers.
+
+### Deferred by owner
+- All rate-limit work (`/ask` and `/api/chat` per-visitor limits, login attempt lockout). Not to be raised again unless asked.
+
 ---
 
 ## ✅ Live and verified on prod
