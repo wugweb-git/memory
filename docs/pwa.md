@@ -24,7 +24,7 @@ Captures sent to the intake endpoint (`POST /api/blob`) are queued when the devi
   1. Background Sync: the page registers `prism-capture-sync`; `public/sw.js` replays the same IndexedDB records on the `sync` event (Chromium browsers; not Safari or Firefox).
   2. Fallback: `CaptureSyncStatus` (mounted in the root layout) flushes on the `online` event and when the app opens.
 - Status: `CaptureSyncStatus` shows "Saved offline, will sync" while items are pending, and the app icon badge shows the pending count where the Badging API exists.
-- Replay rules: oldest first; stops on a network error or a 401/403 (items are kept until you sign in again); 404, 405, 410, 413, 415 and 422 are dropped as they can never succeed; every other failure is retried up to 8 times. `/api/blob` answers 400 for any internal error, including a database outage, so a plain 400 is retried rather than dropped. The queue holds at most 200 items (oldest dropped first).
+- Replay rules: oldest first; stops on a network error or a 401/403 (items are kept until you sign in again); 400, 404, 405, 410, 413, 415 and 422 are dropped as they can never succeed; every other failure is retried up to 8 times. `/api/blob` answers 400 only for invalid input and 500 for internal errors such as a database outage, so those are retried. The queue holds at most 200 items (oldest dropped first).
 - Wired into: `VoiceIngestion` (buffer page) and `BlobBuffer`. `DeviceCapture` and `CsvImport` post to other endpoints and are not queued yet; pass `url` to `captureToBuffer` to queue them.
 - Keep `PERMANENT` and `MAX_ATTEMPTS` in `public/sw.js` in step with `capture-queue.ts` (the worker cannot import TypeScript).
 

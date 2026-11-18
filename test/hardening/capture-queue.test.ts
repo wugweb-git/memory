@@ -31,7 +31,8 @@ test('classifyStatus', () => {
   assert.equal(classifyStatus(403), 'auth');
   assert.equal(classifyStatus(429), 'retry');
   assert.equal(classifyStatus(503), 'retry');
-  assert.equal(classifyStatus(400), 'retry');
+  assert.equal(classifyStatus(500), 'retry');
+  assert.equal(classifyStatus(400), 'drop');
   assert.equal(classifyStatus(422), 'drop');
   assert.equal(classifyStatus(404), 'drop');
 });

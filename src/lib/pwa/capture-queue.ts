@@ -29,12 +29,12 @@ export type Sender = (item: QueuedCapture) => Promise<SendResult>;
 export type StatusClass = 'ok' | 'retry' | 'auth' | 'drop';
 
 /** Statuses that can never succeed on replay. */
-const PERMANENT = new Set([404, 405, 410, 413, 415, 422]);
+const PERMANENT = new Set([400, 404, 405, 410, 413, 415, 422]);
 
 /**
  * 2xx done; 401/403 keep (needs sign-in); known-permanent 4xx drop. Everything else
- * retries with an attempt cap. /api/blob answers 400 for any internal error (including
- * a database outage), so a plain 400 must not discard the user's note immediately.
+ * retries with an attempt cap. /api/blob answers 400 only for invalid input and 500 for
+ * internal failures (including a database outage), so 400 can never succeed on replay.
  */
 export function classifyStatus(status: number): StatusClass {
   if (status >= 200 && status < 300) return 'ok';
@@ -128,7 +128,7 @@ export type CaptureOutcome =
 
 /**
  * Try the network first; on offline or a network error, queue instead.
- * A permanent rejection (404/405/410/413/415/422) is returned as 'rejected' and not queued.
+ * A permanent rejection (400/404/405/410/413/415/422) is returned as 'rejected' and not queued.
  * 401/403 and every other failure status are queued so nothing typed is lost.
  * Without storage the send is attempted and any error is rethrown.
  */

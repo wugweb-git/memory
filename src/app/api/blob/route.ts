@@ -53,9 +53,16 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const adminGate = requireAdmin(req);
   if (adminGate instanceof NextResponse) return adminGate;
+  let body: any;
   try {
-    const body = await req.json();
-
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 });
+  }
+  if (!body || typeof body !== 'object' || typeof body.type !== 'string' || body.raw_payload === undefined || body.raw_payload === null || body.raw_payload === '') {
+    return NextResponse.json({ error: 'INVALID_BODY', message: 'type and raw_payload are required' }, { status: 400 });
+  }
+  try {
     // Check storage limits first
     const stats = await getBlobStats();
     if (stats.status === 'blocked') {
@@ -76,7 +83,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(item, { status: 201 });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    // Internal failures (database down, etc.) are 500 so offline captures retry; 400 is only for bad input above.
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 

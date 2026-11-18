@@ -124,7 +124,7 @@ All live on `www.vedanshusrivastava.com` (commit `410e1b4` promoted; docs commit
 - **Console:** the "Sync Status" sub-label no longer says "All layers nominal" when the status is degraded.
 
 ### Still open (2026-11-19)
-- **Pipeline timeout (found live 2026-11-19):** the first manual run after promotion returned 504 (`FUNCTION_INVOCATION_TIMEOUT`) once real embedding work existed. Fixed on `main` (50s pass budget; embedding and semantic loops stop starting packets when time is short) but not yet pushed or promoted. Re-dispatch the pipeline after that deploy and confirm embedded counts.
+- **Pipeline timeout (found live 2026-11-19):** the first manual run after promotion returned 504 (`FUNCTION_INVOCATION_TIMEOUT`) once real embedding work existed. Fixed on `main` (50s pass budget; embedding and semantic loops stop starting packets when time is short); ships in the final batched push. Re-dispatch the pipeline after that deploy and confirm embedded counts.
 - **Promoted 2026-11-19:** build for `a816077` is live (service worker v3, new starter questions, `/ask` streams, `x-model` header set). Remaining verification: live is still the older build. After promotion verify `/ask` streaming at
   phone width, run `scripts/validate-live.mjs` (two response shapes are guesses: `/api/profile/system_user`, `/api/jobs/process`),
   dispatch the pipeline and confirm embedded counts, check the service worker and offline page, re-measure `/memory` and `/console`
@@ -137,8 +137,7 @@ All live on `www.vedanshusrivastava.com` (commit `410e1b4` promoted; docs commit
 - **Push notifications:** not built. Owner steps (VAPID keys, env vars, subscription table) are in `docs/pwa.md`.
 - **Embedding retrieval quality:** nemotron embedders may want a query/passage prefix; LangChain sends the same payload for both.
   Consistent, so correct, but possibly below the model's best. Revisit only if answers look weak.
-- **Online capture 400:** a genuine validation error on `/api/blob` is queued and shows "Saved offline" (the route returns 400 for
-  any internal error, so 400 is retried up to 8 times).
+- **Capture errors:** `/api/blob` now answers 400 only for invalid input and 500 for internal failures; the offline queue drops 400 and retries 5xx.
 - **3 high npm vulnerabilities** remain (Prisma major upgrade needed); deferred.
 
 ### Deferred by owner
