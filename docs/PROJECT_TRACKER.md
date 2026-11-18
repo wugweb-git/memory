@@ -24,7 +24,7 @@ Primary tracking document for bugs, architectural resolutions, and pending work.
 | BUG-014 | `api-map.test.ts` failing (9 routes undocumented) | Added csv/docx/device ingest, jobs/process, sources, oauth/google, webhooks/email to `src/lib/api/endpoints.ts`; suite 51/51 | ✅ Fixed 2026-11-18 |
 | BUG-015 | `scripts/scan-secrets.sh` silently passed without `rg` | `git grep` fallback, Postgres/Neon patterns, hard-fail if no scanner | ✅ Fixed 2026-11-18 |
 | BUG-016 | CodeQL alerts (SSRF, format string, HTML strip, rate-limit) | Live ones fixed (repeat-until-stable HTML strip, constant log format, orphaned SSRF files removed); 10 stale alerts for deleted files dismissed | ✅ Fixed 2026-11-18 |
-| BUG-017 | `@vercel/sandbox` unused but pinned to `latest` (4 high vulns) | Removed on `fix/remove-unused-sandbox` (npm audit 45 → 41) | 🔄 On branch, pending merge |
+| BUG-017 | npm vulnerabilities (67; 4 critical) | `npm audit fix`, removed unused `@vercel/sandbox` (pinned `latest`), `overrides` for brace-expansion / nanoid / minimatch → 37 (0 critical, 0 moderate) | ✅ Fixed 2026-11-18 (remaining 37: see TSK-008) |
 
 ---
 
@@ -80,7 +80,7 @@ Primary tracking document for bugs, architectural resolutions, and pending work.
 | TSK-005 | Semantic dedup — embedding cosine similarity (upgrade from substring) | MEDIUM | L3 Phase 2 upgrade | 🕒 Pending |
 | TSK-006 | Multi-modal signal extraction (audio/video) | LOW | L2 | 🕒 Backlog |
 | TSK-007 | Cost routing — gpt-4o for complex, gpt-4o-mini for simple | LOW | L3 Phase 4 | 🕒 Backlog |
-| TSK-008 | Remaining ~41 npm vulnerabilities: need major bumps (prisma 7, tailwind 4); mostly CLI/build tooling, several suggested "fixes" are downgrades | LOW | Security | 🕒 Deferred |
+| TSK-008 | Remaining 37 npm vulnerabilities: need major bumps (prisma 7, tailwind 4); mostly CLI/build tooling, several suggested "fixes" are downgrades | LOW | Security | 🕒 Deferred |
 | TSK-009 | Decide auto-promotion vs manual promote on Vercel (manual currently blocks bad builds going live) | MEDIUM | Deploy | 🕒 Owner decision |
 
 ---

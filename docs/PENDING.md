@@ -4,13 +4,13 @@
 > Last updated 2026-11-18 (checked against git + Vercel). Prod: `memory-wugweb.vercel.app`.
 >
 > 🔴 **Status 2026-11-18 (checked against git + Vercel):**
-> - **Live:** alias `memory-wugweb.vercel.app` → `dpl_J84i7uy3` (`bd18194`). Health, `/api/semantic/graph`,
->   `/p/system_user`, `/login` all 200. The `entities.processing_state` error is gone.
-> - **Next promote (owner runs it):** the newest READY `main` build has `CRON_SECRET` + the fixes below. Promote it,
->   then re-enable `.github/workflows/memory-pipeline.yml` (disabled) and run it once: 46 packets are still `pending`.
+> - **Live:** production alias is promoted to the newest `main` build (see PROJECT_TRACKER). Health, `/api/semantic/graph`,
+>   `/p/system_user`, `/login` all 200; the `entities.processing_state` error is gone.
+> - **Memory pipeline running:** `.github/workflows/memory-pipeline.yml` is ENABLED (every 5 min); first run embedded 20 /
+>   completed 30 / 20 semantic. Check `/api/health/system` → `processing_distribution` until no packets are `pending`.
 > - **Hobby only, never Vercel Pro (owner rule).** The old "Deployment failed" on `0b4da3f` was the `*/5` cron
 >   rejected on Hobby. Fixed: Vercel crons are daily; the sub-daily pipeline trigger is
->   `.github/workflows/memory-pipeline.yml` (**disabled** until a build made after the secrets were set is promoted).
+>   `.github/workflows/memory-pipeline.yml` (enabled; `CRON_SECRET`/`JOB_SECRET` set 2026-11-18).
 > - **Builds run `prisma migrate deploy`** against the Neon DB. On 2026-11-18 that applied `20260816070800`
 >   (grafted 15 columns onto the table named `entities`), 3 layer4/5 migrations, and created `graph_entities`.
 >   The 15 grafted columns were dropped by `20261118160000_drop_foreign_entities_columns` (applied 2026-11-18).
@@ -33,7 +33,7 @@
 >   So "Groq brain" below is not what prod runs on — verify which key the AI gateway actually uses.
 >   (Team-level shared env vars were not checked.)
 > - **GitHub security:** Dependabot is OFF (owner: no Dependabot / paid GitHub services). `npm audit fix` took
->   npm vulns 67 → 45 (0 critical); the remaining 45 need major bumps (sanity 5, prisma 7, eslint-config-next). CodeQL:
+>   npm vulns 67 → 37 (0 critical, 0 moderate): `npm audit fix`, unused `@vercel/sandbox` removed, `overrides` for brace-expansion, nanoid, minimatch. The remaining 37 (high, mostly CLI tooling) need majors (prisma 7, tailwind 4), have no patch (picomatch), or risk Prisma/Sanity tooling (deepmerge-ts) — intentionally not forced. CodeQL:
 >   3 live alerts fixed, 10 stale alerts (deleted files) dismissed. Secret scan fixed (`rg`-less fallback). No open PRs/issues.
 > - Vercel runtime: no errors since the promote (only the pre-fix `processing_state` entry from 14:01).
 
