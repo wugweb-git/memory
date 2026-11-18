@@ -35,6 +35,7 @@
 > - **GitHub security:** Dependabot is OFF (owner: no Dependabot / paid GitHub services). `npm audit fix` took
 >   npm vulns 67 → 37 (0 critical, 0 moderate): `npm audit fix`, unused `@vercel/sandbox` removed, `overrides` for brace-expansion, nanoid, minimatch. The remaining 37 (high, mostly CLI tooling) need majors (prisma 7, tailwind 4), have no patch (picomatch), or risk Prisma/Sanity tooling (deepmerge-ts) — intentionally not forced. CodeQL:
 >   3 live alerts fixed, 10 stale alerts (deleted files) dismissed. Secret scan fixed (`rg`-less fallback). No open PRs/issues.
+> - Canonical domain: `https://www.vedanshusrivastava.com` (`SITE_URL`/`PORTFOLIO_URL`, commit `7b3d654`).
 > - Vercel runtime: no errors since the promote (only the pre-fix `processing_state` entry from 14:01).
 
 ---
@@ -42,7 +43,7 @@
 ## ✅ Live and verified on prod
 
 - **DB:** single Neon/Postgres (Mongo removed; pgvector + HNSW for embeddings). ~46 tables.
-- **Auth:** owner login (`admin@wugweb.com`), Edge-safe JWT middleware, RBAC on `/admin` + admin APIs.
+- **Auth:** owner login via env `ADMIN_EMAIL`/`ADMIN_PASSWORD`, Edge-safe JWT middleware, RBAC on `/admin` + admin APIs. Login hard-navigates to `/console`; PWA `start_url` is `/console`.
 - **Cognitive (L3):** decide / evaluate / gaps / prioritize — **Groq** (`llama-3.3-70b-versatile`).
   Mode selector removed (single brain). LLM provider is pluggable: a generic OpenAI-compatible
   gateway (`AI_GA…` env, commit `8d920d4`, live) takes priority over Groq → Gemini/OpenAI.
