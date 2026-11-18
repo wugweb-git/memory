@@ -5,7 +5,7 @@
  */
 import { buildContext } from "./contextBuilder";
 import { buildPrompt } from "./prompt/builder";
-import { runLLM } from "./llm";
+import { runLLMWithMeta } from "./llm";
 import { sanitize } from "./sanitize";
 import { dedup } from "./dedup";
 import { logDecisionNeon } from "./logging/neon";
@@ -77,8 +77,9 @@ export async function processDecision(params: {
       decideGen.end({ output: rawOutput });
     } else {
       const generation = trace.generation({ name: "reasoning_pass", model: "gpt-4o-mini", input: prompt });
-      rawOutput = await runLLM(prompt);
-      generation.end({ output: rawOutput });
+      const llmResult = await runLLMWithMeta(prompt);
+      rawOutput = llmResult.text;
+      generation.end({ output: rawOutput, model: llmResult.model });
     }
 
     // 4. Sanitize

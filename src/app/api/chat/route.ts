@@ -1,7 +1,8 @@
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-import { convertToModelMessages, streamText, type UIMessage } from 'ai';
+import { convertToModelMessages, createUIMessageStream, createUIMessageStreamResponse, streamText, type UIMessage } from 'ai';
+import { isOpenRouterEnabled, runJob, type ChatMessage } from '@/lib/ai/openrouter';
 import { createOpenAI } from '@ai-sdk/openai';
 import { NextResponse } from 'next/server';
 import { retrieve } from '@/lib/memory/rag';
@@ -36,7 +37,8 @@ export async function POST(req: Request) {
     const gatewayOn = Boolean(gatewayBase && gatewayKey);
     const groqKey = process.env.GROQ_API_KEY;
     const openaiKey = process.env.OPENAI_API_KEY;
-    if (!gatewayOn && !groqKey && !openaiKey) {
+    const openrouterOn = isOpenRouterEnabled();
+    if (!openrouterOn && !gatewayOn && !groqKey && !openaiKey) {
       return NextResponse.json(
         { message: 'No chat LLM configured (AI_GATEWAY_BASE_URL+AI_GATEWAY_API_KEY, GROQ_API_KEY, or OPENAI_API_KEY)' },
         { status: 401 },
@@ -77,6 +79,31 @@ export async function POST(req: Request) {
     // L4 persona style hints: soft, best-effort, time-boxed; '' on any failure.
     const styleHints = await loadStyleHints();
 
+    const systemText = `${SYSTEM_PROMPT}\n\nContext nodes:\n${context || '(no indexed clusters matched)'}${styleHints ? `\n\n${styleHints}` : ''}`;
+
+    // Per-job routing: OPENROUTER_API_KEY set -> `ask` chain (free models, fallback
+    // on 429/5xx). Not streamed upstream; the answer is replayed as a UI stream.
+    if (openrouterOn) {
+      const chat: ChatMessage[] = [{ role: 'system', content: systemText }];
+      for (const m of messages) {
+        if (m.role !== 'user' && m.role !== 'assistant') continue;
+        const text = m.parts
+          .filter((part): part is { type: 'text'; text: string } => part.type === 'text')
+          .map((part) => part.text)
+          .join('');
+        if (text.trim()) chat.push({ role: m.role, content: text });
+      }
+      const job = await runJob('ask', chat, { temperature });
+      const stream = createUIMessageStream({
+        execute: ({ writer }) => {
+          writer.write({ type: 'text-start', id: 'ask' });
+          writer.write({ type: 'text-delta', id: 'ask', delta: job.text });
+          writer.write({ type: 'text-end', id: 'ask' });
+        },
+      });
+      return createUIMessageStreamResponse({ stream, headers: { 'X-Model': job.model } });
+    }
+
     // Generic OpenAI-compatible gateway (Command Code / Cline Pass / DeepSeek)
     // takes priority; then Groq; then OpenAI.
     const provider = gatewayOn
@@ -102,7 +129,7 @@ export async function POST(req: Request) {
       // .chat() forces the chat-completions endpoint (Groq has no /responses API)
       model: provider.chat(chatModel) as unknown as Parameters<typeof streamText>[0]['model'],
       temperature,
-      system: `${SYSTEM_PROMPT}\n\nContext nodes:\n${context || '(no indexed clusters matched)'}${styleHints ? `\n\n${styleHints}` : ''}`,
+      system: systemText,
       messages: await convertToModelMessages(messages),
     });
 
