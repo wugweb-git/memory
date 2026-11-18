@@ -41,11 +41,13 @@ export async function clearStaleLocks() {
 }
 
 /** L1 — embeds pending memory packets (priority: fresh > backlog, capped batch). */
-export async function runEmbeddingWorker(batchSize = 20) {
+export async function runEmbeddingWorker(batchSize = process.env.OPENROUTER_API_KEY ? 8 : 20) {
   const config = await SettingsController.getSettings();
   if (!config.rag_enabled) return { skipped: 'rag_disabled', embedded: 0, failed: 0 };
 
   const now = new Date();
+  const requeued = await requeueStaleFailed(now);
+
   const targets = await prisma.memoryPacket.findMany({
     where: {
       embedding_status: 'pending',
@@ -79,7 +81,34 @@ export async function runEmbeddingWorker(batchSize = 20) {
       });
     }
   }
-  return { scanned: targets.length, embedded, failed };
+  return { scanned: targets.length, embedded, failed, requeued };
+}
+
+/**
+ * Packets that exhausted their attempts (e.g. while the embedding provider had no
+ * quota) would otherwise stay `failed` forever. Give a few of them a fresh set of
+ * attempts at most once per 24h each, so a fixed provider heals old rows without
+ * hammering the free-tier cap on genuinely bad packets.
+ */
+export async function requeueStaleFailed(now: Date, limit = 5): Promise<number> {
+  const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const stale = await prisma.memoryPacket.findMany({
+    where: {
+      embedding_status: 'failed',
+      status: 'active',
+      is_embeddable: true,
+      OR: [{ last_retried_at: null }, { last_retried_at: { lt: cutoff } }],
+    },
+    select: { id: true },
+    orderBy: { ingestion_time: 'desc' },
+    take: limit,
+  });
+  if (stale.length === 0) return 0;
+  const res = await prisma.memoryPacket.updateMany({
+    where: { id: { in: stale.map((p) => p.id) }, embedding_status: 'failed' },
+    data: { embedding_status: 'pending', attempt_count: 0, next_retry_at: null, last_retried_at: now },
+  });
+  return res.count;
 }
 
 /** L2 — interpretation processing for packets still pending. */
