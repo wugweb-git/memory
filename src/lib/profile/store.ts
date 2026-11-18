@@ -1,5 +1,6 @@
 import { postgres } from '@/lib/db/postgres';
 import { IDENTITY_CONFIG } from '@/config/identity';
+import { pickProfileFields } from './validate';
 import type { ProfileRecord, ProfileSection, PublishToProfileInput } from './types';
 
 function newSectionId() {
@@ -32,6 +33,8 @@ export async function upsertProfile(
   username: string,
   data: Partial<ProfileRecord>,
 ): Promise<ProfileRecord> {
+  // Whitelist: only known profile fields ever reach the database.
+  data = pickProfileFields(data as Record<string, unknown>) as Partial<ProfileRecord>;
   const sections =
     data.sections !== undefined ? data.sections : undefined;
   const row = await (postgres as any).profile.upsert({

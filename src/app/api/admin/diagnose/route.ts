@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/security/auth';
 import { runL1ValidationSuite } from '@/lib/memory/diagnostics';
 
 export const dynamic = 'force-dynamic';
@@ -8,7 +9,9 @@ export const dynamic = 'force-dynamic';
  * -----------------------------------
  * Heads-less execution of the 16-point stress suite.
  */
-export async function POST() {
+export async function POST(req: NextRequest) {
+  const adminGate = requireAdmin(req);
+  if (adminGate instanceof NextResponse) return adminGate;
   try {
     const results = await runL1ValidationSuite();
     const failures = results.filter(r => r.status === 'FAIL');

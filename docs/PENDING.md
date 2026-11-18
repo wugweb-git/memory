@@ -78,10 +78,20 @@
   service worker v2 (never caches HTML or `/api/*`).
 - **Pipeline trigger:** `memory-pipeline.yml` is manual only; the 5-minute trigger is an external cron on `/api/jobs/process`.
 
-### Open decisions (2026-11-19)
-- Restrict `/ask` retrieval to items marked public (today it can quote any non-restricted memory).
-- Audit follow-ups: whitelist fields on profile writes, filter unpublished profile sections on read, remove header and query identity
-  fallbacks in `src/lib/security/auth.ts`, add `requireAdmin` inside memory, blob, persona and admin route handlers.
+### Shipped 2026-11-19 (hardening decisions, branch-only until promoted)
+- **Profile write whitelist:** `src/lib/profile/validate.ts`. Profile and section writes accept only known fields (unknown stripped,
+  wrong types or oversize rejected with 400), admin-only; the store also picks whitelisted keys.
+- **Unpublished filter:** public `GET /api/profile/*` returns 404 for an unpublished profile and drops draft sections
+  (`settings`/`content` `draft`, `published:false`, `status:draft`); `/api/showcase` excludes drafts and future-dated items. The
+  owner's admin session still sees everything.
+- **Identity from the session only:** `getRequestUser` no longer honours `x-user-id`, `x-user-role` or `?userId=`; callers and UI
+  fetches updated. Cron/job routes still use `CRON_SECRET` / `JOB_SECRET` Bearer secrets.
+- **`requireAdmin` in handlers:** every memory, blob, persona and admin handler (plus profile writes) checks it (401 no session,
+  403 not admin); middleware stays the first gate.
+- **`/ask` limited to public memory:** migration `20261119140000_memory_packets_is_public` (additive: `memory_packets.is_public`
+  default false + index). Visitors retrieve only `is_public` packets (never restricted); the owner's console chat keeps everything.
+  With nothing public, `/ask` says "No public notes yet". Mark items with `POST /api/memory/public { ids, isPublic }`.
+  **Owner action:** the migration applies on the next deploy (`prisma migrate deploy` in build); then mark notes public.
 
 ### Deferred by owner
 - All rate-limit work (`/ask` and `/api/chat` per-visitor limits, login attempt lockout). Not to be raised again unless asked.

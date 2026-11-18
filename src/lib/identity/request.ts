@@ -2,15 +2,9 @@ import type { NextRequest } from 'next/server';
 import { getRequestUser } from '@/lib/security/auth';
 
 /**
- * Resolve userId for API routes from JWT session, query/body, or fallback.
+ * Resolve userId for API routes from the signed session only (JWT cookie or
+ * bearer). Query params and body fields are never trusted for identity.
  */
-export function getRequestUserId(
-  req: NextRequest,
-  options?: { queryKey?: string; bodyUserId?: string | null },
-): string {
-  if (options?.bodyUserId?.trim()) return options.bodyUserId.trim();
-  const key = options?.queryKey ?? 'userId';
-  const fromQuery = req.nextUrl.searchParams.get(key);
-  if (fromQuery?.trim()) return fromQuery.trim();
+export function getRequestUserId(req: NextRequest): string {
   return getRequestUser(req).userId;
 }

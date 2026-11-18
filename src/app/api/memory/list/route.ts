@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/security/auth';
 import { postgres as prisma } from '@/lib/db/postgres';
 import { DB_SETUP_HINT, isPrismaConfigError } from '@/lib/db/degraded';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
+  const adminGate = requireAdmin(req);
+  if (adminGate instanceof NextResponse) return adminGate;
   try {
     const searchParams = req.nextUrl.searchParams;
     const type = searchParams.get('type');

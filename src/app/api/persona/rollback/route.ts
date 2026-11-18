@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from '@/lib/security/auth';
 import { rollbackPersonaField } from "@/lib/persona/evolution";
 import { getEvolutionTimeline } from "@/lib/persona/evolution";
 import { getRequestUserId } from "@/lib/identity/request";
@@ -11,6 +12,8 @@ const VALID_FIELDS = ["communicationStyle", "writingStyle", "decisionStyle"];
 
 /** GET /api/persona/rollback — the evolution timeline (what a rollback would target). */
 export async function GET(req: NextRequest) {
+  const adminGate = requireAdmin(req);
+  if (adminGate instanceof NextResponse) return adminGate;
   const userId = getRequestUserId(req);
   const timeline = await getEvolutionTimeline(userId);
   return NextResponse.json({ timeline });

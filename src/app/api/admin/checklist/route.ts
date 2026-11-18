@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/security/auth';
 import { getAdminChecklist, saveAdminChecklist, type AdminChecklistItem } from '@/lib/admin/checklist';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const adminGate = requireAdmin(req);
+  if (adminGate instanceof NextResponse) return adminGate;
   try {
     const items = await getAdminChecklist();
     return NextResponse.json({ items });
@@ -14,6 +17,8 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
+  const adminGate = requireAdmin(req);
+  if (adminGate instanceof NextResponse) return adminGate;
   try {
     const body = (await req.json()) as { items?: AdminChecklistItem[] };
     if (!Array.isArray(body.items)) {

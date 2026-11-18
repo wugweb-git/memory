@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     };
 
     const result = await rebuildPersona({
-      userId: body.userId,
+      userId: actor.userId,
       username: body.username,
       outputText: body.outputText,
     });

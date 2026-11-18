@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getRequestUserId } from '@/lib/identity/request';
+import { requireAdmin } from '@/lib/security/auth';
 import { postgres } from "@/lib/db/postgres";
 import { updateBehavioralTrait } from "@/lib/persona/behavior";
-import { IDENTITY_CONFIG } from "@/config/identity";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
+  const adminGate = requireAdmin(req);
+  if (adminGate instanceof NextResponse) return adminGate;
   try {
     const body = (await req.json()) as {
       userId?: string;
@@ -15,7 +18,7 @@ export async function POST(req: NextRequest) {
       notes?: string;
     };
 
-    const userId = body.userId || IDENTITY_CONFIG.DEFAULT_USER_ID;
+    const userId = getRequestUserId(req);
     const feedbackType = ["accepted", "rejected", "ignored"].includes(body.feedbackType || "")
       ? (body.feedbackType as "accepted" | "rejected" | "ignored")
       : "ignored";

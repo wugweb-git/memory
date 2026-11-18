@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from '@/lib/security/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,7 +9,9 @@ export const dynamic = 'force-dynamic';
  * Experimental route for executing secure, isolated commands via Vercel Sandbox.
  */
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const adminGate = requireAdmin(req);
+  if (adminGate instanceof NextResponse) return adminGate;
   try {
     return NextResponse.json({
       success: true,

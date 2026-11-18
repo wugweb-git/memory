@@ -26,8 +26,7 @@ export const PublishedWorks = () => {
     (async () => {
       setLoading(true);
       try {
-        const { userId } = resolveUserId();
-        const res = await fetch(`/api/output/history?userId=${encodeURIComponent(userId)}`);
+        const res = await fetch('/api/output/history');
         const history = res.ok ? await res.json() : [];
         const fromOutput: Work[] = (Array.isArray(history) ? history : []).map((h: Record<string, unknown>) => ({
           id: String(h.id ?? crypto.randomUUID()),

@@ -1,9 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from '@/lib/security/auth';
 import { postgres } from "@/lib/db/postgres";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const adminGate = requireAdmin(req);
+  if (adminGate instanceof NextResponse) return adminGate;
   try {
     const [rulesEnabled, rulesTotal, workflowLogs, externalFeedback] = await Promise.all([
       postgres.automationRule.count({ where: { enabled: true } }).catch(() => 0),

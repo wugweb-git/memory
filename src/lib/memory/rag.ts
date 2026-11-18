@@ -191,6 +191,12 @@ export async function retrieve(query: string, filters: any = {}) {
     ? Prisma.sql`AND metadata->>'sensitivity' = ${filters.sensitivity}`
     : Prisma.empty;
 
+  // Visitor-facing callers (/ask) pass publicOnly: only packets the owner has
+  // marked is_public may be retrieved. Constant SQL, no interpolated values.
+  const visibilityFilter = filters.publicOnly === true
+    ? Prisma.sql`AND packet_id IN (SELECT id FROM memory_packets WHERE is_public = true AND sensitivity <> 'restricted')`
+    : Prisma.empty;
+
   const results = await prisma.$queryRaw<
     Array<{ id: string; packet_id: string; text_chunk: string; metadata: any; score: number }>
   >(Prisma.sql`
@@ -199,6 +205,7 @@ export async function retrieve(query: string, filters: any = {}) {
     FROM embeddings
     WHERE embedding IS NOT NULL
       AND test_run_id = ${test_run_id}
+      ${visibilityFilter}
       ${typeFilter}
       ${sourceFilter}
       ${sensitivityFilter}

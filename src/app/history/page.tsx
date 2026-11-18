@@ -11,7 +11,7 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
-    apiRequest<unknown>(`${UI_API.outputHistory}?userId=${encodeURIComponent(resolveUserId().userId)}`)
+    apiRequest<unknown>(UI_API.outputHistory)
       .then((d) => setRows(Array.isArray(d) ? d : []))
       .catch((e) => setError(e?.message || "Failed to load history"))
       .finally(() => setLoading(false));

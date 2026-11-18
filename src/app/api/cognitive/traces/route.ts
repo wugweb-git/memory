@@ -1,13 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { getRequestUserId } from "@/lib/identity/request";
 import { postgres } from "@/lib/db/postgres";
-import { IDENTITY_CONFIG } from "@/config/identity";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
-    const userId = url.searchParams.get("userId") || IDENTITY_CONFIG.DEFAULT_USER_ID;
+    const userId = getRequestUserId(req);
     const limit = Math.min(Number(url.searchParams.get("limit") || 20), 50);
 
     const traces = await postgres.decisionLog.findMany({
