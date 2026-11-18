@@ -24,6 +24,21 @@
 > Until promoted, only the branch alias `memory-git-main-wugweb.vercel.app` shows the latest.
 > Permanent fix (owner): enable auto-promotion in Vercel → Project → Settings.
 
+> ### Audit 2026-11-18 (Vercel + GitHub)
+> - **Cron auth gap:** Vercel project env has **no `CRON_SECRET` and no `JOB_SECRET`**; GitHub repo has only
+>   `NEON_API_KEY`. `/api/jobs/run` and `/api/jobs/process` accept only those bearers (or an admin session), so the
+>   daily Vercel crons get 401 → source sync, publishing queue and the memory pipeline never run (46 packets `pending`).
+>   Fix (owner): add `CRON_SECRET` in Vercel (Vercel sends it to crons automatically) and the same value as the
+>   `JOB_SECRET` GitHub repo secret, redeploy, then enable `memory-pipeline.yml`.
+> - **Env gaps vs this file:** no `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `NOTION_TOKEN`, `GOOGLE_CLIENT_ID/SECRET`,
+>   `INBOUND_EMAIL_*`, `LANGFUSE_*` in project env (only Gemini, OpenAI, `CLINE`, `MEMORY`, Sanity, Neon, auth).
+>   So "Groq brain" below is not what prod runs on — verify which key the AI gateway actually uses.
+>   (Team-level shared env vars were not checked.)
+> - **GitHub security:** **149 open Dependabot alerts** (7 critical, 71 high, 61 medium, 10 low) and **13 open CodeQL
+>   alerts** (3 critical `js/request-forgery`, 6 high `js/missing-rate-limiting`, others high/medium). Earlier
+>   "0 vulnerabilities" was wrong. No open PRs; Actions green; Vercel builds green.
+> - Vercel runtime: no errors since the promote (only the pre-fix `processing_state` entry from 14:01).
+
 ---
 
 ## ✅ Live and verified on prod
@@ -45,7 +60,7 @@
   fetch+parse, **Notion** (real token connector), voice (mic). Buffer capture tabs:
   Upload / Voice / Files / Link / Pulse.
 - **Security:** owner-guarded + rate-limited ingest/cognitive/upload routes; distributed rate-limit in
-  Neon; dependabot **0 vulnerabilities**.
+  Neon. (Dependabot is NOT clean — see audit below.)
 - **Ingestion additions (Jul–Aug):** bulk CSV / `.docx` import (blog, case study, client, profile);
   NUL/control-char strip before Postgres writes (`8492b27`, live).
 - **Routing (live, `ae22657`):** root → public profile; private app at `/console`; 90-day sessions.
@@ -144,7 +159,7 @@ GitHub `.atom` feed verified live/parseable). What's live:
 - [ ] **Email provider** (Postmark/Resend free tier) → set `INBOUND_EMAIL_SECRET` (HMAC) or
       `INBOUND_EMAIL_TOKEN`, then point the provider's inbound webhook at `/api/webhooks/email`.
 - [ ] **Langfuse** → add `LANGFUSE_PUBLIC_KEY` (+ optional `LANGFUSE_HOST`) in Vercel to activate
-      real cognitive tracing (`LANGFUSE_SECRET_KEY` already set; SDK wired).
+      real cognitive tracing (`LANGFUSE_SECRET_KEY` is NOT in Vercel project env as of 2026-11-18 — set both; SDK wired).
 - [ ] **Rotate** the API keys pasted in chat (Groq/OpenAI/Gemini/MiniMax) when convenient.
 - [ ] **Delete seeded `sample` content** after validating the profile UI.
 - ~~Vercel Pro~~ — **never** (owner decision 2026-11-18). Stay on Hobby; use free external triggers for sub-daily jobs.
