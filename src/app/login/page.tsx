@@ -24,7 +24,10 @@ function LoginForm() {
   useEffect(() => {
     fetch(UI_API.authMe, { credentials: 'include' })
       .then((r) => (r.ok ? r.json() : null))
-      .then(setUser)
+      .then((u) => {
+        setUser(u);
+        if (u) window.location.replace(next.startsWith('/') && !next.startsWith('//') ? next : '/console');
+      })
       .catch(() => setUser(null))
       .finally(() => setChecking(false));
   }, []);
@@ -42,8 +45,9 @@ function LoginForm() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Login failed');
-      router.push(next);
-      router.refresh();
+      // Hard navigation so the fresh session cookie is sent and the dashboard
+      // (and PWA shell) loads with it.
+      window.location.assign(next.startsWith('/') && !next.startsWith('//') ? next : '/console');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {

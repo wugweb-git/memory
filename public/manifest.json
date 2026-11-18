@@ -2,7 +2,7 @@
   "name": "Identity Prism OS",
   "short_name": "Prism OS",
   "description": "Neural Identity Operating System & Digital Twin",
-  "start_url": "/",
+  "start_url": "/console",
   "display": "standalone",
   "background_color": "#F5F5F0",
   "theme_color": "#00AAFF",
