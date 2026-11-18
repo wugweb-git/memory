@@ -17,6 +17,14 @@ Primary tracking document for bugs, architectural resolutions, and pending work.
 | BUG-007 | Vercel build failure (CSS) | Defined `border` and `bg` color groups in `tailwind.config.ts` | ✅ Fixed |
 | BUG-008 | RAG/OpenAI desync | Unified `openai.ts` namespace with Layer 2.5 hardened schema | ✅ Fixed |
 | BUG-009 | `contextBuilder.ts` `intelligence` not destructured | `intelligence` was declared as 5th Promise.all arg but not included in destructure array — caused runtime crash on every cognitive run | ✅ Fixed |
+| BUG-010 | Vercel build rejected ("Deployment failed" on `0b4da3f`) | `*/5` cron is not allowed on Hobby → Vercel crons are daily; the 5-min pipeline trigger runs from GitHub Actions (`memory-pipeline.yml`). No Vercel Pro (owner rule) | ✅ Fixed 2026-11-18 |
+| BUG-011 | Job routes unauthenticated for crons (401) | `CRON_SECRET` set in Vercel production, matching `JOB_SECRET` GitHub secret | ✅ Fixed 2026-11-18 |
+| BUG-012 | `/api/health/system` + `/api/semantic/graph` P2022 (`entities.processing_state` missing) | `Entity` remapped to its own `graph_entities` table (the name `entities` collided in the shared Neon DB); the 15 columns wrongly added to `entities` were dropped by guarded migration `20261118160000` | ✅ Fixed 2026-11-18 |
+| BUG-013 | L1/L2/L2.5 pipeline dead (46 packets stuck `pending`) | `node-cron` replaced by `/api/jobs/process`; first live run embedded 20 / completed 30 / 20 semantic; now draining every 5 min | ✅ Fixed 2026-11-18 |
+| BUG-014 | `api-map.test.ts` failing (9 routes undocumented) | Added csv/docx/device ingest, jobs/process, sources, oauth/google, webhooks/email to `src/lib/api/endpoints.ts`; suite 51/51 | ✅ Fixed 2026-11-18 |
+| BUG-015 | `scripts/scan-secrets.sh` silently passed without `rg` | `git grep` fallback, Postgres/Neon patterns, hard-fail if no scanner | ✅ Fixed 2026-11-18 |
+| BUG-016 | CodeQL alerts (SSRF, format string, HTML strip, rate-limit) | Live ones fixed (repeat-until-stable HTML strip, constant log format, orphaned SSRF files removed); 10 stale alerts for deleted files dismissed | ✅ Fixed 2026-11-18 |
+| BUG-017 | `@vercel/sandbox` unused but pinned to `latest` (4 high vulns) | Removed on `fix/remove-unused-sandbox` (npm audit 45 → 41) | 🔄 On branch, pending merge |
 
 ---
 
@@ -52,7 +60,7 @@ Primary tracking document for bugs, architectural resolutions, and pending work.
 | TSK-C13 | `opportunity_evaluations` table — Postgres (Neon) | L3 | ✅ |
 | TSK-C14 | Scheduled weekly cognitive reset (Monday 08:00 UTC, architect mode) | L3 | ✅ |
 | TSK-C15 | Scheduled daily momentum check (09:00 UTC, operator mode) | L3 | ✅ |
-| TSK-C16 | Langfuse observability tracing in orchestrator | L3 | ✅ |
+| TSK-C16 | Observability facade in orchestrator (Langfuse is an intentional no-op — owner decision) | L3 | ✅ |
 | TSK-C17 | Mode engine (architect / founder / operator) | L3 | ✅ |
 | TSK-C18 | Prompt builder with mode instruction + L4 intelligence injection | L3 | ✅ |
 | TSK-C19 | Sidebar navigation — 11 sections, human-readable labels | UI | ✅ |
@@ -72,6 +80,8 @@ Primary tracking document for bugs, architectural resolutions, and pending work.
 | TSK-005 | Semantic dedup — embedding cosine similarity (upgrade from substring) | MEDIUM | L3 Phase 2 upgrade | 🕒 Pending |
 | TSK-006 | Multi-modal signal extraction (audio/video) | LOW | L2 | 🕒 Backlog |
 | TSK-007 | Cost routing — gpt-4o for complex, gpt-4o-mini for simple | LOW | L3 Phase 4 | 🕒 Backlog |
+| TSK-008 | Remaining ~41 npm vulnerabilities: need major bumps (prisma 7, tailwind 4); mostly CLI/build tooling, several suggested "fixes" are downgrades | LOW | Security | 🕒 Deferred |
+| TSK-009 | Decide auto-promotion vs manual promote on Vercel (manual currently blocks bad builds going live) | MEDIUM | Deploy | 🕒 Owner decision |
 
 ---
 
@@ -86,4 +96,4 @@ audit snapshots were moved to [`archive/`](./archive/) to stop them reading as o
 Forward-looking work is consolidated in [`PENDING.md`](./PENDING.md) and
 [`master-roadmap.md`](./master-roadmap.md).
 
-*Last updated: June 2026*
+*Last updated: 2026-11-18*
