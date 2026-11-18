@@ -26,6 +26,8 @@ export function embeddingsProvider(): { name: string; configured: boolean } {
   return { name: 'none', configured: false };
 }
 
+const OPENROUTER_FREE_EMBED_MODEL = 'nvidia/nemotron-3.5-embed-8b:free';
+
 let _instance: OpenAIEmbeddings | null = null;
 
 export function getEmbeddings(): OpenAIEmbeddings {
@@ -34,7 +36,10 @@ export function getEmbeddings(): OpenAIEmbeddings {
   if (process.env.OPENROUTER_API_KEY) {
     _instance = new OpenAIEmbeddings({
       apiKey: process.env.OPENROUTER_API_KEY,
-      modelName: process.env.EMBEDDINGS_MODEL || `openai/${DEFAULT_MODEL}`,
+      // Free-tier default: the 8B Nemotron embedder, asked for 1536 dims server-side so it
+      // fits vector(1536) without a migration. Override with EMBEDDINGS_MODEL.
+      modelName: process.env.EMBEDDINGS_MODEL || OPENROUTER_FREE_EMBED_MODEL,
+      dimensions: Number(process.env.EMBEDDINGS_DIMENSIONS) || 1536,
       batchSize: 20,
       configuration: { baseURL: OPENROUTER_BASE },
     });

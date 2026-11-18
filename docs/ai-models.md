@@ -92,6 +92,13 @@ with one real call before relying on them.
 
 ## Embeddings: checking and switching
 
+**Current (19 Nov 2026):** with `OPENROUTER_API_KEY` set and no `EMBEDDINGS_MODEL`, embeddings use the free
+`nvidia/nemotron-3.5-embed-8b:free` with `dimensions: 1536` sent to the API (server-side, so it fits
+`vector(1536)` with no migration; verified: 1536-length vector). Override with `EMBEDDINGS_MODEL` /
+`EMBEDDINGS_DIMENSIONS`. The 1b models only accept their native 2048 dims. Free quota (~50/day) is shared
+with chat: backfill existing rows in small batches over several days. Old vectors came from a different
+model, so re-embed before trusting similarity.
+
 Embeddings stay on the current provider (`src/lib/memory/embeddings.ts`, 1536 dims for the pgvector
 column). OpenRouter lists these free NVIDIA embedders (`/api/v1/embeddings/models`):
 `nvidia/nemotron-3.5-embed-1b:free`, `nvidia/nemotron-3.5-embed-8b:free`, `nvidia/nemotron-3-embed-1b:free`.
