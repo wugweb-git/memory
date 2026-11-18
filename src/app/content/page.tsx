@@ -254,7 +254,7 @@ export default function OutputStudioPage() {
                 key={id}
                 onClick={() => setTab(id)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
-                  tab === id ? "bg-black text-white" : "border border-border-primary bg-white text-text-secondary"
+                  tab === id ? "bg-text-primary text-bg-primary" : "border border-border-primary bg-white text-text-secondary"
                 }`}
               >
                 {label}
