@@ -3,14 +3,13 @@ import { postgres as prisma } from '@/lib/db/postgres';
 import { Prisma } from '../../generated/postgres';
 import { addProcessingError } from './gate';
 import { EmbeddingStatus, ProcessingError } from './types';
-import { getEmbeddings } from './embeddings';
+import { getEmbeddings, embeddingModelName } from './embeddings';
 
 /** pgvector text literal: '[0.1,0.2,…]' — bound as a parameter, cast with ::vector. */
 function toVectorLiteral(vec: number[]): string {
   return `[${vec.join(',')}]`;
 }
 
-const EMBEDDING_MODEL = process.env.EMBEDDINGS_MODEL || 'text-embedding-3-small';
 const EMBEDDING_VERSION = 1;
 const CHUNK_SIZE = 800;
 const CHUNK_OVERLAP = 100;
@@ -111,7 +110,7 @@ export async function processEmbedding(packetId: string) {
     // Chunk counts per packet are small, so per-row parameterized inserts are fine.
     for (let index = 0; index < chunks.length; index++) {
       const metadata = JSON.stringify({
-        model: EMBEDDING_MODEL,
+        model: embeddingModelName(),
         version: EMBEDDING_VERSION,
         chunk_index: index,
         type: packet.type,

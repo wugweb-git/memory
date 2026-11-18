@@ -4,9 +4,9 @@ import { OpenAIEmbeddings } from '@langchain/openai';
  * Embedding provider — pluggable, OpenAI-compatible.
  *
  * Resolution order:
- *   1. OPENROUTER_API_KEY  → https://openrouter.ai/api/v1 (model
- *      `openai/text-embedding-3-small`, 1536 dims — matches the pgvector
- *      column `embeddings.embedding vector(1536)`).
+ *   1. OPENROUTER_API_KEY  → https://openrouter.ai/api/v1 (default model
+ *      `nvidia/nemotron-3.5-embed-8b:free`, asked for 1536 dims server-side —
+ *      matches the pgvector column `embeddings.embedding vector(1536)`).
  *   2. EMBEDDINGS_API_KEY + EMBEDDINGS_BASE_URL → any OpenAI-compatible
  *      endpoint (Jina, Voyage, self-hosted…).
  *   3. OPENAI_API_KEY → api.openai.com directly.
@@ -27,6 +27,19 @@ export function embeddingsProvider(): { name: string; configured: boolean } {
 }
 
 const OPENROUTER_FREE_EMBED_MODEL = 'nvidia/nemotron-3.5-embed-8b:free';
+const PGVECTOR_DIMENSIONS = 1536;
+
+/** Model name actually used for embeddings, for metadata tagging. */
+export function embeddingModelName(): string {
+  if (process.env.OPENROUTER_API_KEY) return process.env.EMBEDDINGS_MODEL || OPENROUTER_FREE_EMBED_MODEL;
+  return process.env.EMBEDDINGS_MODEL || DEFAULT_MODEL;
+}
+
+/** EMBEDDINGS_DIMENSIONS is honoured only when it matches the vector(1536) column. */
+function embeddingDimensions(): number {
+  const n = Number(process.env.EMBEDDINGS_DIMENSIONS);
+  return n === PGVECTOR_DIMENSIONS ? n : PGVECTOR_DIMENSIONS;
+}
 
 let _instance: OpenAIEmbeddings | null = null;
 
@@ -39,7 +52,7 @@ export function getEmbeddings(): OpenAIEmbeddings {
       // Free-tier default: the 8B Nemotron embedder, asked for 1536 dims server-side so it
       // fits vector(1536) without a migration. Override with EMBEDDINGS_MODEL.
       modelName: process.env.EMBEDDINGS_MODEL || OPENROUTER_FREE_EMBED_MODEL,
-      dimensions: Number(process.env.EMBEDDINGS_DIMENSIONS) || 1536,
+      dimensions: embeddingDimensions(),
       batchSize: 20,
       configuration: { baseURL: OPENROUTER_BASE },
     });

@@ -37,7 +37,12 @@ export async function clearStaleLocks() {
     where: { processing_lock: true, locked_at: { lt: staleThreshold } },
     data: { processing_lock: false, locked_at: null },
   });
-  return { cleared: cleared.count };
+  // A worker killed mid-embed leaves the packet in `processing`; hand it back to the queue.
+  const stuck = await prisma.memoryPacket.updateMany({
+    where: { embedding_status: 'processing', last_updated: { lt: staleThreshold } },
+    data: { embedding_status: 'pending' },
+  });
+  return { cleared: cleared.count, resetProcessing: stuck.count };
 }
 
 /** L1 — embeds pending memory packets (priority: fresh > backlog, capped batch). */
