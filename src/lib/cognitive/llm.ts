@@ -3,6 +3,7 @@ import { ChatOpenAI } from "@langchain/openai";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 import { config } from "@/config";
+import { isOpenRouterEnabled, runJob } from "@/lib/ai/openrouter";
 
 /**
  * Cognitive LLM — provider-flexible.
@@ -92,15 +93,34 @@ export async function runAgentLLM(
  * Returns the raw string result for post-processing.
  */
 export async function runLLM(prompt: string): Promise<string> {
+  return (await runLLMWithMeta(prompt)).text;
+}
+
+/** Same as runLLM, also reporting which model answered (for traces/decision logs). */
+export async function runLLMWithMeta(prompt: string): Promise<{ text: string; model?: string }> {
+  // Per-job routing: when OPENROUTER_API_KEY is set, the brain uses the
+  // `decision` chain (src/lib/ai/models.ts). Otherwise the legacy path below.
+  if (isOpenRouterEnabled()) {
+    try {
+      const r = await runJob("decision", [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: prompt },
+      ]);
+      return { text: r.text, model: r.model };
+    } catch (err: any) {
+      console.error("[LLM/OpenRouter] Execution Failure:", err.message);
+      throw new Error(`LLM_FAILURE: ${err.message}`);
+    }
+  }
   try {
     const response = await getModel(DEFAULT_MODEL, 0.1).invoke([
       new SystemMessage(SYSTEM_PROMPT),
       new HumanMessage(prompt),
     ]);
 
-    return typeof response.content === "string"
-      ? response.content
-      : JSON.stringify(response.content);
+    return {
+      text: typeof response.content === "string" ? response.content : JSON.stringify(response.content),
+    };
   } catch (err: any) {
     console.error("[LLM] Execution Failure:", err.message);
     throw new Error(`LLM_FAILURE: ${err.message}`);
