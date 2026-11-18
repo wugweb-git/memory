@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Brain, User, Search, RefreshCcw, Sparkles, Plus, ArrowUpRight } from 'lucide-react';
 import type { UIMessage } from 'ai';
 import { usePrismChat } from '@/hooks/usePrismChat';
-import { AppShell } from '../component/AppShell';
+import { PublicFrame } from '../component/PublicFrame';
 import { UI_API } from '@/lib/api/endpoints';
 import { CHAT_HIGHLIGHT_KEYWORDS } from '@/config/ui-content';
 
@@ -45,7 +45,7 @@ export default function AskNeuralInterface() {
   };
 
   return (
-    <AppShell bottomDock>
+    <PublicFrame>
       <div className="min-h-[calc(100vh-4rem)] bg-bg-primary text-text-primary flex flex-col selection:bg-accent/30 transition-colors duration-1000 relative">
       {/* Background Interactivity */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
@@ -195,6 +195,6 @@ export default function AskNeuralInterface() {
       </div>
       </motion.section>
       </div>
-    </AppShell>
+    </PublicFrame>
   );
 }
