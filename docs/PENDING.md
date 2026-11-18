@@ -124,7 +124,7 @@ All live on `www.vedanshusrivastava.com` (commit `410e1b4` promoted; docs commit
 - **Console:** the "Sync Status" sub-label no longer says "All layers nominal" when the status is degraded.
 
 ### Still open (2026-11-19)
-- **Pipeline timeout (found live 2026-11-19):** the first manual run after promotion returned 504 (`FUNCTION_INVOCATION_TIMEOUT`) once real embedding work existed. Fixed on `main` (50s pass budget; embedding and semantic loops stop starting packets when time is short); ships in the final batched push. Re-dispatch the pipeline after that deploy and confirm embedded counts.
+- **Pipeline timeout (found live 2026-11-19, still 504 after the 50s cap):** root cause was the embeddings client (SDK default 6 retries, 10 minute timeout). Now 15s timeout, no retries, and each packet is raced against the pipeline deadline. Earlier note: the first manual run after promotion returned 504 (`FUNCTION_INVOCATION_TIMEOUT`) once real embedding work existed. Fixed on `main` (50s pass budget; embedding and semantic loops stop starting packets when time is short); ships in the final batched push. Re-dispatch the pipeline after that deploy and confirm embedded counts.
 - **Promoted 2026-11-19:** build for `a816077` is live (service worker v3, new starter questions, `/ask` streams, `x-model` header set). Remaining verification: live is still the older build. After promotion verify `/ask` streaming at
   phone width, run `scripts/validate-live.mjs` (two response shapes are guesses: `/api/profile/system_user`, `/api/jobs/process`),
   dispatch the pipeline and confirm embedded counts, check the service worker and offline page, re-measure `/memory` and `/console`
@@ -133,7 +133,7 @@ All live on `www.vedanshusrivastava.com` (commit `410e1b4` promoted; docs commit
 - **Owner marks notes public** at `/admin/memory/public`; until then `/ask` answers "No public notes yet".
 - **Memory embeddings:** free embedder live in code; backfill verified only after the pipeline runs on the new build.
 - **GitHub 5-minute schedule** (`memory-pipeline.yml`) has never fired on its own; only manual dispatch runs. Recheck.
-- **Decider flags** (`DECIDER_SIGNALS`, `DECIDER_MODE`) unverified live; both stay OFF (`DECIDER_SIGNALS` burns the free cap).
+- **Decider flags** (`DECIDER_SIGNALS`, `DECIDER_MODE`): turned ON in Vercel production by the owner's decision (19 Nov). One free request per ingested packet for signals; watch the shared ~50/day cap. Unverified live until a build with the env applies.
 - **Push notifications:** not built. Owner steps (VAPID keys, env vars, subscription table) are in `docs/pwa.md`.
 - **Embedding retrieval quality:** nemotron embedders may want a query/passage prefix; LangChain sends the same payload for both.
   Consistent, so correct, but possibly below the model's best. Revisit only if answers look weak.

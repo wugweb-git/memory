@@ -34,6 +34,18 @@ function getNextRetryAt(retryCount: number): Date {
 const PIPELINE_BUDGET_MS = 50_000;
 const EMBED_MIN_REMAINING_MS = 12_000;
 const SEMANTIC_MIN_REMAINING_MS = 25_000;
+const L2_MIN_REMAINING_MS = 5_000;
+
+/** Rejects when the shared deadline passes so one stuck call cannot hold the whole function. */
+function withDeadline<T>(work: Promise<T>, deadline: number, label: string): Promise<T> {
+  if (!Number.isFinite(deadline)) return work;
+  const ms = Math.max(1_000, deadline - Date.now());
+  let timer: ReturnType<typeof setTimeout>;
+  const cutoff = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`DEADLINE: ${label} exceeded the pipeline budget`)), ms);
+  });
+  return Promise.race([work, cutoff]).finally(() => clearTimeout(timer));
+}
 
 /** Clears processing locks stuck for >10 minutes (crashed/timed-out workers). */
 export async function clearStaleLocks() {
@@ -78,7 +90,7 @@ export async function runEmbeddingWorker(
     // Stop starting new packets when the function budget is nearly spent; the rest wait for the next run.
     if (deadline - Date.now() < EMBED_MIN_REMAINING_MS) break;
     try {
-      await processEmbedding(packet.id);
+      await withDeadline(processEmbedding(packet.id), deadline, `embedding ${packet.id}`);
       // processEmbedding records its own failures and does not throw; read the outcome back.
       const after = await prisma.memoryPacket.findUnique({
         where: { id: packet.id },
@@ -133,7 +145,7 @@ export async function requeueStaleFailed(now: Date, limit = 5): Promise<number> 
 }
 
 /** L2 — interpretation processing for packets still pending. */
-export async function runL2Processing(batchSize = 50) {
+export async function runL2Processing(batchSize = 50, deadline = Infinity) {
   const now = new Date();
   const targets = await prisma.memoryPacket.findMany({
     where: {
@@ -148,6 +160,7 @@ export async function runL2Processing(batchSize = 50) {
   let completed = 0;
   let failed = 0;
   for (const packet of targets) {
+    if (deadline - Date.now() < L2_MIN_REMAINING_MS) break;
     try {
       await prisma.memoryPacket.update({ where: { id: packet.id }, data: { processing_status: 'processing', locked_at: new Date() } });
       const result = await ProcessingEngine.processPacket(packet.id);
@@ -231,7 +244,7 @@ export async function runMemoryPipeline() {
   const deadline = Date.now() + PIPELINE_BUDGET_MS;
   const locks = await clearStaleLocks();
   const embedding = await runEmbeddingWorker(undefined, deadline);
-  const l2 = await runL2Processing();
+  const l2 = await runL2Processing(undefined, deadline);
   const l25 = await runL25Processing(undefined, deadline);
   return { locks, embedding, l2, l25, ranAt: new Date().toISOString() };
 }

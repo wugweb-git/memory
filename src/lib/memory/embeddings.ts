@@ -54,6 +54,10 @@ export function getEmbeddings(): OpenAIEmbeddings {
       modelName: process.env.EMBEDDINGS_MODEL || OPENROUTER_FREE_EMBED_MODEL,
       dimensions: embeddingDimensions(),
       batchSize: 20,
+      // Fail fast: the SDK default is 6 retries and a 10 minute timeout, which can eat the whole
+      // 60s function on a slow free-tier call. The pipeline retries later on its own schedule.
+      timeout: 15_000,
+      maxRetries: 0,
       configuration: { baseURL: OPENROUTER_BASE },
     });
   } else if (process.env.EMBEDDINGS_API_KEY && process.env.EMBEDDINGS_BASE_URL) {
