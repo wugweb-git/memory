@@ -4,16 +4,16 @@
 > Last updated 2026-11-18 (checked against git + Vercel). Prod: `memory-wugweb.vercel.app`.
 >
 > 🔴 **Status 2026-11-18 (checked against git + Vercel):**
-> - **Live:** alias `memory-wugweb.vercel.app` → `dpl_J84i7uy3` (`bd18194`, promoted 2026-11-18). Health,
->   `/api/semantic/graph`, `/p/system_user`, `/login` all 200. The `entities.processing_state` error is gone.
->   `main` HEAD is `a2dee40` (docs only, same code; not promoted — not needed).
+> - **Live:** alias `memory-wugweb.vercel.app` → `dpl_J84i7uy3` (`bd18194`). Health, `/api/semantic/graph`,
+>   `/p/system_user`, `/login` all 200. The `entities.processing_state` error is gone.
+> - **Next promote (owner runs it):** the newest READY `main` build has `CRON_SECRET` + the fixes below. Promote it,
+>   then re-enable `.github/workflows/memory-pipeline.yml` (disabled) and run it once: 46 packets are still `pending`.
 > - **Hobby only, never Vercel Pro (owner rule).** The old "Deployment failed" on `0b4da3f` was the `*/5` cron
 >   rejected on Hobby. Fixed: Vercel crons are daily; the sub-daily pipeline trigger is
->   `.github/workflows/memory-pipeline.yml` (**disabled** until the `JOB_SECRET` repo secret is set).
-> - **Open:** `/api/jobs/process` has not run in prod yet — health shows 46 memory packets all `pending`.
+>   `.github/workflows/memory-pipeline.yml` (**disabled** until a build made after the secrets were set is promoted).
 > - **Builds run `prisma migrate deploy`** against the Neon DB. On 2026-11-18 that applied `20260816070800`
->   (added 15 columns to the table named `entities`; now a no-op for new DBs), 3 layer4/5 migrations, and
->   created `graph_entities`. The 15 columns are left in place — dropping them is an owner decision.
+>   (grafted 15 columns onto the table named `entities`), 3 layer4/5 migrations, and created `graph_entities`.
+>   The 15 grafted columns were dropped by `20261118160000_drop_foreign_entities_columns` (applied 2026-11-18).
 >   Comparison with other repos is **on hold** (owner instruction). Use `main`; the old local branch
 >   `fix/graph-entities-table` is a superseded duplicate.
 >
@@ -25,18 +25,16 @@
 > Permanent fix (owner): enable auto-promotion in Vercel → Project → Settings.
 
 > ### Audit 2026-11-18 (Vercel + GitHub)
-> - **Cron auth gap:** Vercel project env has **no `CRON_SECRET` and no `JOB_SECRET`**; GitHub repo has only
->   `NEON_API_KEY`. `/api/jobs/run` and `/api/jobs/process` accept only those bearers (or an admin session), so the
->   daily Vercel crons get 401 → source sync, publishing queue and the memory pipeline never run (46 packets `pending`).
->   Fix (owner): add `CRON_SECRET` in Vercel (Vercel sends it to crons automatically) and the same value as the
->   `JOB_SECRET` GitHub repo secret, redeploy, then enable `memory-pipeline.yml`.
+> - **Cron auth (resolved 2026-11-18):** the routes only accept `CRON_SECRET`/`JOB_SECRET` bearers or an admin session, and
+>   neither secret existed (crons were 401). `CRON_SECRET` is now set in Vercel production and `JOB_SECRET` as a GitHub repo
+>   secret (same value). It takes effect only in builds created after that — promote one, then enable `memory-pipeline.yml`.
 > - **Env gaps vs this file:** no `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `NOTION_TOKEN`, `GOOGLE_CLIENT_ID/SECRET`,
->   `INBOUND_EMAIL_*`, `LANGFUSE_*` in project env (only Gemini, OpenAI, `CLINE`, `MEMORY`, Sanity, Neon, auth).
+>   `INBOUND_EMAIL_*` in project env (only Gemini, OpenAI, `CLINE`, `MEMORY`, Sanity, Neon, auth).
 >   So "Groq brain" below is not what prod runs on — verify which key the AI gateway actually uses.
 >   (Team-level shared env vars were not checked.)
-> - **GitHub security:** **149 open Dependabot alerts** (7 critical, 71 high, 61 medium, 10 low) and **13 open CodeQL
->   alerts** (3 critical `js/request-forgery`, 6 high `js/missing-rate-limiting`, others high/medium). Earlier
->   "0 vulnerabilities" was wrong. No open PRs; Actions green; Vercel builds green.
+> - **GitHub security:** Dependabot is OFF (owner: no Dependabot / paid GitHub services). `npm audit fix` took
+>   npm vulns 67 → 45 (0 critical); the remaining 45 need major bumps (sanity 5, prisma 7, eslint-config-next). CodeQL:
+>   3 live alerts fixed, 10 stale alerts (deleted files) dismissed. Secret scan fixed (`rg`-less fallback). No open PRs/issues.
 > - Vercel runtime: no errors since the promote (only the pre-fix `processing_state` entry from 14:01).
 
 ---
@@ -136,10 +134,7 @@ GitHub `.atom` feed verified live/parseable). What's live:
   multi-tenant boundaries; immutable provenance ledger; persona checkpoint/anomaly guards; twin
   contradiction alerts. (Load-test script already shipped: `scripts/load-test.mjs`.) All roadmap-scale
   and/or deferred-by-design (single-owner) — no quick wins left here.
-- ✅ **Langfuse tracing** — DONE (2026-07-09). `observability/langfuse.ts` now lazily loads the real SDK
-  (guarded `require`, build-safe) and traces for real when `LANGFUSE_PUBLIC_KEY` + `LANGFUSE_SECRET_KEY`
-  are set (else no-op). Added `flush()` (awaited in the orchestrator `finally`) so serverless actually
-  delivers events. **Owner:** add `LANGFUSE_PUBLIC_KEY` (+ optional `LANGFUSE_HOST`) to activate.
+- **Langfuse:** intentionally not used — the no-op facade is by design (owner decision), not a missing feature.
 - ✅ **Legacy Express layer** — already retired (`src/server.js`, `src/routes`, `src/models`,
   `api/index.js` all removed; unused deps stripped). Nothing left to do.
 
@@ -158,8 +153,6 @@ GitHub `.atom` feed verified live/parseable). What's live:
       token is Editor-only) → enables `sanity schema deploy` for Studio editing. In-app CMS works now.
 - [ ] **Email provider** (Postmark/Resend free tier) → set `INBOUND_EMAIL_SECRET` (HMAC) or
       `INBOUND_EMAIL_TOKEN`, then point the provider's inbound webhook at `/api/webhooks/email`.
-- [ ] **Langfuse** → add `LANGFUSE_PUBLIC_KEY` (+ optional `LANGFUSE_HOST`) in Vercel to activate
-      real cognitive tracing (`LANGFUSE_SECRET_KEY` is NOT in Vercel project env as of 2026-11-18 — set both; SDK wired).
 - [ ] **Rotate** the API keys pasted in chat (Groq/OpenAI/Gemini/MiniMax) when convenient.
 - [ ] **Delete seeded `sample` content** after validating the profile UI.
 - ~~Vercel Pro~~ — **never** (owner decision 2026-11-18). Stay on Hobby; use free external triggers for sub-daily jobs.
