@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       INTERNAL_VAULT.ADMIN_PASSWORD &&
       INTERNAL_VAULT.ADMIN_EMAIL &&
       normalized === INTERNAL_VAULT.ADMIN_EMAIL.toLowerCase() &&
-      String(password) === INTERNAL_VAULT.ADMIN_PASSWORD
+      String(password).trim() === INTERNAL_VAULT.ADMIN_PASSWORD
     ) {
       const token = signToken(
         { sub: IDENTITY_CONFIG.DEFAULT_USER_ID, email: normalized, role: 'admin' },

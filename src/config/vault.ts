@@ -21,8 +21,9 @@ export const INTERNAL_VAULT = {
   MINIMAX_API_KEY: process.env.MINIMAX_API_KEY || '',
 
   AUTH_SECRET: resolvedAuthSecret || 'dev_auth_secret_insecure_fallback',
-  ADMIN_EMAIL: process.env.ADMIN_EMAIL || 'admin@prism.io',
-  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || '',
+  // Trimmed: a stray space or newline from pasting into the env UI must not lock the owner out.
+  ADMIN_EMAIL: (process.env.ADMIN_EMAIL || 'admin@prism.io').trim(),
+  ADMIN_PASSWORD: (process.env.ADMIN_PASSWORD || '').trim(),
 
   VercelBlobLimits: {
     region: "IAD1",
