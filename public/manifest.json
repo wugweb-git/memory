@@ -41,36 +41,62 @@
       "purpose": "maskable"
     }
   ],
-  "shortcuts": [
-    {
-      "name": "Dashboard",
-      "url": "/console",
-      "icons": [
+  "share_target": {
+    "action": "/share-target",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
         {
-          "src": "/icons/icon-192.png",
-          "sizes": "192x192"
+          "name": "files",
+          "accept": ["text/plain", "text/markdown", "text/calendar", ".txt", ".md", ".ics", "image/*", "application/pdf"]
         }
       ]
+    }
+  },
+  "file_handlers": [
+    {
+      "action": "/share-target/review",
+      "accept": {
+        "text/calendar": [".ics"],
+        "text/plain": [".txt"],
+        "text/markdown": [".md"]
+      }
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+prism",
+      "url": "/share-target/review?url=%s"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Capture note",
+      "short_name": "Capture",
+      "description": "Write a quick note into the buffer",
+      "url": "/share-target/review?source=shortcut",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Ask",
+      "description": "Ask your memory",
       "url": "/ask",
-      "icons": [
-        {
-          "src": "/icons/icon-192.png",
-          "sizes": "192x192"
-        }
-      ]
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     },
     {
-      "name": "Memory",
-      "url": "/memory",
-      "icons": [
-        {
-          "src": "/icons/icon-192.png",
-          "sizes": "192x192"
-        }
-      ]
+      "name": "Buffer",
+      "description": "Review captured items",
+      "url": "/buffer",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Dashboard",
+      "url": "/console",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     }
   ],
   "screenshots": [

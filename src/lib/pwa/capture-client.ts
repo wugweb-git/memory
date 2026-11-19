@@ -14,7 +14,17 @@ import {
 import { createIndexedDbStorage } from './capture-store';
 import { haptic, setAppBadge } from './browser';
 
+import { isQuotaError } from '../native/storage';
+
 export const CAPTURE_EVENT = 'prism:capture-queue';
+
+/** Thrown by captureToBuffer when the device has no space left to queue the capture offline. */
+export class StorageFullError extends Error {
+  readonly name = 'QuotaExceededError';
+  constructor() {
+    super('Device storage is full');
+  }
+}
 
 const send = async (item: QueuedCapture): Promise<SendResult> => {
   const res = await fetch(item.url, {
@@ -64,7 +74,14 @@ async function registerSync(): Promise<void> {
 /** POST a capture to the intake endpoint, or queue it locally when offline. */
 export async function captureToBuffer(input: EnqueueInput): Promise<CaptureOutcome> {
   const online = typeof navigator === 'undefined' ? true : navigator.onLine !== false;
-  const out = await captureOrQueue(storage(), send, input, online);
+  let out: CaptureOutcome;
+  try {
+    out = await captureOrQueue(storage(), send, input, online);
+  } catch (err) {
+    // Device storage full: surface a typed error callers can show ("storage full") instead of losing the capture silently.
+    if (isQuotaError(err)) throw new StorageFullError();
+    throw err;
+  }
   if (out.kind === 'queued') {
     haptic('warning');
     void registerSync();
