@@ -109,6 +109,22 @@ export function isPermanentEmbedFailure(msg: string): boolean {
   );
 }
 
+/** Attempts a packet gets while the embedder is having an outage before it is marked failed. */
+export const MAX_EMBED_ATTEMPTS = 6;
+
+/** Provider outage or throttling (5xx, 429, quota, network): the same packet will embed fine later. */
+export function isTransientEmbedFailure(msg: string): boolean {
+  const m = msg || '';
+  if (isPermanentEmbedFailure(m) || isModerationError(m)) return false;
+  return /LLM_UNAVAILABLE|\b5\d\d\b|\b429\b|quota|rate limit|timeout|timed out|network|socket|ECONN|fetch failed/i.test(m);
+}
+
+/** Back-off before the next try: 2, 10, 30, 60, 120 minutes. */
+export function embedRetryDelayMs(attemptsSoFar: number): number {
+  const mins = [2, 10, 30, 60, 120];
+  return (mins[Math.max(0, attemptsSoFar - 1)] ?? 120) * 60_000;
+}
+
 type ChunkEmbedder = {
   embedDocuments(texts: string[]): Promise<number[][]>;
   embedQuery(text: string): Promise<number[]>;

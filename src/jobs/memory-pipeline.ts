@@ -13,6 +13,7 @@
  */
 import { postgres as prisma } from '@/lib/db/postgres';
 import { processEmbedding } from '@/lib/memory/rag';
+import { MAX_EMBED_ATTEMPTS } from '@/lib/memory/embeddings';
 import { SettingsController } from '@/lib/memory/settings';
 import { IntelligenceEngine } from '@/lib/processing/intelligence';
 import { ProcessingEngine } from '@/lib/processing/engine';
@@ -80,7 +81,7 @@ export async function runEmbeddingWorker(
       embedding_status: 'pending',
       status: 'active',
       is_embeddable: true,
-      OR: [{ attempt_count: 0 }, { next_retry_at: { lte: now }, attempt_count: { lt: 2 } }],
+      OR: [{ attempt_count: 0 }, { next_retry_at: { lte: now }, attempt_count: { lt: MAX_EMBED_ATTEMPTS } }],
     },
     orderBy: [{ priority: 'desc' }, { ingestion_time: 'desc' }, { attempt_count: 'asc' }],
     take: batchSize,
@@ -125,7 +126,7 @@ export async function runEmbeddingWorker(
  * attempts at most once per 24h each, so a fixed provider heals old rows without
  * hammering the free-tier cap on genuinely bad packets.
  */
-export async function requeueStaleFailed(now: Date, limit = 5): Promise<number> {
+export async function requeueStaleFailed(now: Date, limit = 20): Promise<number> {
   const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const stale = await prisma.memoryPacket.findMany({
     where: {
@@ -153,7 +154,7 @@ export async function runL2Processing(batchSize = 50, deadline = Infinity) {
     where: {
       processing_status: 'pending',
       status: 'active',
-      OR: [{ attempt_count: 0 }, { next_retry_at: { lte: now }, attempt_count: { lt: 2 } }],
+      OR: [{ attempt_count: 0 }, { next_retry_at: { lte: now }, attempt_count: { lt: MAX_EMBED_ATTEMPTS } }],
     },
     orderBy: [{ priority: 'desc' }, { ingestion_time: 'desc' }],
     take: batchSize,

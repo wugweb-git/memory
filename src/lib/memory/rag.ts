@@ -3,7 +3,7 @@ import { postgres as prisma } from '@/lib/db/postgres';
 import { Prisma } from '../../generated/postgres';
 import { addProcessingError } from './gate';
 import { EmbeddingStatus, ProcessingError } from './types';
-import { getEmbeddings, embeddingModelName, embedChunksTolerant, isPermanentEmbedFailure, assertEmbeddingDimensions } from './embeddings';
+import { getEmbeddings, embeddingModelName, embedChunksTolerant, isPermanentEmbedFailure, isTransientEmbedFailure, embedRetryDelayMs, MAX_EMBED_ATTEMPTS, assertEmbeddingDimensions } from './embeddings';
 import { rerank, rerankConfigFromEnv } from './rerank';
 
 /** pgvector text literal: '[0.1,0.2,…]' — bound as a parameter, cast with ::vector. */
@@ -156,6 +156,24 @@ export async function processEmbedding(packetId: string) {
         reason: `EMBEDDING_FAILURE: ${err.message}`,
         level: 'error'
       });
+
+      // A provider outage is not the packet's fault: back off and retry (up to MAX_EMBED_ATTEMPTS)
+      // instead of stamping it failed and waiting for the daily requeue.
+      const attempts = (packet?.attempt_count ?? 0) + 1;
+      if (isTransientEmbedFailure(String(err.message)) && attempts < MAX_EMBED_ATTEMPTS) {
+        await prisma.memoryPacket.update({
+          where: { id: packetId },
+          data: {
+            embedding_status: 'pending',
+            processing_errors: updatedErrors as any,
+            attempt_count: attempts,
+            retry_classification: 'transient',
+            next_retry_at: new Date(Date.now() + embedRetryDelayMs(attempts)),
+            last_retried_at: new Date(),
+          },
+        });
+        return;
+      }
 
       await prisma.memoryPacket.update({
         where: { id: packetId },
