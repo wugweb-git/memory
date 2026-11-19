@@ -30,3 +30,19 @@ jobs:
           curl --fail-with-body -sS -X POST --max-time 65 \
             -H "Authorization: Bearer $JOB_SECRET" \
             "$TARGET_URL/api/jobs/process"
+
+  publishing:
+    # Drains scheduled and queued publishes. Vercel Hobby crons are daily only,
+    # so without this a scheduled post would wait up to a day.
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Call /api/jobs/publishing
+        env:
+          JOB_SECRET: ${{ secrets.JOB_SECRET }}
+          TARGET_URL: ${{ vars.PIPELINE_URL || 'https://www.vedanshusrivastava.com' }}
+        run: |
+          if [ -z "$JOB_SECRET" ]; then echo "JOB_SECRET repo secret is not set"; exit 1; fi
+          curl --fail-with-body -sS -X POST --max-time 65 \
+            -H "Authorization: Bearer $JOB_SECRET" \
+            "$TARGET_URL/api/jobs/publishing"
