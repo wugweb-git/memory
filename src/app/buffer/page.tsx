@@ -359,7 +359,7 @@ export default function BufferControlSurface() {
         {/* Header and capacity */}
         <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div className="min-w-0">
-            <h1 className="text-2xl font-semibold text-text-primary">Buffer</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-text-primary">Buffer</h1>
             <p className="mt-1 text-sm text-text-tertiary">Review what is waiting before it becomes memory.</p>
           </div>
           <div className="flex w-full items-center gap-3 sm:w-auto">
@@ -417,7 +417,7 @@ export default function BufferControlSurface() {
                   className="min-h-11 w-full rounded-full border border-border-primary bg-bg-elevated pl-10 pr-4 text-base sm:text-sm text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 />
               </div>
-              <div role="group" aria-label="Filter by review state" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+              <div role="group" aria-label="Filter by review state" className="-mx-4 flex snap-x scroll-pl-4 gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {TABS.map(tab => (
                   <button
                     key={tab.id}

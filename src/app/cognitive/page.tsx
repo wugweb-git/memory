@@ -50,7 +50,7 @@ export default function CognitivePage() {
             <Brain size={17} className="text-text-tertiary" aria-hidden="true" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-text-primary">Cognitive engine</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-text-primary">Cognitive engine</h1>
             <p className="text-sm text-text-tertiary">Decide, evaluate and rank using your memory. Nothing here changes it.</p>
           </div>
         </header>

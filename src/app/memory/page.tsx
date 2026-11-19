@@ -224,7 +224,7 @@ export default function MemoryControlSurface() {
             <Database size={20} aria-hidden="true" className="text-text-tertiary" />
           </div>
           <div>
-            <h1 className="text-3xl font-black tracking-tight text-text-primary">Memory</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-text-primary">Memory</h1>
             <p role="status" className="mt-1 flex items-center gap-2 text-sm font-medium text-text-tertiary">
               <span aria-hidden="true" className={`h-2 w-2 rounded-full ${loadError ? 'bg-danger' : 'bg-success'}`} />
               {loadError ? 'Memory store unreachable' : 'Your memory vault'}

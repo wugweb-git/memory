@@ -36,7 +36,7 @@ function AdminMemoryContent() {
             <div className="p-2 bg-accent rounded-xl">
               <Brain aria-hidden="true" className="w-5 h-5 text-bg-elevated" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-text-primary">Memory control surface</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-text-primary">Memory control surface</h1>
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
             <span className="flex items-center gap-1.5 text-text-secondary font-medium">

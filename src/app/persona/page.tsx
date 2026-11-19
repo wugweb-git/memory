@@ -282,7 +282,7 @@ export default function PersonaIntelligencePage() {
     <div className="w-full max-w-3xl mx-auto space-y-8">
       <header className="space-y-3">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold text-text-primary">Persona</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-text-primary">Persona</h1>
           <p className="text-sm text-text-secondary">How your digital twin writes, decides and changes over time. Review it, then regenerate when your writing has moved on.</p>
         </div>
         <button
