@@ -118,10 +118,10 @@ export function CsvImport({ onComplete }: { onComplete?: () => void }) {
         {busy ? 'Importing…' : 'Import to memory'}
       </button>
 
-      {error && <p className="text-2xs text-danger">{error}</p>}
+      {error && <p role="alert" className="text-2xs text-danger">{error}</p>}
 
       {result && (
-        <div className="rounded-xl border border-border-secondary bg-bg-secondary p-3 space-y-1.5">
+        <div role="status" className="rounded-xl border border-border-secondary bg-bg-secondary p-3 space-y-1.5">
           <p className="text-sm font-bold text-text-primary">
             {result.imported} imported · {result.duplicates} duplicates · {result.skipped} skipped
             {result.failed ? ` · ${result.failed} failed` : ''}
@@ -134,7 +134,7 @@ export function CsvImport({ onComplete }: { onComplete?: () => void }) {
           {result.failed > 0 && (
             <ul className="text-2xs text-danger space-y-0.5 pt-1">
               {result.items.filter((i) => i.status === 'failed').slice(0, 5).map((i, idx) => (
-                <li key={idx} className="truncate">{i.title}: {i.reason}</li>
+                <li key={idx} className="break-words">{i.title}: {i.reason}</li>
               ))}
             </ul>
           )}

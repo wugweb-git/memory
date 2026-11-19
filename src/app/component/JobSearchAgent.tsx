@@ -128,9 +128,9 @@ export const JobSearchAgent = () => {
                         <span className="text-2xs font-semibold text-accent">{lead.score}%</span>
                       </div>
                       <div className="space-y-1">
-                        <h4 className="text-xl font-semibold text-text-primary tracking-tight ">
+                        <h3 className="text-xl font-semibold text-text-primary tracking-tight ">
                           {lead.role}
-                        </h4>
+                        </h3>
                         <p className="text-2xs text-text-tertiary font-bold uppercase tracking-widest  opacity-60">
                           {lead.company} · Sync: {lead.via}
                         </p>
@@ -147,7 +147,7 @@ export const JobSearchAgent = () => {
                           rel="noopener noreferrer"
                           className="inline-flex min-h-11 items-center text-2xs font-semibold text-accent uppercase tracking-widest hover:underline"
                         >
-                          View_Nexus
+                          View_Nexus<span className="sr-only"> (opens in a new tab)</span>
                         </a>
                       ) : (
                         <a
@@ -156,7 +156,7 @@ export const JobSearchAgent = () => {
                           rel="noopener noreferrer"
                           className="inline-flex min-h-11 items-center text-2xs font-semibold text-accent uppercase tracking-widest hover:underline"
                         >
-                          Find_Roles
+                          Find_Roles<span className="sr-only"> (opens in a new tab)</span>
                         </a>
                       )}
                       <time className="text-2xs font-mono text-text-tertiary">{lead.date}</time>

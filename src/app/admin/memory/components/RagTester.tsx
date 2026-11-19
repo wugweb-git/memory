@@ -89,6 +89,7 @@ export default function RagTester({ testRunId = 'PROD' }: RagTesterProps) {
         <AnimatePresence mode="popLayout">
           {error && (
             <motion.div
+              role="alert"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}

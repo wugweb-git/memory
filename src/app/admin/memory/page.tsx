@@ -80,7 +80,7 @@ function AdminMemoryContent() {
         <span>Identity Prism OS · combined operations center</span>
         <div className="flex gap-6">
           <a href="/admin" className="hover:text-text-primary transition-colors">Admin console</a>
-          <a href="/api/health/system" target="_blank" rel="noopener noreferrer" className="hover:text-text-primary transition-colors">System health JSON</a>
+          <a href="/api/health/system" target="_blank" rel="noopener noreferrer" className="hover:text-text-primary transition-colors">System health JSON<span className="sr-only"> (opens in a new tab)</span></a>
         </div>
       </footer>
     </div>

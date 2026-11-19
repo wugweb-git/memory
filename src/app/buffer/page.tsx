@@ -360,7 +360,7 @@ export default function BufferControlSurface() {
               <div className="p-6 rounded-2xl bg-secondary border border-border-secondary animate-in slide-in-from-bottom-4 duration-300">
                 <div className="flex items-start justify-between mb-6">
                   <div>
-                    <h3 className="text-text-primary font-medium">Item details</h3>
+                    <h2 className="text-text-primary font-medium">Item details</h2>
                     <p className="text-xs text-text-tertiary">{selectedId}</p>
                   </div>
                   <button aria-label="Close details" onClick={() => setSelectedId(null)} className="p-1 hover:bg-secondary rounded-full transition-colors text-text-tertiary">
@@ -370,7 +370,7 @@ export default function BufferControlSurface() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-4">
-                    <h4 className="text-2xs font-bold uppercase tracking-widest text-text-tertiary border-b border-border-secondary pb-2">Actions</h4>
+                    <h3 className="text-2xs font-bold uppercase tracking-widest text-text-tertiary border-b border-border-secondary pb-2">Actions</h3>
                     {actionError && <p role="alert" className="text-xs text-danger">{actionError}</p>}
                     <div className="grid grid-cols-2 gap-3">
                       <button 
@@ -422,7 +422,7 @@ export default function BufferControlSurface() {
                   )}
 
                   <div className="space-y-4">
-                    <h4 className="text-2xs font-bold uppercase tracking-widest text-text-tertiary border-b border-border-secondary pb-2">Payload</h4>
+                    <h3 className="text-2xs font-bold uppercase tracking-widest text-text-tertiary border-b border-border-secondary pb-2">Payload</h3>
                     <div className="bg-bg-primary rounded-xl p-4 font-mono text-2xs overflow-auto max-h-64 ">
                        <pre className="text-success/80">
                          {JSON.stringify(selectedItem?.raw_payload ?? null, null, 2)}

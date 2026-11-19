@@ -184,7 +184,7 @@ export const FeedbackBar: React.FC<{ decisionId: string }> = ({ decisionId }) =>
   return (
     <div className="space-y-2">
       <p className="text-xs text-text-tertiary">Was this useful?</p>
-      {failed ? <p className="text-xs text-danger">Could not record feedback. Try again.</p> : null}
+      {failed ? <p role="alert" className="text-xs text-danger">Could not record feedback. Try again.</p> : null}
       <div className="grid grid-cols-3 gap-2">
         {[
           { key: 'accepted', label: 'Accept' },

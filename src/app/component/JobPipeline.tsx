@@ -146,7 +146,7 @@ export const JobPipeline = () => {
                     <Briefcase size={20} />
                   </div>
                   <div className="text-left space-y-1">
-                    <h4 className="text-lg font-semibold text-text-primary tracking-tight kinetic-text">{app.role}</h4>
+                    <h3 className="text-lg font-semibold text-text-primary tracking-tight kinetic-text">{app.role}</h3>
                     <p className="text-2xs text-text-tertiary font-bold uppercase tracking-widest">
                       {app.company}{' // '}
                       <span className="opacity-50 ">via {app.source}</span>
@@ -175,7 +175,7 @@ export const JobPipeline = () => {
                   {app.url ? (
                     <a href={app.url} target="_blank" rel="noopener noreferrer"
                       className="w-10 h-10 rounded-xl bg-bg-elevated border border-border-secondary text-text-tertiary hover:text-bg-primary hover:bg-text-primary transition-all flex items-center justify-center shadow-md active:scale-90"
-                      aria-label={`View ${app.role} at ${app.company}`}>
+                      aria-label={`View ${app.role} at ${app.company} (opens in a new tab)`}>
                       <ArrowRight size={18} />
                     </a>
                   ) : (
@@ -194,7 +194,7 @@ export const JobPipeline = () => {
             className="w-full glass-panel rounded-[2rem] p-6 border-2 border-dashed border-border-secondary hover:border-accent/40 hover:shadow-xl transition-all flex items-center justify-center gap-3 text-text-tertiary hover:text-accent group"
           >
             <Plus size={18} className="group-hover:rotate-90 transition-transform" />
-            <span className="text-2xs font-semibold uppercase tracking-widest">Add Application</span>
+            <span className="text-2xs font-semibold uppercase tracking-widest">Add Application<span className="sr-only"> (opens in a new tab)</span></span>
           </button>
         </div>
       )}

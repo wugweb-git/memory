@@ -58,10 +58,10 @@ export default function ActivityLog({ testRunId = 'PROD' }: ActivityLogProps) {
   return (
     <div className="bg-bg-primary border border-border-secondary rounded-xl overflow-hidden h-[450px] flex flex-col shadow-sm">
       <div className="py-4 px-6 border-b border-border-secondary flex flex-row items-center justify-between shrink-0 bg-bg-secondary">
-        <h3 className="text-2xs font-bold uppercase tracking-[0.2em] flex items-center gap-2 text-text-tertiary">
+        <h2 className="text-2xs font-bold uppercase tracking-[0.2em] flex items-center gap-2 text-text-tertiary">
           <Terminal className="w-3.5 h-3.5" />
           Recent gate activity
-        </h3>
+        </h2>
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {error ? (

@@ -1,6 +1,6 @@
 import { RetryButton } from './RetryButton';
 
-export const metadata = { title: 'Offline | Identity Prism' };
+export const metadata = { title: 'Offline' };
 
 export default function OfflinePage() {
   return (

@@ -190,9 +190,9 @@ export const VoiceIngestion = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-8 relative z-10">
         <div>
-          <h3 className="text-2xs font-semibold tracking-widest text-text-primary uppercase flex items-center gap-3">
+          <h2 className="text-2xs font-semibold tracking-widest text-text-primary uppercase flex items-center gap-3">
             <Waves size={16} className="text-accent" /> Cognitive_Ingress
-          </h3>
+          </h2>
           <p className="text-2xs text-text-tertiary font-bold tracking-widest mt-1 uppercase opacity-50">
             {SUPPORTED ? 'Voice + Text Signal Capture' : 'Text Signal Capture'}
           </p>

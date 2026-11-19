@@ -135,12 +135,12 @@ export const UniversalSync = () => {
       <div className="space-y-8 relative z-10">
         <div className="flex items-start justify-between">
           <div className="kinetic-text">
-            <h3 className="text-2xs font-semibold tracking-widest text-text-primary uppercase flex items-center gap-4">
+            <h2 className="text-2xs font-semibold tracking-widest text-text-primary uppercase flex items-center gap-4">
               <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
                 <LinkIcon size={16} className="text-accent" />
               </div>
               Neural_Uplink_Bridge
-            </h3>
+            </h2>
             <p className="text-2xs text-text-tertiary font-semibold tracking-widest mt-3 uppercase opacity-40 ">
               Syncing LinkedIn, Blogs, and External Intelligence
             </p>

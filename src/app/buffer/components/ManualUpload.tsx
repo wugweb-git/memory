@@ -74,7 +74,7 @@ export default function ManualUpload({ onComplete }: { onComplete: () => void })
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-2xs font-bold uppercase tracking-widest text-text-tertiary">Upload to memory</h3>
+        <h2 className="text-2xs font-bold uppercase tracking-widest text-text-tertiary">Upload to memory</h2>
         {uploading && <Loader2 size={14} className="animate-spin text-text-tertiary" />}
       </div>
 

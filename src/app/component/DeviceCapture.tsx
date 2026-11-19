@@ -119,7 +119,7 @@ export function DeviceCapture() {
         );
       })}
       {status && (
-        <p className={`text-2xs ${status.tone === 'ok' ? 'text-success' : 'text-danger'}`}>{status.message}</p>
+        <p role={status.tone === 'ok' ? 'status' : 'alert'} className={`text-2xs ${status.tone === 'ok' ? 'text-success' : 'text-danger'}`}>{status.message}</p>
       )}
     </div>
   );
