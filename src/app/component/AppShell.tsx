@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Command, Menu, LogOut, LogIn, Settings, ShieldCheck, Eye } from 'lucide-react';
+import { ArrowLeft, Command, Menu, LogOut, LogIn, Settings, ShieldCheck, Eye } from 'lucide-react';
 import {
   APP_BRAND,
   NAV_GROUPS,
@@ -115,6 +115,10 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
   const dockItems = MOBILE_DOCK_ITEMS.filter((i) => featureOn(i.feature));
   // "More" reads as current on the More screen and when the page lives only there.
   const moreActive = pathname === '/more' || !dockItems.some((i) => isNavActive(pathname, i.href));
+  // Nested pages (e.g. /integrations/publishing) get a back control to their parent on phones.
+  const segments = pathname.split('/').filter(Boolean);
+  const parentHref = segments.length >= 2 ? `/${segments.slice(0, -1).join('/')}` : null;
+  const parentLabel = parentHref ? (findNavItem(parentHref)?.label ?? 'previous page') : null;
   const pageTitle = pathname === '/more' ? 'More' : findNavItem(pathname)?.label ?? APP_BRAND.name;
 
   // Plain render helpers (not components) so state changes never remount the sidebar and drop focus.
@@ -252,10 +256,19 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
       {/* Top bar: page title on the left, one contextual action slot, then the account entry. */}
       <header className="fixed top-0 right-0 left-0 md:left-[var(--sidebar-w)] z-30 h-[calc(var(--topbar-h)+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] bg-bg-elevated/90 backdrop-blur-xl border-b border-border-secondary flex items-center justify-between gap-2 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] md:px-8">
         <div className="flex min-w-0 items-center gap-2">
+          {parentHref ? (
+            <Link
+              href={parentHref}
+              aria-label={`Back to ${parentLabel}`}
+              className="md:hidden -ml-2 flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-pill text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <ArrowLeft size={22} aria-hidden="true" />
+            </Link>
+          ) : null}
           <Link
             href="/console"
             aria-label={`${APP_BRAND.name} home`}
-            className="md:hidden -ml-2 flex min-h-11 min-w-11 shrink-0 items-center justify-center"
+            className={`${parentHref ? 'hidden' : 'md:hidden'} -ml-2 flex min-h-11 min-w-11 shrink-0 items-center justify-center`}
           >
             <span className="w-7 h-7 rounded-control bg-text-primary flex items-center justify-center">
               <Command size={14} aria-hidden="true" className="text-bg-primary" />
