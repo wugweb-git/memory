@@ -150,6 +150,9 @@ export const API_ENDPOINTS = {
   sources: {
     list: { path: '/api/sources', methods: ['GET'] as const },
     sync: { path: '/api/sources/[id]/sync', methods: ['POST'] as const },
+    config: { path: '/api/sources/[id]/config', methods: ['PUT'] as const },
+    feeds: { path: '/api/sources/feeds', methods: ['POST'] as const },
+    feed: { path: '/api/sources/feeds/[id]', methods: ['DELETE'] as const },
   },
   oauth: {
     googleStart: { path: '/api/oauth/google/start', methods: ['GET'] as const },

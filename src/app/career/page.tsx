@@ -177,7 +177,7 @@ export default function CareerPage() {
                       {c.company ? <p className="text-sm text-text-tertiary">{String(c.company)}</p> : null}
                       {c.originalLogic ? <p className="text-sm text-text-secondary mt-1 line-clamp-2">{String(c.originalLogic)}</p> : null}
                       <div className="flex gap-1 mt-1 -ml-2">
-                        <button type="button" onClick={() => startEdit(s)} aria-label={`Edit ${s.title}`} className="min-h-[44px] px-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-lg text-accent">Edit</button>
+                        <button type="button" onClick={() => startEdit(s)} aria-label={`Edit ${s.title}`} className="min-h-[44px] min-w-[44px] px-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-lg text-accent">Edit</button>
                         <button type="button" onClick={() => remove(s)} aria-label={`Remove ${s.title}`} className="min-h-[44px] px-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-lg text-danger">Remove</button>
                       </div>
                     </li>

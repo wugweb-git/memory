@@ -59,6 +59,8 @@ export interface Connector {
   connected?(): Promise<boolean>;
   /** OAuth-only: where the "Connect" button should send the owner. */
   authStartPath?: string;
+  /** True for feeds the owner added in the app (can be removed). */
+  custom?: boolean;
   /** Pull from the source into the blob buffer. Must dedupe across runs. */
   sync(opts?: { autoPromote?: boolean }): Promise<SyncResult>;
 }
@@ -77,6 +79,12 @@ export interface ConnectorStatus {
   connected?: boolean;
   /** OAuth-only: where the "Connect" button links. */
   authStartPath?: string;
+  /** Owner can set this source up from the app: the input to show. */
+  setup?: { label: string; placeholder: string; inputMode: 'text' | 'url'; help: string };
+  /** Saved setup value (not secret): username, channel id or feed URL. */
+  setupValue?: string | null;
+  /** A feed the owner added; can be removed. */
+  custom?: boolean;
   lastSyncAt: string | null;
   lastError: string | null;
   lastResult: { ingested: number; skipped: number; scanned?: number } | null;

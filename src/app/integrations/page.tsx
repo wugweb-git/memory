@@ -14,6 +14,7 @@ import { M3Button, M3Card, M3Page, M3State } from '@/components/ui/m3';
 import { EmptyState, Skeleton } from '@/components/ui/primitives';
 import { AppShell } from '@/app/component/AppShell';
 import { apiRequest } from '@/lib/ui/api-client';
+import { BrandIcon, brandIconFor } from '@/components/ui/brand-icon';
 
 type ConnectorStatus = {
   id: string;
@@ -26,6 +27,9 @@ type ConnectorStatus = {
   configured: boolean;
   connected?: boolean;
   authStartPath?: string;
+  setup?: { label: string; placeholder: string; inputMode: 'text' | 'url'; help: string };
+  setupValue?: string | null;
+  custom?: boolean;
   lastSyncAt: string | null;
   lastError: string | null;
   lastResult: { ingested: number; skipped: number; scanned?: number } | null;
@@ -129,6 +133,14 @@ export default function IntegrationsPage() {
   const [expired, setExpired] = useState(false);
   const [syncing, setSyncing] = useState<string | null>(null);
   const [announce, setAnnounce] = useState('');
+  const [editing, setEditing] = useState<string | null>(null);
+  const [draft, setDraft] = useState('');
+  const [fieldError, setFieldError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [feedName, setFeedName] = useState('');
+  const [feedUrl, setFeedUrl] = useState('');
+  const [feedError, setFeedError] = useState<string | null>(null);
+  const [addingFeed, setAddingFeed] = useState(false);
 
   const load = useCallback(async () => {
     setError(null);
@@ -191,11 +203,73 @@ export default function IntegrationsPage() {
     }
   }
 
+  function startSetup(c: ConnectorStatus) {
+    setEditing(c.id);
+    setDraft(c.setupValue ?? '');
+    setFieldError(null);
+  }
+
+  async function saveSetup(c: ConnectorStatus, value: string) {
+    setSaving(true);
+    setFieldError(null);
+    try {
+      await apiRequest(`/api/sources/${c.id}/config`, { method: 'PUT', body: { value } });
+      setEditing(null);
+      toast.success(value.trim() ? `${c.label} saved. Syncing now.` : `${c.label} removed.`);
+      setAnnounce(value.trim() ? `${c.label} saved` : `${c.label} removed`);
+      await load();
+      if (value.trim()) await syncNow({ ...c, configured: true });
+    } catch (e: unknown) {
+      setFieldError(e instanceof Error ? e.message : 'Could not save. Try again.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function addFeed() {
+    setAddingFeed(true);
+    setFeedError(null);
+    try {
+      const res = await apiRequest<{ feed: { id: string; label: string } }>('/api/sources/feeds', {
+        method: 'POST',
+        body: { label: feedName, url: feedUrl },
+      });
+      setFeedName('');
+      setFeedUrl('');
+      toast.success(`${res.feed.label} added. Syncing now.`);
+      setAnnounce(`${res.feed.label} added`);
+      await load();
+      await syncNow({ id: res.feed.id, label: res.feed.label } as ConnectorStatus);
+    } catch (e: unknown) {
+      setFeedError(e instanceof Error ? e.message : 'Could not add the feed. Try again.');
+    } finally {
+      setAddingFeed(false);
+    }
+  }
+
+  async function removeFeed(c: ConnectorStatus) {
+    try {
+      await apiRequest(`/api/sources/feeds/${c.id}`, { method: 'DELETE' });
+      toast.success(`${c.label} removed.`);
+      setAnnounce(`${c.label} removed`);
+      await load();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : `Could not remove ${c.label}.`);
+    }
+  }
+
   /** The single next step for a connector. */
   function renderAction(c: ConnectorStatus) {
     const h = healthOf(c);
     if (c.kind === 'manual') {
       return <Link href="/buffer" aria-label={`Capture with ${c.label}`} className={ACTION_QUIET}>Capture</Link>;
+    }
+    if (h === 'unset' && c.setup) {
+      return (
+        <button type="button" onClick={() => startSetup(c)} aria-label={`Set up ${c.label}`} className={ACTION_PRIMARY}>
+          Set up
+        </button>
+      );
     }
     if (h === 'unset') {
       return (
@@ -223,6 +297,12 @@ export default function IntegrationsPage() {
         </button>
         {h === 'error' && c.authStartPath ? (
           <a href={c.authStartPath} aria-label={`Reconnect ${c.label}`} className={ACTION_QUIET}>Reconnect</a>
+        ) : null}
+        {c.setup ? (
+          <button type="button" onClick={() => startSetup(c)} aria-label={`Change ${c.label}`} className={ACTION_QUIET}>Change</button>
+        ) : null}
+        {c.custom ? (
+          <button type="button" onClick={() => removeFeed(c)} aria-label={`Remove ${c.label}`} className={ACTION_QUIET}>Remove</button>
         ) : null}
       </div>
     );
@@ -285,17 +365,23 @@ export default function IntegrationsPage() {
                     <ul className="space-y-2">
                       {items.map((c) => {
                         const Icon = iconFor(c);
+                        const brand = brandIconFor(c.id, c.custom);
                         const h = healthOf(c);
                         const copy = HEALTH_COPY[h];
                         const sec = detailLine(c);
                         return (
                           <li
                             key={c.id}
-                            className="flex flex-col gap-3 rounded-2xl border border-border-secondary bg-bg-primary p-3 sm:flex-row sm:items-center"
+                            className="rounded-2xl border border-border-secondary bg-bg-primary p-3"
                           >
+                           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                             <div className="flex min-w-0 flex-1 items-start gap-3">
                               <div className="h-10 w-10 shrink-0 rounded-xl bg-bg-secondary flex items-center justify-center">
-                                <Icon className="h-4 w-4 text-text-secondary" aria-hidden="true" />
+                                {brand ? (
+                                  <BrandIcon icon={brand} className="h-5 w-5 text-text-primary" />
+                                ) : (
+                                  <Icon className="h-4 w-4 text-text-secondary" aria-hidden="true" />
+                                )}
                               </div>
                               <div className="min-w-0 flex-1">
                                 <p className="text-sm font-bold text-text-primary break-words">{c.label}</p>
@@ -309,6 +395,38 @@ export default function IntegrationsPage() {
                               </div>
                             </div>
                             {renderAction(c)}
+                           </div>
+                           {editing === c.id && c.setup ? (
+                            <form
+                              className="mt-3 space-y-2 border-t border-border-secondary pt-3"
+                              onSubmit={(e) => { e.preventDefault(); saveSetup(c, draft); }}
+                            >
+                              <label htmlFor={`setup-${c.id}`} className="block text-sm font-medium text-text-primary">{c.setup.label}</label>
+                              <input
+                                id={`setup-${c.id}`}
+                                value={draft}
+                                onChange={(e) => setDraft(e.target.value)}
+                                type="text"
+                                inputMode={c.setup.inputMode === 'url' ? 'url' : 'text'}
+                                autoCapitalize="none"
+                                autoCorrect="off"
+                                spellCheck={false}
+                                placeholder={c.setup.placeholder}
+                                aria-describedby={`setup-${c.id}-help${fieldError ? ` setup-${c.id}-err` : ''}`}
+                                aria-invalid={fieldError ? true : undefined}
+                                className="min-h-11 w-full rounded-xl border border-border-primary bg-bg-elevated px-3 text-base text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                              />
+                              <p id={`setup-${c.id}-help`} className="text-xs text-text-tertiary">{c.setup.help}</p>
+                              {fieldError ? <p id={`setup-${c.id}-err`} role="alert" className="text-xs text-danger">{fieldError}</p> : null}
+                              <div className="flex flex-col gap-2 sm:flex-row">
+                                <button type="submit" disabled={saving || !draft.trim()} className={ACTION_PRIMARY}>{saving ? 'Saving…' : 'Save and sync'}</button>
+                                <button type="button" onClick={() => setEditing(null)} className={ACTION_QUIET}>Cancel</button>
+                                {c.setupValue ? (
+                                  <button type="button" disabled={saving} onClick={() => saveSetup(c, '')} className={ACTION_QUIET}>Remove</button>
+                                ) : null}
+                              </div>
+                            </form>
+                           ) : null}
                           </li>
                         );
                       })}
@@ -316,6 +434,41 @@ export default function IntegrationsPage() {
                   </M3Card>
                 );
               })}
+
+              <M3Card title="Add a feed">
+                <p className="-mt-1 text-xs text-text-tertiary">
+                  Follow any blog, newsletter or channel that has an RSS or Atom feed. New posts are pulled in on a schedule.
+                </p>
+                <form className="mt-3 space-y-2" onSubmit={(e) => { e.preventDefault(); addFeed(); }}>
+                  <label htmlFor="feed-name" className="block text-sm font-medium text-text-primary">Name <span className="font-normal text-text-tertiary">(optional)</span></label>
+                  <input
+                    id="feed-name"
+                    value={feedName}
+                    onChange={(e) => setFeedName(e.target.value)}
+                    type="text"
+                    maxLength={60}
+                    placeholder="My newsletter"
+                    className="min-h-11 w-full rounded-xl border border-border-primary bg-bg-elevated px-3 text-base text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  />
+                  <label htmlFor="feed-url" className="block text-sm font-medium text-text-primary">Feed address</label>
+                  <input
+                    id="feed-url"
+                    value={feedUrl}
+                    onChange={(e) => setFeedUrl(e.target.value)}
+                    type="text"
+                    inputMode="url"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    placeholder="https://example.com/feed"
+                    aria-describedby={feedError ? 'feed-url-err' : undefined}
+                    aria-invalid={feedError ? true : undefined}
+                    className="min-h-11 w-full rounded-xl border border-border-primary bg-bg-elevated px-3 text-base text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  />
+                  {feedError ? <p id="feed-url-err" role="alert" className="text-xs text-danger">{feedError}</p> : null}
+                  <button type="submit" disabled={addingFeed || !feedUrl.trim()} className={ACTION_PRIMARY}>{addingFeed ? 'Adding…' : 'Add and sync'}</button>
+                </form>
+              </M3Card>
             </>
           )}
       </M3Page>

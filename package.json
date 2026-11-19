@@ -59,6 +59,7 @@
     "react-filepond": "^7.1.2",
     "react-toastify": "^10.0.4",
     "sanity": "^6.2.0",
+    "simple-icons": "^13.21.0",
     "styled-components": "^6.4.3",
     "unpdf": "^1.6.2"
   },
