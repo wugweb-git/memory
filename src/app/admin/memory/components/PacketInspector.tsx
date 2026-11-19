@@ -162,7 +162,7 @@ export default function PacketInspector({ packetId, onClose }: PacketInspectorPr
             </div>
           ) : (
             <div className="grid grid-cols-12 gap-6 lg:gap-10">
-              <div className="col-span-12 lg:col-span-5 space-y-4">
+              <div className="col-span-12 min-w-0 lg:col-span-5 space-y-4">
                 <div role="tablist" aria-label="Packet data" className="flex items-center gap-1 p-1 bg-bg-primary rounded-lg border border-border-secondary">
                   {TABS.map((tab, i) => (
                     <button
@@ -210,7 +210,7 @@ export default function PacketInspector({ packetId, onClose }: PacketInspectorPr
                 <p className="text-2xs text-text-tertiary">Read-only view of the stored packet.</p>
               </div>
 
-              <div className="col-span-12 lg:col-span-7 space-y-10">
+              <div className="col-span-12 min-w-0 lg:col-span-7 space-y-10">
                 <section aria-labelledby="packet-l2-title" className="space-y-5">
                   <h3 id="packet-l2-title" className="text-sm font-semibold text-text-secondary flex items-center gap-3">
                     <span aria-hidden="true" className="w-2 h-2 rounded-full bg-accent" />

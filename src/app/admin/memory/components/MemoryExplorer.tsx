@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Database, Eye, Hash, Tag } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { ChevronLeft, ChevronRight, Database, Eye, Hash, Tag } from 'lucide-react';
 import { EmptyState, Skeleton } from '@/components/ui/primitives';
 import PacketInspector from './PacketInspector';
+import { pageRangeLabel, hasPrevPage, hasNextPage } from '@/lib/memory/list-pagination';
 
 interface Packet {
   id: string;
@@ -33,26 +34,56 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
   const [filterType, setFilterType] = useState('');
   const [selectedPacketId, setSelectedPacketId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [offset, setOffset] = useState(0);
+  const [total, setTotal] = useState(0);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  // Back to page 1 whenever the filter or test run changes.
+  useEffect(() => {
+    setOffset(0);
+  }, [filterType, testRunId]);
 
   const fetchPackets = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/memory/list?limit=${PAGE_SIZE}&test_run_id=${encodeURIComponent(testRunId)}${filterType ? `&type=${encodeURIComponent(filterType)}` : ''}`, { credentials: 'include' });
+      const response = await fetch(`/api/memory/list?limit=${PAGE_SIZE}&offset=${offset}&test_run_id=${encodeURIComponent(testRunId)}${filterType ? `&type=${encodeURIComponent(filterType)}` : ''}`, { credentials: 'include' });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data?.error || `HTTP ${response.status}`);
-      setPackets(data.packets || []);
+      const items: Packet[] = data.packets || [];
+      const count = typeof data.total === 'number' ? data.total : items.length;
+      // Page vanished (e.g. records removed): step back to the last page that exists.
+      if (items.length === 0 && count > 0 && offset > 0) {
+        setOffset(Math.max(0, Math.floor((count - 1) / PAGE_SIZE) * PAGE_SIZE));
+        return;
+      }
+      setPackets(items);
+      setTotal(count);
       setLoadError(null);
     } catch (err) {
       setPackets([]);
+      setTotal(0);
       setLoadError(err instanceof Error ? `Could not load packets: ${err.message}. Retry, or check that you are signed in as admin.` : 'Could not load packets. Retry, or check that you are signed in as admin.');
     } finally {
       setLoading(false);
     }
-  }, [filterType, testRunId]);
+  }, [filterType, testRunId, offset]);
 
   useEffect(() => {
     fetchPackets();
   }, [fetchPackets]);
+
+  const canPrev = hasPrevPage(offset);
+  const canNext = hasNextPage(offset, packets.length, total);
+  const rangeLabel = pageRangeLabel(offset, packets.length, total);
+
+  const goPrev = () => {
+    if (!canPrev || loading) return;
+    setOffset(Math.max(0, offset - PAGE_SIZE));
+  };
+  const goNext = () => {
+    if (!canNext || loading) return;
+    setOffset(offset + PAGE_SIZE);
+  };
 
   const openPacket = (id: string) => setSelectedPacketId(id);
 
@@ -64,14 +95,14 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
     <section aria-labelledby="memory-explorer-title" className="relative overflow-hidden rounded-2xl border border-border-primary bg-bg-elevated">
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border-secondary bg-bg-secondary p-4 sm:p-6">
         <div className="min-w-0">
-          <h2 id="memory-explorer-title" className="flex items-center gap-2 text-xl font-semibold text-text-primary">
+          <h2 id="memory-explorer-title" ref={headingRef} tabIndex={-1} className="flex items-center gap-2 text-xl font-semibold text-text-primary focus:outline-none">
             <Database aria-hidden="true" className="h-5 w-5 text-text-tertiary" />
             Memory explorer
           </h2>
-          <p className="mt-1 text-sm text-text-tertiary">Browse the latest memory packets and open one to inspect it.</p>
+          <p className="mt-1 text-sm text-text-tertiary">Browse memory packets, newest first, and open one to inspect it.</p>
         </div>
         <div className="w-full sm:w-auto">
-          <label htmlFor="explorer-type-filter" className="mb-1 block text-xs font-medium text-text-secondary">Packet type</label>
+          <label htmlFor="explorer-type-filter" className="mb-1 block text-sm font-medium text-text-secondary">Packet type</label>
           <select
             id="explorer-type-filter"
             value={filterType}
@@ -134,7 +165,7 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
       {/* Tablet and up: table */}
       <div className="hidden overflow-x-auto md:block" role="region" aria-label="Memory packets table, scrollable" tabIndex={0} aria-busy={loading}>
         <table className="w-full border-collapse text-left">
-          <caption className="sr-only">Latest {PAGE_SIZE} memory packets{filterType ? ` of type ${filterType}` : ''}</caption>
+          <caption className="sr-only">Memory packets{filterType ? ` of type ${filterType}` : ''}, {rangeLabel}</caption>
           <thead>
             <tr className="border-b border-border-secondary bg-bg-primary text-xs text-text-tertiary">
               <th scope="col" className={headCell}>Type</th>
@@ -192,8 +223,33 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
         </table>
       </div>
 
-      <p role="status" className="border-t border-border-secondary bg-bg-primary px-4 py-3 text-xs text-text-tertiary sm:px-6">
-        {loading ? 'Loading packets…' : `Showing the latest ${packets.length} ${packets.length === 1 ? 'packet' : 'packets'}. Use the type filter to narrow the list.`}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-secondary bg-bg-primary px-4 py-3 sm:px-6">
+        <p className="text-sm text-text-tertiary">
+          {loading ? 'Loading packets…' : rangeLabel}
+        </p>
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+          <button
+            type="button"
+            onClick={goPrev}
+            aria-disabled={!canPrev || loading}
+            className={`inline-flex min-h-11 flex-1 items-center justify-center gap-1 rounded-xl border border-border-primary px-4 text-sm font-medium text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:flex-none ${!canPrev || loading ? 'cursor-not-allowed opacity-50' : 'hover:bg-bg-secondary'}`}
+          >
+            <ChevronLeft aria-hidden="true" className="h-4 w-4" />
+            Previous
+          </button>
+          <button
+            type="button"
+            onClick={goNext}
+            aria-disabled={!canNext || loading}
+            className={`inline-flex min-h-11 flex-1 items-center justify-center gap-1 rounded-xl border border-border-primary px-4 text-sm font-medium text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:flex-none ${!canNext || loading ? 'cursor-not-allowed opacity-50' : 'hover:bg-bg-secondary'}`}
+          >
+            Next
+            <ChevronRight aria-hidden="true" className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+      <p role="status" aria-live="polite" className="sr-only">
+        {loading ? '' : rangeLabel}
       </p>
 
       {selectedPacketId && (

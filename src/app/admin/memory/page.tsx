@@ -28,7 +28,7 @@ function AdminMemoryContent() {
   }, []);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-2">
+    <div className="max-w-6xl mx-auto">
       {/* Header */}
       <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -79,9 +79,9 @@ function AdminMemoryContent() {
 
       <footer className="mt-16 py-6 border-t border-border-secondary flex flex-wrap items-center justify-between gap-3 text-2xs text-text-tertiary">
         <span>Identity Prism OS · combined operations center</span>
-        <div className="flex gap-6">
-          <Link href="/admin" className="inline-flex items-center min-h-6 hover:text-text-primary transition-colors">Admin console</Link>
-          <a href="/api/health/system" target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-6 hover:text-text-primary transition-colors">System health JSON<span className="sr-only"> (opens in a new tab)</span></a>
+        <div className="flex flex-wrap gap-x-6 gap-y-1">
+          <Link href="/admin" className="inline-flex items-center min-h-11 sm:min-h-6 hover:text-text-primary transition-colors">Admin console</Link>
+          <a href="/api/health/system" target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-11 sm:min-h-6 hover:text-text-primary transition-colors">System health JSON<span className="sr-only"> (opens in a new tab)</span></a>
         </div>
       </footer>
     </div>

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { IDENTITY_CONFIG, resolveUserId } from '@/config/identity';
 import { AppShell } from '@/app/component/AppShell';
 import { EmptyState, Skeleton } from '@/components/ui/primitives';
+import { ConfirmDialog, buildRollbackDescription, useConfirm } from '@/components/ui/confirm-dialog';
 
 type Trait = { id: string; traitName: string; traitValue: number; confidence: number; evidenceCount: number };
 type EvolutionLog = { id: string; changedField: string | null; reason: string | null; confidenceDelta: number | null; createdAt: string };
@@ -108,6 +109,7 @@ export default function PersonaIntelligencePage() {
   const [saving, setSaving] = useState(false);
   const [rebuilding, setRebuilding] = useState(false);
   const [userId, setUserId] = useState<string>('');
+  const rollbackConfirm = useConfirm<{ logId: string; field: string; createdAt: string }>();
 
   useEffect(() => {
     const { userId: resolved } = resolveUserId();
@@ -181,7 +183,6 @@ export default function PersonaIntelligencePage() {
 
   async function rollbackField(logId: string, field: string) {
     if (!ROLLBACK_FIELDS.includes(field)) return;
-    if (!confirm(`Roll back ${(STYLE_LABEL[field] ?? humanize(field)).toLowerCase()} to how it was before this change? The change stays in the timeline.`)) return;
     setSaving(true);
     setError(null);
     setNotice(null);
@@ -202,6 +203,7 @@ export default function PersonaIntelligencePage() {
       setError('Rollback failed. Check your connection and try again.');
     } finally {
       setSaving(false);
+      rollbackConfirm.close();
     }
   }
 
@@ -248,7 +250,7 @@ export default function PersonaIntelligencePage() {
   if (loading) {
     return (
       <AppShell>
-        <div className="w-full max-w-3xl mx-auto px-4 py-8 space-y-4">
+        <div className="w-full max-w-3xl mx-auto space-y-4">
           <h1 className="sr-only">Persona</h1>
           <div role="status" aria-label="Loading persona" className="space-y-4">
             <Skeleton className="h-8 w-40 motion-reduce:animate-none" />
@@ -277,7 +279,7 @@ export default function PersonaIntelligencePage() {
 
   return (
     <AppShell>
-    <div className="w-full max-w-3xl mx-auto px-4 py-8 space-y-8">
+    <div className="w-full max-w-3xl mx-auto space-y-8">
       <header className="space-y-3">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold text-text-primary">Persona</h1>
@@ -364,7 +366,7 @@ export default function PersonaIntelligencePage() {
                   {log.changedField && ROLLBACK_FIELDS.includes(log.changedField) && log.reason !== 'rollback' && (
                     <button
                       type="button"
-                      onClick={() => rollbackField(log.id, log.changedField!)}
+                      onClick={() => rollbackConfirm.ask({ logId: log.id, field: log.changedField!, createdAt: log.createdAt })}
                       disabled={saving}
                       aria-label={`Roll back ${(STYLE_LABEL[log.changedField!] ?? humanize(log.changedField!)).toLowerCase()} change`}
                       className="inline-flex min-h-11 items-center -ml-2 px-2 rounded-lg text-sm font-semibold text-accent hover:bg-bg-tertiary disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
@@ -445,6 +447,26 @@ export default function PersonaIntelligencePage() {
         </button>
       </section>
     </div>
+      <ConfirmDialog
+        open={rollbackConfirm.open}
+        title="Roll back this change?"
+        description={
+          rollbackConfirm.pending
+            ? buildRollbackDescription(
+                STYLE_LABEL[rollbackConfirm.pending.field] ?? humanize(rollbackConfirm.pending.field),
+                rollbackConfirm.pending.createdAt ? new Date(rollbackConfirm.pending.createdAt).toLocaleDateString() : null,
+              )
+            : ''
+        }
+        confirmLabel="Roll back"
+        cancelLabel="Keep current value"
+        tone="danger"
+        busy={saving}
+        onConfirm={() => {
+          if (rollbackConfirm.pending) void rollbackField(rollbackConfirm.pending.logId, rollbackConfirm.pending.field);
+        }}
+        onCancel={rollbackConfirm.close}
+      />
     </AppShell>
   );
 }

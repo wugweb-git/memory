@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Check, Copy, MoreVertical, SendHorizontal, Square } from 'lucide-react';
 import type { UIMessage } from 'ai';
-import { usePrismChat } from '@/hooks/usePrismChat';
+import { useAskChat } from '@/lib/chat/useAskChat';
+import type { AskSource } from '@/lib/chat/sources';
 import { UI_API } from '@/lib/api/endpoints';
 import { IDENTITY_CONFIG, avatarFallbackUrl } from '@/config/identity';
 import { haptic, prefersReducedMotion } from '@/lib/pwa/browser';
@@ -111,6 +112,27 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
+function SourceList({ sources }: { sources: AskSource[] }) {
+  const headingId = useId();
+  return (
+    <div className="mt-1.5 max-w-[85%] px-1">
+      <p id={headingId} className="text-2xs font-medium text-text-secondary">
+        Sources
+      </p>
+      <ul aria-labelledby={headingId} className="mt-1 flex flex-wrap gap-1.5">
+        {sources.map((s) => (
+          <li
+            key={s.packet_id}
+            className="max-w-full break-words rounded-full border border-border-primary bg-bg-secondary px-2.5 py-0.5 text-2xs text-text-secondary"
+          >
+            {s.label}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function TypingDots() {
   return (
     <div role="status" aria-label={`${FIRST_NAME} is replying`} className="flex justify-start">
@@ -132,7 +154,7 @@ export default function AskPage() {
   const [input, setInput] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
-  const { messages, sendMessage, status, setMessages, stop, regenerate, clearError, error } = usePrismChat(UI_API.chat);
+  const { messages, sendMessage, status, setMessages, stop, regenerate, clearError, error, sourcesById, clearSources } = useAskChat(UI_API.chat);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -238,6 +260,7 @@ export default function AskPage() {
     stop?.();
     clearError?.();
     setMessages([]);
+    clearSources();
     stamps.current.clear();
     nearBottomRef.current = true;
     dialogRef.current?.close();
@@ -267,9 +290,10 @@ export default function AskPage() {
         id: m.id,
         role: m.role,
         text: messageText(m as UIMessage),
+        sources: sourcesById[m.id] ?? [],
         time: formatMessageTime(stamps.current.stamp(m.id)),
       })),
-    [messages],
+    [messages, sourcesById],
   );
 
   const profileHref = `/p/${IDENTITY_CONFIG.HANDLE}`;
@@ -369,6 +393,9 @@ export default function AskPage() {
                   >
                     {r.text}
                   </div>
+                  {!mine && !(isLoading && r.id === lastMessage?.id) && r.sources.length > 0 && (
+                    <SourceList sources={r.sources} />
+                  )}
                   <span className="mt-1 flex items-center gap-1 px-1 text-2xs text-text-secondary">
                     <span className="sr-only">{mine ? 'You, ' : `${FIRST_NAME}, `}</span>
                     {r.time}

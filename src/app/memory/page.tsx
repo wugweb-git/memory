@@ -282,7 +282,7 @@ export default function MemoryControlSurface() {
               <label className="block">
                 <span className="mb-1 block text-xs font-medium text-text-secondary">Status</span>
                 <input
-                  className="min-h-11 w-full min-w-0 rounded-xl border border-border-primary bg-bg-primary px-3 text-sm text-text-primary placeholder:text-text-disabled focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  className="min-h-11 w-full min-w-0 rounded-xl border border-border-primary bg-bg-primary px-3 text-base text-text-primary sm:text-sm placeholder:text-text-disabled focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   placeholder="For example accepted or hold"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
@@ -291,7 +291,7 @@ export default function MemoryControlSurface() {
               <label className="block">
                 <span className="mb-1 block text-xs font-medium text-text-secondary">Source</span>
                 <input
-                  className="min-h-11 w-full min-w-0 rounded-xl border border-border-primary bg-bg-primary px-3 text-sm text-text-primary placeholder:text-text-disabled focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  className="min-h-11 w-full min-w-0 rounded-xl border border-border-primary bg-bg-primary px-3 text-base text-text-primary sm:text-sm placeholder:text-text-disabled focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   placeholder="For example upload"
                   value={sourceFilter}
                   onChange={(e) => setSourceFilter(e.target.value)}

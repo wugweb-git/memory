@@ -44,7 +44,7 @@ export default function CognitivePage() {
 
   return (
     <AppShell>
-      <div className="w-full max-w-2xl mx-auto px-4 md:px-6 py-6 space-y-6 pb-24 md:pb-6">
+      <div className="w-full max-w-2xl mx-auto space-y-6">
         <header className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-secondary border border-border-secondary flex items-center justify-center shrink-0">
             <Brain size={17} className="text-text-tertiary" aria-hidden="true" />
