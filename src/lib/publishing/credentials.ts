@@ -64,7 +64,16 @@ export const PUBLISH_ACCOUNTS: PublishAccount[] = [
   },
 ];
 
-const ALL_FIELDS = new Map(PUBLISH_ACCOUNTS.flatMap((a) => a.fields.map((f) => [f.key, f] as const)));
+/** Credentials for read-only connectors (not publishers). Stored the same way, listed separately. */
+export const CONNECTOR_CREDENTIALS: CredentialField[] = [
+  { key: 'ICLOUD_APPLE_ID', label: 'Apple ID', secret: false, required: true, help: 'The email address of your Apple ID.' },
+  { key: 'ICLOUD_APP_PASSWORD', label: 'App-specific password', secret: true, required: true, help: 'Created at account.apple.com under Sign-In and Security. Not your Apple ID password.' },
+];
+
+const ALL_FIELDS = new Map<string, CredentialField>([
+  ...PUBLISH_ACCOUNTS.flatMap((a) => a.fields.map((f) => [f.key, f] as const)),
+  ...CONNECTOR_CREDENTIALS.map((f) => [f.key, f] as const),
+]);
 const dbKey = (key: string) => `publish-credential:${key}`;
 
 export function isCredentialKey(key: string): boolean {

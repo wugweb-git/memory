@@ -78,7 +78,7 @@ export function extractSignals(packet: MemoryPacket): Signal[] {
   const isEmail = source === 'gmail' || source === 'email';
 
   // Rule: Work Activity
-  const isCalendar = source === 'google_calendar' || source === 'google_calendar_events';
+  const isCalendar = source === 'google_calendar' || source === 'google_calendar_events' || source === 'icloud_calendar';
   if (source === 'github' || isCalendar || (isEmail && /work|project|meeting|sprint|task/i.test((packet.metadata as any).subject || ''))) {
     detected.push({
       packet_id: packetId,

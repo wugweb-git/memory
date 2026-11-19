@@ -16,6 +16,8 @@ import { googleDriveConnector, googleCalendarConnector } from './google';
 import { googleCalendarEventsConnector, googleTasksConnector, gmailConnector } from '@/lib/connectors/google-extra';
 import { spotifyConnector } from '@/lib/connectors/spotify';
 import { linkedinConnector, twitterConnector } from '@/lib/connectors/exports';
+import { appleHealthConnector } from '@/lib/connectors/apple-health';
+import { icloudCalendarConnector } from '@/lib/connectors/icloud';
 import { voiceConnector } from '@/lib/connectors/voice';
 import { getConfigValue, getCustomFeeds } from './config';
 import type { Connector, SyncResult } from './types';
@@ -156,6 +158,8 @@ export const CONNECTORS: Connector[] = [
   spotifyConnector,
   linkedinConnector,
   twitterConnector,
+  appleHealthConnector,
+  icloudCalendarConnector,
   oauthPlaceholder({ id: 'behance', label: 'Behance', category: 'design', setupHint: 'No public API/RSS — needs an app registration.' }),
   oauthPlaceholder({ id: 'dribbble', label: 'Dribbble', category: 'design', setupHint: 'Needs Dribbble OAuth (client id/secret).' }),
 ];
