@@ -12,7 +12,7 @@ function makeSub() {
     ua,
     auth,
     sub: {
-      endpoint: 'https://push.example.com/send/abc123',
+      endpoint: 'https://fcm.googleapis.com/fcm/send/abc123',
       keys: { p256dh: b64urlEncode(ua.getPublicKey()), auth: b64urlEncode(auth) },
     },
   };
@@ -20,12 +20,12 @@ function makeSub() {
 
 describe('push keys', () => {
   it('hashes endpoints stably and namespaces the key', () => {
-    const e = 'https://push.example.com/send/abc123';
+    const e = 'https://fcm.googleapis.com/fcm/send/abc123';
     assert.equal(hashEndpoint(e), hashEndpoint(e));
     assert.notEqual(hashEndpoint(e), hashEndpoint(e + 'x'));
     assert.match(hashEndpoint(e), /^[0-9a-f]{32}$/);
     assert.equal(subscriptionKey(e), `push-sub:${hashEndpoint(e)}`);
-    assert.ok(!subscriptionKey(e).includes('example.com'));
+    assert.ok(!subscriptionKey(e).includes('googleapis'));
   });
 
   it('accepts a valid subscription, bare or wrapped', () => {
@@ -40,6 +40,8 @@ describe('push keys', () => {
     assert.equal(parseSubscription({}).ok, false);
     assert.equal(parseSubscription({ ...sub, endpoint: 'http://push.example.com/x' }).ok, false);
     assert.equal(parseSubscription({ ...sub, endpoint: 'not a url' }).ok, false);
+    assert.equal(parseSubscription({ ...sub, endpoint: 'https://internal.example.com/x' }).ok, false, 'unknown host is refused');
+    assert.equal(parseSubscription({ ...sub, endpoint: 'https://updates.push.services.mozilla.com/wpush/v2/abc' }).ok, true);
     assert.equal(parseSubscription({ ...sub, keys: { ...sub.keys, auth: 'AAAA' } }).ok, false);
     assert.equal(parseSubscription({ ...sub, keys: { ...sub.keys, p256dh: 'AAAA' } }).ok, false);
     assert.equal(parseSubscription({ ...sub, keys: undefined }).ok, false);

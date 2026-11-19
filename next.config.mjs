@@ -12,6 +12,20 @@ const nextConfig = {
     NEXT_PUBLIC_BUILD_ID: buildId || 'dev',
   },
   ...(buildId ? { generateBuildId: async () => buildId } : {}),
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'Content-Security-Policy', value: "frame-ancestors 'none'" },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(self), geolocation=(), payment=()' },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

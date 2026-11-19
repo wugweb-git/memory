@@ -76,7 +76,7 @@ export function CostCard() {
               </li>
             ))}
           </ul>
-          <p className="text-2xs text-text-tertiary mt-2">Limits reset at 00:00 UTC. Change them with the DAILY_BUDGET_ASK, _DECISION, _SIGNALS, _SUMMARY and _INGEST environment variables.</p>
+          <p className="text-2xs text-text-tertiary mt-2 break-words">Limits reset at 00:00 UTC. Change them with the DAILY_BUDGET_ASK, _DECISION, _SIGNALS, _SUMMARY and _INGEST environment variables.</p>
         </>
       )}
     </M3Card>

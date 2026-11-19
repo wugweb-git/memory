@@ -1,3 +1,4 @@
+import { verifySharedToken } from '@/lib/webhooks/verify';
 import { NextRequest, NextResponse } from "next/server";
 import { runScheduledPublisher } from "@/jobs/scheduled-publisher";
 import { runPublishingQueueJob } from "@/jobs/publishing-queue";
@@ -9,8 +10,8 @@ export const maxDuration = 60;
 
 function authorized(req: NextRequest): boolean {
   const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  if (process.env.CRON_SECRET && bearer === process.env.CRON_SECRET) return true;
-  if (process.env.JOB_SECRET && (bearer === process.env.JOB_SECRET || req.headers.get("x-job-secret") === process.env.JOB_SECRET)) return true;
+  if (process.env.CRON_SECRET && verifySharedToken(bearer ?? null, process.env.CRON_SECRET)) return true;
+  if (process.env.JOB_SECRET && (verifySharedToken(bearer ?? null, process.env.JOB_SECRET) || verifySharedToken(req.headers.get('x-job-secret'), process.env.JOB_SECRET))) return true;
   return hasPermission(getRequestUser(req).role, "admin:read");
 }
 

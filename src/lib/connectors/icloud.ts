@@ -144,6 +144,11 @@ const icsStamp = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d
 // ── CalDAV client ────────────────────────────────────────────────────────
 
 async function dav(f: typeof fetch, url: string, method: string, depth: string, body: string, auth: string): Promise<string> {
+  // Credentials only ever go to iCloud over https, even if a server response names another host.
+  const target = new URL(url);
+  if (target.protocol !== 'https:' || !(target.hostname === 'icloud.com' || target.hostname.endsWith('.icloud.com'))) {
+    throw new Error('iCloud CalDAV returned an unexpected address.');
+  }
   const res = await f(url, {
     method,
     headers: { Authorization: auth, Depth: depth, 'Content-Type': 'application/xml; charset=utf-8' },

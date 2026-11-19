@@ -88,7 +88,7 @@ export function encryptPayload(
   return Buffer.concat([salt, rs, Buffer.from([asPublic.length]), asPublic, encrypted]);
 }
 
-type FetchLike = (url: string, init: { method: string; headers: Record<string, string>; body: Buffer }) => Promise<{ status: number }>;
+type FetchLike = (url: string, init: { method: string; redirect?: 'manual'; headers: Record<string, string>; body: Buffer }) => Promise<{ status: number }>;
 
 /** Send one notification. Never throws; returns an honest result. */
 export async function sendPush(
@@ -102,7 +102,7 @@ export async function sendPush(
     const body = JSON.stringify({
       title: payload.title.slice(0, 120),
       body: (payload.body ?? '').slice(0, 300),
-      url: payload.url && payload.url.startsWith('/') ? payload.url : '/',
+      url: payload.url && /^\/(?![\/\\])/.test(payload.url) ? payload.url : '/',
     });
     const encrypted = encryptPayload(sub, Buffer.from(body));
     const audience = new URL(sub.endpoint).origin;
@@ -110,6 +110,7 @@ export async function sendPush(
     const doFetch: FetchLike = opts.fetchImpl ?? ((url, init) => fetch(url, init as RequestInit));
     const res = await doFetch(sub.endpoint, {
       method: 'POST',
+      redirect: 'manual',
       headers: {
         Authorization: `vapid t=${jwt}, k=${cfg.publicKey}`,
         'Content-Encoding': 'aes128gcm',

@@ -236,7 +236,7 @@ export default function AdminConsole() {
                       <span aria-hidden="true" className={`w-5 h-5 rounded border shrink-0 flex items-center justify-center text-2xs ${item.completed ? 'bg-text-primary border-text-primary text-bg-primary' : 'border-border-primary text-transparent group-hover:border-text-tertiary'}`}>
                         ✓
                       </span>
-                      <span className={`text-sm ${item.completed ? 'text-text-disabled line-through' : 'text-text-primary'}`}>{item.text}</span>
+                      <span className={`text-sm ${item.completed ? 'text-text-tertiary line-through' : 'text-text-primary'}`}>{item.text}</span>
                     </button>
                   </li>
                 ))}

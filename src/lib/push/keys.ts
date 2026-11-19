@@ -48,6 +48,7 @@ export function parseSubscription(body: unknown): ParsedSubscription {
     return { ok: false, error: 'The subscription endpoint is not a valid URL.' };
   }
   if (url.protocol !== 'https:') return { ok: false, error: 'The subscription endpoint must use https.' };
+  if (!isKnownPushHost(url.hostname)) return { ok: false, error: 'The subscription endpoint is not a known push service.' };
   const keys = sub.keys as Record<string, unknown> | undefined;
   const p256dh = keys?.p256dh;
   const auth = keys?.auth;
@@ -65,4 +66,11 @@ export function parseEndpointBody(body: unknown): { ok: true; endpoint: string }
   const e = body && typeof body === 'object' ? (body as Record<string, unknown>).endpoint : null;
   if (typeof e !== 'string' || !e || e.length > MAX_ENDPOINT) return { ok: false, error: 'An endpoint is required.' };
   return { ok: true, endpoint: e };
+}
+
+/** Only real browser push services; the server POSTs to this URL, so never an arbitrary host. */
+const PUSH_HOST_SUFFIXES = ['fcm.googleapis.com', 'push.services.mozilla.com', 'push.apple.com', 'notify.windows.com'];
+export function isKnownPushHost(hostname: string): boolean {
+  const h = hostname.toLowerCase();
+  return PUSH_HOST_SUFFIXES.some((suffix) => h === suffix || h.endsWith('.' + suffix));
 }

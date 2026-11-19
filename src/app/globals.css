@@ -443,3 +443,15 @@ html {
     transform: none;
   }
 }
+
+/* Remove the tap delay and double-tap zoom on controls (mobile-first). Pinch zoom stays available. */
+a,
+button,
+input,
+select,
+textarea,
+summary,
+[role='button'],
+[role='tab'] {
+  touch-action: manipulation;
+}
