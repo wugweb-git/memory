@@ -16,6 +16,8 @@ export interface CredentialField {
   secret: boolean;
   required: boolean;
   help: string;
+  /** Extra format check. Return an error message, or null when the value is fine. */
+  validate?: (value: string) => string | null;
 }
 
 export interface PublishAccount {
@@ -64,6 +66,82 @@ export const PUBLISH_ACCOUNTS: PublishAccount[] = [
   },
 ];
 
+const GOOGLE_ID_RE = /^[A-Za-z0-9._-]+\.apps\.googleusercontent\.com$/;
+const HEX32_RE = /^[a-f0-9]{32}$/i;
+
+/** Integration credentials (read connectors). Same store and resolution order as publishing. */
+export const INTEGRATION_ACCOUNTS: PublishAccount[] = [
+  {
+    platform: 'notion',
+    label: 'Notion',
+    note: 'Reads pages shared with your internal integration. Create it at notion.so/my-integrations and share your pages with it.',
+    fields: [
+      {
+        key: 'NOTION_TOKEN',
+        label: 'Integration token',
+        secret: true,
+        required: true,
+        help: 'The internal integration secret, starting with ntn_ or secret_.',
+        validate: (v) => (v.length < 20 ? 'That token looks too short.' : null),
+      },
+    ],
+  },
+  {
+    platform: 'google',
+    label: 'Google (Drive, Calendar, Gmail, Tasks)',
+    note: 'One OAuth client covers every Google source, Gmail included. After saving, use Connect on the Integrations page to grant access.',
+    fields: [
+      {
+        key: 'GOOGLE_CLIENT_ID',
+        label: 'OAuth client ID',
+        secret: false,
+        required: true,
+        help: 'Ends with .apps.googleusercontent.com.',
+        validate: (v) => (GOOGLE_ID_RE.test(v) ? null : 'Enter the client ID that ends with .apps.googleusercontent.com.'),
+      },
+      {
+        key: 'GOOGLE_CLIENT_SECRET',
+        label: 'OAuth client secret',
+        secret: true,
+        required: true,
+        help: 'From the same OAuth client in Google Cloud.',
+        validate: (v) => (v.length < 10 ? 'That secret looks too short.' : null),
+      },
+    ],
+  },
+  {
+    platform: 'spotify',
+    label: 'Spotify',
+    note: 'Reads recently played tracks. Needs a refresh token with the user-read-recently-played scope.',
+    fields: [
+      {
+        key: 'SPOTIFY_CLIENT_ID',
+        label: 'Client ID',
+        secret: false,
+        required: true,
+        help: 'The 32 character client id of your Spotify app.',
+        validate: (v) => (HEX32_RE.test(v) ? null : 'Enter the 32 character client id.'),
+      },
+      {
+        key: 'SPOTIFY_CLIENT_SECRET',
+        label: 'Client secret',
+        secret: true,
+        required: true,
+        help: 'The 32 character client secret of the same app.',
+        validate: (v) => (HEX32_RE.test(v) ? null : 'Enter the 32 character client secret.'),
+      },
+      {
+        key: 'SPOTIFY_REFRESH_TOKEN',
+        label: 'Refresh token',
+        secret: true,
+        required: true,
+        help: 'Obtained once through the Spotify authorization code flow.',
+        validate: (v) => (v.length < 20 ? 'That token looks too short.' : null),
+      },
+    ],
+  },
+];
+
 /** Credentials for read-only connectors (not publishers). Stored the same way, listed separately. */
 export const CONNECTOR_CREDENTIALS: CredentialField[] = [
   { key: 'ICLOUD_APPLE_ID', label: 'Apple ID', secret: false, required: true, help: 'The email address of your Apple ID.' },
@@ -71,7 +149,7 @@ export const CONNECTOR_CREDENTIALS: CredentialField[] = [
 ];
 
 const ALL_FIELDS = new Map<string, CredentialField>([
-  ...PUBLISH_ACCOUNTS.flatMap((a) => a.fields.map((f) => [f.key, f] as const)),
+  ...[...PUBLISH_ACCOUNTS, ...INTEGRATION_ACCOUNTS].flatMap((a) => a.fields.map((f) => [f.key, f] as const)),
   ...CONNECTOR_CREDENTIALS.map((f) => [f.key, f] as const),
 ]);
 const dbKey = (key: string) => `publish-credential:${key}`;
@@ -111,22 +189,77 @@ export async function getCredential(key: string): Promise<string | undefined> {
   return process.env[key] || undefined;
 }
 
-export type FieldStatus = CredentialField & { source: 'app' | 'env' | null };
+export type FieldStatus = Omit<CredentialField, 'validate'> & { source: 'app' | 'env' | null; hint: string | null };
 export type AccountStatus = Omit<PublishAccount, 'fields'> & { fields: FieldStatus[]; ready: boolean };
 
-export async function listAccountStatus(): Promise<{ accounts: AccountStatus[]; encryptionReady: boolean }> {
-  let rows: Array<{ key: string }> = [];
+/** Last 4 characters, and only for values long enough that this reveals nothing useful. */
+export function lastFour(value: string | null | undefined): string | null {
+  return value && value.length >= 12 ? value.slice(-4) : null;
+}
+
+async function statusFor(groups: PublishAccount[]): Promise<{ accounts: AccountStatus[]; encryptionReady: boolean }> {
+  let rows: Array<{ key: string; value: unknown }> = [];
   try {
-    rows = await withTimeout(postgres.schedulerState.findMany({ where: { key: { startsWith: 'publish-credential:' } }, select: { key: true } }));
+    rows = await withTimeout(postgres.schedulerState.findMany({ where: { key: { startsWith: 'publish-credential:' } } }));
   } catch {
     /* env-only view */
   }
-  const saved = new Set(rows.map((r) => r.key.slice('publish-credential:'.length)));
-  const accounts = PUBLISH_ACCOUNTS.map((a) => {
-    const fields = a.fields.map((f) => ({ ...f, source: (saved.has(f.key) ? 'app' : process.env[f.key] ? 'env' : null) as 'app' | 'env' | null }));
+  const saved = new Map(rows.map((r) => [r.key.slice('publish-credential:'.length), open((r.value ?? null) as Stored | null)] as const));
+  const accounts = groups.map((a) => {
+    const fields: FieldStatus[] = a.fields.map(({ validate: _v, ...f }) => {
+      const source = saved.has(f.key) ? 'app' : process.env[f.key] ? 'env' : null;
+      const value = source === 'app' ? saved.get(f.key) : source === 'env' ? process.env[f.key] : null;
+      return { ...f, source, hint: lastFour(value) };
+    });
     return { ...a, fields, ready: fields.filter((f) => f.required).every((f) => f.source !== null) };
   });
   return { accounts, encryptionReady: isEncryptionConfigured() };
+}
+
+/** Publishing accounts: which fields are set and where from. Never returns values. */
+export function listAccountStatus() {
+  return statusFor(PUBLISH_ACCOUNTS);
+}
+
+/** Integration credentials (Notion, Google, Spotify). Never returns values. */
+export function listIntegrationStatus() {
+  return statusFor(INTEGRATION_ACCOUNTS);
+}
+
+// ── Sync cache ───────────────────────────────────────────────────────────────
+// Connector `configured()` checks are synchronous, so saved values are loaded into a
+// small cache by `primeCredentials()` at the start of a request (same pattern as
+// connectors/config.ts). Resolution is stored value first, then the env var.
+
+const cache = new Map<string, string>();
+let primedAt = 0;
+const CACHE_TTL_MS = 15_000;
+
+export async function primeCredentials(force = false): Promise<void> {
+  if (!force && Date.now() - primedAt < CACHE_TTL_MS) return;
+  try {
+    const rows = await withTimeout(postgres.schedulerState.findMany({ where: { key: { startsWith: 'publish-credential:' } } }));
+    cache.clear();
+    for (const r of rows) {
+      const key = r.key.slice('publish-credential:'.length);
+      const v = ALL_FIELDS.has(key) ? open((r.value ?? null) as Stored | null) : null;
+      if (v) cache.set(key, v);
+    }
+    primedAt = Date.now();
+  } catch {
+    /* keep the previous cache; env fallback still applies */
+  }
+}
+
+/** Stored value first, env var second. Call primeCredentials() earlier in the request. */
+export function getCredentialSync(key: string): string | undefined {
+  return cache.get(key) || process.env[key] || undefined;
+}
+
+/** Test helper: reset the cache. */
+export function resetCredentialCache(): void {
+  cache.clear();
+  primedAt = 0;
 }
 
 export async function setCredential(key: string, value: string): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -135,6 +268,9 @@ export async function setCredential(key: string, value: string): Promise<{ ok: t
   const v = value.trim();
   if (!v) return { ok: false, error: 'Enter a value, or use Remove.' };
   if (v.length > 4000) return { ok: false, error: 'That value is too long.' };
+  if (/[\s\u0000-\u001f]/.test(v)) return { ok: false, error: 'Remove spaces and line breaks from the value.' };
+  const invalid = field.validate?.(v);
+  if (invalid) return { ok: false, error: invalid };
   let stored: Stored;
   if (field.secret) {
     if (!isEncryptionConfigured()) {
@@ -149,11 +285,13 @@ export async function setCredential(key: string, value: string): Promise<{ ok: t
     create: { key: dbKey(key), value: stored as any },
     update: { value: stored as any },
   });
+  cache.set(key, v);
   return { ok: true };
 }
 
 export async function clearCredential(key: string): Promise<boolean> {
   if (!ALL_FIELDS.has(key)) return false;
   await postgres.schedulerState.deleteMany({ where: { key: dbKey(key) } });
+  cache.delete(key);
   return true;
 }

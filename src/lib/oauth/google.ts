@@ -9,6 +9,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { postgres } from '@/lib/db/postgres';
+import { getCredentialSync, primeCredentials } from '@/lib/publishing/credentials';
 
 const TOKEN_KEY = 'oauth:google';
 const STATE_KEY = 'oauth:google:state';
@@ -36,7 +37,7 @@ export interface GoogleTokens {
 }
 
 export function googleClientConfigured(): boolean {
-  return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+  return Boolean(getCredentialSync('GOOGLE_CLIENT_ID') && getCredentialSync('GOOGLE_CLIENT_SECRET'));
 }
 
 export function googleRedirectUri(origin: string): string {
@@ -104,6 +105,7 @@ async function readJson(res: Response): Promise<any> {
 /** Build the consent URL and persist a one-time CSRF state. */
 export async function buildGoogleAuthUrl(origin: string, returnTo = '/integrations'): Promise<string> {
   returnTo = safeReturnTo(returnTo);
+  await primeCredentials();
   const state = randomUUID();
   await postgres.schedulerState.upsert({
     where: { key: STATE_KEY },
@@ -112,7 +114,7 @@ export async function buildGoogleAuthUrl(origin: string, returnTo = '/integratio
   });
 
   const params = new URLSearchParams({
-    client_id: process.env.GOOGLE_CLIENT_ID!,
+    client_id: getCredentialSync('GOOGLE_CLIENT_ID')!,
     redirect_uri: googleRedirectUri(origin),
     response_type: 'code',
     scope: GOOGLE_SCOPES.join(' '),
@@ -143,13 +145,14 @@ export async function consumeGoogleState(state: string | null): Promise<{ ok: bo
 
 /** Exchange an auth code for tokens and store them. */
 export async function exchangeGoogleCode(code: string, origin: string): Promise<void> {
+  await primeCredentials();
   const res = await timedFetch(TOKEN_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       code,
-      client_id: process.env.GOOGLE_CLIENT_ID!,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+      client_id: getCredentialSync('GOOGLE_CLIENT_ID')!,
+      client_secret: getCredentialSync('GOOGLE_CLIENT_SECRET')!,
       redirect_uri: googleRedirectUri(origin),
       grant_type: 'authorization_code',
     }),
@@ -174,8 +177,8 @@ async function refreshAccessToken(tokens: GoogleTokens): Promise<GoogleTokens> {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      client_id: process.env.GOOGLE_CLIENT_ID!,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+      client_id: getCredentialSync('GOOGLE_CLIENT_ID')!,
+      client_secret: getCredentialSync('GOOGLE_CLIENT_SECRET')!,
       refresh_token: tokens.refresh_token,
       grant_type: 'refresh_token',
     }),
@@ -204,6 +207,7 @@ async function refreshAccessToken(tokens: GoogleTokens): Promise<GoogleTokens> {
 
 /** Get a valid access token, refreshing if it is expired or near-expiry. */
 async function getAccessToken(): Promise<string> {
+  await primeCredentials();
   if (!googleClientConfigured()) throw new Error('GOOGLE_NOT_CONFIGURED: set GOOGLE_CLIENT_ID/SECRET');
   let tokens = await readTokens();
   if (!tokens) throw new Error('GOOGLE_NOT_CONNECTED: complete the OAuth flow first');

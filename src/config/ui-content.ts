@@ -112,6 +112,7 @@ const RAW_NAV_GROUPS: ReadonlyArray<NavGroup> = [
     group: 'Admin',
     items: [
       { href: '/integrations', label: 'Integrations', icon: Link2, hint: 'Connect accounts and sources' },
+      { href: '/integrations/credentials', label: 'Integration credentials', icon: Link2, hint: 'Keys for Notion, Google, Spotify' },
       { href: '/integrations/publishing', label: 'Publishing accounts', icon: Link2, hint: 'Tokens for posting to social' },
       { href: '/system', label: 'System', icon: Settings, hint: 'Modules, health and access', feature: 'system' },
       { href: '/admin', label: 'Admin', icon: ShieldCheck, hint: 'Owner settings', feature: 'admin' },

@@ -4,6 +4,7 @@
 
 import { CONNECTORS, customFeedConnectors, getConnector } from './registry';
 import { CONFIGURABLE, getConfigValue, primeConnectorConfig } from './config';
+import { primeCredentials } from '@/lib/publishing/credentials';
 import { getConnectorState, isDue } from './state';
 import { autoPromoteFor } from './auto-promote';
 import type { Connector, ConnectorStatus, SyncResult } from './types';
@@ -13,7 +14,7 @@ export type { Connector, ConnectorStatus, SyncResult };
 
 /** Built-in connectors plus feeds the owner added. Loads saved setup first. */
 export async function allConnectors(): Promise<Connector[]> {
-  await primeConnectorConfig();
+  await Promise.all([primeConnectorConfig(), primeCredentials()]);
   return [...CONNECTORS, ...customFeedConnectors()];
 }
 

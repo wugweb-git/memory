@@ -6,6 +6,7 @@
  */
 
 import type { Connector, SyncResult } from '@/lib/ingestion/connectors/types';
+import { getCredentialSync, primeCredentials } from '@/lib/publishing/credentials';
 import { ingestItems, recordError, type PendingItem } from './sync-items';
 
 const TOKEN_URL = 'https://accounts.spotify.com/api/token';
@@ -13,10 +14,12 @@ const RECENT_URL = 'https://api.spotify.com/v1/me/player/recently-played?limit=5
 
 type Deps = { fetchFn?: typeof fetch; env?: NodeJS.ProcessEnv };
 
-function creds(env: NodeJS.ProcessEnv) {
-  const id = env.SPOTIFY_CLIENT_ID;
-  const secret = env.SPOTIFY_CLIENT_SECRET;
-  const refresh = env.SPOTIFY_REFRESH_TOKEN;
+function creds(env?: NodeJS.ProcessEnv) {
+  // Injected env (tests) wins; otherwise stored value first, env var second.
+  const get = (k: string) => (env ? env[k] : getCredentialSync(k));
+  const id = get('SPOTIFY_CLIENT_ID');
+  const secret = get('SPOTIFY_CLIENT_SECRET');
+  const refresh = get('SPOTIFY_REFRESH_TOKEN');
   return id && secret && refresh ? { id, secret, refresh } : null;
 }
 
@@ -40,7 +43,7 @@ export function mapPlay(p: any): PendingItem | null {
 }
 
 export function makeSpotifyConnector(deps: Deps = {}): Connector {
-  const env = () => deps.env ?? process.env;
+  const env = () => deps.env;
   return {
     id: 'spotify',
     label: 'Spotify',
@@ -51,6 +54,7 @@ export function makeSpotifyConnector(deps: Deps = {}): Connector {
     setupHint: 'Create a Spotify app, get a refresh token for user-read-recently-played, and set SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET and SPOTIFY_REFRESH_TOKEN.',
     configured: () => Boolean(creds(env())),
     async sync(opts): Promise<SyncResult> {
+      if (!deps.env) await primeCredentials();
       const c = creds(env());
       if (!c) return { ingested: 0, skipped: 0, error: 'NOT_CONFIGURED: set the Spotify env vars' };
       const f = deps.fetchFn ?? fetch;

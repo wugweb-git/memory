@@ -9,7 +9,7 @@ import { M3Button, M3Card, M3Page, M3State } from '@/components/ui/m3';
 import { StatusPill } from '@/components/ui/primitives';
 import { apiRequest } from '@/lib/ui/api-client';
 
-type Field = { key: string; label: string; secret: boolean; required: boolean; help: string; source: 'app' | 'env' | null };
+type Field = { key: string; label: string; secret: boolean; required: boolean; help: string; source: 'app' | 'env' | null; hint: string | null };
 type Account = { platform: string; label: string; note: string; fields: Field[]; ready: boolean };
 type Payload = { accounts: Account[]; encryptionReady: boolean };
 
@@ -87,7 +87,7 @@ export default function PublishingAccountsPage() {
                         {f.label}{f.required ? '' : ' (optional)'}
                       </label>
                       {f.source ? (
-                        <StatusPill tone="success">{f.source === 'app' ? 'Saved in app' : 'Set in Vercel'}</StatusPill>
+                        <StatusPill tone="success">{(f.source === 'app' ? 'Saved in app' : 'Set in Vercel') + (f.hint ? `, ends in ${f.hint}` : '')}</StatusPill>
                       ) : (
                         <StatusPill tone="neutral">Not set</StatusPill>
                       )}

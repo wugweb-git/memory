@@ -114,6 +114,15 @@ Base path: `/api`. All routes use App Router unless noted.
 | POST | `/output/publish` | Publish output |
 | POST | `/output/schedule` | Schedule publishing |
 
+## Credentials (admin only)
+
+Secrets are AES-256-GCM encrypted (`MEMORY_ENCRYPTION_KEY`) in `scheduler_state`. A stored value wins over the env var of the same name. Responses never include values, only `source` (`app` or `env`) and the last 4 characters.
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET/PUT/DELETE | `/integrations/credentials` | Notion token, Google OAuth client id/secret (also used by Gmail), Spotify client id/secret/refresh token. PUT `{ key, value }`, DELETE `?key=` |
+| GET/PUT/DELETE | `/publishing/accounts` | Publishing tokens (LinkedIn, X, Facebook, Instagram, Medium). Same shape |
+
 ## Persona
 
 | Method | Path | Purpose |
