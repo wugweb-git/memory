@@ -61,7 +61,7 @@ export default function HistoryPage() {
       <div className="mx-auto w-full max-w-3xl space-y-5 px-4 py-6">
         <header className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight text-text-primary">History</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-text-primary">History</h1>
             <p className="mt-1 text-sm text-text-tertiary">Everything you have published, newest first</p>
           </div>
           {!error && (loading || rows.length > 0) ? (
