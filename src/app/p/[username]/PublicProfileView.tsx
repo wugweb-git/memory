@@ -69,7 +69,8 @@ export function PublicProfileView({ username }: { username: string }) {
   if (loading) {
     return (
       <main className="min-h-dvh-fallback flex items-center justify-center" aria-busy="true">
-        <Loader2 className="animate-spin text-text-tertiary" size={28} role="img" aria-label="Loading profile" />
+        <h1 className="sr-only">Loading profile</h1>
+        <Loader2 className="animate-spin text-text-tertiary" size={28} aria-hidden="true" />
       </main>
     );
   }
@@ -79,7 +80,7 @@ export function PublicProfileView({ username }: { username: string }) {
       <main className="min-h-dvh-fallback flex items-center justify-center px-6 text-center">
         <div role="status" className="flex flex-col gap-3">
           <h1 className="text-lg font-bold text-text-primary">This profile isn&rsquo;t live yet</h1>
-          <p className="text-sm text-text-tertiary">Check the link, or come back soon.</p>
+          <p className="text-sm text-text-tertiary">Check the link for typos, or try again in a little while.</p>
         </div>
       </main>
     );
@@ -102,7 +103,7 @@ export function PublicProfileView({ username }: { username: string }) {
           </div>
           <img
             src={avatar}
-            alt={displayName}
+            alt={`Photo of ${displayName}`}
             className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border border-border-secondary bg-bg-secondary object-cover shrink-0"
             onError={(e) => { e.currentTarget.src = avatarFallbackUrl(160); }}
           />
@@ -120,7 +121,7 @@ export function PublicProfileView({ username }: { username: string }) {
                 href={`mailto:${IDENTITY_CONFIG.EMAIL}`}
                 className="inline-flex min-h-11 items-center gap-2 px-4 rounded-xl bg-text-primary text-bg-primary text-sm font-bold hover:bg-text-secondary transition-colors"
               >
-                <Mail size={15} /> Get in touch
+                <Mail size={15} aria-hidden="true" /> Get in touch
               </a>
             )}
             {socials.map((link) => {
@@ -134,8 +135,9 @@ export function PublicProfileView({ username }: { username: string }) {
                   rel="noopener noreferrer"
                   className="inline-flex min-h-11 items-center gap-2 px-3.5 rounded-xl border border-border-secondary text-sm font-medium text-text-secondary hover:border-border-primary hover:text-text-primary transition-colors"
                 >
-                  <Icon size={15} className="text-text-tertiary" />
+                  <Icon size={15} className="text-text-tertiary" aria-hidden="true" />
                   {link.platform}
+                  <span className="sr-only"> (opens in a new tab)</span>
                 </a>
               );
             })}
@@ -182,7 +184,7 @@ export function PublicProfileView({ username }: { username: string }) {
                 const perspective = str(c.perspective2026) || str(c.perspective);
                 return (
                   <li key={exp.id} className="ml-5">
-                    <span className="absolute -left-[6.5px] mt-1.5 h-3 w-3 rounded-full bg-accent border-2 border-bg-primary" />
+                    <span aria-hidden="true" className="absolute -left-[6.5px] mt-1.5 h-3 w-3 rounded-full bg-accent border-2 border-bg-primary" />
                     <div className="flex flex-wrap items-baseline justify-between gap-x-3">
                       <h3 className="text-base font-bold text-text-primary">{exp.title}</h3>
                       {str(c.date) && <span className="text-2xs text-text-tertiary shrink-0">{str(c.date)}</span>}
@@ -239,6 +241,7 @@ export function PublicProfileView({ username }: { username: string }) {
                 return url ? (
                   <a key={post.id} href={url} target="_blank" rel="noopener noreferrer" className="block py-4 group">
                     {inner}
+                    <span className="sr-only"> (opens in a new tab)</span>
                   </a>
                 ) : (
                   <div key={post.id} className="py-4 group">{inner}</div>
@@ -323,7 +326,8 @@ export function PublicProfileView({ username }: { username: string }) {
                         <p className="text-xs text-text-tertiary mt-0.5 line-clamp-1">{str(c.summary)}</p>
                       )}
                     </div>
-                    <ArrowUpRight size={16} className="text-text-disabled group-hover:text-accent shrink-0 transition-colors" />
+                    <ArrowUpRight size={16} aria-hidden="true" className="text-text-tertiary group-hover:text-accent shrink-0 transition-colors" />
+                    <span className="sr-only"> (opens in a new tab)</span>
                   </a>
                 );
               })}
@@ -340,9 +344,9 @@ export function PublicProfileView({ username }: { username: string }) {
         {isOwner && (
           <Link
             href="/ask"
-            className="inline-flex items-center gap-1.5 text-2xs font-bold text-text-tertiary hover:text-accent transition-colors"
+            className="inline-flex min-h-11 items-center gap-1.5 text-2xs font-bold text-text-tertiary hover:text-accent transition-colors"
           >
-            <MessageSquare size={13} /> Ask my digital twin
+            <MessageSquare size={13} aria-hidden="true" /> Ask my digital twin
           </Link>
         )}
       </footer>
@@ -388,14 +392,14 @@ function SanityShowcase() {
               {it.coverImage && (
                 <img
                   src={`${it.coverImage}?w=800&h=420&fit=crop&auto=format`}
-                  alt={it.title}
+                  alt=""
                   loading="lazy"
                   className="w-full h-40 object-cover rounded-xl mb-4 border border-border-secondary"
                 />
               )}
               <div className="flex items-center justify-between gap-3">
                 <span className="text-2xs font-bold text-accent">{it.kind}</span>
-                {safeUrl(it.url) && <ArrowUpRight size={14} className="text-text-disabled group-hover:text-accent transition-colors" />}
+                {safeUrl(it.url) && <ArrowUpRight size={14} aria-hidden="true" className="text-text-tertiary group-hover:text-accent transition-colors" />}
               </div>
               <h3 className="text-base font-bold text-text-primary mt-2 group-hover:text-accent transition-colors">
                 {it.title}
@@ -418,6 +422,7 @@ function SanityShowcase() {
           return itUrl ? (
             <a key={it._id} href={itUrl} target="_blank" rel="noopener noreferrer" className={cls}>
               {body}
+              <span className="sr-only"> (opens in a new tab)</span>
             </a>
           ) : (
             <div key={it._id} className={cls}>{body}</div>

@@ -47,7 +47,7 @@ export default function CognitivePage() {
       <div className="w-full max-w-2xl mx-auto px-4 md:px-6 py-6 space-y-6">
         <header className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-secondary border border-border-secondary flex items-center justify-center shrink-0">
-            <Brain size={17} className="text-text-tertiary" />
+            <Brain size={17} className="text-text-tertiary" aria-hidden="true" />
           </div>
           <div>
             <h1 className="text-xl font-semibold text-text-primary">Cognitive engine</h1>
@@ -71,7 +71,7 @@ export default function CognitivePage() {
                 tabIndex={active ? 0 : -1}
                 onKeyDown={(e) => onTabKeyDown(e, i)}
                 onClick={() => setSubTab(t.id)}
-                className={`min-h-12 rounded-xl flex flex-col items-center justify-center gap-0.5 text-2xs font-medium transition-colors ${
+                className={`min-h-12 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent flex flex-col items-center justify-center gap-0.5 text-2xs font-medium transition-colors ${
                   active ? 'bg-bg-elevated text-text-primary shadow-sm' : 'text-text-tertiary'
                 }`}
               >

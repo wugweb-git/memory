@@ -79,7 +79,7 @@ export const JobSearchAgent = () => {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-2">
         <div>
           <h2 className="text-2xl font-semibold text-text-primary tracking-tight flex items-center gap-3">
-            <Target size={22} className="text-accent" /> Opportunities
+            <Target aria-hidden="true" size={22} className="text-accent" /> Opportunities
           </h2>
           <p className="text-2xs font-bold uppercase tracking-widest text-text-tertiary mt-1">
             Leads &amp; outreach
@@ -93,20 +93,20 @@ export const JobSearchAgent = () => {
             className="flex h-11 w-11 items-center justify-center rounded-xl border border-border-secondary text-text-tertiary hover:text-accent transition-colors"
             aria-label="Refresh leads"
           >
-            <RefreshCcw size={15} className={loading ? 'animate-spin' : ''} />
+            <RefreshCcw aria-hidden="true" size={15} className={loading ? 'motion-safe:animate-spin' : ''} />
           </button>
-          <div className="px-5 py-2.5 rounded-full bg-secondary border border-border-secondary text-2xs font-semibold text-text-tertiary flex items-center gap-3 uppercase tracking-widest shadow-sm">
-            <Fingerprint size={14} className="text-accent" /> Agent: Nominal
+          <div className="px-5 py-2.5 rounded-full bg-secondary border border-border-secondary text-2xs font-semibold text-text-tertiary flex items-center gap-3 shadow-sm">
+            <Fingerprint aria-hidden="true" size={14} className="text-accent" /> Agent: Nominal
           </div>
-          <div className="px-5 py-2.5 rounded-full bg-success/5 border border-success/20 text-2xs font-semibold text-success flex items-center gap-3 uppercase tracking-widest shadow-sm">
-            <Zap size={14} className="animate-pulse" /> {leads.length} Matches
+          <div className="px-5 py-2.5 rounded-full bg-success/5 border border-success/20 text-2xs font-semibold text-success flex items-center gap-3 shadow-sm">
+            <Zap aria-hidden="true" size={14} className="motion-safe:animate-pulse" /> {leads.length} Matches
           </div>
         </div>
       </div>
 
       {loading ? (
         <div className="flex justify-center py-16">
-          <Loader2 className="animate-spin text-accent" size={28} />
+          <Loader2 aria-hidden="true" className="motion-safe:animate-spin text-accent" size={28} />
         </div>
       ) : (
         <ul role="list" className="space-y-6">
@@ -121,7 +121,7 @@ export const JobSearchAgent = () => {
                 transition={{ delay: idx * 0.1 }}
                 role="listitem"
               >
-                <article className="glass-panel p-5 md:p-8 rounded-[2.5rem] border border-border-secondary hover:border-border-primary hover:shadow-2xl transition-all duration-700 group relative overflow-hidden">
+                <article className="glass-panel p-5 md:p-8 rounded-radius-2xl border border-border-secondary hover:border-border-primary hover:shadow-2xl transition-all duration-700 group relative overflow-hidden">
                   <div className="flex items-center justify-between flex-wrap md:flex-nowrap gap-4 md:gap-8 relative z-10">
                     <div className="flex min-w-0 items-center gap-4 md:gap-8">
                       <div className="relative w-16 h-16 flex items-center justify-center shrink-0">
@@ -131,13 +131,13 @@ export const JobSearchAgent = () => {
                         <h3 className="text-xl font-semibold text-text-primary tracking-tight ">
                           {lead.role}
                         </h3>
-                        <p className="text-2xs text-text-tertiary font-bold uppercase tracking-widest  opacity-60">
+                        <p className="text-2xs text-text-tertiary font-bold ">
                           {lead.company} · Sync: {lead.via}
                         </p>
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-3 md:gap-6 md:ml-auto">
-                      <span className={`px-4 py-1.5 rounded-full border text-2xs font-semibold uppercase tracking-widest flex items-center gap-2 ${statusCfg.color}`}>
+                      <span className={`px-4 py-1.5 rounded-full border text-2xs font-semibold flex items-center gap-2 ${statusCfg.color}`}>
                         <StatusIcon size={12} /> {statusCfg.label}
                       </span>
                       {lead.url ? (
@@ -145,7 +145,7 @@ export const JobSearchAgent = () => {
                           href={lead.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex min-h-11 items-center text-2xs font-semibold text-accent uppercase tracking-widest hover:underline"
+                          className="inline-flex min-h-11 items-center text-2xs font-semibold text-accent hover:underline"
                         >
                           View_Nexus<span className="sr-only"> (opens in a new tab)</span>
                         </a>
@@ -154,7 +154,7 @@ export const JobSearchAgent = () => {
                           href={IDENTITY_CONFIG.LINKEDIN_JOBS_URL}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex min-h-11 items-center text-2xs font-semibold text-accent uppercase tracking-widest hover:underline"
+                          className="inline-flex min-h-11 items-center text-2xs font-semibold text-accent hover:underline"
                         >
                           Find_Roles<span className="sr-only"> (opens in a new tab)</span>
                         </a>
@@ -165,7 +165,7 @@ export const JobSearchAgent = () => {
                         className="w-11 h-11 rounded-2xl bg-bg-elevated border border-border-secondary flex items-center justify-center hover:bg-text-primary hover:text-bg-primary transition-all"
                         aria-label="Open lead"
                       >
-                        <ArrowRight size={20} />
+                        <ArrowRight aria-hidden="true" size={20} />
                       </button>
                     </div>
                   </div>

@@ -47,7 +47,7 @@ export const GapsTab: React.FC = () => {
           aria-label="Re-run analysis"
           className="min-h-11 min-w-11 rounded-xl border border-border-secondary flex items-center justify-center text-text-secondary disabled:opacity-40"
         >
-          <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+          <RefreshCw size={16} className={loading ? 'animate-spin' : ''} aria-hidden="true" />
         </button>
       </div>
 
@@ -67,8 +67,8 @@ export const GapsTab: React.FC = () => {
                 const missing = missingDomains.includes(d);
                 return (
                   <li key={d} className={`flex items-center gap-2 rounded-xl border px-3 min-h-11 text-sm ${missing ? 'border-danger/30 bg-danger/5 text-danger' : 'border-success/30 bg-success/5 text-success'}`}>
-                    {missing ? <Minus size={14} /> : <Check size={14} />}
-                    <span className="capitalize">{d}</span>
+                    {missing ? <Minus size={14} aria-hidden="true" /> : <Check size={14} aria-hidden="true" />}
+                    <span className="capitalize">{d}{missing ? ' (missing)' : ''}</span>
                   </li>
                 );
               })}

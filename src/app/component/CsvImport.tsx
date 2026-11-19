@@ -74,12 +74,14 @@ export function CsvImport({ onComplete }: { onComplete?: () => void }) {
         one item). Each becomes one memory item; re-imports are de-duplicated.
       </p>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Import as">
         {TYPES.map((t) => (
           <button
             key={t.key}
+            type="button"
+            aria-pressed={type === t.key}
             onClick={() => setType(t.key)}
-            className={`px-3 py-1.5 rounded-lg text-2xs font-bold transition-colors ${
+            className={`px-3 py-1.5 min-h-11 rounded-lg text-2xs font-bold transition-colors ${
               type === t.key ? 'bg-text-primary text-bg-primary' : 'text-text-tertiary hover:bg-bg-secondary'
             }`}
           >
@@ -88,8 +90,8 @@ export function CsvImport({ onComplete }: { onComplete?: () => void }) {
         ))}
       </div>
 
-      <label className="flex items-center gap-3 rounded-xl border border-dashed border-border-primary p-4 cursor-pointer hover:bg-bg-secondary transition-colors">
-        <FileSpreadsheet className="h-5 w-5 text-accent shrink-0" />
+      <label className="flex items-center gap-3 rounded-xl border border-dashed focus-within:ring-2 focus-within:ring-accent border-border-primary p-4 cursor-pointer hover:bg-bg-secondary transition-colors">
+        <FileSpreadsheet aria-hidden="true" className="h-5 w-5 text-accent shrink-0" />
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-bold text-text-primary truncate">{file ? file.name : 'Choose a .csv or .docx file'}</span>
           <span className="block text-2xs text-text-tertiary">
@@ -99,7 +101,8 @@ export function CsvImport({ onComplete }: { onComplete?: () => void }) {
         <input
           type="file"
           accept=".csv,text/csv,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-          className="hidden"
+          className="sr-only"
+          aria-label="Choose a CSV or Word file"
           onChange={(e) => {
             const f = e.target.files?.[0] ?? null;
             setFile(f);
@@ -111,9 +114,11 @@ export function CsvImport({ onComplete }: { onComplete?: () => void }) {
       </label>
 
       <button
+        type="button"
         onClick={run}
         disabled={!file || busy}
-        className="w-full rounded-xl bg-text-primary text-bg-primary text-sm font-bold py-2.5 disabled:opacity-40 disabled:cursor-not-allowed"
+        aria-busy={busy || undefined}
+        className="w-full rounded-xl bg-text-primary text-bg-primary text-sm font-bold py-2.5 min-h-11 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {busy ? 'Importing…' : 'Import to memory'}
       </button>

@@ -129,19 +129,19 @@ export const UniversalSync = () => {
   };
 
   return (
-    <section className="glass-panel p-10 rounded-[2.5rem] border border-border-secondary relative overflow-hidden group">
-      <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 blur-[80px] pointer-events-none transition-all group-hover:bg-accent/10" />
+    <section className="glass-panel p-10 rounded-radius-2xl border border-border-secondary relative overflow-hidden group">
+      <div aria-hidden="true" className="absolute top-0 right-0 w-64 h-64 bg-accent/5 blur-3xl pointer-events-none transition-all group-hover:bg-accent/10" />
 
       <div className="space-y-8 relative z-10">
         <div className="flex items-start justify-between">
           <div className="kinetic-text">
             <h2 className="text-2xs font-semibold tracking-widest text-text-primary uppercase flex items-center gap-4">
               <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
-                <LinkIcon size={16} className="text-accent" />
+                <LinkIcon aria-hidden="true" size={16} className="text-accent" />
               </div>
               Neural_Uplink_Bridge
             </h2>
-            <p className="text-2xs text-text-tertiary font-semibold tracking-widest mt-3 uppercase opacity-40 ">
+            <p className="text-2xs text-text-tertiary font-semibold mt-3 ">
               Syncing LinkedIn, Blogs, and External Intelligence
             </p>
           </div>
@@ -149,36 +149,40 @@ export const UniversalSync = () => {
 
         <div className="flex gap-4">
           <div className="relative flex-1 group">
+            <label htmlFor="bridge-url" className="sr-only">Resource URL (LinkedIn or web)</label>
             <input
+              id="bridge-url"
               type="url"
+              autoComplete="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSync()}
               placeholder="Paste resource URL (LinkedIn / Web)..."
-              className="w-full bg-bg-secondary/30 border-2 border-border-primary/50 rounded-2xl px-6 py-5 text-sm font-semibold text-text-primary focus:border-accent/40 outline-none transition-all  shadow-inner pr-14 tracking-tight"
+              className="w-full bg-bg-secondary/30 border-2 border-border-primary/50 rounded-2xl px-6 py-5 text-base sm:text-sm font-semibold text-text-primary focus:border-accent transition-all  shadow-inner pr-14 tracking-tight"
             />
             <div className="absolute right-5 top-1/2 -translate-y-1/2 transition-all">
               {url.includes('linkedin') ? (
-                <Linkedin size={18} className="text-accent animate-pulse" />
+                <Linkedin aria-hidden="true" size={18} className="text-accent motion-safe:animate-pulse" />
               ) : (
-                <Globe size={18} className="text-text-disabled group-focus-within:text-accent" />
+                <Globe aria-hidden="true" size={18} className="text-text-disabled group-focus-within:text-accent" />
               )}
             </div>
           </div>
           <button
             onClick={handleSync}
             disabled={isSyncing || !url.trim()}
-            className="px-8 rounded-2xl bg-text-primary text-bg-primary hover:bg-accent transition-all disabled:opacity-20 flex items-center justify-center shadow-2xl relative overflow-hidden group/btn"
+            aria-label={isSyncing ? 'Syncing' : 'Sync this URL'}
+            className="min-h-11 min-w-11 px-8 rounded-2xl bg-text-primary text-bg-primary hover:bg-text-secondary transition-all disabled:opacity-50 flex items-center justify-center shadow-2xl relative overflow-hidden group/btn"
           >
             <div className="absolute inset-0 bg-bg-elevated opacity-20 -translate-x-full group-hover/btn:translate-x-0 transition-transform duration-500" />
-            {isSyncing ? <RefreshCw size={20} className="animate-spin relative z-10" /> : <Send size={20} className="relative z-10" />}
+            {isSyncing ? <RefreshCw aria-hidden="true" size={20} className="motion-safe:animate-spin relative z-10" /> : <Send aria-hidden="true" size={20} className="relative z-10" />}
           </button>
         </div>
 
         <div className="space-y-4">
           <div className="flex items-center justify-between px-2">
             <span className="text-2xs font-semibold text-text-tertiary tracking-widest uppercase">Active bridges</span>
-            <span className="text-2xs font-semibold text-accent uppercase tracking-widest">{syncedItems.length} Nodes</span>
+            <span className="text-2xs font-semibold text-accent">{syncedItems.length} Nodes</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[180px] overflow-y-auto custom-scrollbar pr-3">
@@ -193,23 +197,23 @@ export const UniversalSync = () => {
                   <div className="flex items-center gap-4">
                     <div className="p-2.5 rounded-xl bg-bg-primary border border-border-primary shadow-inner group-hover/node:scale-110 transition-transform">
                       {item.type === 'LinkedIn' ? (
-                        <Linkedin size={16} className="text-accent" />
+                        <Linkedin aria-hidden="true" size={16} className="text-accent" />
                       ) : (
-                        <LinkIcon size={16} className="text-text-tertiary" />
+                        <LinkIcon aria-hidden="true" size={16} className="text-text-tertiary" />
                       )}
                     </div>
                     <div className="space-y-0.5">
                       <span className="text-2xs font-semibold text-text-primary truncate max-w-[140px] block tracking-tight">
                         {item.title}
                       </span>
-                      <span className="text-2xs font-bold text-text-tertiary uppercase tracking-widest block">
+                      <span className="text-2xs font-bold text-text-tertiary block">
                         {item.lastSync}
                       </span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-success/10 border border-success/20">
-                    <div className="w-1.5 h-1.5 rounded-full bg-success shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                    <span className="text-2xs font-semibold text-success uppercase tracking-widest">Bridged</span>
+                    <div className="w-1.5 h-1.5 rounded-full bg-success shadow-sm" />
+                    <span className="text-2xs font-semibold text-success">Bridged</span>
                   </div>
                 </motion.div>
               ))}

@@ -184,16 +184,16 @@ export const VoiceIngestion = () => {
   };
 
   return (
-    <section className="glass-card rounded-[2rem] p-8 border border-border-secondary overflow-hidden relative" aria-label="Voice ingestion">
-      <div className="absolute top-0 right-0 w-48 h-48 bg-accent/5 blur-[80px] pointer-events-none" />
+    <section className="glass-card rounded-radius-xl p-8 border border-border-secondary overflow-hidden relative" aria-label="Voice ingestion">
+      <div aria-hidden="true" className="absolute top-0 right-0 w-48 h-48 bg-accent/5 blur-3xl pointer-events-none" />
 
       {/* Header */}
       <div className="flex items-center justify-between mb-8 relative z-10">
         <div>
           <h2 className="text-2xs font-semibold tracking-widest text-text-primary uppercase flex items-center gap-3">
-            <Waves size={16} className="text-accent" /> Cognitive_Ingress
+            <Waves aria-hidden="true" size={16} className="text-accent" /> Cognitive ingress
           </h2>
-          <p className="text-2xs text-text-tertiary font-bold tracking-widest mt-1 uppercase opacity-50">
+          <p className="text-2xs text-text-tertiary font-bold mt-1">
             {SUPPORTED ? 'Voice + Text Signal Capture' : 'Text Signal Capture'}
           </p>
         </div>
@@ -218,8 +218,8 @@ export const VoiceIngestion = () => {
               />
             )}
             {stage === 'recording'
-              ? <MicOff size={22} className="relative z-10 animate-pulse" />
-              : <Mic    size={22} className="relative z-10 group-hover:rotate-12 transition-transform" />
+              ? <MicOff aria-hidden="true" size={22} className="relative z-10 motion-safe:animate-pulse" />
+              : <Mic aria-hidden="true"    size={22} className="relative z-10 group-hover:rotate-12 transition-transform" />
             }
           </button>
         )}
@@ -234,7 +234,7 @@ export const VoiceIngestion = () => {
             <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="flex flex-col items-center justify-center text-center p-4 space-y-5 w-full">
               <div className="w-16 h-16 rounded-full bg-secondary border border-border-secondary flex items-center justify-center shadow-inner">
-                <Brain size={28} className="text-text-disabled opacity-40" />
+                <Brain aria-hidden="true" size={28} className="text-text-disabled opacity-40" />
               </div>
               <div className="space-y-1">
                 <p className="text-xs font-bold text-text-tertiary tracking-widest ">
@@ -262,8 +262,8 @@ export const VoiceIngestion = () => {
                   />
                 ))}
               </div>
-              <p className="text-2xs font-semibold text-accent tracking-widest animate-pulse uppercase">
-                RECORDING… TAP MIC TO STOP
+              <p className="text-2xs font-semibold text-accent motion-safe:animate-pulse">
+                Recording. Tap the mic to stop.
               </p>
             </motion.div>
           )}
@@ -272,8 +272,8 @@ export const VoiceIngestion = () => {
           {stage === 'processing' && (
             <motion.div key="processing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="flex flex-col items-center gap-4" role="status">
-              <Loader2 size={36} className="text-accent animate-spin" />
-              <p className="text-2xs font-semibold text-text-tertiary tracking-widest uppercase">Parsing signal…</p>
+              <Loader2 aria-hidden="true" size={36} className="text-accent motion-safe:animate-spin" />
+              <p className="text-2xs font-semibold text-text-tertiary">Parsing signal…</p>
             </motion.div>
           )}
 
@@ -283,25 +283,25 @@ export const VoiceIngestion = () => {
               className="space-y-5 w-full">
               <div className="grid grid-cols-2 gap-3">
                 {([
-                  { label: 'WHAT',   val: parsed.what },
-                  { label: 'WHEN',   val: new Date(parsed.when).toLocaleString() },
-                  { label: 'WHY',    val: parsed.why },
-                  { label: 'METHOD', val: parsed.how },
+                  { label: 'What',   val: parsed.what },
+                  { label: 'When',   val: new Date(parsed.when).toLocaleString() },
+                  { label: 'Why',    val: parsed.why },
+                  { label: 'Method', val: parsed.how },
                 ] as const).map(item => (
                   <div key={item.label} className="p-3 rounded-xl bg-secondary/40 border border-border-primary group hover:border-accent/40 transition-colors">
-                    <span className="text-2xs font-semibold text-text-tertiary tracking-widest block mb-1 uppercase">{item.label}</span>
+                    <span className="text-2xs font-semibold text-text-tertiary block mb-1">{item.label}</span>
                     <p className="text-2xs text-text-primary font-bold leading-tight line-clamp-2 ">{item.val}</p>
                   </div>
                 ))}
               </div>
               <div className="flex gap-3">
                 <button onClick={anchorMemory}
-                  className="flex-1 py-3.5 rounded-2xl bg-accent text-bg-primary text-2xs font-semibold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-accent-high transition-all shadow-lg active:scale-95">
-                  <CheckCircle2 size={15} /> Anchor to Buffer
+                  className="flex-1 min-h-11 py-3.5 rounded-2xl bg-accent text-bg-primary text-2xs font-semibold flex items-center justify-center gap-2 hover:bg-accent-high transition-all shadow-lg active:scale-95">
+                  <CheckCircle2 aria-hidden="true" size={15} /> Anchor to Buffer
                 </button>
                 <button onClick={reset}
-                  className="px-5 py-3.5 rounded-2xl bg-secondary border border-border-primary text-text-tertiary hover:text-danger hover:border-danger/40 transition-all">
-                  <X size={17} />
+                  className="px-5 py-3.5 rounded-2xl bg-secondary border border-border-primary text-text-tertiary hover:text-danger hover:border-danger/40 transition-all min-h-11 min-w-11" aria-label="Discard signal">
+                  <X aria-hidden="true" size={17} />
                 </button>
               </div>
             </motion.div>
@@ -311,8 +311,8 @@ export const VoiceIngestion = () => {
           {stage === 'anchoring' && (
             <motion.div key="anchoring" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="flex flex-col items-center gap-4" role="status">
-              <Loader2 size={36} className="text-success animate-spin" />
-              <p className="text-2xs font-semibold text-success tracking-widest uppercase">Writing to buffer…</p>
+              <Loader2 aria-hidden="true" size={36} className="text-success motion-safe:animate-spin" />
+              <p className="text-2xs font-semibold text-success">Writing to buffer…</p>
             </motion.div>
           )}
 
@@ -320,10 +320,10 @@ export const VoiceIngestion = () => {
           {stage === 'error' && (
             <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="flex flex-col items-center gap-4 text-center">
-              <AlertCircle size={32} className="text-danger" />
-              <p className="text-2xs text-danger font-bold">{error}</p>
+              <AlertCircle aria-hidden="true" size={32} className="text-danger" />
+              <p role="alert" className="text-2xs text-danger font-bold">{error}</p>
               <button onClick={reset}
-                className="text-2xs font-semibold text-accent hover:underline uppercase tracking-widest">
+                className="text-2xs font-semibold text-accent hover:underline">
                 Try again →
               </button>
             </motion.div>
@@ -340,17 +340,19 @@ const TextInput: React.FC<{ onSubmit: (text: string) => void }> = ({ onSubmit })
   const [val, setVal] = useState('');
   return (
     <div className="w-full space-y-2">
+      <label htmlFor="signal-text" className="sr-only">Cognitive signal</label>
       <textarea
+        id="signal-text"
         value={val}
         onChange={e => setVal(e.target.value)}
         placeholder="Type a cognitive signal to capture…"
         rows={2}
-        className="w-full bg-secondary/50 border border-border-primary rounded-2xl px-4 py-3 text-xs text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent/50 transition-colors resize-none"
+        className="w-full bg-secondary/50 border border-border-primary rounded-2xl px-4 py-3 text-base sm:text-xs text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent/50 transition-colors resize-none"
       />
       <button
         disabled={!val.trim()}
         onClick={() => { onSubmit(val); setVal(''); }}
-        className="w-full py-2.5 rounded-xl bg-text-primary text-bg-primary text-2xs font-semibold uppercase tracking-widest disabled:opacity-30 hover:bg-accent-high transition-colors"
+        className="w-full py-2.5 rounded-xl min-h-11 bg-text-primary text-bg-primary text-2xs font-semibold disabled:opacity-50 hover:bg-text-secondary transition-colors"
       >
         Capture Signal
       </button>

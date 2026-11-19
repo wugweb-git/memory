@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
+import { usePolling } from './usePolling';
 import { Terminal, Shield } from 'lucide-react';
 
 interface LogEntry {
@@ -43,54 +44,52 @@ export default function ActivityLog({ testRunId = 'PROD' }: ActivityLogProps) {
       setLogs(((data.recent_ingestion_logs ?? []) as RawLog[]).map(toEntry));
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not load activity');
+      setError(e instanceof Error ? `Could not load activity: ${e.message}. It will retry automatically.` : 'Could not load activity. It will retry automatically.');
     } finally {
       setLoading(false);
     }
   }, [testRunId]);
 
-  useEffect(() => {
-    load();
-    const interval = setInterval(load, 15000);
-    return () => clearInterval(interval);
-  }, [load]);
+  usePolling(load, 15000);
 
   return (
-    <div className="bg-bg-primary border border-border-secondary rounded-xl overflow-hidden h-[450px] flex flex-col shadow-sm">
+    <section aria-labelledby="activity-log-title" className="bg-bg-primary border border-border-secondary rounded-xl overflow-hidden h-[450px] flex flex-col">
       <div className="py-4 px-6 border-b border-border-secondary flex flex-row items-center justify-between shrink-0 bg-bg-secondary">
-        <h2 className="text-2xs font-bold uppercase tracking-[0.2em] flex items-center gap-2 text-text-tertiary">
-          <Terminal className="w-3.5 h-3.5" />
+        <h2 id="activity-log-title" className="text-lg font-semibold flex items-center gap-2 text-text-primary">
+          <Terminal aria-hidden="true" className="w-5 h-5 text-text-tertiary" />
           Recent gate activity
         </h2>
       </div>
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div tabIndex={0} role="region" aria-label="Recent gate activity entries" className="flex-1 overflow-y-auto p-4 space-y-3">
         {error ? (
           <p role="alert" className="text-sm text-danger">{error}</p>
         ) : loading ? (
-          <p className="text-sm text-text-tertiary">Loading activity…</p>
+          <p role="status" className="text-sm text-text-tertiary">Loading activity…</p>
         ) : logs.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-text-tertiary text-2xs uppercase font-bold tracking-widest py-20 opacity-60">
-            <Shield className="w-8 h-8 mb-2" />
-            No recent activity
+          <div className="h-full flex flex-col items-center justify-center text-text-tertiary text-sm py-20">
+            <Shield aria-hidden="true" className="w-8 h-8 mb-2 opacity-40" />
+            No recent activity yet.
           </div>
         ) : logs.map((log) => (
           <div key={log.id} className="flex gap-4 group">
             <div className="flex flex-col items-center pt-1 shrink-0">
-              <div className={`w-1.5 h-1.5 rounded-full ${log.level === 'error' ? 'bg-danger' : log.level === 'warn' ? 'bg-warning' : 'bg-accent'}`} />
-              <div className="w-px h-full bg-bg-tertiary my-1" />
+              <div aria-hidden="true" className={`w-1.5 h-1.5 rounded-full ${log.level === 'error' ? 'bg-danger' : log.level === 'warn' ? 'bg-warning' : 'bg-accent'}`} />
+              <div aria-hidden="true" className="w-px h-full bg-bg-tertiary my-1" />
             </div>
             <div className="flex-1 min-w-0 pb-3 border-b border-border-secondary">
               <div className="flex items-center justify-between mb-1">
                 <span className={`text-2xs font-mono ${log.level === 'error' ? 'text-danger' : log.level === 'warn' ? 'text-warning' : 'text-accent'}`}>
                   [{log.time}]
                 </span>
-                <span className="text-2xs text-text-tertiary font-bold uppercase tracking-widest">{log.target}</span>
+                <span className="text-2xs text-text-tertiary font-semibold truncate ml-2">{log.target}</span>
               </div>
-              <p className="text-2xs text-text-secondary leading-relaxed">{log.event}</p>
+              <p className="text-xs text-text-secondary leading-relaxed break-words">
+                <span className="sr-only">{log.level === 'error' ? 'Rejected. ' : log.level === 'warn' ? 'Held or redirected. ' : 'Accepted. '}</span>{log.event}
+              </p>
             </div>
           </div>
         ))}
       </div>
-    </div>
+    </section>
   );
 }

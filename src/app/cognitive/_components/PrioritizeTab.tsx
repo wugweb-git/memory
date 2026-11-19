@@ -41,16 +41,16 @@ export const PrioritizeTab: React.FC<{ mode: Mode }> = ({ mode }) => {
       </Intent>
 
       <div className="space-y-2">
-        <label htmlFor="prio-items" className="text-xs font-medium text-text-secondary">Your list</label>
+        <label htmlFor="prio-items" className="text-sm font-medium text-text-secondary">Your list</label>
         <textarea
           id="prio-items"
           value={text}
           onChange={e => setText(e.target.value)}
           rows={6}
           placeholder={'Reply to client proposal\nFix onboarding bug\nWrite weekly update'}
-          className="w-full rounded-xl border border-border-secondary bg-bg-elevated px-4 py-3 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent resize-y"
+          className="w-full rounded-xl border border-border-secondary bg-bg-elevated px-4 py-3 text-md text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent resize-y"
         />
-        <p className={`text-xs ${tooMany ? 'text-danger' : 'text-text-tertiary'}`}>
+        <p aria-live="polite" className={`text-xs ${tooMany ? 'text-danger' : 'text-text-tertiary'}`}>
           {items.length} of {MAX_ITEMS} items{tooMany ? ' (remove some to continue)' : ''}
         </p>
       </div>
@@ -79,7 +79,7 @@ export const PrioritizeTab: React.FC<{ mode: Mode }> = ({ mode }) => {
                     <p className="text-sm font-semibold text-text-primary">{r.item}</p>
                     <p className="text-sm text-text-tertiary">{r.reason}</p>
                     {r.signal_match ? (
-                      <span className="inline-block text-2xs font-medium px-2 py-0.5 rounded-full bg-secondary text-text-secondary border border-border-secondary">
+                      <span className="inline-block text-2xs font-medium px-2 py-0.5 rounded-full bg-bg-secondary text-text-secondary border border-border-secondary">
                         Matches: {r.signal_match}
                       </span>
                     ) : null}

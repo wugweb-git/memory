@@ -13,7 +13,7 @@
   
   --border-primary: rgba(0, 0, 0, 0.08);
   --border-secondary: rgba(0, 0, 0, 0.04);
-  --border-active: rgba(0, 170, 255, 0.4);
+  --border-active: rgba(0, 111, 175, 0.4);
 
   --text-primary: #0A0A0A;     /* Deep obsidian */
   --text-secondary: #2D2D2A;   /* Warm charcoal */
@@ -29,18 +29,18 @@
   --text-secondary-rgb: 45 45 42;
   --text-tertiary-rgb: 90 90 84;
   --text-disabled-rgb: 107 107 101;
-  --success-rgb: 4 120 87;
-  --danger-rgb: 225 29 72;
-  --warning-rgb: 180 83 9;
+  --success-rgb: 4 108 78;       /* #046C4E: 5.89:1 on porcelain, 4.86:1 on clay (was 4.14:1) */
+  --danger-rgb: 190 18 60;       /* #BE123C: 5.75:1 on porcelain (was #E11D48 at 4.29:1) */
+  --warning-rgb: 154 74 8;       /* #9A4A08: 5.72:1 on porcelain (was #B45309; 4.28:1 on stone) */
   --accent-high-rgb: 0 0 0;
 
-  --accent: 0 170 255;           /* Electric Cyan */
+  --accent: 0 111 175;           /* Deep cyan #006FAF: 4.93:1 on porcelain as text (was #00AAFF at 2.34:1) */
   --accent-high: #000000;      /* High contrast spark */
-  --accent-muted: rgba(0, 170, 255, 0.08);
+  --accent-muted: rgba(0, 111, 175, 0.08);
   
-  --success: #047857;
-  --danger: #E11D48;
-  --warning: #B45309;
+  --success: #046C4E;
+  --danger: #BE123C;
+  --warning: #9A4A08;
 
   /* ── Type scale ────────────────────────────────────────────────
      One continuous fluid ramp. UI/body sizes are flat-ish (2xs–md);
@@ -48,7 +48,7 @@
   --font-2xs:  0.6875rem;                                  /* 11px — micro labels */
   --font-xs:   0.75rem;                                    /* 12px — captions */
   --font-sm:   0.8125rem;                                  /* 13px — secondary UI */
-  --font-base: clamp(0.9375rem, 0.9rem + 0.2vw, 1rem);    /* 15→16px — body */
+  --font-base: clamp(1rem, 0.95rem + 0.15vw, 1.0625rem);   /* 16→17px — body; 16px floor avoids iOS input zoom */
   --font-md:   clamp(1rem, 0.95rem + 0.25vw, 1.0625rem);  /* 16→17px — lead */
   --font-lg:   clamp(1.125rem, 1.05rem + 0.35vw, 1.25rem);/* 18→20px — h5/h6 */
   --font-xl:   clamp(1.375rem, 1.25rem + 0.6vw, 1.625rem);/* 22→26px — h4 */
@@ -86,31 +86,31 @@ body {
 
 @layer components {
   .glass-panel {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(253, 253, 251, 0.95) 100%);
+    background: linear-gradient(135deg, rgb(var(--bg-elevated-rgb) / 0.9) 0%, rgb(var(--bg-elevated-rgb) / 0.95) 100%);
     border: 1px solid var(--border-secondary);
-    box-shadow: 
-      0 20px 60px rgba(0, 0, 0, 0.04),
-      inset 0 1px 0 rgba(255, 255, 255, 1);
+    box-shadow:
+      0 20px 60px rgb(var(--text-primary-rgb) / 0.04),
+      inset 0 1px 0 rgb(var(--bg-elevated-rgb));
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
   }
-  
+
   .glass-card {
-    background: rgba(255, 255, 255, 0.6);
+    background: rgb(var(--bg-elevated-rgb) / 0.6);
     border: 1px solid var(--border-secondary);
-    box-shadow: 
-      0 4px 12px rgba(0, 0, 0, 0.02),
-      inset 0 1px 1px rgba(255, 255, 255, 1);
+    box-shadow:
+      0 4px 12px rgb(var(--text-primary-rgb) / 0.02),
+      inset 0 1px 1px rgb(var(--bg-elevated-rgb));
     transition: all 700ms ease;
   }
 
   .glass-card:hover {
     border-color: rgb(var(--accent) / 0.4);
-    background: #ffffff;
+    background: var(--bg-elevated);
     transform: translateY(-0.5rem);
     box-shadow:
-      0 25px 50px -12px rgb(0 0 0 / 0.25),
-      inset 0 1px 1px rgba(255, 255, 255, 1);
+      0 25px 50px -12px rgb(var(--text-primary-rgb) / 0.25),
+      inset 0 1px 1px rgb(var(--bg-elevated-rgb));
   }
 
   .bento-grid {
@@ -151,8 +151,8 @@ body {
 @layer utilities {
   .shadow-3xl {
     box-shadow:
-      0 24px 48px rgba(0, 0, 0, 0.08),
-      0 8px 24px rgba(0, 0, 0, 0.06);
+      0 24px 48px rgb(var(--text-primary-rgb) / 0.08),
+      0 8px 24px rgb(var(--text-primary-rgb) / 0.06);
   }
 
   .rounded-radius-xl {
@@ -174,7 +174,7 @@ body {
 
   .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: #bdbdb6 transparent;
+    scrollbar-color: rgb(var(--text-disabled-rgb) / 0.5) transparent;
   }
 
   .custom-scrollbar::-webkit-scrollbar {
@@ -183,7 +183,7 @@ body {
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #d7d7d2;
+    background: rgb(var(--text-disabled-rgb) / 0.4);
     border-radius: 9999px;
   }
 
@@ -328,5 +328,14 @@ html {
   }
   .scanline {
     display: none;
+  }
+  .animate-pulse,
+  .animate-spin,
+  .animate-bounce,
+  .animate-ping {
+    animation: none !important;
+  }
+  .glass-card:hover {
+    transform: none;
   }
 }

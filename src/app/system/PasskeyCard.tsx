@@ -28,10 +28,10 @@ export function PasskeyCard() {
     try {
       const res = await fetch(UI_API.passkeyList, { credentials: 'include' });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.error || 'Could not load devices');
+      if (!res.ok) throw new Error(data?.error || 'Could not load your devices. Try again.');
       setDevices(data.devices as Device[]);
     } catch (e) {
-      setLoadError(e instanceof Error ? e.message : 'Could not load devices');
+      setLoadError(e instanceof Error ? e.message : 'Could not load your devices. Try again.');
     }
   }, []);
 
@@ -58,6 +58,7 @@ export function PasskeyCard() {
   }
 
   async function remove(d: Device) {
+    if (!window.confirm(`Remove ${d.deviceName}? It will no longer be able to sign in with biometrics.`)) return;
     setRemoving(d.id);
     setError(null);
     setStatus(`Removing ${d.deviceName}`);
@@ -131,7 +132,7 @@ export function PasskeyCard() {
         <p className="text-sm text-text-tertiary">This browser or device does not support biometric sign-in.</p>
       ) : (
         <div className="space-y-2">
-          <label htmlFor="passkey-device-name" className="text-2xs font-bold text-text-tertiary">
+          <label htmlFor="passkey-device-name" className="block text-xs font-bold text-text-secondary">
             Device name
           </label>
           <input
@@ -141,7 +142,7 @@ export function PasskeyCard() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="For example, My phone"
-            className="w-full min-h-11 rounded-2xl border border-border-primary p-3 text-base"
+            className="w-full min-h-11 rounded-2xl border border-border-primary bg-bg-primary p-3 text-md text-text-primary placeholder:text-text-tertiary"
           />
           <button
             type="button"
@@ -154,7 +155,7 @@ export function PasskeyCard() {
         </div>
       )}
 
-      <p role="status" aria-live="polite" className="text-sm text-success">{status}</p>
+      <p role="status" aria-live="polite" className="text-sm text-success empty:hidden">{status}</p>
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}
     </M3Card>
   );

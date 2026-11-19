@@ -12,7 +12,7 @@ export const KnowledgeSource = () => {
   const onProcessFile = (err: any, file: any) => {
     if (!err) {
       toast.success('Anchored to your memory vault.', {
-        icon: <CheckCircle2 className="text-success" />
+        icon: <CheckCircle2 aria-hidden="true" className="text-success" />
       });
       setSources(prev => [{
         id: Math.random().toString(),
@@ -54,12 +54,12 @@ export const KnowledgeSource = () => {
                   className="flex items-center justify-between p-3 rounded-xl bg-secondary border border-border-secondary hover:border-border-primary transition-all group"
                 >
                   <div className="flex items-center gap-3">
-                    {source.type === 'document' ? <FileText size={14} className="text-text-tertiary" /> : <Globe size={14} className="text-text-tertiary" />}
+                    {source.type === 'document' ? <FileText aria-hidden="true" size={14} className="text-text-tertiary" /> : <Globe aria-hidden="true" size={14} className="text-text-tertiary" />}
                     <span className="text-xs font-bold text-text-secondary truncate max-w-[150px]">{source.name}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                     <div className="w-1.5 h-1.5 rounded-full bg-success opacity-60" />
-                     <span className="text-2xs font-semibold text-text-tertiary uppercase tracking-tight opacity-0 group-hover:opacity-100 transition-opacity">Anchored</span>
+                     <div aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-success" />
+                     <span className="text-2xs font-semibold text-text-tertiary">Anchored</span>
                   </div>
                 </motion.div>
               ))}

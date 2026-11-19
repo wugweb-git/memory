@@ -45,16 +45,16 @@ export const EvaluateTab: React.FC<{ mode: Mode }> = ({ mode }) => {
       </Intent>
 
       <div className="space-y-2">
-        <label htmlFor="eval-input" className="text-xs font-medium text-text-secondary">Opportunity text</label>
+        <label htmlFor="eval-input" className="text-sm font-medium text-text-secondary">Opportunity text</label>
         <textarea
           id="eval-input"
           value={input}
           onChange={e => setInput(e.target.value)}
           rows={7}
           placeholder="Paste the full description here…"
-          className="w-full rounded-xl border border-border-secondary bg-bg-elevated px-4 py-3 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent resize-y"
+          className="w-full rounded-xl border border-border-secondary bg-bg-elevated px-4 py-3 text-md text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent resize-y"
         />
-        <p className="text-xs text-text-tertiary flex justify-between">
+        <p className="text-xs text-text-tertiary flex justify-between" aria-live="polite">
           <span>{len < MIN ? `Add at least ${MIN} characters` : 'Ready to evaluate'}</span>
           <span>{len} characters</span>
         </p>
@@ -69,7 +69,7 @@ export const EvaluateTab: React.FC<{ mode: Mode }> = ({ mode }) => {
 
       {!loading && !result && !error ? (
         <div className="rounded-2xl border border-dashed border-border-secondary p-6 text-center text-xs text-text-tertiary flex flex-col items-center gap-2">
-          <FileText size={22} className="text-text-disabled" />
+          <FileText size={22} className="text-text-disabled" aria-hidden="true" />
           A fit score, pros, cons and next steps will appear here.
         </div>
       ) : null}
@@ -80,7 +80,7 @@ export const EvaluateTab: React.FC<{ mode: Mode }> = ({ mode }) => {
             <ScoreRing value={fit} label="fit" />
             <div className="flex-1 space-y-3 min-w-0">
               <span className={`inline-block text-sm font-semibold px-3 py-1 rounded-full border ${VERDICT_STYLE[tone]}`}>
-                {result.verdict || 'Moderate Fit'}
+                {result.verdict || 'Moderate fit'}
               </span>
               {typeof result.confidence === 'number' ? <Meter label="Confidence" value={result.confidence} /> : null}
             </div>
@@ -94,7 +94,7 @@ export const EvaluateTab: React.FC<{ mode: Mode }> = ({ mode }) => {
                 <ul className="space-y-2">
                   {result.why_yes.map((r: string, i: number) => (
                     <li key={i} className="flex gap-2.5 text-sm text-text-secondary">
-                      <Check size={15} className="text-success shrink-0 mt-0.5" /> {r}
+                      <Check size={15} className="text-success shrink-0 mt-0.5" aria-hidden="true" /> {r}
                     </li>
                   ))}
                 </ul>
@@ -105,7 +105,7 @@ export const EvaluateTab: React.FC<{ mode: Mode }> = ({ mode }) => {
                 <ul className="space-y-2">
                   {result.why_no.map((r: string, i: number) => (
                     <li key={i} className="flex gap-2.5 text-sm text-text-secondary">
-                      <X size={15} className="text-danger shrink-0 mt-0.5" /> {r}
+                      <X size={15} className="text-danger shrink-0 mt-0.5" aria-hidden="true" /> {r}
                     </li>
                   ))}
                 </ul>
@@ -118,7 +118,7 @@ export const EvaluateTab: React.FC<{ mode: Mode }> = ({ mode }) => {
               <ul className="space-y-2.5">
                 {result.action_items.map((a: string, i: number) => (
                   <li key={i} className="flex gap-3 text-sm text-text-secondary">
-                    <ListChecks size={16} className="text-accent shrink-0 mt-0.5" /> {a}
+                    <ListChecks size={16} className="text-accent shrink-0 mt-0.5" aria-hidden="true" /> {a}
                   </li>
                 ))}
               </ul>

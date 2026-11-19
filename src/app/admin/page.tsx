@@ -26,7 +26,7 @@ const SHORTCUTS = [
   { href: '/admin/memory', label: 'Memory admin', desc: 'Packet-level inspection' },
   { href: '/admin/memory/public', label: 'Public notes', desc: 'Choose what Ask may quote' },
   { href: '/admin/profile', label: 'Profile admin', desc: 'Public profile internals' },
-  { href: '/buffer', label: 'Buffer', desc: 'Intake queue & capture' },
+  { href: '/buffer', label: 'Buffer', desc: 'Intake queue and capture' },
 ];
 
 export default function AdminConsole() {
@@ -100,7 +100,7 @@ export default function AdminConsole() {
       const failures = (j.results ?? []).filter((r: any) => r.status === 'FAIL');
       return [
         `Passed ${j.summary?.passed ?? '?'} / ${j.summary?.total ?? '?'} checks.`,
-        ...failures.map((f: any) => `FAIL — ${f.name ?? f.check ?? 'unknown'}: ${f.detail ?? f.error ?? ''}`),
+        ...failures.map((f: any) => `FAIL: ${f.name ?? f.check ?? 'unknown'}: ${f.detail ?? f.error ?? ''}`),
       ].join('\n');
     });
 
@@ -138,7 +138,7 @@ export default function AdminConsole() {
       if (!res.ok) throw new Error(String(res.status));
     } catch {
       setChecklist(checklist); // roll back optimistic update
-      toast.error('Could not save checklist');
+      toast.error('Could not save the checklist. Your change was reverted; try again.');
     }
   }
 
@@ -147,7 +147,7 @@ export default function AdminConsole() {
   return (
     <>
       <AppToastContainer position="bottom-right" theme="light" />
-      <div className="max-w-3xl mx-auto px-4">
+      <div>
         <M3Page title="Admin console" subtitle="Operations, health and setup — owner only">
 
           <M3Card title="Operations">
@@ -156,34 +156,37 @@ export default function AdminConsole() {
                 {busy === 'diagnose' ? 'Running…' : 'Run diagnostics'}
               </M3Button>
               <M3Button tone="secondary" onClick={runAudit} disabled={busy !== null}>
-                {busy === 'audit' ? 'Running…' : 'Memory audit'}
+                {busy === 'audit' ? 'Running…' : 'Run memory audit'}
               </M3Button>
               <M3Button tone="secondary" onClick={runJobs} disabled={busy !== null}>
                 {busy === 'jobs' ? 'Running…' : 'Run jobs now'}
               </M3Button>
             </div>
-            {opResult && (
-              <div className="mt-3 rounded-2xl bg-bg-secondary border border-border-secondary p-4">
-                <p className="text-2xs font-bold uppercase tracking-widest text-text-tertiary mb-2">{opResult.title}</p>
-                <pre className="text-xs text-text-secondary whitespace-pre-wrap">{opResult.body}</pre>
-              </div>
-            )}
+            <div role="status" aria-live="polite" className={opResult || busy ? 'mt-3' : ''}>
+              {busy ? <span className="sr-only">Running operation…</span> : null}
+              {opResult && (
+                <div className="rounded-2xl bg-bg-secondary border border-border-secondary p-4">
+                  <p className="text-2xs font-bold uppercase tracking-widest text-text-tertiary mb-2">{opResult.title}</p>
+                  <pre className="text-xs text-text-secondary whitespace-pre-wrap break-words">{opResult.body}</pre>
+                </div>
+              )}
+            </div>
           </M3Card>
 
           <M3Card
             title="Health"
-            action={<button type="button" onClick={loadHealth} className="min-h-11 px-2 text-2xs font-bold uppercase text-accent">Refresh</button>}
+            action={<button type="button" onClick={loadHealth} aria-label="Refresh health checks" className="min-h-11 px-2 text-xs font-bold text-accent">Refresh</button>}
           >
             {health === null ? (
               <M3State state="loading" message="Checking subsystems…" />
             ) : (
-              <ul className="divide-y divide-border-secondary">
+              <ul aria-label="Subsystem health" className="divide-y divide-border-secondary">
                 {health.map((row) => (
                   <li key={row.name} className="flex items-center justify-between py-2">
                     <span className="text-sm text-text-primary">{row.name}</span>
                     <span className={`inline-flex items-center gap-1.5 text-2xs font-bold uppercase tracking-widest ${row.ok ? 'text-success' : 'text-danger'}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${row.ok ? 'bg-success' : 'bg-danger'}`} />
-                      {row.status}
+                      <span aria-hidden="true" className={`w-1.5 h-1.5 rounded-full ${row.ok ? 'bg-success' : 'bg-danger'}`} />
+                      <span className="sr-only">{row.ok ? 'Healthy: ' : 'Problem: '}</span>{row.status}
                     </span>
                   </li>
                 ))}
@@ -194,21 +197,21 @@ export default function AdminConsole() {
           <M3Card title={`Setup checklist${checklist ? ` (${done}/${checklist.length})` : ''}`}>
             {checklist === null ? (
               checklistError ? (
-                <M3State state="error" message="Could not load checklist. Log in as admin and refresh." />
+                <M3State state="error" message="Could not load checklist. Sign in as admin, then refresh the page." />
               ) : (
                 <M3State state="loading" message="Loading checklist…" />
               )
             ) : (
-              <ul className="divide-y divide-border-secondary">
+              <ul aria-label="Setup checklist" className="divide-y divide-border-secondary">
                 {checklist.map((item) => (
                   <li key={item.id}>
                     <button
                       type="button"
                       aria-pressed={item.completed}
                       onClick={() => toggleChecklist(item)}
-                      className="w-full flex items-center gap-3 py-2 text-left group"
+                      className="w-full min-h-11 flex items-center gap-3 py-2 text-left group"
                     >
-                      <span className={`w-4 h-4 rounded border shrink-0 flex items-center justify-center text-2xs ${item.completed ? 'bg-text-primary border-text-primary text-bg-primary' : 'border-border-primary text-transparent group-hover:border-text-tertiary'}`}>
+                      <span aria-hidden="true" className={`w-5 h-5 rounded border shrink-0 flex items-center justify-center text-xs ${item.completed ? 'bg-text-primary border-text-primary text-bg-primary' : 'border-border-primary text-transparent group-hover:border-text-tertiary'}`}>
                         ✓
                       </span>
                       <span className={`text-sm ${item.completed ? 'text-text-disabled line-through' : 'text-text-primary'}`}>{item.text}</span>
@@ -225,7 +228,7 @@ export default function AdminConsole() {
                 <Link
                   key={s.href}
                   href={s.href}
-                  className="rounded-2xl border border-border-secondary p-4 hover:border-border-primary transition-colors block"
+                  className="rounded-2xl border border-border-secondary p-4 min-h-11 hover:border-border-primary transition-colors block"
                 >
                   <p className="text-sm font-bold text-text-primary">{s.label}</p>
                   <p className="text-2xs text-text-tertiary mt-0.5">{s.desc}</p>

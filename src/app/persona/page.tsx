@@ -21,21 +21,38 @@ function humanize(key: string): string {
   return spaced.charAt(0).toUpperCase() + spaced.slice(1).toLowerCase();
 }
 
+/** Accessible 0-1 progress bar with a text name for assistive tech. */
+function Meter({ label, value, className = 'h-1.5' }: { label: string; value: number; className?: string }) {
+  const pct = Math.max(0, Math.min(100, Math.round(value * 100)));
+  return (
+    <div
+      role="progressbar"
+      aria-label={label}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={pct}
+      className={`${className} overflow-hidden rounded-full bg-secondary`}
+    >
+      <div className={`${className} rounded-full bg-text-primary transition-all motion-reduce:transition-none`} style={{ width: `${pct}%` }} />
+    </div>
+  );
+}
+
 /** Renders an arbitrary style-profile value as readable UI instead of a raw
  *  JSON dump — was the reason /persona read like a debug page. Numbers in
  *  [0,1] render as a labeled bar (these are style scores), strings render as
  *  prose, arrays as chips, nested objects recurse one level with indent. */
-function StyleValue({ value, depth = 0 }: { value: unknown; depth?: number }) {
+function StyleValue({ value, depth = 0, label = 'Score' }: { value: unknown; depth?: number; label?: string }) {
   if (value === null || value === undefined || value === '') return null;
 
   if (typeof value === 'number') {
     if (value >= 0 && value <= 1) {
       return (
         <div className="flex items-center gap-2">
-          <div className="h-1 flex-1 bg-secondary rounded-full overflow-hidden">
-            <div className="h-1 bg-text-primary rounded-full" style={{ width: `${value * 100}%` }} />
+          <div className="flex-1">
+            <Meter label={label} value={value} className="h-1" />
           </div>
-          <span className="text-2xs font-bold text-text-tertiary w-9 text-right">{Math.round(value * 100)}%</span>
+          <span className="text-2xs font-semibold text-text-secondary w-9 text-right tabular-nums">{Math.round(value * 100)}%</span>
         </div>
       );
     }
@@ -51,7 +68,7 @@ function StyleValue({ value, depth = 0 }: { value: unknown; depth?: number }) {
     return (
       <div className="flex flex-wrap gap-1.5">
         {value.map((v, i) => (
-          <span key={i} className="text-2xs font-medium px-2 py-0.5 rounded-full bg-bg-primary border border-border-secondary text-text-tertiary">
+          <span key={i} className="text-2xs font-medium px-2 py-0.5 rounded-full bg-bg-primary border border-border-secondary text-text-secondary">
             {typeof v === 'string' ? v : JSON.stringify(v)}
           </span>
         ))}
@@ -66,8 +83,8 @@ function StyleValue({ value, depth = 0 }: { value: unknown; depth?: number }) {
       <div className={depth > 0 ? 'space-y-2 pl-3 border-l border-border-secondary' : 'space-y-2'}>
         {entries.map(([k, v]) => (
           <div key={k}>
-            <p className="text-2xs text-text-tertiary mb-0.5">{humanize(k)}</p>
-            <StyleValue value={v} depth={depth + 1} />
+            <p className="text-2xs text-text-secondary mb-0.5">{humanize(k)}</p>
+            <StyleValue value={v} depth={depth + 1} label={humanize(k)} />
           </div>
         ))}
       </div>
@@ -146,14 +163,14 @@ export default function PersonaIntelligencePage() {
         setError(
           data.reason === 'ai_contamination_detected'
             ? 'Rebuild blocked: profile text appears AI-generated.'
-            : data.reason ?? data.error ?? 'Rebuild failed',
+            : data.reason ?? data.error ?? 'Rebuild failed. Try again in a moment.',
         );
         return;
       }
-      setNotice('Persona regenerated.');
+      setNotice('Persona regenerated from your profile.');
       await fetchData(userId);
     } catch {
-      setError('Persona rebuild failed');
+      setError('Persona rebuild failed. Check your connection and try again.');
     } finally {
       setRebuilding(false);
     }
@@ -163,7 +180,7 @@ export default function PersonaIntelligencePage() {
 
   async function rollbackField(logId: string, field: string) {
     if (!ROLLBACK_FIELDS.includes(field)) return;
-    if (!confirm(`Roll back ${field} to its value before this change?`)) return;
+    if (!confirm(`Roll back ${humanize(field).toLowerCase()} to its value before this change?`)) return;
     setSaving(true);
     setError(null);
     setNotice(null);
@@ -178,10 +195,10 @@ export default function PersonaIntelligencePage() {
         setError(data.error ?? 'Rollback failed');
         return;
       }
-      setNotice('Rolled back.');
+      setNotice('Rolled back to the earlier value.');
       await fetchData(userId);
     } catch {
-      setError('Rollback failed');
+      setError('Rollback failed. Check your connection and try again.');
     } finally {
       setSaving(false);
     }
@@ -197,7 +214,7 @@ export default function PersonaIntelligencePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, feedbackType, targetType: 'persona' }),
       });
-      if (!res.ok) throw new Error(`Feedback failed (${res.status})`);
+      if (!res.ok) throw new Error(`Feedback was not saved (${res.status}). Try again.`);
       setNotice('Feedback saved.');
       await fetchData(userId);
     } catch (e) {
@@ -217,7 +234,8 @@ export default function PersonaIntelligencePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [field]: value }),
       });
-      if (!res.ok) throw new Error(`Update failed (${res.status})`);
+      if (!res.ok) throw new Error(`Update failed (${res.status}). Try again.`);
+      setNotice('Interface preference saved.');
       await fetchData(userId);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Update failed');
@@ -229,8 +247,9 @@ export default function PersonaIntelligencePage() {
   if (loading) {
     return (
       <AppShell>
-        <div className="w-full min-h-[50vh] flex items-center justify-center px-4">
-          <p role="status" className="text-sm text-text-tertiary animate-pulse">Loading persona…</p>
+        <div className="w-full min-h-[50vh] flex flex-col items-center justify-center gap-2 px-4">
+          <h1 className="sr-only">Persona</h1>
+          <p role="status" className="text-sm text-text-secondary motion-safe:animate-pulse">Loading persona…</p>
         </div>
       </AppShell>
     );
@@ -240,9 +259,10 @@ export default function PersonaIntelligencePage() {
     return (
       <AppShell>
         <div className="w-full min-h-[50vh] flex items-center justify-center px-4">
-          <div className="text-center space-y-2">
+          <div className="text-center space-y-3">
+            <h1 className="sr-only">Persona</h1>
             <p role="alert" className="text-sm text-danger">{loadError}</p>
-            {userId && <button onClick={() => { setLoading(true); fetchData(userId); }} className="px-4 py-2 rounded-xl bg-text-primary text-bg-primary text-xs font-bold">Retry</button>}
+            {userId && <button type="button" onClick={() => { setLoading(true); fetchData(userId); }} className="min-h-11 px-5 rounded-xl bg-text-primary text-bg-primary text-sm font-semibold">Retry loading persona</button>}
           </div>
         </div>
       </AppShell>
@@ -254,40 +274,43 @@ export default function PersonaIntelligencePage() {
     <div className="w-full max-w-3xl mx-auto px-4 py-8 space-y-8">
       <header className="space-y-3">
         <div className="space-y-1">
-          <h1 className="text-xl font-semibold text-text-primary">Persona</h1>
-          <p className="text-xs text-text-tertiary">How your digital twin writes, decides and evolves.</p>
+          <h1 className="text-2xl font-semibold text-text-primary">Persona</h1>
+          <p className="text-sm text-text-secondary">How your digital twin writes, decides and evolves.</p>
         </div>
         <button
           type="button"
           onClick={rebuildPersona}
           disabled={rebuilding || saving}
-          className="px-4 py-2 rounded-xl bg-text-primary text-bg-primary text-xs font-bold disabled:opacity-50"
+          aria-busy={rebuilding}
+          className="min-h-11 px-5 rounded-xl bg-text-primary text-bg-primary text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {rebuilding ? 'Regenerating…' : 'Regenerate with AI'}
         </button>
+        <div aria-live="polite" className="space-y-1">
+          {notice && <p role="status" className="text-sm text-success">{notice}</p>}
+        </div>
         {error && <p role="alert" className="text-sm text-danger">{error}</p>}
         {loadError && <p role="alert" className="text-sm text-danger">{loadError}</p>}
-        {notice && <p role="status" className="text-sm text-success">{notice}</p>}
       </header>
 
       {/* Communication profile */}
       <section className="glass-panel rounded-3xl border border-border-secondary p-5 space-y-3">
-        <h2 className="text-sm font-semibold text-text-secondary">Communication profile</h2>
+        <h2 className="text-base font-semibold text-text-primary">Communication profile</h2>
         <div className="flex items-center justify-between">
           <span className="text-sm">Confidence</span>
-          <span className="text-sm font-bold">{Math.round((profile?.confidenceScore ?? 0.5) * 100)}%</span>
+          <span className="text-sm font-semibold tabular-nums">
+            {typeof profile?.confidenceScore === 'number' ? `${Math.round(profile.confidenceScore * 100)}%` : 'Not measured yet'}
+          </span>
         </div>
-        <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
-          <div className="h-1.5 bg-text-primary rounded-full transition-all" style={{ width: `${(profile?.confidenceScore ?? 0.5) * 100}%` }} />
-        </div>
+        {typeof profile?.confidenceScore === 'number' && <Meter label="Persona confidence" value={profile.confidenceScore} />}
         <div className="grid grid-cols-1 gap-3">
           {(['communicationStyle', 'writingStyle', 'decisionStyle'] as const).map((key) => {
             const val = profile?.[key];
             const hasContent = val && typeof val === 'object' && Object.keys(val).length > 0;
             return (
               <div key={key} className="bg-secondary/40 rounded-xl p-3">
-                <p className="text-2xs font-bold text-text-tertiary mb-2">{STYLE_LABEL[key]}</p>
-                {hasContent ? <StyleValue value={val} /> : <p className="text-sm text-text-tertiary">Not enough signal yet.</p>}
+                <h3 className="text-xs font-semibold text-text-secondary mb-2">{STYLE_LABEL[key]}</h3>
+                {hasContent ? <StyleValue value={val} label={STYLE_LABEL[key]} /> : <p className="text-sm text-text-secondary">Not enough signal yet.</p>}
               </div>
             );
           })}
@@ -296,20 +319,18 @@ export default function PersonaIntelligencePage() {
 
       {/* Behavioral traits */}
       <section className="glass-panel rounded-3xl border border-border-secondary p-5 space-y-3">
-        <h2 className="text-sm font-semibold text-text-secondary">Behavioral traits</h2>
+        <h2 className="text-base font-semibold text-text-primary">Behavioral traits</h2>
         {traits.length === 0 ? (
-          <p className="text-sm text-text-tertiary">No traits yet.</p>
+          <p className="text-sm text-text-secondary">No traits yet. Regenerate the persona to detect them from your writing.</p>
         ) : (
           traits.map((t) => (
             <div key={t.id} className="space-y-1">
               <div className="flex justify-between text-sm">
                 <span>{t.traitName}</span>
-                <span className="font-bold">{Math.round(t.traitValue * 100)}%</span>
+                <span className="font-semibold tabular-nums">{Math.round(t.traitValue * 100)}%</span>
               </div>
-              <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
-                <div className="h-1.5 bg-text-primary rounded-full transition-all" style={{ width: `${t.traitValue * 100}%` }} />
-              </div>
-              <p className="text-2xs text-text-tertiary">Confidence {Math.round(t.confidence * 100)}% · Evidence {t.evidenceCount}</p>
+              <Meter label={t.traitName} value={t.traitValue} />
+              <p className="text-2xs text-text-secondary">Confidence {Math.round(t.confidence * 100)}% · Evidence {t.evidenceCount}</p>
             </div>
           ))
         )}
@@ -317,41 +338,44 @@ export default function PersonaIntelligencePage() {
 
       {/* Evolution timeline */}
       <section className="glass-panel rounded-3xl border border-border-secondary p-5 space-y-3">
-        <h2 className="text-sm font-semibold text-text-secondary">Evolution timeline</h2>
+        <h2 className="text-base font-semibold text-text-primary">Evolution timeline</h2>
         {timeline.length === 0 ? (
-          <p className="text-sm text-text-tertiary">No evolution logs yet.</p>
+          <p className="text-sm text-text-secondary">No changes yet. Each regeneration or rollback is logged here.</p>
         ) : (
-          <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+          <ul className="space-y-2 max-h-64 overflow-y-auto pr-1" tabIndex={0} aria-label="Evolution timeline entries">
             {timeline.map((log) => (
-              <div key={log.id} className="flex items-start justify-between bg-secondary/40 rounded-xl p-3 gap-3">
+              <li key={log.id} className="flex items-start justify-between bg-secondary/40 rounded-xl p-3 gap-3">
                 <div className="space-y-0.5 min-w-0">
-                  <p className="text-xs font-bold">{log.changedField || 'general'}</p>
-                  <p className="text-2xs text-text-tertiary">{log.reason || 'no reason'}</p>
+                  <p className="text-xs font-semibold">{log.changedField ? humanize(log.changedField) : 'General'}</p>
+                  <p className="text-2xs text-text-secondary">{log.reason || 'No reason recorded'}</p>
                   {log.changedField && ROLLBACK_FIELDS.includes(log.changedField) && log.reason !== 'rollback' && (
                     <button
+                      type="button"
                       onClick={() => rollbackField(log.id, log.changedField!)}
                       disabled={saving}
-                      className="text-2xs font-bold text-accent disabled:opacity-50"
+                      aria-label={`Roll back ${humanize(log.changedField).toLowerCase()} change`}
+                      className="min-h-11 sm:min-h-6 -ml-1 px-1 text-xs font-semibold text-accent underline underline-offset-2 disabled:opacity-50"
                     >
                       Roll back
                     </button>
                   )}
                 </div>
                 <div className="text-right shrink-0">
-                  <span className={`text-2xs font-bold ${(log.confidenceDelta || 0) >= 0 ? 'text-success' : 'text-danger'}`}>
-                    {(log.confidenceDelta || 0) >= 0 ? '+' : ''}{Math.round((log.confidenceDelta || 0) * 100)}%
+                  <span className={`text-2xs font-semibold tabular-nums ${(log.confidenceDelta || 0) >= 0 ? 'text-success' : 'text-danger'}`}>
+                    <span className="sr-only">Confidence change </span>
+                    {(log.confidenceDelta || 0) >= 0 ? '+' : '−'}{Math.abs(Math.round((log.confidenceDelta || 0) * 100))}%
                   </span>
-                  <p className="text-2xs text-text-tertiary">{log.createdAt ? new Date(log.createdAt).toLocaleDateString() : ''}</p>
+                  <p className="text-2xs text-text-secondary">{log.createdAt ? new Date(log.createdAt).toLocaleDateString() : ''}</p>
                 </div>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </section>
 
       {/* Adaptive UX Settings */}
       <section className="glass-panel rounded-3xl border border-border-secondary p-5 space-y-3">
-        <h2 className="text-sm font-semibold text-text-secondary">Adaptive interface</h2>
+        <h2 className="text-base font-semibold text-text-primary">Adaptive interface</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[
             { label: 'UI density', field: 'uiDensity' as const, options: ['minimal', 'dense', 'comfortable'] },
@@ -359,16 +383,17 @@ export default function PersonaIntelligencePage() {
             { label: 'Navigation', field: 'preferredNavigationStyle' as const, options: ['single-primary-action', 'tabbed', 'drawer'] },
             { label: 'Mode', field: 'preferredMode' as const, options: ['operator', 'founder', 'architect'] },
           ].map((ctrl) => (
-            <div key={ctrl.field} className="space-y-1">
-              <p className="text-2xs text-text-tertiary">{ctrl.label}</p>
-              <div className="flex flex-wrap gap-1">
+            <div key={ctrl.field} role="group" aria-labelledby={`adaptive-${ctrl.field}`} className="space-y-1">
+              <p id={`adaptive-${ctrl.field}`} className="text-xs text-text-secondary">{ctrl.label}</p>
+              <div className="flex flex-wrap gap-2">
                 {ctrl.options.map((opt) => (
                   <button
                     key={opt}
+                    type="button"
                     aria-pressed={adaptive?.[ctrl.field] === opt}
                     disabled={saving}
                     onClick={() => updateAdaptive(ctrl.field, opt)}
-                    className={`px-2 py-1 rounded-lg border text-2xs ${adaptive?.[ctrl.field] === opt ? 'bg-text-primary text-bg-primary border-text-primary' : 'border-border-secondary'} disabled:opacity-50`}
+                    className={`min-h-11 sm:min-h-8 px-3 rounded-lg border text-xs font-medium ${adaptive?.[ctrl.field] === opt ? 'bg-text-primary text-bg-primary border-text-primary' : 'border-border-secondary text-text-primary hover:bg-bg-secondary'} disabled:opacity-50`}
                   >
                     {opt.replace(/-/g, ' ')}
                   </button>
@@ -381,23 +406,25 @@ export default function PersonaIntelligencePage() {
 
       {/* Feedback */}
       <section className="glass-panel rounded-3xl border border-border-secondary p-5 space-y-3">
-        <h2 className="text-sm font-semibold text-text-secondary">Feedback on this persona</h2>
-        <div className="flex gap-2">
+        <h2 className="text-base font-semibold text-text-primary">Feedback on this persona</h2>
+        <div role="group" aria-label="Feedback type" className="flex gap-2">
           {(['accepted', 'rejected', 'ignored'] as const).map((t) => (
             <button
               key={t}
+              type="button"
               aria-pressed={feedbackType === t}
               onClick={() => setFeedbackType(t)}
-              className={`flex-1 px-3 py-2 rounded-xl border text-xs capitalize font-bold ${feedbackType === t ? 'bg-text-primary text-bg-primary border-text-primary' : 'border-border-secondary'}`}
+              className={`flex-1 min-h-11 px-3 rounded-xl border text-sm capitalize font-medium ${feedbackType === t ? 'bg-text-primary text-bg-primary border-text-primary' : 'border-border-secondary text-text-primary hover:bg-bg-secondary'}`}
             >
               {t}
             </button>
           ))}
         </div>
         <button
+          type="button"
           onClick={sendFeedback}
           disabled={saving}
-          className="w-full px-4 py-3 rounded-xl bg-text-primary text-bg-primary text-xs font-bold disabled:opacity-50"
+          className="w-full min-h-11 px-4 rounded-xl bg-text-primary text-bg-primary text-sm font-semibold disabled:opacity-50"
         >
           {saving ? 'Saving…' : 'Save feedback'}
         </button>

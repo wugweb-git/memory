@@ -108,7 +108,8 @@ export function DeviceCapture() {
             key={a.kind}
             onClick={a.run}
             disabled={busy !== null}
-            className="w-full flex items-center gap-3 rounded-xl border border-border-primary p-3 text-left hover:bg-bg-secondary disabled:opacity-50"
+            aria-busy={busy === a.kind || undefined}
+            className="w-full min-h-11 flex items-center gap-3 rounded-xl border border-border-primary p-3 text-left hover:bg-bg-secondary disabled:opacity-50"
           >
             <Icon className="h-4 w-4 text-accent shrink-0" />
             <span className="min-w-0 flex-1">
@@ -119,7 +120,7 @@ export function DeviceCapture() {
         );
       })}
       {status && (
-        <p role={status.tone === 'ok' ? 'status' : 'alert'} className={`text-2xs ${status.tone === 'ok' ? 'text-success' : 'text-danger'}`}>{status.message}</p>
+        <p role={status.tone === 'ok' ? 'status' : 'alert'} aria-live="polite" className={`text-2xs ${status.tone === 'ok' ? 'text-success' : 'text-danger'}`}>{status.message}</p>
       )}
     </div>
   );

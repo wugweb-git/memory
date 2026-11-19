@@ -65,7 +65,7 @@ export function PulseWidget() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <Activity size={15} className="text-accent" />
+        <Activity aria-hidden="true" size={15} className="text-accent" />
         <h2 className="text-sm font-bold text-text-primary">Pulse check-in</h2>
       </div>
       <p className="text-xs text-text-tertiary">How are you doing right now?</p>
@@ -73,29 +73,33 @@ export function PulseWidget() {
       <div className="space-y-3">
         {FIELDS.map(({ key, label }) => (
           <div key={key}>
-            <div className="flex items-center justify-between text-xs text-text-tertiary mb-1">
+            <label htmlFor={`pulse-${key}`} className="flex items-center justify-between text-xs text-text-tertiary mb-1">
               <span>{label}</span>
               <span className="font-mono">{Math.round(values[key] * 100)}%</span>
-            </div>
+            </label>
             <input
+              id={`pulse-${key}`}
               type="range"
+              aria-valuetext={`${Math.round(values[key] * 100)}%`}
               min={0}
               max={1}
               step={0.05}
               value={values[key]}
               onChange={(e) => setValues((v) => ({ ...v, [key]: Number(e.target.value) }))}
-              className="w-full accent-accent"
+              className="w-full min-h-11 accent-accent"
             />
           </div>
         ))}
       </div>
 
       <button
+        type="button"
         onClick={submit}
         disabled={saving}
-        className="w-full py-2 rounded-xl bg-text-primary text-bg-primary text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2"
+        aria-busy={saving || undefined}
+        className="w-full min-h-11 py-2 rounded-xl bg-text-primary text-bg-primary text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2"
       >
-        {saving ? <Loader2 size={14} className="animate-spin" /> : null}
+        {saving ? <Loader2 aria-hidden="true" size={14} className="motion-safe:animate-spin" /> : null}
         {saving ? "Saving…" : "Log check-in"}
       </button>
 

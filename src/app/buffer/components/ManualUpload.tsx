@@ -48,7 +48,7 @@ export default function ManualUpload({ onComplete }: { onComplete: () => void })
       try { body = JSON.parse(xhr.responseText); } catch { /* non-JSON */ }
       if (xhr.status === 200) {
         setStatus('success');
-        setMessage(`In memory — packet ${String(body.packetId ?? '').slice(0, 8)}`);
+        setMessage(body.packetId ? `Saved to memory (packet ${String(body.packetId).slice(0, 8)}).` : 'Saved to memory.');
         setTimeout(() => { setFile(null); setStatus('idle'); onComplete(); }, 2500);
       } else if (xhr.status === 202) {
         setStatus('stalled');
@@ -56,15 +56,15 @@ export default function ManualUpload({ onComplete }: { onComplete: () => void })
       } else if (xhr.status === 401) {
         setStatus('error');
         setNeedsLogin(true);
-        setMessage('You need to sign in before ingesting data.');
+        setMessage('Your session has ended. Sign in, then upload again.');
       } else {
         setStatus('error');
-        setMessage(body.error || body.message || `Upload failed (HTTP ${xhr.status})`);
+        setMessage(body.error || body.message || `Upload failed (HTTP ${xhr.status}). Try again, or use a smaller file.`);
       }
     };
     xhr.onerror = () => {
       setStatus('error');
-      setMessage('Network error — upload did not reach the server.');
+      setMessage('Network error: the upload did not reach the server. Check your connection and try again.');
     };
     xhr.send(form);
   };
@@ -74,74 +74,74 @@ export default function ManualUpload({ onComplete }: { onComplete: () => void })
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xs font-bold uppercase tracking-widest text-text-tertiary">Upload to memory</h2>
-        {uploading && <Loader2 size={14} className="animate-spin text-text-tertiary" />}
+        <h3 className="text-2xs font-semibold uppercase tracking-widest text-text-tertiary">Upload to memory</h3>
+        {uploading && <Loader2 size={14} aria-hidden="true" className="motion-safe:animate-spin text-text-tertiary" />}
       </div>
 
       {!file ? (
-        <div className="border-2 border-dashed border-border-primary rounded-xl p-8 flex flex-col items-center justify-center gap-3 hover:border-accent/50 hover:bg-accent/5 transition-all cursor-pointer relative group">
+        <div className="border-2 border-dashed border-border-primary rounded-xl p-8 flex flex-col items-center justify-center gap-3 hover:border-accent/50 hover:bg-accent/5 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent transition-colors cursor-pointer relative group">
           <input
             type="file"
             aria-label="Choose a file to upload to memory"
             aria-describedby={status === 'error' ? 'upload-msg' : undefined}
             accept=".pdf,.txt,.md,.html,.htm,.json,.csv"
-            className="absolute inset-0 opacity-0 cursor-pointer focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent rounded-xl"
+            className="absolute inset-0 h-full w-full opacity-0 cursor-pointer rounded-xl"
             onChange={handleFileChange}
           />
-          <div className="w-11 h-11 rounded-full bg-secondary border border-border-secondary flex items-center justify-center text-text-tertiary group-hover:scale-110 transition-transform">
-            <Upload size={20} />
+          <div className="w-11 h-11 rounded-full bg-secondary border border-border-secondary flex items-center justify-center text-text-tertiary motion-safe:group-hover:scale-110 motion-safe:transition-transform">
+            <Upload size={20} aria-hidden="true" />
           </div>
           <div className="text-center">
             <p className="text-sm text-text-primary font-medium">Drop a file or click to select</p>
-            <p className="text-2xs text-text-tertiary mt-1">PDF, text, Markdown, HTML — parsed straight into memory</p>
+            <p className="text-xs text-text-tertiary mt-1">PDF, text, Markdown, HTML, JSON or CSV. Parsed straight into memory.</p>
           </div>
         </div>
       ) : (
         <div className="space-y-3">
           <div className="flex items-center justify-between p-3 rounded-xl bg-secondary border border-border-secondary">
             <div className="flex items-center gap-3 min-w-0">
-              <Upload size={16} className="text-accent shrink-0" />
+              <Upload size={16} aria-hidden="true" className="text-accent shrink-0" />
               <div className="min-w-0">
                 <p className="text-sm text-text-primary font-medium truncate">{file.name}</p>
-                <p className="text-2xs text-text-tertiary">{(file.size / 1024).toFixed(0)} KB</p>
+                <p className="text-xs text-text-tertiary">{(file.size / 1024).toFixed(0)} KB</p>
               </div>
             </div>
             {!uploading && (
-              <button type="button" aria-label="Remove selected file" onClick={() => { setFile(null); setStatus('idle'); setMessage(null); }} className="p-1.5 hover:bg-bg-secondary rounded-full text-text-tertiary shrink-0">
-                <X size={15} />
+              <button type="button" aria-label="Remove selected file" onClick={() => { setFile(null); setStatus('idle'); setMessage(null); }} className="inline-flex h-11 w-11 items-center justify-center hover:bg-bg-tertiary rounded-full text-text-tertiary shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                <X size={15} aria-hidden="true" />
               </button>
             )}
           </div>
 
           {uploading && (
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-2xs font-bold text-text-tertiary">
+              <div className="flex items-center justify-between text-xs font-medium text-text-tertiary">
                 <span>Uploading…</span>
                 <span>{progress}%</span>
               </div>
               <div role="progressbar" aria-label="Upload progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
-                <div className="h-full bg-accent transition-all duration-200" style={{ width: `${progress}%` }} />
+                <div className="h-full bg-accent motion-safe:transition-all motion-safe:duration-200" style={{ width: `${progress}%` }} />
               </div>
             </div>
           )}
 
           {status === 'success' && (
             <p role="status" className="flex items-center gap-2 text-xs text-success font-medium">
-              <Check size={14} /> {message}
+              <Check size={14} aria-hidden="true" /> {message}
             </p>
           )}
           {status === 'stalled' && (
             <p role="status" className="flex items-center gap-2 text-xs text-warning font-medium">
-              <AlertCircle size={14} /> {message}
+              <AlertCircle size={14} aria-hidden="true" /> {message}
             </p>
           )}
           {status === 'error' && (
             <div id="upload-msg" role="alert" className="flex items-start gap-2 text-xs text-danger font-medium">
-              <AlertCircle size={14} className="shrink-0 mt-0.5" />
+              <AlertCircle size={14} aria-hidden="true" className="shrink-0 mt-0.5" />
               <span>
                 {message}{' '}
                 {needsLogin && (
-                  <Link href="/login?next=/buffer" className="underline font-bold">Sign in</Link>
+                  <Link href="/login?next=/buffer" className="underline font-semibold inline-flex items-center min-h-[44px]">Sign in</Link>
                 )}
               </span>
             </div>
@@ -149,8 +149,9 @@ export default function ManualUpload({ onComplete }: { onComplete: () => void })
 
           {status === 'idle' && (
             <button
+              type="button"
               onClick={startUpload}
-              className="w-full py-2.5 rounded-xl bg-text-primary text-bg-primary text-sm font-bold hover:bg-text-secondary transition-colors"
+              className="w-full min-h-[44px] py-2.5 rounded-xl bg-text-primary text-bg-primary text-sm font-semibold hover:bg-text-secondary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
             >
               Ingest into memory
             </button>

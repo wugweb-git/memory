@@ -101,7 +101,7 @@ export default function PublicNotesPage() {
 
   return (
     <>
-      <div className="max-w-3xl mx-auto px-4">
+      <div>
         <M3Page title="Public notes" subtitle="Choose which memory notes the public Ask chat may quote. Owner only.">
           <p className="text-sm">
             <Link href="/admin" className="text-accent underline underline-offset-2">Back to admin</Link>

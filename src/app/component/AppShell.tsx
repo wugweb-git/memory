@@ -25,11 +25,21 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerRef = useRef<HTMLElement | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
+  const mainRef = useRef<HTMLElement | null>(null);
+  const skipFocusReturn = useRef(false);
+  const firstRoute = useRef(true);
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
-  // Close the drawer when the route changes.
+  // On route change: close the drawer (without pulling focus back to the menu button) and move
+  // focus to <main> so keyboard and screen-reader users land on the new page, not the old link.
   useEffect(() => {
+    if (firstRoute.current) {
+      firstRoute.current = false;
+      return;
+    }
+    skipFocusReturn.current = true;
     setDrawerOpen(false);
+    mainRef.current?.focus({ preventScroll: true });
   }, [pathname]);
 
   // Drawer behaves as a modal dialog: focus moves in, Tab is trapped, Esc closes,
@@ -71,7 +81,8 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
     return () => {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = prevOverflow;
-      opener?.focus();
+      if (skipFocusReturn.current) skipFocusReturn.current = false;
+      else opener?.focus();
     };
   }, [drawerOpen]);
 
@@ -118,7 +129,7 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
     <nav aria-label={label} className="flex-1 overflow-y-auto py-4 px-3 custom-scrollbar">
       {navGroups.map((group) => (
         <div key={group.group} className="mb-5">
-          <p className="text-2xs font-black text-text-tertiary uppercase tracking-[0.3em] px-3 mb-1.5">
+          <p className="text-2xs font-black text-text-tertiary uppercase tracking-widest px-3 mb-1.5">
             {group.group}
           </p>
           {group.items.map(({ href, label, icon: Icon }) => {
@@ -149,11 +160,11 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
     <>
       <div className="h-14 flex items-center gap-3 px-5 border-b border-border-secondary shrink-0">
         <div className="w-7 h-7 rounded-xl bg-text-primary flex items-center justify-center shadow-lg">
-          <Command size={14} className="text-bg-primary" />
+          <Command size={14} aria-hidden="true" className="text-bg-primary" />
         </div>
         <div>
           <span className="text-sm font-black text-text-primary tracking-tight ">{APP_BRAND.name}</span>
-          <div className="flex items-center gap-1 mt-0.5" role="status">
+          <div className="flex items-center gap-1 mt-0.5">
             <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" aria-hidden="true" />
             <span className="text-2xs font-bold text-text-tertiary uppercase tracking-widest">{APP_BRAND.statusLabel}</span>
           </div>
@@ -165,7 +176,7 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
       <div className="px-4 py-3 border-t border-border-secondary space-y-2">
         {SIDEBAR_STATS.map((s) => (
           <div key={s.label} className="flex items-center gap-2.5">
-            <span className={`w-1.5 h-1.5 rounded-full ${s.colorClass === 'text-accent' ? 'bg-accent' : 'bg-success'}`} />
+            <span aria-hidden="true" className={`w-1.5 h-1.5 rounded-full ${s.colorClass === 'text-accent' ? 'bg-accent' : 'bg-success'}`} />
             <span className="text-2xs text-text-tertiary flex-1 font-mono">{s.label}</span>
             <span className="text-2xs font-bold text-text-secondary font-mono">{s.value}</span>
           </div>
@@ -175,7 +186,7 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
       <div className="px-3 py-3 border-t border-border-secondary space-y-1">
         {view.state === 'loading' && (
           <div className="flex items-center gap-3 p-2.5 min-h-[44px]" role="status" aria-busy="true" aria-label="Checking session">
-            <div className="w-8 h-8 rounded-full bg-secondary animate-pulse" />
+            <div aria-hidden="true" className="w-8 h-8 rounded-full bg-secondary animate-pulse" />
             <div className="flex-1 space-y-1.5">
               <div className="h-2.5 w-24 rounded bg-secondary animate-pulse" />
               <div className="h-2 w-14 rounded bg-secondary animate-pulse" />
@@ -303,6 +314,7 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
 
       {/* Content */}
       <main
+        ref={mainRef}
         id="main-content"
         tabIndex={-1}
         className={`md:pl-60 pt-[calc(3.5rem+env(safe-area-inset-top))] focus:outline-none ${

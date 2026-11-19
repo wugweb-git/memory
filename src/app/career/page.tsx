@@ -112,18 +112,17 @@ export default function CareerPage() {
     if (!confirm(`Remove "${s.title}" from your career tree?`)) return;
     try {
       await apiRequest(`${profilePath(HANDLE, "sections")}?sectionId=${encodeURIComponent(s.id)}`, { method: "DELETE" });
-      toast.success("Removed");
+      toast.success("Role removed from your career tree");
       await load();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Remove failed");
+      toast.error(e instanceof Error ? e.message : "Could not remove this role. Try again.");
     }
   }
 
   return (
     <AppShell>
       <AppToastContainer position="top-center" theme="light" />
-      <div className="max-w-3xl mx-auto px-4 pb-24">
-        <M3Page title="Career" subtitle="Your career tree, applications and opportunities — the tree feeds your public profile">
+      <M3Page title="Career" subtitle="Your career tree, applications and opportunities. The tree feeds your public profile.">
           <M3Card
             title="Career tree"
             action={
@@ -151,21 +150,21 @@ export default function CareerPage() {
               <M3State state="loading" message="Loading your career tree…" />
             ) : loadFailed ? (
               <div>
-                <M3State state="error" message="Could not load your career tree." />
+                <M3State state="error" message="Could not load your career tree. Check your connection, then try again." />
                 <button type="button" onClick={load} className="mt-2 min-h-[44px] px-3 rounded-xl border border-border-primary text-sm font-medium text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">Try again</button>
               </div>
             ) : sections.length === 0 ? (
-              <M3State state="empty" message="No roles yet. Add your first — it renders on your public profile." />
+              <M3State state="empty" message="No roles yet. Add your first role and it appears on your public profile." />
             ) : (
               <ol className="relative border-l border-border-secondary ml-1.5 space-y-4">
                 {sections.map((s) => {
                   const c = s.content ?? {};
                   return (
                     <li key={s.id} className="ml-5">
-                      <span className="absolute -left-[5.5px] mt-1.5 h-2.5 w-2.5 rounded-full bg-accent border-2 border-bg-elevated" />
+                      <span aria-hidden="true" className="absolute -left-[5.5px] mt-1.5 h-2.5 w-2.5 rounded-full bg-accent border-2 border-bg-elevated" />
                       <div className="flex flex-wrap items-baseline justify-between gap-x-3">
                         <p className="text-base font-semibold text-text-primary">{s.title}</p>
-                        <span className="text-xs text-text-tertiary">{String(c.date ?? "")}</span>
+                        {c.date ? <span className="text-xs text-text-tertiary">{String(c.date)}</span> : null}
                       </div>
                       {c.company ? <p className="text-sm text-text-tertiary">{String(c.company)}</p> : null}
                       {c.originalLogic ? <p className="text-sm text-text-secondary mt-1 line-clamp-2">{String(c.originalLogic)}</p> : null}
@@ -189,8 +188,7 @@ export default function CareerPage() {
               <JobSearchAgent />
             </div>
           </div>
-        </M3Page>
-      </div>
+      </M3Page>
     </AppShell>
   );
 }

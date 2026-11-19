@@ -19,58 +19,67 @@ interface SignalTimelineProps {
 
 export function SignalTimeline({ signals, loading }: SignalTimelineProps) {
   if (loading) {
-    return <div className="h-32 bg-bg-secondary animate-pulse rounded-lg border border-border-secondary" />;
+    return (
+      <div role="status" aria-label="Loading signals" className="h-32 bg-bg-secondary animate-pulse motion-reduce:animate-none rounded-lg border border-border-secondary" />
+    );
   }
 
   if (!signals || signals.length === 0) {
     return (
-      <div className="h-32 flex flex-col items-center justify-center border border-dashed border-border-secondary rounded-lg text-text-tertiary bg-bg-primary/40">
-        <HelpCircle className="w-6 h-6 mb-2 opacity-20" />
-        <p className="text-2xs uppercase tracking-widest">No signals interpreted</p>
+      <div className="h-32 flex flex-col items-center justify-center border border-dashed border-border-secondary rounded-lg text-text-tertiary bg-bg-primary px-4 text-center">
+        <HelpCircle aria-hidden="true" className="w-6 h-6 mb-2 opacity-40" />
+        <p className="text-sm">No signals interpreted yet.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-bg-secondary border border-border-secondary rounded-xl overflow-hidden shadow-2xl">
-      <div className="py-3 px-4 border-b border-border-secondary bg-bg-secondary">
-        <h2 className="text-2xs font-bold uppercase tracking-[0.2em] flex items-center gap-2 text-text-tertiary">
-          <Zap className="w-3 h-3 text-warning" />
-          Signal Pulse
-        </h2>
+    <section aria-labelledby="signal-timeline-title" className="bg-bg-secondary border border-border-secondary rounded-xl overflow-hidden">
+      <div className="py-3 px-4 border-b border-border-secondary">
+        <h4 id="signal-timeline-title" className="text-sm font-semibold flex items-center gap-2 text-text-secondary">
+          <Zap aria-hidden="true" className="w-4 h-4 text-warning" />
+          Signal pulse
+        </h4>
       </div>
-      <div className="divide-y divide-border-secondary max-h-[300px] overflow-y-auto">
-        {signals.map((signal) => (
-          <div key={signal.id} className="p-3 hover:bg-bg-secondary transition-colors flex items-center justify-between group">
-            <div className="flex items-center gap-3">
-              <div className={`p-1.5 rounded-full bg-bg-secondary ${
-                signal.type === 'work_activity' ? 'text-accent' :
-                signal.type === 'learning' ? 'text-accent' : 'text-text-tertiary'
-              }`}>
-                <Activity className="w-3.5 h-3.5" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-text-primary uppercase tracking-tight">{signal.category}</p>
-                <p className="text-2xs text-text-tertiary uppercase tracking-tighter font-mono">{signal.type}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <div className="flex items-center gap-1 justify-end">
-                  <TrendingUp className="w-3 h-3 text-success opacity-50" />
-                  <span className="text-xs font-mono text-success">{(signal.intensity_absolute / 5 * 10).toFixed(1)}</span>
+      <ul
+        tabIndex={0}
+        aria-label="Interpreted signals, newest first"
+        className="divide-y divide-border-secondary max-h-[300px] overflow-y-auto"
+      >
+        {signals.map((signal) => {
+          const relative = (signal.intensity_absolute / 5 * 10).toFixed(1);
+          const conf = Math.round(signal.confidence * 100);
+          return (
+            <li key={signal.id} className="p-3 hover:bg-bg-tertiary transition-colors flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={`p-1.5 rounded-full bg-bg-tertiary ${
+                  signal.type === 'work_activity' || signal.type === 'learning' ? 'text-accent' : 'text-text-tertiary'
+                }`}>
+                  <Activity aria-hidden="true" className="w-4 h-4" />
                 </div>
-                <p className="text-2xs text-text-tertiary uppercase font-bold">Rel. Intensity</p>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-text-primary break-words">{signal.category}</p>
+                  <p className="text-2xs text-text-tertiary font-mono break-words">{signal.type}</p>
+                </div>
               </div>
-              
-              <div className="px-2 py-0.5 rounded-full bg-bg-secondary border border-border-secondary text-2xs text-text-tertiary font-bold tracking-widest uppercase">
-                {Math.round(signal.confidence * 100)}% Conf
+
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <div className="flex items-center gap-1 justify-end">
+                    <TrendingUp aria-hidden="true" className="w-3 h-3 text-success" />
+                    <span className="text-xs font-mono text-success">{relative}</span>
+                  </div>
+                  <p className="text-2xs text-text-tertiary">Relative intensity</p>
+                </div>
+
+                <span className="px-2 py-0.5 rounded-full bg-bg-secondary border border-border-secondary text-2xs text-text-tertiary font-semibold">
+                  {conf}% confidence
+                </span>
               </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }

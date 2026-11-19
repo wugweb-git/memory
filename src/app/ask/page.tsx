@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, MoreVertical, SendHorizontal, Square } from 'lucide-react';
+import { ArrowLeft, Check, Copy, MoreVertical, SendHorizontal, Square } from 'lucide-react';
 import type { UIMessage } from 'ai';
 import { usePrismChat } from '@/hooks/usePrismChat';
 import { UI_API } from '@/lib/api/endpoints';
@@ -30,7 +30,13 @@ const STARTER_QUESTIONS: readonly string[] = [
 const FIRST_NAME = IDENTITY_CONFIG.DISPLAY_NAME.split(' ')[0];
 const LINE_HEIGHT_PX = 24; // matches leading-6 on the textarea
 const TEXTAREA_PADDING_PX = 16; // py-2 top and bottom
-const FALLBACK_ERROR = 'Could not get an answer. Try again.';
+const FALLBACK_ERROR = 'Could not get an answer. Check your connection and try again.';
+const RATE_LIMIT_ERROR = 'Too many questions in a short time. Wait a minute, then try again.';
+
+function errorMessage(error: Error | undefined): string {
+  const text = error?.message ?? '';
+  return /429|rate limit/i.test(text) ? RATE_LIMIT_ERROR : FALLBACK_ERROR;
+}
 
 function messageText(message: UIMessage): string {
   return message.parts
@@ -76,6 +82,35 @@ function Avatar() {
   );
 }
 
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current);
+  }, []);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      className="inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-2xs font-medium text-text-secondary hover:bg-bg-secondary hover:text-text-primary md:min-h-6 md:px-2"
+    >
+      {copied ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
+      <span>{copied ? 'Copied' : 'Copy answer'}</span>
+      <span role="status" className="sr-only">{copied ? 'Answer copied to clipboard' : ''}</span>
+    </button>
+  );
+}
+
 function TypingDots() {
   return (
     <div role="status" aria-label={`${FIRST_NAME} is replying`} className="flex justify-start">
@@ -97,12 +132,13 @@ export default function AskPage() {
   const [input, setInput] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
-  const { messages, sendMessage, status, setMessages, stop, regenerate, clearError } = usePrismChat(UI_API.chat);
+  const { messages, sendMessage, status, setMessages, stop, regenerate, clearError, error } = usePrismChat(UI_API.chat);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const nearBottomRef = useRef(true);
   const stamps = useRef(createTimestampStore());
 
@@ -147,6 +183,11 @@ export default function AskPage() {
     ta.style.height = `${clampTextareaHeight(ta.scrollHeight, LINE_HEIGHT_PX, 4, TEXTAREA_PADDING_PX)}px`;
   }, [input]);
 
+  // Move focus into the menu when it opens.
+  useEffect(() => {
+    if (menuOpen) menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]:not(:disabled)')?.focus();
+  }, [menuOpen]);
+
   // Close the overflow menu on outside click or Escape.
   useEffect(() => {
     if (!menuOpen) return;
@@ -154,7 +195,10 @@ export default function AskPage() {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMenuOpen(false);
+      if (e.key === 'Escape') {
+        setMenuOpen(false);
+        menuButtonRef.current?.focus();
+      }
     };
     document.addEventListener('mousedown', onDown);
     document.addEventListener('touchstart', onDown);
@@ -240,23 +284,24 @@ export default function AskPage() {
         <Link
           href={profileHref}
           aria-label={`Back to ${FIRST_NAME}'s profile`}
-          className="min-h-11 min-w-11 flex items-center justify-center rounded-full text-text-secondary hover:text-text-primary"
+          className="min-h-11 min-w-11 flex items-center justify-center rounded-full text-text-secondary hover:bg-bg-secondary hover:text-text-primary"
         >
           <ArrowLeft size={22} aria-hidden="true" />
         </Link>
         <Avatar />
         <div className="min-w-0 flex-1 py-2">
           <h1 className="text-base font-semibold leading-tight truncate">{IDENTITY_CONFIG.DISPLAY_NAME}</h1>
-          <p className="text-xs text-text-tertiary leading-tight truncate">{`Ask about ${FIRST_NAME}'s work`}</p>
+          <p className="text-xs text-text-secondary leading-tight truncate">{`Ask about ${FIRST_NAME}'s work`}</p>
         </div>
         <div className="relative" ref={menuRef}>
           <button
+            ref={menuButtonRef}
             type="button"
             aria-label="More options"
             aria-haspopup="menu"
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((v) => !v)}
-            className="min-h-11 min-w-11 flex items-center justify-center rounded-full text-text-secondary hover:text-text-primary"
+            className="min-h-11 min-w-11 flex items-center justify-center rounded-full text-text-secondary hover:bg-bg-secondary hover:text-text-primary"
           >
             <MoreVertical size={22} aria-hidden="true" />
           </button>
@@ -292,9 +337,8 @@ export default function AskPage() {
       >
         {rows.length === 0 && !hasError ? (
           <div className="flex min-h-full flex-col items-center justify-center gap-4 text-center">
-            <p className="max-w-xs text-sm text-text-tertiary">
-              {`Ask a question about ${FIRST_NAME}'s work. Pick one to start.`}
-            </p>
+            <h2 className="max-w-xs text-lg font-semibold text-text-primary">{`Ask anything about ${FIRST_NAME}'s work`}</h2>
+            <p className="max-w-xs text-sm text-text-secondary">Pick a question to start, or type your own below.</p>
             <div className="flex w-full max-w-sm flex-col gap-2">
               {STARTER_QUESTIONS.map((q) => (
                 <button
@@ -324,9 +368,10 @@ export default function AskPage() {
                   >
                     {r.text}
                   </div>
-                  <span className="mt-1 px-1 text-2xs text-text-tertiary">
+                  <span className="mt-1 flex items-center gap-1 px-1 text-2xs text-text-secondary">
                     <span className="sr-only">{mine ? 'You, ' : `${FIRST_NAME}, `}</span>
                     {r.time}
+                    {!mine && !(isLoading && r.id === lastMessage?.id) && <CopyButton text={r.text} />}
                   </span>
                 </li>
               );
@@ -339,14 +384,14 @@ export default function AskPage() {
             {hasError && (
               <li role="alert" className="flex flex-col items-start gap-2">
                 <div className="max-w-[85%] rounded-2xl rounded-bl-md border border-danger bg-bg-elevated px-3.5 py-2 text-base text-text-primary">
-                  {FALLBACK_ERROR}
+                  {errorMessage(error)}
                 </div>
                 <button
                   type="button"
                   onClick={retry}
                   className="min-h-11 rounded-full border border-border-primary bg-bg-elevated px-4 text-sm font-medium text-text-primary hover:bg-bg-secondary"
                 >
-                  Retry
+                  Try again
                 </button>
               </li>
             )}
@@ -377,7 +422,7 @@ export default function AskPage() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder="Type a question"
-            className="min-h-11 flex-1 resize-none rounded-2xl border border-border-primary bg-bg-primary px-4 py-2 text-base leading-6 text-text-primary placeholder:text-text-tertiary"
+            className="min-h-11 flex-1 resize-none rounded-2xl border border-border-primary bg-bg-primary px-4 py-2 text-base leading-6 text-text-primary placeholder:text-text-secondary"
           />
           {isLoading && stop ? (
             <button
@@ -392,15 +437,15 @@ export default function AskPage() {
             <button
               type="submit"
               disabled={!canSend}
-              aria-label="Send"
+              aria-label="Send question"
               className="h-11 w-11 shrink-0 rounded-full bg-text-primary text-bg-primary flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <SendHorizontal size={20} aria-hidden="true" />
             </button>
           )}
         </form>
-        <p className="mx-auto mt-1.5 max-w-2xl text-center text-2xs text-text-tertiary">
-          {`Answers are generated from ${FIRST_NAME}'s notes and may be wrong.`}
+        <p className="mx-auto mt-1.5 max-w-2xl text-center text-2xs text-text-secondary">
+          {`Answers are generated from ${FIRST_NAME}'s notes and can be wrong. Check anything important.`}
         </p>
       </div>
 
@@ -412,7 +457,7 @@ export default function AskPage() {
         <h2 id="clear-title" className="text-lg font-semibold">
           Clear this chat?
         </h2>
-        <p className="mt-1 text-sm text-text-tertiary">This removes every message from this screen.</p>
+        <p className="mt-1 text-sm text-text-secondary">This removes every message from this screen. It cannot be undone.</p>
         <div className="mt-4 flex justify-end gap-2">
           <button
             type="button"

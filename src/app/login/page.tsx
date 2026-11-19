@@ -49,7 +49,7 @@ function LoginForm() {
       window.location.assign(safeNext);
     } catch (err: unknown) {
       setStatus('');
-      setError(err instanceof Error ? err.message : 'Biometric sign-in failed');
+      setError(err instanceof Error ? err.message : 'Biometric sign-in failed. Use your email and password instead.');
       setBioBusy(false);
     }
   }
@@ -81,13 +81,13 @@ function LoginForm() {
         body: JSON.stringify({ email, password, remember }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.error || `Login failed (${res.status})`);
+      if (!res.ok) throw new Error(data?.error || `Sign-in failed (${res.status}). Check your email and password, then try again.`);
       haptic('success');
       // Hard navigation so the fresh session cookie is sent and the dashboard
       // (and PWA shell) loads with it.
       window.location.assign(safeNext);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(err instanceof Error ? err.message : 'Sign-in failed. Check your connection and try again.');
       setBusy(false);
     }
   }
@@ -96,10 +96,10 @@ function LoginForm() {
     setBusy(true);
     try {
       const res = await fetch(UI_API.authLogout, { method: 'POST', credentials: 'include' });
-      if (!res.ok) throw new Error('Log out failed');
+      if (!res.ok) throw new Error('Log out failed. Try again.');
       setUser(null);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Log out failed');
+      setError(err instanceof Error ? err.message : 'Log out failed. Try again.');
     } finally {
       setBusy(false);
     }
@@ -109,14 +109,15 @@ function LoginForm() {
     <main className="min-h-dvh-fallback flex items-center justify-center px-5">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-black tracking-tight text-text-primary">{APP_BRAND.name}</h1>
-          <p className="text-sm text-text-tertiary mt-1">Sign in to manage your prism</p>
+          <h1 className="text-2xl font-bold tracking-tight text-text-primary">{APP_BRAND.name}</h1>
+          <p className="text-sm text-text-tertiary mt-1">Sign in to your private workspace</p>
         </div>
 
         <div className="rounded-3xl bg-bg-elevated border border-border-secondary shadow-sm p-6">
           {checking ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="animate-spin text-text-disabled" size={22} aria-label="Checking session" role="img" />
+            <div role="status" className="flex flex-col items-center gap-2 py-8">
+              <Loader2 className="animate-spin text-text-disabled" size={22} aria-hidden="true" />
+              <span className="text-sm text-text-tertiary">Checking your session…</span>
             </div>
           ) : user ? (
             <div className="space-y-4 text-center">
@@ -136,7 +137,7 @@ function LoginForm() {
                   disabled={busy}
                   className="inline-flex min-h-11 items-center gap-1.5 px-4 rounded-xl border border-border-primary text-sm font-bold text-text-secondary disabled:opacity-50"
                 >
-                  <LogOut size={14} /> Log out
+                  <LogOut size={14} aria-hidden="true" /> Log out
                 </button>
               </div>
               {user.role !== 'admin' && (
@@ -157,8 +158,8 @@ function LoginForm() {
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
-                className="w-full min-h-11 rounded-2xl border border-border-primary p-3 text-base"
-                aria-label="Email" placeholder="Email"
+                className="w-full min-h-11 rounded-2xl border border-border-primary bg-bg-primary p-3 text-md text-text-primary placeholder:text-text-tertiary"
+                placeholder="Email"
                 aria-required="true"
                 aria-invalid={error ? true : undefined}
                 aria-describedby={error ? 'login-error' : undefined}
@@ -172,8 +173,8 @@ function LoginForm() {
                 required
                 autoComplete="current-password"
                 enterKeyHint="go"
-                className="w-full min-h-11 rounded-2xl border border-border-primary p-3 text-base"
-                aria-label="Password" placeholder="Password"
+                className="w-full min-h-11 rounded-2xl border border-border-primary bg-bg-primary p-3 text-md text-text-primary placeholder:text-text-tertiary"
+                placeholder="Password"
                 aria-required="true"
                 aria-invalid={error ? true : undefined}
                 aria-describedby={error ? 'login-error' : undefined}
@@ -209,14 +210,14 @@ function LoginForm() {
                   {bioBusy ? 'Waiting for your device…' : 'Sign in with Face ID or fingerprint'}
                 </button>
               ) : (
-                <p className="text-2xs text-text-tertiary text-center">Set up biometrics after you sign in</p>
+                <p className="text-xs text-text-tertiary text-center">You can add Face ID or fingerprint sign-in from System after you sign in.</p>
               )}
             </form>
           )}
         </div>
 
         <p className="text-2xs text-text-tertiary text-center mt-6">
-          <Link href="/console" className="inline-flex min-h-11 items-center hover:text-text-tertiary">Back to console</Link>
+          <Link href="/console" className="inline-flex min-h-11 items-center hover:text-text-primary">Back to console</Link>
         </p>
       </div>
     </main>

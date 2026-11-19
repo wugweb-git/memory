@@ -50,7 +50,7 @@ export const HistoryTab: React.FC = () => {
       {items === null ? <SkeletonCard label="Loading timeline" /> : null}
 
       {items && items.length === 0 ? (
-        <EmptyState icon={<History size={28} strokeWidth={1.5} />} title="No runs yet" hint="Use Decide, Evaluate or Rank and each run will show up here." />
+        <EmptyState icon={<History size={28} strokeWidth={1.5} aria-hidden="true" />} title="No runs yet" hint="Use Decide, Evaluate or Rank and each run will show up here." />
       ) : null}
 
       {items && items.length > 0 ? (
@@ -64,7 +64,7 @@ export const HistoryTab: React.FC = () => {
             const conf = typeof h.confidence === 'number' ? Math.round(h.confidence * 100) : null;
             return (
               <li key={h.id} className="pl-5 relative">
-                <span className={`absolute -left-[6px] top-4 w-2.5 h-2.5 rounded-full ring-2 ring-bg-primary ${FEEDBACK_DOT[h.lastFeedback] ?? 'bg-accent'}`} />
+                <span aria-hidden="true" className={`absolute -left-[6px] top-4 w-2.5 h-2.5 rounded-full ring-2 ring-bg-primary ${FEEDBACK_DOT[h.lastFeedback] ?? 'bg-accent'}`} />
                 {showDay ? <p className="text-2xs font-semibold text-text-tertiary uppercase tracking-widest mb-2">{dayLabel(h.createdAt)}</p> : null}
                 <div className="rounded-2xl border border-border-secondary bg-bg-elevated overflow-hidden">
                   <button
@@ -82,7 +82,7 @@ export const HistoryTab: React.FC = () => {
                         {h.lastFeedback ? ` · ${h.lastFeedback}` : ''}
                       </p>
                     </div>
-                    <ChevronDown size={16} className={`text-text-tertiary shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown size={16} aria-hidden="true" className={`text-text-tertiary shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                   </button>
                   {isOpen ? (
                     <div className="px-4 pb-4 pt-3 space-y-3 border-t border-border-secondary">
@@ -108,8 +108,8 @@ export const HistoryTab: React.FC = () => {
       ) : null}
 
       {items && items.length > 0 ? (
-        <button type="button" onClick={load} className="w-full min-h-11 text-xs font-semibold text-text-secondary flex items-center justify-center gap-2">
-          <RefreshCw size={13} /> Refresh
+        <button type="button" onClick={load} className="w-full min-h-11 text-xs font-semibold text-text-secondary hover:text-text-primary flex items-center justify-center gap-2">
+          <RefreshCw size={13} aria-hidden="true" /> Refresh history
         </button>
       ) : null}
     </div>
