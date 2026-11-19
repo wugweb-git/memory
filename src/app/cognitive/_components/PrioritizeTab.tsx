@@ -48,7 +48,7 @@ export const PrioritizeTab: React.FC<{ mode: Mode }> = ({ mode }) => {
           onChange={e => setText(e.target.value)}
           rows={6}
           placeholder={'Reply to client proposal\nFix onboarding bug\nWrite weekly update'}
-          className="w-full rounded-xl border border-border-secondary bg-bg-elevated px-4 py-3 text-sm text-text-primary placeholder:text-text-disabled focus:outline-none focus:border-accent resize-y"
+          className="w-full rounded-xl border border-border-secondary bg-bg-elevated px-4 py-3 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent resize-y"
         />
         <p className={`text-xs ${tooMany ? 'text-danger' : 'text-text-tertiary'}`}>
           {items.length} of {MAX_ITEMS} items{tooMany ? ' (remove some to continue)' : ''}
@@ -74,7 +74,7 @@ export const PrioritizeTab: React.FC<{ mode: Mode }> = ({ mode }) => {
             <ol className="space-y-3">
               {ranked.map((r, i) => (
                 <li key={i} className={`rounded-2xl border p-4 flex gap-4 ${i === 0 ? 'border-accent/30 bg-accent/5' : 'border-border-secondary bg-bg-elevated'}`}>
-                  <span className={`text-3xl font-semibold leading-none w-8 shrink-0 ${i === 0 ? 'text-accent' : 'text-text-disabled'}`}>{r.rank ?? i + 1}</span>
+                  <span className={`text-3xl font-semibold leading-none w-8 shrink-0 ${i === 0 ? 'text-accent' : 'text-text-tertiary'}`}>{r.rank ?? i + 1}</span>
                   <div className="space-y-2 min-w-0">
                     <p className="text-sm font-semibold text-text-primary">{r.item}</p>
                     <p className="text-sm text-text-tertiary">{r.reason}</p>

@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
+import { AppToastContainer } from "@/app/component/AppToastContainer";
 import 'react-toastify/dist/ReactToastify.css';
 import {
   Code2, FileText, Video, BookOpen, Share2, Palette, File as FileIcon,
@@ -165,7 +166,7 @@ export default function IntegrationsPage() {
       return <Link href="/buffer" className={`${PILL} text-accent hover:bg-bg-tertiary`}>Capture</Link>;
     }
     if (!c.configured) {
-      return <span className={`${PILL} text-text-disabled`}>{c.kind === 'oauth' ? 'Connect' : 'Needs setup'}</span>;
+      return <span className={`${PILL} text-text-tertiary`}>{c.kind === 'oauth' ? 'Connect' : 'Needs setup'}</span>;
     }
     if (!isReady(c) && c.authStartPath) {
       return <a href={c.authStartPath} className={`${PILL} text-accent hover:bg-bg-tertiary`}>Connect</a>;
@@ -184,7 +185,7 @@ export default function IntegrationsPage() {
 
   return (
     <AppShell>
-      <ToastContainer position="bottom-right" theme="light" />
+      <AppToastContainer position="bottom-right" theme="light" />
       <div className="max-w-3xl mx-auto px-4">
         <M3Page title="Integrations" subtitle="Every source that feeds your memory — connect, sync, and watch what flows in">
           {loading ? (
@@ -210,7 +211,7 @@ export default function IntegrationsPage() {
               const items = connectors.filter(group.match);
               if (items.length === 0) return null;
               return (
-                <M3Card key={group.key} title={group.title} action={<span className="text-2xs text-text-disabled">{group.subtitle}</span>}>
+                <M3Card key={group.key} title={group.title} action={<span className="text-2xs text-text-tertiary">{group.subtitle}</span>}>
                   <ul className="space-y-2">
                     {items.map((c) => {
                       const Icon = iconFor(c);

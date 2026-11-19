@@ -94,7 +94,7 @@ export const ErrorBox: React.FC<{ message: string; onRetry?: () => void }> = ({ 
 
 export const EmptyState: React.FC<{ icon: React.ReactNode; title: string; hint: string }> = ({ icon, title, hint }) => (
   <div className="rounded-2xl border border-dashed border-border-secondary p-8 text-center space-y-2">
-    <div className="mx-auto w-fit text-text-disabled">{icon}</div>
+    <div className="mx-auto w-fit text-text-tertiary">{icon}</div>
     <p className="text-sm font-semibold text-text-secondary">{title}</p>
     <p className="text-xs text-text-tertiary">{hint}</p>
   </div>

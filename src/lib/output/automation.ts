@@ -64,19 +64,6 @@ export async function publishOutput(
     };
   }
 
-  // Distribution: apply platform-specific formatting via the platform adapters.
-  // A bad/unsupported platform is logged but does not abort the publish.
-  let payload: unknown = null;
-  let platformResult: PublishResult['platformResult'];
-  try {
-    payload = routeDistribution({ platform: output.platform, content });
-    // Thread the BUILT payload through to the platform dispatch — do not
-    // discard it and re-send raw content.
-    platformResult = await publishNow({ platform: output.platform, content, payload });
-  } catch (err) {
-    console.error('[Publish] Distribution routing failed:', err);
-  }
-
   // Direct publish to the public profile (the functional publish target today).
   let profilePublished = false;
   try {
@@ -91,6 +78,27 @@ export async function publishOutput(
   }
 
   const mode: PublishMode = profilePublished ? 'published' : 'skipped';
+
+  // Distribution: apply platform-specific formatting, then send externally.
+  // This runs AFTER the profile publish: publishContentToProfile writes the
+  // published_outputs row that the idempotency check above relies on, so a
+  // queue retry can never re-send to an external platform that already accepted
+  // the post. A bad/unsupported platform is logged but does not abort the publish.
+  let payload: unknown = null;
+  let platformResult: PublishResult['platformResult'];
+  try {
+    payload = routeDistribution({ platform: output.platform, content });
+    if (profilePublished) {
+      // Thread the BUILT payload through to the platform dispatch (not raw content).
+      platformResult = await publishNow({ platform: output.platform, content, payload });
+      if (platformResult?.status === 'error') {
+        console.error(`[Publish] External send to ${output.platform} failed for ${outputId}: ${platformResult.error}`);
+      }
+    }
+  } catch (err) {
+    console.error('[Publish] Distribution routing failed:', err);
+  }
+
 
   await postgres.outputLog.update({
     where: { id: outputId },
@@ -115,11 +123,15 @@ export async function publishOutput(
     }
   }
 
-  // Automation rules: best-effort, never blocks or fails a publish.
+  // Automation rules: best-effort; failures never fail a publish and waiting is capped at 8s.
   if (mode === 'published') {
     try {
       const { evaluateRules } = await import('@/lib/automation/rules');
-      await evaluateRules(output.userId, { type: 'output_published', platform: output.platform, content, outputId });
+      // Bounded so a slow workflow cannot stall the publishing queue past its function budget.
+      await Promise.race([
+        evaluateRules(output.userId, { type: 'output_published', platform: output.platform, content, outputId }),
+        new Promise((resolve) => setTimeout(resolve, 8_000)),
+      ]);
     } catch (err) {
       console.error('[Publish] Automation rules failed:', err);
     }

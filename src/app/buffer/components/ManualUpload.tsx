@@ -82,9 +82,10 @@ export default function ManualUpload({ onComplete }: { onComplete: () => void })
         <div className="border-2 border-dashed border-border-primary rounded-xl p-8 flex flex-col items-center justify-center gap-3 hover:border-accent/50 hover:bg-accent/5 transition-all cursor-pointer relative group">
           <input
             type="file"
-            aria-label="Choose a file to ingest"
+            aria-label="Choose a file to upload to memory"
+            aria-describedby={status === 'error' ? 'upload-msg' : undefined}
             accept=".pdf,.txt,.md,.html,.htm,.json,.csv"
-            className="absolute inset-0 opacity-0 cursor-pointer"
+            className="absolute inset-0 opacity-0 cursor-pointer focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent rounded-xl"
             onChange={handleFileChange}
           />
           <div className="w-11 h-11 rounded-full bg-secondary border border-border-secondary flex items-center justify-center text-text-tertiary group-hover:scale-110 transition-transform">
@@ -106,7 +107,7 @@ export default function ManualUpload({ onComplete }: { onComplete: () => void })
               </div>
             </div>
             {!uploading && (
-              <button aria-label="Remove file" onClick={() => { setFile(null); setStatus('idle'); setMessage(null); }} className="p-1.5 hover:bg-bg-secondary rounded-full text-text-disabled shrink-0">
+              <button type="button" aria-label="Remove selected file" onClick={() => { setFile(null); setStatus('idle'); setMessage(null); }} className="p-1.5 hover:bg-bg-secondary rounded-full text-text-tertiary shrink-0">
                 <X size={15} />
               </button>
             )}
@@ -118,24 +119,24 @@ export default function ManualUpload({ onComplete }: { onComplete: () => void })
                 <span>Uploading…</span>
                 <span>{progress}%</span>
               </div>
-              <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
+              <div role="progressbar" aria-label="Upload progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
                 <div className="h-full bg-accent transition-all duration-200" style={{ width: `${progress}%` }} />
               </div>
             </div>
           )}
 
           {status === 'success' && (
-            <p className="flex items-center gap-2 text-xs text-success font-medium">
+            <p role="status" className="flex items-center gap-2 text-xs text-success font-medium">
               <Check size={14} /> {message}
             </p>
           )}
           {status === 'stalled' && (
-            <p className="flex items-center gap-2 text-xs text-warning font-medium">
+            <p role="status" className="flex items-center gap-2 text-xs text-warning font-medium">
               <AlertCircle size={14} /> {message}
             </p>
           )}
           {status === 'error' && (
-            <div className="flex items-start gap-2 text-xs text-danger font-medium">
+            <div id="upload-msg" role="alert" className="flex items-start gap-2 text-xs text-danger font-medium">
               <AlertCircle size={14} className="shrink-0 mt-0.5" />
               <span>
                 {message}{' '}

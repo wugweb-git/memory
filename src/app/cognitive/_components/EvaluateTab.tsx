@@ -52,7 +52,7 @@ export const EvaluateTab: React.FC<{ mode: Mode }> = ({ mode }) => {
           onChange={e => setInput(e.target.value)}
           rows={7}
           placeholder="Paste the full description here…"
-          className="w-full rounded-xl border border-border-secondary bg-bg-elevated px-4 py-3 text-sm text-text-primary placeholder:text-text-disabled focus:outline-none focus:border-accent resize-y"
+          className="w-full rounded-xl border border-border-secondary bg-bg-elevated px-4 py-3 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent resize-y"
         />
         <p className="text-xs text-text-tertiary flex justify-between">
           <span>{len < MIN ? `Add at least ${MIN} characters` : 'Ready to evaluate'}</span>

@@ -183,7 +183,7 @@ export function PublicProfileView({ username }: { username: string }) {
                     <span className="absolute -left-[6.5px] mt-1.5 h-3 w-3 rounded-full bg-accent border-2 border-bg-primary" />
                     <div className="flex flex-wrap items-baseline justify-between gap-x-3">
                       <h3 className="text-base font-bold text-text-primary">{exp.title}</h3>
-                      {str(c.date) && <span className="text-2xs text-text-disabled shrink-0">{str(c.date)}</span>}
+                      {str(c.date) && <span className="text-2xs text-text-tertiary shrink-0">{str(c.date)}</span>}
                     </div>
                     {company && <p className="text-sm text-text-tertiary mt-0.5">{company}</p>}
                     {logic && <p className="text-sm text-text-secondary mt-2 max-w-prose">{logic}</p>}
@@ -224,7 +224,7 @@ export function PublicProfileView({ username }: { username: string }) {
                         {post.title}
                       </h3>
                       {str(c.date) && (
-                        <span className="text-2xs text-text-disabled shrink-0">{str(c.date)}</span>
+                        <span className="text-2xs text-text-tertiary shrink-0">{str(c.date)}</span>
                       )}
                     </div>
                     {summary && (
@@ -332,7 +332,7 @@ export function PublicProfileView({ username }: { username: string }) {
 
       {/* ── Footer ── */}
       <footer className="mt-20 pt-8 border-t border-border-secondary flex items-center justify-between gap-4">
-        <p className="text-2xs text-text-disabled">
+        <p className="text-2xs text-text-tertiary">
           {displayName} · powered by Identity Prism
         </p>
         {isOwner && (
@@ -407,7 +407,7 @@ function SanityShowcase() {
                 <p className="text-2xs text-text-tertiary mt-1.5">Client: {it.client}</p>
               )}
               {Array.isArray(it.tags) && it.tags.length > 0 && (
-                <p className="text-2xs text-text-disabled mt-3">{it.tags.slice(0, 4).join(' · ')}</p>
+                <p className="text-2xs text-text-tertiary mt-3">{it.tags.slice(0, 4).join(' · ')}</p>
               )}
             </>
           );

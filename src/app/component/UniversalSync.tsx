@@ -202,7 +202,7 @@ export const UniversalSync = () => {
                       <span className="text-2xs font-semibold text-text-primary truncate max-w-[140px] block tracking-tight">
                         {item.title}
                       </span>
-                      <span className="text-2xs font-bold text-text-disabled uppercase tracking-widest block opacity-60">
+                      <span className="text-2xs font-bold text-text-tertiary uppercase tracking-widest block">
                         {item.lastSync}
                       </span>
                     </div>

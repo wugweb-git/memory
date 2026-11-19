@@ -119,7 +119,7 @@ export const ActivityLog = () => {
                               : <Bookmark size={10} aria-hidden="true" />
                             } {signal.action}
                           </span>
-                          <span className="text-2xs text-text-disabled font-mono font-bold uppercase tracking-widest">Via {signal.source}</span>
+                          <span className="text-2xs text-text-tertiary font-mono font-bold uppercase tracking-widest">Via {signal.source}</span>
                         </div>
                         <h4 className="text-lg font-semibold text-text-primary tracking-tight group-hover:text-accent transition-colors flex items-center gap-3 group/title">
                           {signal.target} 

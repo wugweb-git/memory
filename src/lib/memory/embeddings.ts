@@ -75,7 +75,8 @@ export function getEmbeddings(): OpenAIEmbeddings {
     _instance = new OpenAIEmbeddings({
       apiKey: process.env.EMBEDDINGS_API_KEY,
       modelName: process.env.EMBEDDINGS_MODEL || LEGACY_FALLBACK_MODEL,
-      dimensions: embeddingDimensions(),
+      // No `dimensions` here: custom OpenAI-compatible providers may reject the parameter;
+      // a wrong width is caught by assertEmbeddingDimensions as a permanent failure.
       batchSize: 20,
       configuration: { baseURL: process.env.EMBEDDINGS_BASE_URL },
     });

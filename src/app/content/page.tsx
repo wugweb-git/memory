@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from "react";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
+import { AppToastContainer } from "@/app/component/AppToastContainer";
 import "react-toastify/dist/ReactToastify.css";
 import { M3Button, M3Card, M3Page, M3State } from "@/components/ui/m3";
 import { UI_API, resolveUserId } from "@/lib/ui/contracts";
@@ -258,10 +259,10 @@ export default function OutputStudioPage() {
 
   return (
     <AppShell>
-      <ToastContainer position="bottom-right" theme="light" />
+      <AppToastContainer position="bottom-right" theme="light" />
       <div className="max-w-3xl mx-auto px-4">
         <M3Page title="Output studio" subtitle="Shape what the world sees on your public profile">
-          <div className="flex gap-2">
+          <div className="flex gap-2" role="group" aria-label="Output studio sections">
             {([
               ["compose", "Compose"],
               ["live", `Live${sections.length ? ` (${sections.length})` : ""}`],
@@ -270,6 +271,7 @@ export default function OutputStudioPage() {
               <button
                 key={id}
                 aria-pressed={tab === id}
+                type="button"
                 onClick={() => setTab(id)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
                   tab === id ? "bg-text-primary text-bg-primary" : "border border-border-primary bg-bg-primary text-text-secondary"
@@ -287,7 +289,11 @@ export default function OutputStudioPage() {
                 <div className="space-y-2">
                   <input
                     className="w-full rounded-2xl border border-border-primary p-3 text-sm"
-                    aria-label="Decision ID (required)" placeholder="Decision ID (required)"
+                    aria-label="Decision ID" placeholder="Decision ID (required)"
+                    aria-required="true" required
+                    aria-invalid={error && !decisionId ? true : undefined}
+                    aria-describedby={error && !decisionId ? "compose-error" : undefined}
+                    autoComplete="off"
                     value={decisionId}
                     onChange={(e) => setDecisionId(e.target.value)}
                   />
@@ -319,7 +325,7 @@ export default function OutputStudioPage() {
                   <M3Button onClick={generate} disabled={loading || !decisionId}>
                     {loading ? "Generating…" : outputId ? "Regenerate" : "Generate"}
                   </M3Button>
-                  {error ? <M3State state="error" message={error} /> : null}
+                  {error ? <div id="compose-error" role="alert"><M3State state="error" message={error} /></div> : null}
                 </div>
               </M3Card>
 

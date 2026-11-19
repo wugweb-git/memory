@@ -30,7 +30,7 @@ export function M3Button({ children, onClick, tone = "primary", disabled = false
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`min-h-10 px-4 py-2 rounded-xl text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+      className={`min-h-11 px-4 py-2 rounded-xl text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
         tone === "primary"
           ? "bg-text-primary text-bg-primary hover:bg-accent"
           : "border border-border-primary text-text-primary bg-bg-elevated hover:bg-bg-secondary"

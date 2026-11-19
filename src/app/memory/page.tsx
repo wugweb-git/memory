@@ -163,7 +163,7 @@ export default function MemoryControlSurface() {
             <div>
               <p className="text-2xs uppercase tracking-widest text-text-tertiary font-bold mb-1">{stat.label}</p>
               <p className="text-2xl font-black tracking-tight text-text-primary">{stat.value}</p>
-              <p className="text-2xs text-text-disabled font-medium mt-1">{stat.sub}</p>
+              <p className="text-2xs text-text-tertiary font-medium mt-1">{stat.sub}</p>
             </div>
             <stat.icon size={20} className={stat.color} />
           </div>
@@ -223,7 +223,7 @@ export default function MemoryControlSurface() {
                   </button>
                 </div>
               ) : (
-                <div className="h-40 flex flex-col items-center justify-center text-text-disabled border border-dashed border-border-secondary rounded-2xl">
+                <div className="h-40 flex flex-col items-center justify-center text-text-tertiary border border-dashed border-border-secondary rounded-2xl">
                   <Database size={24} className="mb-2 opacity-40" />
                   <p className="text-xs font-bold">No packets yet</p>
                 </div>
@@ -244,7 +244,7 @@ export default function MemoryControlSurface() {
                 <div key={row.threshold} className="space-y-2">
                   <div className="flex items-center justify-between text-2xs font-bold">
                     <span className="text-text-tertiary uppercase tracking-tighter">Capacity threshold {row.threshold}%</span>
-                    <span className={row.hit ? 'text-warning' : 'text-text-disabled'}>{row.hit ? 'Triggered' : 'Ready'}</span>
+                    <span className={row.hit ? 'text-warning' : 'text-text-tertiary'}>{row.hit ? 'Triggered' : 'Ready'}</span>
                   </div>
                   <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
                     <div
@@ -296,7 +296,7 @@ export default function MemoryControlSurface() {
                 </div>
               </div>
             ) : (
-              <div className="py-12 flex flex-col items-center justify-center text-text-disabled border border-dashed border-border-secondary rounded-2xl">
+              <div className="py-12 flex flex-col items-center justify-center text-text-tertiary border border-dashed border-border-secondary rounded-2xl">
                 <Activity size={20} className="mb-2 opacity-40" />
                 <p className="text-2xs font-bold uppercase tracking-widest">Select a packet</p>
               </div>

@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
+import { AppToastContainer } from "@/app/component/AppToastContainer";
 import 'react-toastify/dist/ReactToastify.css';
 import {
   ArrowLeft, Save, Eye, Plus, Trash2, BookOpen, ExternalLink, Loader2,
@@ -87,7 +88,7 @@ export default function AdminProfilePage() {
 
   return (
     <div className="text-text-primary">
-      <ToastContainer position="bottom-right" theme="light" />
+      <AppToastContainer position="bottom-right" theme="light" />
       <header className="border-b border-border-secondary bg-bg-elevated rounded-radius-xl mb-6">
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -117,11 +118,12 @@ export default function AdminProfilePage() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
-        <div className="flex gap-2">
+        <div className="flex gap-2" role="group" aria-label="Profile sections">
           {(['basic', 'content'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
+              aria-pressed={activeTab === tab}
               className={`px-4 py-2 rounded-full text-2xs font-black uppercase tracking-widest border ${
                 activeTab === tab
                   ? 'bg-text-primary text-bg-primary border-text-primary'
@@ -146,21 +148,28 @@ export default function AdminProfilePage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <section className="glass-panel rounded-3xl border border-border-secondary p-6 space-y-4">
               <h2 className="text-xs font-black uppercase tracking-widest text-text-tertiary">Identity</h2>
-              <label className="block text-2xs font-bold uppercase text-text-tertiary">Display name</label>
+              <label htmlFor="ap-name" className="block text-2xs font-bold uppercase text-text-tertiary">Display name</label>
               <input
+                id="ap-name"
+                autoComplete="name"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 className="w-full rounded-2xl border border-border-secondary bg-bg-primary px-4 py-3 text-sm"
               />
-              <label className="block text-2xs font-bold uppercase text-text-tertiary">Bio</label>
+              <label htmlFor="ap-bio" className="block text-2xs font-bold uppercase text-text-tertiary">Bio</label>
               <textarea
+                id="ap-bio"
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 rows={4}
                 className="w-full rounded-2xl border border-border-secondary bg-bg-primary px-4 py-3 text-sm resize-none"
               />
-              <label className="block text-2xs font-bold uppercase text-text-tertiary">Avatar URL</label>
+              <label htmlFor="ap-avatar" className="block text-2xs font-bold uppercase text-text-tertiary">Avatar URL</label>
               <input
+                id="ap-avatar"
+                type="url"
+                inputMode="url"
+                autoComplete="photo"
                 value={avatarUrl}
                 onChange={(e) => setAvatarUrl(e.target.value)}
                 placeholder="https://..."
@@ -184,7 +193,7 @@ export default function AdminProfilePage() {
               />
               <h2 className="text-2xl font-black ">{displayName}</h2>
               <p className="text-sm text-text-tertiary mt-2 max-w-sm">{bio || 'No bio yet.'}</p>
-              <p className="text-2xs text-text-disabled mt-4 font-mono">
+              <p className="text-2xs text-text-tertiary mt-4 font-mono">
                 {sections.length} sections · {contentSections.length} posts
               </p>
             </section>
@@ -199,6 +208,7 @@ export default function AdminProfilePage() {
                 Posts appear on your public profile and in the workspace Published Works feed.
               </p>
               <select
+                aria-label="Post type"
                 value={newType}
                 onChange={(e) => setNewType(e.target.value as 'blog' | 'published')}
                 className="w-full rounded-2xl border border-border-secondary px-4 py-3 text-sm"
@@ -207,12 +217,15 @@ export default function AdminProfilePage() {
                 <option value="published">Published work</option>
               </select>
               <input
+                aria-label="Title"
+                autoComplete="off"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
                 placeholder="Title"
                 className="w-full rounded-2xl border border-border-secondary px-4 py-3 text-sm"
               />
               <textarea
+                aria-label="Body or excerpt"
                 value={newBody}
                 onChange={(e) => setNewBody(e.target.value)}
                 placeholder="Body / excerpt"

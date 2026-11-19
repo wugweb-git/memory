@@ -10,19 +10,20 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        primary: "var(--bg-primary)",
-        secondary: "var(--bg-secondary)",
-        tertiary: "var(--bg-tertiary)",
-        elevated: "var(--bg-elevated)",
+        primary: "rgb(var(--bg-primary-rgb) / <alpha-value>)",
+        secondary: "rgb(var(--bg-secondary-rgb) / <alpha-value>)",
+        tertiary: "rgb(var(--bg-tertiary-rgb) / <alpha-value>)",
+        elevated: "rgb(var(--bg-elevated-rgb) / <alpha-value>)",
         accent: "rgb(var(--accent) / <alpha-value>)",
-        success: "var(--success)",
-        danger: "var(--danger)",
-        warning: "var(--warning)",
+        "accent-high": "rgb(var(--accent-high-rgb) / <alpha-value>)",
+        success: "rgb(var(--success-rgb) / <alpha-value>)",
+        danger: "rgb(var(--danger-rgb) / <alpha-value>)",
+        warning: "rgb(var(--warning-rgb) / <alpha-value>)",
         text: {
-          primary: "var(--text-primary)",
-          secondary: "var(--text-secondary)",
-          tertiary: "var(--text-tertiary)",
-          disabled: "var(--text-disabled)",
+          primary: "rgb(var(--text-primary-rgb) / <alpha-value>)",
+          secondary: "rgb(var(--text-secondary-rgb) / <alpha-value>)",
+          tertiary: "rgb(var(--text-tertiary-rgb) / <alpha-value>)",
+          disabled: "rgb(var(--text-disabled-rgb) / <alpha-value>)",
         },
         border: {
           primary: "var(--border-primary)",
@@ -30,10 +31,10 @@ const config: Config = {
           active: "var(--border-active)",
         },
         bg: {
-          primary: "var(--bg-primary)",
-          secondary: "var(--bg-secondary)",
-          tertiary: "var(--bg-tertiary)",
-          elevated: "var(--bg-elevated)",
+          primary: "rgb(var(--bg-primary-rgb) / <alpha-value>)",
+          secondary: "rgb(var(--bg-secondary-rgb) / <alpha-value>)",
+          tertiary: "rgb(var(--bg-tertiary-rgb) / <alpha-value>)",
+          elevated: "rgb(var(--bg-elevated-rgb) / <alpha-value>)",
         }
       },
       fontSize: {

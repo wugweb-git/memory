@@ -240,7 +240,7 @@ export const VoiceIngestion = () => {
                 <p className="text-xs font-bold text-text-tertiary tracking-widest ">
                   {SUPPORTED ? 'Tap mic or type below' : 'Type your signal below'}
                 </p>
-                <p className="text-2xs text-text-disabled max-w-[220px] leading-relaxed">
+                <p className="text-2xs text-text-tertiary max-w-[220px] leading-relaxed">
                   Broadcast a cognitive signal to anchor it into the buffer queue.
                 </p>
               </div>
@@ -345,7 +345,7 @@ const TextInput: React.FC<{ onSubmit: (text: string) => void }> = ({ onSubmit })
         onChange={e => setVal(e.target.value)}
         placeholder="Type a cognitive signal to capture…"
         rows={2}
-        className="w-full bg-secondary/50 border border-border-primary rounded-2xl px-4 py-3 text-xs text-text-primary placeholder:text-text-disabled focus:outline-none focus:border-accent/50 transition-colors resize-none"
+        className="w-full bg-secondary/50 border border-border-primary rounded-2xl px-4 py-3 text-xs text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent/50 transition-colors resize-none"
       />
       <button
         disabled={!val.trim()}

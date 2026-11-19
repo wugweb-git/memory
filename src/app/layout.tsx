@@ -40,10 +40,10 @@ export const metadata: Metadata = {
     description: "High-fidelity Personal Operating System & Neural RAG Matrix. A professional-grade OS for semantic memory and venture mapping.",
     images: [
       {
-        url: `${IDENTITY_CONFIG.SITE_URL}/og-image.png`,
+        url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Identity Prism OS Dashboard Preview",
+        alt: "Identity Prism, a personal cognitive operating system",
       },
     ],
   },
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Identity Prism | Neural OS",
     description: "High-fidelity Personal Operating System & Neural RAG Matrix. A professional-grade OS for semantic memory and venture mapping.",
-    images: [`${IDENTITY_CONFIG.SITE_URL}/og-image.png`],
+    images: [{ url: "/og-image.png", alt: "Identity Prism, a personal cognitive operating system" }],
     creator: IDENTITY_CONFIG.X_HANDLE,
   },
   manifest: "/manifest.json",

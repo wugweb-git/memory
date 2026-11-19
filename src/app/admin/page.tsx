@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
+import { AppToastContainer } from "@/app/component/AppToastContainer";
 import 'react-toastify/dist/ReactToastify.css';
 import { M3Button, M3Card, M3Page, M3State } from '@/components/ui/m3';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
@@ -145,7 +146,7 @@ export default function AdminConsole() {
 
   return (
     <>
-      <ToastContainer position="bottom-right" theme="light" />
+      <AppToastContainer position="bottom-right" theme="light" />
       <div className="max-w-3xl mx-auto px-4">
         <M3Page title="Admin console" subtitle="Operations, health and setup — owner only">
 

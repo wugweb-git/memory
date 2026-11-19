@@ -31,7 +31,7 @@ const STATUS_COLOR: Record<Application['status'], string> = {
   Offer:        'text-success',
 };
 const ICON_COLOR: Record<Application['status'], string> = {
-  Applied:      'bg-bg-secondary border-border-primary text-text-disabled',
+  Applied:      'bg-bg-secondary border-border-primary text-text-tertiary',
   Interviewing: 'bg-success/5 border-success/20 text-success',
   Rejected:     'bg-danger/5 border-danger/20 text-danger',
   Offer:        'bg-success/10 border-success/30 text-success',
@@ -95,7 +95,7 @@ export const JobPipeline = () => {
         </div>
         <div className="flex flex-wrap gap-3 items-center">
           <button onClick={load} disabled={loading}
-            className="flex h-11 w-11 items-center justify-center rounded-xl border border-border-secondary text-text-disabled hover:text-accent hover:border-accent/30 transition-colors"
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-border-secondary text-text-tertiary hover:text-accent hover:border-accent/30 transition-colors"
             aria-label="Refresh pipeline">
             <RefreshCcw size={15} className={loading ? 'animate-spin' : ''} />
           </button>
@@ -110,7 +110,7 @@ export const JobPipeline = () => {
 
       {/* Loading */}
       {loading && (
-        <div className="flex items-center justify-center py-16 gap-3 text-text-disabled">
+        <div className="flex items-center justify-center py-16 gap-3 text-text-tertiary">
           <Loader2 size={20} className="animate-spin text-accent" />
           <span className="text-sm">Loading pipeline…</span>
         </div>
@@ -118,7 +118,7 @@ export const JobPipeline = () => {
 
       {/* Error */}
       {!loading && error && apps.length === 0 && (
-        <div className="flex flex-col items-center gap-4 py-16 text-text-disabled">
+        <div className="flex flex-col items-center gap-4 py-16 text-text-tertiary">
           <AlertCircle size={32} className="text-danger/40" />
           <p className="text-sm font-medium">Failed to load applications</p>
           <button onClick={load} className="text-accent text-xs font-bold hover:underline">Try again →</button>
@@ -156,19 +156,19 @@ export const JobPipeline = () => {
 
                 <div className="flex items-center gap-10 ml-auto overflow-x-auto pb-1 scrollbar-hide">
                   <div className="flex flex-col items-end shrink-0">
-                    <span className="text-2xs font-semibold text-text-disabled tracking-widest uppercase mb-1">Method</span>
+                    <span className="text-2xs font-semibold text-text-tertiary tracking-widest uppercase mb-1">Method</span>
                     <span className="text-2xs font-semibold text-text-tertiary uppercase tracking-widest bg-secondary px-2 py-0.5 rounded border border-border-secondary ">
                       {app.via}
                     </span>
                   </div>
                   <div className="flex flex-col items-end shrink-0">
-                    <span className="text-2xs font-semibold text-text-disabled tracking-widest uppercase mb-1">State</span>
+                    <span className="text-2xs font-semibold text-text-tertiary tracking-widest uppercase mb-1">State</span>
                     <span className={`text-2xs font-semibold uppercase tracking-widest  ${STATUS_COLOR[app.status]}`}>
                       {STATUS_LABEL[app.status]}
                     </span>
                   </div>
                   <div className="flex flex-col items-end shrink-0">
-                    <span className="text-2xs font-semibold text-text-disabled tracking-widest uppercase mb-1">Temporal</span>
+                    <span className="text-2xs font-semibold text-text-tertiary tracking-widest uppercase mb-1">Temporal</span>
                     <span className="text-2xs font-semibold text-text-tertiary uppercase tracking-widest ">{app.date}</span>
                   </div>
                   {/* Navigate to job URL if available */}
@@ -179,7 +179,7 @@ export const JobPipeline = () => {
                       <ArrowRight size={18} />
                     </a>
                   ) : (
-                    <div className="w-10 h-10 rounded-xl bg-secondary border border-border-secondary text-text-disabled flex items-center justify-center cursor-not-allowed opacity-40">
+                    <div className="w-10 h-10 rounded-xl bg-secondary border border-border-secondary text-text-tertiary flex items-center justify-center cursor-not-allowed">
                       <ArrowRight size={18} />
                     </div>
                   )}
@@ -191,7 +191,7 @@ export const JobPipeline = () => {
           {/* Add entry */}
           <button
             onClick={() => window.open(IDENTITY_CONFIG.LINKEDIN_JOBS_URL, '_blank')}
-            className="w-full glass-panel rounded-[2rem] p-6 border-2 border-dashed border-border-secondary hover:border-accent/40 hover:shadow-xl transition-all flex items-center justify-center gap-3 text-text-disabled hover:text-accent group"
+            className="w-full glass-panel rounded-[2rem] p-6 border-2 border-dashed border-border-secondary hover:border-accent/40 hover:shadow-xl transition-all flex items-center justify-center gap-3 text-text-tertiary hover:text-accent group"
           >
             <Plus size={18} className="group-hover:rotate-90 transition-transform" />
             <span className="text-2xs font-semibold uppercase tracking-widest">Add Application</span>
