@@ -4,9 +4,10 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Database, ShieldCheck, Archive, Zap, Brain, Cpu,
-  ChevronRight, LayoutDashboard, FileText, Sparkles, AlertCircle, RefreshCw,
+  ChevronRight, FileText, Sparkles, AlertCircle, RefreshCw,
 } from 'lucide-react';
 import { AppShell } from '@/app/component/AppShell';
+import { PageIntro } from '@/app/component/PageIntro';
 import { useDashboardData } from '@/app/hooks/useDashboardData';
 import { UI_API } from '@/lib/api/endpoints';
 import { Card, Skeleton } from '@/components/ui/primitives';
@@ -22,8 +23,8 @@ class SectionErrorBoundary extends React.Component<
     if (this.state.hasError) {
       return (
         <Card role="alert" className="border-danger/30 p-6 text-center space-y-3">
-          <p className="text-sm font-semibold text-danger">The console could not render.</p>
-          <p className="text-xs text-text-tertiary">Reload the page to try again. If it keeps happening, check the system page.</p>
+          <p className="text-base font-semibold text-danger">The console could not render.</p>
+          <p className="text-sm text-text-secondary">Reload the page to try again. If it keeps happening, check the system page.</p>
           <button
             type="button"
             onClick={() => window.location.reload()}
@@ -40,29 +41,32 @@ class SectionErrorBoundary extends React.Component<
 
 /* ── Primitives ───────────────────────────────────────────────── */
 const SectionTitle: React.FC<{ id: string; children: React.ReactNode }> = ({ id, children }) => (
-  <h2 id={id} className="mb-3 px-1 text-sm font-semibold text-text-secondary">{children}</h2>
+  <h2 id={id} className="mb-3 px-1 text-base font-semibold text-text-primary">{children}</h2>
 );
 
 const StatCard: React.FC<{ label: string; value: string; sub?: string; color?: string; icon: React.ReactNode }> =
 ({ label, value, sub, color = 'text-text-primary', icon }) => (
-  <Card className="flex items-start justify-between gap-2 p-4">
-    <div className="min-w-0">
-      <p className="text-xs text-text-tertiary">{label}</p>
-      <p className={`mt-1 text-2xl font-semibold tracking-tight break-words ${color}`}>{value}</p>
-      {sub && <p className="mt-1 text-xs text-text-tertiary">{sub}</p>}
+  <Card className="flex min-h-28 flex-col justify-between gap-1 p-4">
+    <div className="flex items-center justify-between gap-2">
+      <p className="text-sm text-text-secondary">{label}</p>
+      <span aria-hidden="true" className="shrink-0">{icon}</span>
     </div>
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border-primary bg-bg-secondary" aria-hidden="true">
-      {icon}
+    <div className="min-w-0">
+      <p className={`text-xl font-semibold tracking-tight tabular-nums ${color}`}>{value}</p>
+      {sub && <p className="mt-0.5 text-sm text-text-secondary">{sub}</p>}
     </div>
   </Card>
 );
 
+/** API status words arrive upper-case (DEGRADED). Show them in sentence case. */
+const sentenceCase = (v: string) => (/^[A-Za-z]+$/.test(v) ? v.charAt(0).toUpperCase() + v.slice(1).toLowerCase() : v);
+
 const ROW_LINK =
-  'group flex min-h-14 w-full items-center gap-3 rounded-2xl border border-border-primary bg-bg-elevated p-3 transition-colors hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none';
+  'group flex min-h-16 w-full items-center gap-3 rounded-2xl border border-border-primary bg-bg-elevated px-4 py-3 transition-colors hover:bg-bg-secondary active:bg-bg-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none';
 
 /* ── Console ──────────────────────────────────────────────────── */
 const QUICK = [
-  { href: '/ask',       label: 'Ask your memory', icon: Brain,    desc: 'Ask anything grounded in your memory' },
+  { href: '/ask',       label: 'Ask your memory', icon: Brain,    desc: 'Answers grounded in your memory' },
   { href: '/memory',    label: 'Memory vault',           icon: Database,  desc: 'Indexed knowledge packets' },
   { href: '/buffer',    label: 'Buffer queue',           icon: Archive,   desc: 'Pending intake for review' },
   { href: '/cognitive', label: 'Decision engine',        icon: Cpu,       desc: 'Decide, evaluate and rank' },
@@ -170,19 +174,11 @@ export default function ConsolePage() {
   return (
     <AppShell>
       <div className="mx-auto w-full max-w-5xl">
-      <header className="mb-6 flex items-center gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-border-primary bg-bg-secondary" aria-hidden="true">
-          <LayoutDashboard size={20} className="text-text-tertiary" />
-        </div>
-        <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-text-primary">Console</h1>
-          <p className="text-sm text-text-tertiary">What needs you today, and how the system is doing</p>
-        </div>
-      </header>
+      <PageIntro title="Console" description="What needs you today, and how the system is doing" />
 
       <SectionErrorBoundary>
         {/* Next best actions: the one primary surface on this screen */}
-        <section aria-labelledby="console-next" className="mb-8">
+        <section aria-labelledby="console-next" className="mb-6">
           <SectionTitle id="console-next">Next best actions</SectionTitle>
           {recommendations === null ? (
             <div className="space-y-2" role="status" aria-label="Loading next actions">
@@ -193,12 +189,12 @@ export default function ConsolePage() {
             <Card role="alert" className="flex flex-col gap-3 border-danger/30 sm:flex-row sm:items-center">
               <div className="flex flex-1 items-start gap-3">
                 <AlertCircle size={18} className="mt-0.5 shrink-0 text-danger" aria-hidden="true" />
-                <p className="text-sm text-text-secondary">Could not load your next actions. Check your connection, then try again.</p>
+                <p className="text-base text-text-secondary">Could not load your next actions. Check your connection, then try again.</p>
               </div>
               <button
                 type="button"
                 onClick={retryRecs}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border-primary px-4 text-sm font-medium text-text-primary hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-border-primary px-5 text-sm font-medium text-text-primary hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 <RefreshCw size={14} aria-hidden="true" /> Try again
               </button>
@@ -206,7 +202,7 @@ export default function ConsolePage() {
           ) : recommendations.length === 0 ? (
             <Card className="flex items-center gap-3">
               <ShieldCheck size={18} className="shrink-0 text-success" aria-hidden="true" />
-              <p className="text-sm text-text-secondary">All clear. Nothing needs your attention right now.</p>
+              <p className="text-base text-text-secondary">All clear. Nothing needs your attention right now.</p>
             </Card>
           ) : (
             <ul className="space-y-2">
@@ -219,8 +215,8 @@ export default function ConsolePage() {
                     />
                     <span className="min-w-0 flex-1">
                       {rec.urgent ? <span className="sr-only">Urgent: </span> : null}
-                      <span className="block text-sm font-semibold leading-tight text-text-primary">{rec.title}</span>
-                      <span className="mt-0.5 block text-xs text-text-tertiary line-clamp-2">{rec.reason}</span>
+                      <span className="block text-base font-medium leading-snug text-text-primary">{rec.title}</span>
+                      <span className="mt-0.5 block text-sm text-text-secondary line-clamp-2">{rec.reason}</span>
                     </span>
                     <ChevronRight size={16} className="shrink-0 text-text-tertiary transition-colors group-hover:text-accent" aria-hidden="true" />
                   </Link>
@@ -230,23 +226,23 @@ export default function ConsolePage() {
           )}
         </section>
 
-        <section aria-labelledby="console-stats" className="mb-8">
+        <section aria-labelledby="console-stats" className="mb-6">
           <SectionTitle id="console-stats">System snapshot</SectionTitle>
-          <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-4" aria-busy={loading}>
+          <div className="grid grid-cols-2 gap-3 xl:grid-cols-4" aria-busy={loading}>
             {loading ? (
-              [1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24" />)
+              [1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-28" />)
             ) : (
               <>
                 <StatCard label="Memory packets" value={String(stats.memoryPackets)} sub="Total indexed" icon={<Database size={18} className="text-accent" />} />
-                <StatCard label="Sync status" value={String(stats.syncStatus)} sub={syncSub} color={syncColor} icon={<ShieldCheck size={18} className={syncColor} />} />
+                <StatCard label="Sync status" value={sentenceCase(String(stats.syncStatus))} sub={syncSub} color={syncColor} icon={<ShieldCheck size={18} className={syncColor} />} />
                 <StatCard label="Buffer queue" value={String(stats.bufferQueue)} sub="Pending review" icon={<Archive size={18} className="text-warning" />} />
-                <StatCard label="Uplink" value={String(stats.uplink)} sub="Reasoning layer reliability" icon={<Zap size={18} className="text-accent" />} />
+                <StatCard label="Uplink" value={sentenceCase(String(stats.uplink))} sub="Reasoning reliability" icon={<Zap size={18} className="text-accent" />} />
               </>
             )}
           </div>
         </section>
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <section aria-labelledby="console-quick">
             <SectionTitle id="console-quick">Quick access</SectionTitle>
             <ul className="space-y-2">
@@ -257,8 +253,8 @@ export default function ConsolePage() {
                       <Icon size={18} className="text-text-tertiary transition-colors group-hover:text-accent" />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-semibold leading-tight text-text-primary">{label}</span>
-                      <span className="mt-0.5 block truncate text-xs text-text-tertiary">{desc}</span>
+                      <span className="block text-base font-medium leading-snug text-text-primary">{label}</span>
+                      <span className="mt-0.5 block truncate text-sm text-text-secondary">{desc}</span>
                     </span>
                     <ChevronRight size={16} className="shrink-0 text-text-tertiary transition-colors group-hover:text-accent" aria-hidden="true" />
                   </Link>
@@ -275,11 +271,11 @@ export default function ConsolePage() {
                 const st = STATUS_STYLE[status];
                 return (
                   <li key={l.id}>
-                    <Card className="h-full p-3">
-                      <p className="font-mono text-xs text-text-tertiary">{l.id}</p>
-                      <p className="mt-0.5 text-sm font-semibold text-text-primary">{l.name}</p>
-                      <p className={`mt-2 flex items-center gap-1.5 text-xs font-medium ${st.text}`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${st.dot}`} aria-hidden="true" />
+                    <Card className="h-full p-4">
+                      <p className="font-mono text-xs text-text-secondary">{l.id}</p>
+                      <p className="mt-0.5 text-base font-medium text-text-primary">{l.name}</p>
+                      <p className={`mt-2 flex items-center gap-2 text-sm font-medium ${st.text}`}>
+                        <span className={`h-2 w-2 rounded-full ${st.dot}`} aria-hidden="true" />
                         {status}
                       </p>
                     </Card>
@@ -288,7 +284,7 @@ export default function ConsolePage() {
               })}
             </ul>
             {Object.values(layerHealth).some((v) => v === 'Offline') ? (
-              <p role="status" className="mt-3 px-1 text-xs text-text-tertiary">
+              <p role="status" className="mt-3 px-1 text-sm text-text-secondary">
                 A layer shows offline when its health check fails. Reload to check again.
               </p>
             ) : null}
