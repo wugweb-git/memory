@@ -61,16 +61,16 @@ function AdminMemoryContent() {
         </div>
       </header>
 
-      <div className="grid grid-cols-12 gap-8">
+      <div className="grid grid-cols-12 gap-6 md:gap-8">
         {/* Left: status & health */}
-        <div className="col-span-12 lg:col-span-4 flex flex-col gap-8">
+        <div className="col-span-12 min-w-0 lg:col-span-4 flex flex-col gap-8">
           <ActivityLog testRunId={testRunId} />
           <IngestionMonitor testRunId={testRunId} />
           <EmbeddingMonitor testRunId={testRunId} />
         </div>
 
         {/* Right: RAG tools & explorer */}
-        <div className="col-span-12 lg:col-span-8 flex flex-col gap-8">
+        <div className="col-span-12 min-w-0 lg:col-span-8 flex flex-col gap-8">
           <RagTester testRunId={testRunId} />
           <MemoryExplorer testRunId={testRunId} />
         </div>

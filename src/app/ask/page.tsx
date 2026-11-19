@@ -279,6 +279,7 @@ export default function AskPage() {
         </div>
       </header>
 
+      <main id="main-content" tabIndex={-1} className="flex min-h-0 flex-1 flex-col focus:outline-none">
       <div
         ref={scrollRef}
         onScroll={(e) => {
@@ -404,6 +405,7 @@ export default function AskPage() {
           {`Answers are generated from ${FIRST_NAME}'s notes and may be wrong.`}
         </p>
       </div>
+      </main>
 
       <dialog
         ref={dialogRef}

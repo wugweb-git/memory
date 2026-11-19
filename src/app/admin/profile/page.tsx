@@ -119,7 +119,7 @@ export default function AdminProfilePage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+      <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
         <div className="flex gap-2" role="group" aria-label="Profile sections">
           {(['basic', 'content'] as const).map((tab) => (
             <button
@@ -270,7 +270,7 @@ export default function AdminProfilePage() {
             </section>
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }
