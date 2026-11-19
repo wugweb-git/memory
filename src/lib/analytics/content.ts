@@ -19,6 +19,15 @@ export function extractMetrics(blob: unknown): Partial<EngagementTotals> {
   return out;
 }
 
+/** True when the blob carries at least one real numeric metric, zero included. */
+function hasNumericMetrics(blob: unknown): boolean {
+  if (!blob || typeof blob !== "object") return false;
+  const b = blob as any;
+  if ((b as any).status && b.status !== "ok") return false;
+  const src = (b.metrics && typeof b.metrics === "object" ? b.metrics : b) as Record<string, unknown>;
+  return METRICS.some((m) => typeof src[m] === "number" && Number.isFinite(src[m] as number));
+}
+
 export interface PublishedRow { platform?: string | null; externalId?: string | null; analytics?: unknown }
 export interface SnapshotRow { platform?: string | null; externalPostId?: string | null; payload?: unknown; createdAt: Date }
 
@@ -40,6 +49,10 @@ export function aggregateContentAnalytics(published: PublishedRow[], snapshots: 
   const engagementByPlatform: Record<string, EngagementTotals> = {};
   const totals = emptyTotals();
   let withMetrics = 0;
+  let postsWithData = 0;
+  let postsWithZeroEngagement = 0;
+  let postsNoData = 0;
+  const unavailableReasons: Record<string, string> = {};
 
   for (const p of published) {
     const platform = p.platform || "unknown";
@@ -47,6 +60,15 @@ export function aggregateContentAnalytics(published: PublishedRow[], snapshots: 
     const snap = p.externalId ? latest.get(`${p.platform ?? ""}:${p.externalId}`) : undefined;
     const fromSnap = snap ? extractMetrics(snap.payload) : {};
     const metrics = Object.keys(fromSnap).length ? fromSnap : extractMetrics(p.analytics);
+    const realData = hasNumericMetrics(snap?.payload) || hasNumericMetrics(p.analytics);
+    if (realData) {
+      postsWithData += 1;
+      if (!Object.keys(metrics).length) postsWithZeroEngagement += 1;
+    } else {
+      postsNoData += 1;
+      const sp = snap?.payload as any;
+      if (sp && typeof sp === "object" && typeof sp.reason === "string") unavailableReasons[platform] = sp.reason;
+    }
     if (!Object.keys(metrics).length) continue;
     withMetrics += 1;
     const bucket = (engagementByPlatform[platform] ||= emptyTotals());
@@ -68,7 +90,13 @@ export function aggregateContentAnalytics(published: PublishedRow[], snapshots: 
       postsWithMetrics: withMetrics,
       snapshotCount: snapshots.length,
       lastSnapshotAt: snapshots.reduce<Date | null>((a, s) => (!a || s.createdAt > a ? s.createdAt : a), null),
-      note: withMetrics === 0 ? "No platform metrics captured yet (engagement-fetcher has not recorded numeric metrics)." : undefined,
+      // Additive: separates "never measured" from "measured, zero engagement".
+      hasData: postsWithData > 0,
+      postsWithData,
+      postsWithZeroEngagement,
+      postsNoData,
+      unavailableReasons,
+      note: withMetrics === 0 ? postsWithData > 0 ? "Metrics were captured and show zero engagement so far." : "No platform metrics available (not measured or platform exposes none); totals of 0 do not mean zero engagement." : undefined,
     },
   };
 }
