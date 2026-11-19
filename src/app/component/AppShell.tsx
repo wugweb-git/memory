@@ -4,11 +4,11 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Command, Menu, LogOut, LogIn, X } from 'lucide-react';
+import { Command, Menu, LogOut, LogIn, Settings, ShieldCheck } from 'lucide-react';
 import {
   APP_BRAND,
   NAV_GROUPS,
-  MOBILE_DOCK_ITEMS,
+  dockItemsFor,
   SIDEBAR_STATS,
   findNavItem,
   isNavActive,
@@ -35,76 +35,45 @@ export function TopbarAction({ children }: { children: React.ReactNode }) {
 }
 
 /** Single source of truth for app chrome: route-aware sidebar (desktop),
- *  top bar (page title + one action slot), mobile drawer, and bottom dock (mobile). */
+ *  top bar (page title + one action slot + account menu), and bottom tab bar (mobile). */
 export function AppShell({ children, bottomDock = false }: AppShellProps) {
   const pathname = usePathname() || '/';
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const drawerRef = useRef<HTMLElement | null>(null);
-  const openerRef = useRef<HTMLElement | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
-  const skipFocusReturn = useRef(false);
   const firstRoute = useRef(true);
-  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
-  const openDrawer = useCallback(() => {
-    openerRef.current = document.activeElement as HTMLElement | null;
-    setDrawerOpen(true);
-  }, []);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const accountRef = useRef<HTMLDivElement | null>(null);
+  const accountBtnRef = useRef<HTMLButtonElement | null>(null);
 
-  // On route change: close the drawer (without pulling focus back to the menu button) and move
-  // focus to <main> so keyboard and screen-reader users land on the new page, not the old link.
+  // On route change: close the account menu and move focus to <main> so keyboard and
+  // screen-reader users land on the new page, not the old link.
   useEffect(() => {
     if (firstRoute.current) {
       firstRoute.current = false;
       return;
     }
-    skipFocusReturn.current = true;
-    setDrawerOpen(false);
+    setAccountOpen(false);
     mainRef.current?.focus({ preventScroll: true });
   }, [pathname]);
 
-  // Drawer behaves as a modal dialog: focus moves in, Tab is trapped, Esc closes,
-  // body scroll is locked, and focus returns to the control that opened it.
+  // Account menu: closes on Escape (focus returns to its button) and on a tap outside it.
   useEffect(() => {
-    if (!drawerOpen) return;
-    const drawer = drawerRef.current;
-    const opener = openerRef.current;
-    const focusables = () =>
-      Array.from(
-        drawer?.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])') ?? []
-      );
-    focusables()[0]?.focus();
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    if (!accountOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        e.preventDefault();
-        setDrawerOpen(false);
-        return;
+        setAccountOpen(false);
+        accountBtnRef.current?.focus();
       }
-      if (e.key !== 'Tab') return;
-      const items = focusables();
-      if (items.length === 0) return;
-      const first = items[0];
-      const last = items[items.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      } else if (drawer && !drawer.contains(document.activeElement)) {
-        e.preventDefault();
-        first.focus();
-      }
+    };
+    const onPointer = (e: PointerEvent) => {
+      if (accountRef.current && !accountRef.current.contains(e.target as Node)) setAccountOpen(false);
     };
     document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onPointer);
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prevOverflow;
-      if (skipFocusReturn.current) skipFocusReturn.current = false;
-      else opener?.focus();
+      document.removeEventListener('pointerdown', onPointer);
     };
-  }, [drawerOpen]);
+  }, [accountOpen]);
 
   // Runtime module flags (toggled from /system). Until they load, the static
   // config-filtered nav renders as-is — no flash of hidden modules re-appearing.
@@ -142,12 +111,12 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
   const navGroups = NAV_GROUPS
     .map((g) => ({ ...g, items: g.items.filter((i) => featureOn(i.feature)) }))
     .filter((g) => g.items.length > 0);
-  const dockItems = MOBILE_DOCK_ITEMS.filter((i) => featureOn(i.feature));
-  // "More" reads as current when the page lives only in the drawer.
-  const moreActive = !dockItems.some((i) => isNavActive(pathname, i.href));
-  const pageTitle = findNavItem(pathname)?.label ?? APP_BRAND.name;
+  const dockItems = dockItemsFor(view.state === 'signed-in').filter((i) => featureOn(i.feature));
+  // "More" reads as current on the More screen and when the page lives only there.
+  const moreActive = pathname === '/more' || !dockItems.some((i) => isNavActive(pathname, i.href));
+  const pageTitle = pathname === '/more' ? 'More' : findNavItem(pathname)?.label ?? APP_BRAND.name;
 
-  // Plain render helpers (not components) so state changes never remount the drawer and drop focus.
+  // Plain render helpers (not components) so state changes never remount the sidebar and drop focus.
   const NavList = ({ onNavigate, label, hints }: { onNavigate?: () => void; label: string; hints?: boolean }) => (
     <nav aria-label={label} className="flex-1 overflow-y-auto py-4 px-3 custom-scrollbar">
       {navGroups.map((group) => {
@@ -279,36 +248,6 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
         {SidebarInner({ navLabel: 'Primary' })}
       </aside>
 
-      {/* Mobile drawer */}
-      {drawerOpen && (
-        <>
-          <button
-            type="button"
-            aria-label="Close menu"
-            tabIndex={-1}
-            className="md:hidden fixed inset-0 z-50 bg-text-primary/30 backdrop-blur-sm"
-            onClick={closeDrawer}
-          />
-          <aside
-            ref={drawerRef}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Navigation menu"
-            className="md:hidden fixed top-0 left-0 h-dvh w-[min(19rem,88vw)] flex flex-col z-[60] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] overscroll-contain bg-bg-elevated border-r border-border-secondary shadow-elev-3"
-          >
-            <button
-              type="button"
-              aria-label="Close menu"
-              onClick={closeDrawer}
-              className="absolute right-2 top-[calc(env(safe-area-inset-top)+0.5rem)] z-10 flex h-11 w-11 items-center justify-center rounded-control text-text-secondary hover:bg-secondary"
-            >
-              <X size={18} aria-hidden="true" />
-            </button>
-            {SidebarInner({ onNavigate: closeDrawer, navLabel: 'Mobile primary', hints: true })}
-          </aside>
-        </>
-      )}
-
       {/* Top bar: page title on the left, one contextual action slot, then the account entry. */}
       <header className="fixed top-0 right-0 left-0 md:left-[var(--sidebar-w)] z-30 h-[calc(var(--topbar-h)+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] bg-bg-elevated/90 backdrop-blur-xl border-b border-border-secondary flex items-center justify-between gap-2 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] md:px-8">
         <div className="flex min-w-0 items-center gap-2">
@@ -326,11 +265,60 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
         <div className="flex shrink-0 items-center gap-2">
           <div id={ACTION_SLOT_ID} className="flex items-center gap-2" />
           {view.state === 'signed-in' && (
-            <div className="flex items-center gap-2 min-h-11">
-              <span className="w-6 h-6 rounded-pill bg-text-primary text-bg-primary text-2xs font-bold flex items-center justify-center">
-                {view.initial}
-              </span>
-              <span className="text-xs font-semibold text-text-secondary hidden sm:block">{view.role}</span>
+            <div ref={accountRef} className="relative">
+              <button
+                ref={accountBtnRef}
+                type="button"
+                aria-label="Account menu"
+                aria-expanded={accountOpen}
+                aria-controls="account-menu"
+                onClick={() => setAccountOpen((o) => !o)}
+                className="flex min-h-11 min-w-11 items-center justify-center rounded-pill focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <span className="w-8 h-8 rounded-pill bg-text-primary text-bg-primary text-xs font-bold flex items-center justify-center">
+                  {view.initial}
+                </span>
+              </button>
+              {accountOpen && (
+                <div
+                  id="account-menu"
+                  role="group"
+                  aria-label="Account"
+                  className="absolute right-0 top-full mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-2xl border border-border-secondary bg-bg-elevated p-2 shadow-elev-3"
+                >
+                  <div className="px-3 py-2">
+                    <p className="truncate text-sm font-bold text-text-primary">{view.email}</p>
+                    <p className="text-xs text-text-tertiary">{view.role}</p>
+                  </div>
+                  <Link
+                    href="/system"
+                    onClick={() => setAccountOpen(false)}
+                    className="flex min-h-11 items-center gap-3 rounded-control px-3 text-sm font-medium text-text-secondary hover:bg-secondary hover:text-text-primary"
+                  >
+                    <Settings size={16} aria-hidden="true" />
+                    <span>Account and security</span>
+                  </Link>
+                  {view.role === 'admin' && (
+                    <Link
+                      href="/admin"
+                      onClick={() => setAccountOpen(false)}
+                      className="flex min-h-11 items-center gap-3 rounded-control px-3 text-sm font-medium text-text-secondary hover:bg-secondary hover:text-text-primary"
+                    >
+                      <ShieldCheck size={16} aria-hidden="true" />
+                      <span>Admin</span>
+                    </Link>
+                  )}
+                  <button
+                    type="button"
+                    onClick={signOut}
+                    disabled={signingOut}
+                    className="flex min-h-11 w-full items-center gap-3 rounded-control px-3 text-sm font-medium text-text-secondary hover:bg-secondary hover:text-text-primary disabled:opacity-60"
+                  >
+                    <LogOut size={16} aria-hidden="true" />
+                    <span>{signingOut ? 'Signing out…' : 'Sign out'}</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
           {view.state === 'signed-out' && (
@@ -391,11 +379,9 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
             );
           })}
           <li className="flex-1">
-            <button
-              type="button"
-              aria-haspopup="dialog"
-              aria-expanded={drawerOpen}
-              onClick={openDrawer}
+            <Link
+              href="/more"
+              aria-current={pathname === '/more' ? 'page' : undefined}
               className={`flex h-full w-full flex-col items-center justify-center gap-1 rounded-control transition-colors duration-fast ease-standard ${
                 moreActive ? 'text-text-primary' : 'text-text-secondary'
               }`}
@@ -409,9 +395,9 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
               </span>
               <span className={`text-2xs leading-none ${moreActive ? 'font-bold' : 'font-medium'}`}>
                 More
-                {moreActive ? <span className="sr-only"> (current page is in this menu)</span> : null}
+                {moreActive && pathname !== '/more' ? <span className="sr-only"> (current page is in this section)</span> : null}
               </span>
-            </button>
+            </Link>
           </li>
         </ul>
       </nav>

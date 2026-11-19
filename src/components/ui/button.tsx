@@ -27,7 +27,7 @@ const variantClasses: Record<ButtonVariant, string> = {
 export const controlSizeClasses: Record<ButtonSize, string> = {
   default: "min-h-10 px-4 py-2 text-sm",
   sm: "min-h-9 px-3 py-2 text-xs",
-  lg: "min-h-11 px-6 py-3 text-base",
+  lg: "min-h-11 px-5 py-2 text-sm",
   icon: "h-10 w-10 p-0",
 };
 

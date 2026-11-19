@@ -134,8 +134,9 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-html,
-body {
+/* Clip sideways overflow on the page itself only. Putting overflow on both html and body
+   turns body into its own scroll container, which makes phone scrolling stick. */
+html {
   overflow-x: hidden;
 }
 

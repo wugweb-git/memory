@@ -271,13 +271,7 @@ export default function IntegrationsPage() {
         </button>
       );
     }
-    if (h === 'unset') {
-      return (
-        <span className="inline-flex min-h-11 items-center text-xs text-text-tertiary sm:max-w-[10rem] sm:text-right">
-          Add the keys listed above to turn this on
-        </span>
-      );
-    }
+    if (h === 'unset') return null;
     if (h === 'needs-connect' && c.authStartPath) {
       return <a href={c.authStartPath} aria-label={`Connect ${c.label}`} className={ACTION_PRIMARY}>Connect</a>;
     }
@@ -285,7 +279,7 @@ export default function IntegrationsPage() {
     if (h === 'needs-connect') return null;
     const busy = syncing === c.id;
     return (
-      <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+      <div className="flex w-full flex-row flex-wrap gap-2 sm:w-auto sm:flex-nowrap [&>*]:min-w-[7rem] [&>*]:flex-1 sm:[&>*]:flex-none">
         <button
           type="button"
           onClick={() => syncNow(c)}
