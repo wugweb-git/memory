@@ -36,6 +36,7 @@ model FeedbackLog {
   comment      String?
   createdAt    DateTime @default(now())
 
+  @@unique([decisionId, userId, feedbackType])
   @@index([decisionId])
   @@index([userId])
   @@map("feedback_logs")
@@ -349,6 +350,25 @@ model OutputLog {
   @@index([userId])
   @@index([decisionId])
   @@map("output_logs")
+}
+
+// Provenance ledger — append-only record of AI-likelihood assessments per subject
+// (output draft, memory packet, ...). Idempotent per (subjectType, subjectId, contentHash).
+model ProvenanceRecord {
+  id           String   @id @default(uuid())
+  userId       String
+  subjectType  String   // output | memory_packet | draft
+  subjectId    String
+  contentHash  String
+  aiLikelihood Float
+  confidence   String   // low | medium
+  signals      Json
+  source       String
+  createdAt    DateTime @default(now())
+
+  @@index([subjectType, subjectId])
+  @@index([userId, createdAt])
+  @@map("provenance_records")
 }
 
 // Public profile — the world-facing serving surface (Neon, L5 output).
