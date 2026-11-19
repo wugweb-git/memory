@@ -7,6 +7,10 @@
 const PLATFORM_CREDENTIAL_ENV: Record<string, string> = {
   linkedin: "LINKEDIN_ACCESS_TOKEN",
   medium: "MEDIUM_INTEGRATION_TOKEN",
+  x: "X_ACCESS_TOKEN",
+  twitter: "X_ACCESS_TOKEN",
+  facebook: "FACEBOOK_PAGE_TOKEN",
+  instagram: "FACEBOOK_PAGE_TOKEN",
 };
 
 /** Platforms served by the internal profile/CMS path — no external send here. */
@@ -66,7 +70,13 @@ export async function publishToPlatform(
         ? await sendMedium(token, payload)
         : platform === "linkedin"
           ? await sendLinkedIn(token, payload)
-          : null;
+          : platform === "x" || platform === "twitter"
+            ? await sendX(token, payload)
+            : platform === "facebook"
+              ? await sendFacebook(token, payload)
+              : platform === "instagram"
+                ? await sendInstagram(token, payload)
+                : null;
     if (!sent) throw new Error(`NO_CLIENT: external send for ${platform} is not implemented`);
     return { platform, status: "published", externalId: sent.id, delivered: true, payload };
   } catch (err) {
@@ -160,4 +170,67 @@ async function sendLinkedIn(token: string, payload: unknown): Promise<{ id: stri
   const id = res.headers.get("x-restli-id");
   if (!id) throw new Error("LINKEDIN_NO_ID");
   return { id: String(id) };
+}
+
+/** X: one post, or a reply thread when the content was split. Returns the first post's id. */
+async function sendX(token: string, payload: unknown): Promise<{ id: string }> {
+  const body = innerPayload(payload);
+  const posts = (Array.isArray(body) ? body : [body]).filter((p): p is string => typeof p === "string" && p.trim().length > 0);
+  if (posts.length === 0) throw new Error("EMPTY_CONTENT");
+  if (posts.some((p) => p.length > 280)) throw new Error("X_POST_TOO_LONG");
+  const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+  let firstId: string | null = null;
+  let previousId: string | null = null;
+  for (const text of posts) {
+    const { json } = await httpJson("https://api.x.com/2/tweets", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(previousId ? { text, reply: { in_reply_to_tweet_id: previousId } } : { text }),
+    });
+    const id = json?.data?.id;
+    if (!id) throw new Error(firstId ? `X_THREAD_BROKEN_AFTER:${firstId}` : "X_NO_ID");
+    previousId = String(id);
+    firstId = firstId ?? previousId;
+  }
+  return { id: firstId as string };
+}
+
+const GRAPH = "https://graph.facebook.com/v21.0";
+
+/** Facebook Page feed post. Needs FACEBOOK_PAGE_ID and a Page access token. */
+async function sendFacebook(token: string, payload: unknown): Promise<{ id: string }> {
+  const text = innerPayload(payload);
+  if (typeof text !== "string" || !text.trim()) throw new Error("EMPTY_CONTENT");
+  const pageId = process.env.FACEBOOK_PAGE_ID;
+  if (!pageId) throw new Error("FACEBOOK_PAGE_ID_MISSING");
+  const { json } = await httpJson(`${GRAPH}/${encodeURIComponent(pageId)}/feed`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: text, access_token: token }),
+  });
+  if (!json?.id) throw new Error("FACEBOOK_NO_ID");
+  return { id: String(json.id) };
+}
+
+/** Instagram: two-step container then publish. Requires an image URL; text-only is not possible. */
+async function sendInstagram(token: string, payload: unknown): Promise<{ id: string }> {
+  const body = innerPayload(payload) as { caption?: string; imageUrl?: string | null };
+  if (!body || typeof body.caption !== "string" || !body.caption.trim()) throw new Error("EMPTY_CONTENT");
+  if (!body.imageUrl || !/^https:\/\//.test(body.imageUrl)) throw new Error("INSTAGRAM_IMAGE_REQUIRED");
+  const igUser = process.env.INSTAGRAM_USER_ID;
+  if (!igUser) throw new Error("INSTAGRAM_USER_ID_MISSING");
+  const headers = { "Content-Type": "application/json" };
+  const container = await httpJson(`${GRAPH}/${encodeURIComponent(igUser)}/media`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ image_url: body.imageUrl, caption: body.caption, access_token: token }),
+  });
+  if (!container.json?.id) throw new Error("INSTAGRAM_NO_CONTAINER");
+  const published = await httpJson(`${GRAPH}/${encodeURIComponent(igUser)}/media_publish`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ creation_id: container.json.id, access_token: token }),
+  });
+  if (!published.json?.id) throw new Error("INSTAGRAM_NO_ID");
+  return { id: String(published.json.id) };
 }

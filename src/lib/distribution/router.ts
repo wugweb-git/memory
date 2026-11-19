@@ -1,15 +1,24 @@
 import { buildLinkedInPayload } from "@/lib/platforms/linkedin";
 import { buildMediumPayload } from "@/lib/platforms/medium";
+import { buildXPayload } from "@/lib/platforms/x";
+import { buildFacebookPayload, buildInstagramPayload } from "@/lib/platforms/meta";
 import { buildPortfolioPayload } from "@/lib/platforms/portfolio";
 
-export function routeDistribution(params: { platform: string; content: string; title?: string; tags?: string[]; scheduledAt?: string }) {
-  const { platform, content, title, tags = [], scheduledAt } = params;
+export function routeDistribution(params: { platform: string; content: string; title?: string; tags?: string[]; scheduledAt?: string; imageUrl?: string }) {
+  const { platform, content, title, tags = [], scheduledAt, imageUrl } = params;
   if (!content.trim()) throw new Error("EMPTY_CONTENT");
   if (scheduledAt && Number.isNaN(Date.parse(scheduledAt))) throw new Error("INVALID_SCHEDULE");
 
   switch (platform) {
     case "linkedin":
       return buildLinkedInPayload({ content, title, tags });
+    case "x":
+    case "twitter":
+      return buildXPayload({ content, title, tags });
+    case "facebook":
+      return buildFacebookPayload({ content, title, tags });
+    case "instagram":
+      return buildInstagramPayload({ content, title, tags, imageUrl });
     case "medium":
       return buildMediumPayload({ content, title, tags });
     case "portfolio":
