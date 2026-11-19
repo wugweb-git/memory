@@ -3,6 +3,7 @@ import { resolvePersona } from "./persona";
 import { postgres } from "../db/postgres";
 import { enforcePersonaStyle } from "@/lib/persona/style";
 import { persistFingerprint } from "@/lib/persona/fingerprint";
+import { recordProvenance } from "@/lib/provenance/ledger";
 
 export type OutputPlatform = "linkedin" | "blog" | "memo" | "medium" | "portfolio" | "other";
 
@@ -85,6 +86,9 @@ export async function generateArtifact(params: {
       personaSnapshot: { timestamp: new Date(), source: "L4_active", fingerprint } as any
     }
   });
+
+  // 5. Provenance ledger (best-effort; recordProvenance never throws)
+  await recordProvenance({ userId, subjectType: "output", subjectId: log.id, text: log.content, source: "output_generator" });
 
   return {
     output_id: log.id,

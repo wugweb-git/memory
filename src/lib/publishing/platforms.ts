@@ -125,7 +125,10 @@ async function sendMedium(token: string, payload: unknown): Promise<{ id: string
   return { id: String(id) };
 }
 
-/** LinkedIn: text share via ugcPosts. Author = LINKEDIN_AUTHOR_URN or the token's own member id. */
+/** Default LinkedIn versioned-API month (YYYYMM); override with LINKEDIN_API_VERSION. */
+const LINKEDIN_DEFAULT_VERSION = "202511";
+
+/** LinkedIn: text post via the versioned Posts API. Author = LINKEDIN_AUTHOR_URN or the token's own member id. */
 async function sendLinkedIn(token: string, payload: unknown): Promise<{ id: string }> {
   const text = innerPayload(payload);
   if (typeof text !== "string" || !text.trim()) throw new Error("EMPTY_CONTENT");
@@ -133,6 +136,7 @@ async function sendLinkedIn(token: string, payload: unknown): Promise<{ id: stri
     Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",
     "X-Restli-Protocol-Version": "2.0.0",
+    "LinkedIn-Version": process.env.LINKEDIN_API_VERSION || LINKEDIN_DEFAULT_VERSION,
   };
   let author = process.env.LINKEDIN_AUTHOR_URN;
   if (!author) {
@@ -140,22 +144,20 @@ async function sendLinkedIn(token: string, payload: unknown): Promise<{ id: stri
     if (!me.json?.sub) throw new Error("LINKEDIN_NO_USER");
     author = `urn:li:person:${me.json.sub}`;
   }
-  const { res, json } = await httpJson("https://api.linkedin.com/v2/ugcPosts", {
+  const { res } = await httpJson("https://api.linkedin.com/rest/posts", {
     method: "POST",
     headers,
     body: JSON.stringify({
       author,
+      commentary: text.slice(0, 3000),
+      visibility: "PUBLIC",
+      distribution: { feedDistribution: "MAIN_FEED", targetEntities: [], thirdPartyDistributionChannels: [] },
       lifecycleState: "PUBLISHED",
-      specificContent: {
-        "com.linkedin.ugc.ShareContent": {
-          shareCommentary: { text: text.slice(0, 3000) },
-          shareMediaCategory: "NONE",
-        },
-      },
-      visibility: { "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC" },
+      isReclosedByOwner: false,
     }),
   });
-  const id = res.headers.get("x-restli-id") ?? json?.id;
+  // The Posts API returns 201 with an empty body; the id is only in the header.
+  const id = res.headers.get("x-restli-id");
   if (!id) throw new Error("LINKEDIN_NO_ID");
   return { id: String(id) };
 }

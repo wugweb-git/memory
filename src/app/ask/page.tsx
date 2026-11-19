@@ -2,7 +2,20 @@
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Check, Copy, MoreVertical, SendHorizontal, Square } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowLeft,
+  Check,
+  Copy,
+  Layers,
+  MoreVertical,
+  PenLine,
+  Rocket,
+  SendHorizontal,
+  Square,
+  Wrench,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { UIMessage } from 'ai';
 import { usePrismChat } from '@/hooks/usePrismChat';
 import { UI_API } from '@/lib/api/endpoints';
@@ -16,27 +29,26 @@ import {
   isNearBottom,
 } from '@/lib/chat/ask-helpers';
 
+type Starter = { question: string; hint: string; Icon: LucideIcon };
+
 /**
  * Starter questions shown on the empty state. Edit this list to change them.
  * Drafted from the public profile (ventures, experience, writing).
  */
-const STARTER_QUESTIONS: readonly string[] = [
-  'What is Vedanshu working on?',
-  'What has he written about?',
-  'What kind of projects has he built?',
-  'What are his main areas of expertise?',
+const STARTERS: readonly Starter[] = [
+  { question: 'What is Vedanshu working on?', hint: 'Current focus', Icon: Rocket },
+  { question: 'What has he written about?', hint: 'Notes and writing', Icon: PenLine },
+  { question: 'What kind of projects has he built?', hint: 'Shipped work', Icon: Wrench },
+  { question: 'What are his main areas of expertise?', hint: 'Skills and depth', Icon: Layers },
 ];
 
 const FIRST_NAME = IDENTITY_CONFIG.DISPLAY_NAME.split(' ')[0];
 const LINE_HEIGHT_PX = 24; // matches leading-6 on the textarea
-const TEXTAREA_PADDING_PX = 16; // py-2 top and bottom
-const FALLBACK_ERROR = 'Could not get an answer. Check your connection and try again.';
-const RATE_LIMIT_ERROR = 'Too many questions in a short time. Wait a minute, then try again.';
+const TEXTAREA_PADDING_PX = 20; // py-2.5 top and bottom
+const MAX_LINES = 5;
+const FALLBACK_ERROR = 'The answer did not come through. Check your connection, then tap Retry.';
 
-function errorMessage(error: Error | undefined): string {
-  const text = error?.message ?? '';
-  return /429|rate limit/i.test(text) ? RATE_LIMIT_ERROR : FALLBACK_ERROR;
-}
+const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent';
 
 function messageText(message: UIMessage): string {
   return message.parts
@@ -53,17 +65,18 @@ function isCoarsePointer(): boolean {
   }
 }
 
-function Avatar() {
+function Avatar({ size = 40 }: { size?: 28 | 40 | 56 }) {
   const [failed, setFailed] = useState(false);
   const initials = IDENTITY_CONFIG.DISPLAY_NAME.split(/\s+/)
     .map((w) => w[0])
     .join('')
     .slice(0, 2);
+  const box = size === 56 ? 'h-14 w-14 text-md' : size === 40 ? 'h-10 w-10 text-sm' : 'h-7 w-7 text-2xs';
   if (failed) {
     return (
       <span
         aria-hidden="true"
-        className="h-10 w-10 shrink-0 rounded-full bg-bg-tertiary text-text-primary text-sm font-semibold flex items-center justify-center"
+        className={`${box} shrink-0 rounded-full bg-bg-tertiary font-semibold text-text-primary flex items-center justify-center`}
       >
         {initials}
       </span>
@@ -72,50 +85,22 @@ function Avatar() {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={avatarFallbackUrl(96)}
+      src={avatarFallbackUrl(size * 2)}
       alt=""
-      width={40}
-      height={40}
+      width={size}
+      height={size}
       onError={() => setFailed(true)}
-      className="h-10 w-10 shrink-0 rounded-full bg-bg-tertiary"
+      className={`${box} shrink-0 rounded-full bg-bg-tertiary`}
     />
-  );
-}
-
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => {
-    if (timer.current) clearTimeout(timer.current);
-  }, []);
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setCopied(false);
-    }
-  };
-  return (
-    <button
-      type="button"
-      onClick={copy}
-      className="inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-2xs font-medium text-text-secondary hover:bg-bg-secondary hover:text-text-primary md:min-h-6 md:px-2"
-    >
-      {copied ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
-      <span>{copied ? 'Copied' : 'Copy answer'}</span>
-      <span role="status" className="sr-only">{copied ? 'Answer copied to clipboard' : ''}</span>
-    </button>
   );
 }
 
 function TypingDots() {
   return (
-    <div role="status" aria-label={`${FIRST_NAME} is replying`} className="flex justify-start">
-      <div className="rounded-2xl rounded-bl-md border border-border-primary bg-bg-elevated px-4 py-3 flex items-center gap-1.5">
-        {[0, 150, 300].map((delay) => (
+    <div role="status" aria-label={`${FIRST_NAME} is replying`} className="flex items-start gap-2.5">
+      <Avatar size={28} />
+      <div className="flex h-7 items-center gap-1.5 px-1">
+        {[0, 160, 320].map((delay) => (
           <span
             key={delay}
             aria-hidden="true"
@@ -128,17 +113,52 @@ function TypingDots() {
   );
 }
 
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timer.current) clearTimeout(timer.current);
+    };
+  }, []);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      haptic('tap');
+      setCopied(true);
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      aria-label="Copy answer"
+      className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl px-2.5 text-xs font-medium text-text-tertiary transition-colors hover:bg-bg-secondary hover:text-text-primary ${FOCUS_RING}`}
+    >
+      {copied ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}
+      <span aria-live="polite">{copied ? 'Copied' : 'Copy'}</span>
+    </button>
+  );
+}
+
 export default function AskPage() {
   const [input, setInput] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showJump, setShowJump] = useState(false);
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
-  const { messages, sendMessage, status, setMessages, stop, regenerate, clearError, error } = usePrismChat(UI_API.chat);
+  const { messages, sendMessage, status, setMessages, stop, regenerate, clearError } = usePrismChat(UI_API.chat);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const nearBottomRef = useRef(true);
   const stamps = useRef(createTimestampStore());
 
@@ -175,18 +195,13 @@ export default function AskPage() {
     return () => vv.removeEventListener('resize', update);
   }, [scrollToBottom]);
 
-  // Auto-grow the textarea up to four lines.
+  // Auto-grow the textarea up to five lines.
   useLayoutEffect(() => {
     const ta = textareaRef.current;
     if (!ta) return;
     ta.style.height = 'auto';
-    ta.style.height = `${clampTextareaHeight(ta.scrollHeight, LINE_HEIGHT_PX, 4, TEXTAREA_PADDING_PX)}px`;
+    ta.style.height = `${clampTextareaHeight(ta.scrollHeight, LINE_HEIGHT_PX, MAX_LINES, TEXTAREA_PADDING_PX)}px`;
   }, [input]);
-
-  // Move focus into the menu when it opens.
-  useEffect(() => {
-    if (menuOpen) menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]:not(:disabled)')?.focus();
-  }, [menuOpen]);
 
   // Close the overflow menu on outside click or Escape.
   useEffect(() => {
@@ -195,10 +210,7 @@ export default function AskPage() {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setMenuOpen(false);
-        menuButtonRef.current?.focus();
-      }
+      if (e.key === 'Escape') setMenuOpen(false);
     };
     document.addEventListener('mousedown', onDown);
     document.addEventListener('touchstart', onDown);
@@ -216,6 +228,7 @@ export default function AskPage() {
       if (!text || isLoading) return;
       haptic('tap');
       nearBottomRef.current = true;
+      setShowJump(false);
       sendMessage({ text });
       setInput('');
       requestAnimationFrame(() => scrollToBottom(true));
@@ -226,6 +239,7 @@ export default function AskPage() {
   const retry = () => {
     haptic('tap');
     nearBottomRef.current = true;
+    setShowJump(false);
     if (regenerate) {
       regenerate();
       return;
@@ -240,12 +254,19 @@ export default function AskPage() {
     setMessages([]);
     stamps.current.clear();
     nearBottomRef.current = true;
+    setShowJump(false);
     dialogRef.current?.close();
   };
 
   const openClearDialog = () => {
     setMenuOpen(false);
     dialogRef.current?.showModal();
+  };
+
+  const jumpToLatest = () => {
+    nearBottomRef.current = true;
+    setShowJump(false);
+    scrollToBottom(true);
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -274,41 +295,42 @@ export default function AskPage() {
 
   const profileHref = `/p/${IDENTITY_CONFIG.HANDLE}`;
   const canSend = input.trim() !== '' && !isLoading;
+  const isEmpty = rows.length === 0 && !hasError;
+  const streamingId = status === 'streaming' && lastMessage?.role === 'assistant' ? lastMessage.id : null;
 
   return (
     <div
       className="fixed inset-x-0 top-0 flex flex-col bg-bg-primary text-text-primary h-screen"
       style={{ height: viewportHeight ? `${viewportHeight}px` : '100dvh' }}
     >
-      <header className="shrink-0 flex items-center gap-2 border-b border-border-primary bg-bg-elevated px-2 pt-[env(safe-area-inset-top)]">
+      <header className="shrink-0 flex items-center gap-1 border-b border-border-primary bg-bg-elevated px-2 pt-[env(safe-area-inset-top)]">
         <Link
           href={profileHref}
           aria-label={`Back to ${FIRST_NAME}'s profile`}
-          className="min-h-11 min-w-11 flex items-center justify-center rounded-full text-text-secondary hover:bg-bg-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className={`flex min-h-11 min-w-11 items-center justify-center rounded-full text-text-secondary hover:bg-bg-secondary hover:text-text-primary ${FOCUS_RING}`}
         >
           <ArrowLeft size={22} aria-hidden="true" />
         </Link>
-        <Avatar />
-        <div className="min-w-0 flex-1 py-2">
-          <h1 className="text-base font-semibold leading-tight truncate">{IDENTITY_CONFIG.DISPLAY_NAME}</h1>
-          <p className="text-xs text-text-secondary leading-tight truncate">{`Ask about ${FIRST_NAME}'s work`}</p>
+        <Avatar size={40} />
+        <div className="min-w-0 flex-1 px-2 py-2">
+          <h1 className="truncate text-base font-semibold leading-tight">{IDENTITY_CONFIG.DISPLAY_NAME}</h1>
+          <p className="text-xs leading-snug text-text-tertiary">Answers come from published notes</p>
         </div>
         <div className="relative" ref={menuRef}>
           <button
-            ref={menuButtonRef}
             type="button"
             aria-label="More options"
             aria-haspopup="menu"
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((v) => !v)}
-            className="min-h-11 min-w-11 flex items-center justify-center rounded-full text-text-secondary hover:bg-bg-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className={`flex min-h-11 min-w-11 items-center justify-center rounded-full text-text-secondary hover:bg-bg-secondary hover:text-text-primary ${FOCUS_RING}`}
           >
             <MoreVertical size={22} aria-hidden="true" />
           </button>
           {menuOpen && (
             <div
               role="menu"
-              className="absolute right-0 top-full z-10 mt-1 min-w-40 rounded-xl border border-border-primary bg-bg-elevated py-1 shadow-lg"
+              className="absolute right-0 top-full z-10 mt-1 min-w-40 rounded-xl border border-border-primary bg-bg-elevated py-1 shadow-elev-2"
             >
               <button
                 type="button"
@@ -325,130 +347,182 @@ export default function AskPage() {
       </header>
 
       <main id="main-content" tabIndex={-1} className="flex min-h-0 flex-1 flex-col focus:outline-none">
-      <div
-        ref={scrollRef}
-        onScroll={(e) => {
-          nearBottomRef.current = isNearBottom(e.currentTarget);
-        }}
-        role="log"
-        aria-live="polite"
-        aria-relevant="additions text"
-        aria-label="Conversation"
-        className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-4"
-      >
-        {rows.length === 0 && !hasError ? (
-          <div className="flex min-h-full flex-col items-center justify-center gap-4 text-center">
-            <h2 className="max-w-xs text-lg font-semibold text-text-primary">{`Ask anything about ${FIRST_NAME}'s work`}</h2>
-            <p className="max-w-xs text-sm text-text-secondary">Pick a question to start, or type your own below.</p>
-            <div className="flex w-full max-w-sm flex-col gap-2">
-              {STARTER_QUESTIONS.map((q) => (
-                <button
-                  key={q}
-                  type="button"
-                  onClick={() => send(q)}
-                  className="min-h-11 rounded-2xl border border-border-primary bg-bg-elevated px-4 py-2 text-left text-sm text-text-primary hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <ul className="mx-auto flex w-full max-w-2xl flex-col gap-3">
-            {rows.map((r) => {
-              const mine = r.role === 'user';
-              if (!mine && r.text === '') return null;
-              return (
-                <li key={r.id} className={`flex flex-col ${mine ? 'items-end' : 'items-start'}`}>
-                  <div
-                    className={`max-w-[85%] whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2 text-base leading-snug ${
-                      mine
-                        ? 'rounded-br-md bg-bg-tertiary text-text-primary'
-                        : 'rounded-bl-md border border-border-primary bg-bg-elevated text-text-primary'
-                    }`}
-                  >
-                    {r.text}
-                  </div>
-                  <span className="mt-1 flex items-center gap-1 px-1 text-2xs text-text-secondary">
-                    <span className="sr-only">{mine ? 'You, ' : `${FIRST_NAME}, `}</span>
-                    {r.time}
-                    {!mine && !(isLoading && r.id === lastMessage?.id) && <CopyButton text={r.text} />}
-                  </span>
-                </li>
-              );
-            })}
-            {showTyping && (
-              <li>
-                <TypingDots />
-              </li>
-            )}
-            {hasError && (
-              <li role="alert" className="flex flex-col items-start gap-2">
-                <div className="max-w-[85%] rounded-2xl rounded-bl-md border border-danger bg-bg-elevated px-3.5 py-2 text-base text-text-primary">
-                  {errorMessage(error)}
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          <div
+            ref={scrollRef}
+            onScroll={(e) => {
+              const near = isNearBottom(e.currentTarget);
+              nearBottomRef.current = near;
+              setShowJump(!near);
+            }}
+            role="log"
+            aria-live="polite"
+            aria-relevant="additions text"
+            aria-label="Conversation"
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4"
+          >
+            {isEmpty ? (
+              <div className="mx-auto flex min-h-full w-full max-w-xl flex-col justify-center gap-6 pb-6">
+                <div className="space-y-3">
+                  <Avatar size={56} />
+                  <h2 className="max-w-sm text-xl font-semibold text-text-primary">
+                    {`What would you like to know about ${FIRST_NAME}'s work?`}
+                  </h2>
+                  <p className="max-w-sm text-base leading-relaxed text-text-tertiary">
+                    {`We answer from ${FIRST_NAME}'s published notes: his projects, writing and experience. Pick a place to start, or ask your own question below.`}
+                  </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={retry}
-                  className="min-h-11 rounded-full border border-border-primary bg-bg-elevated px-4 text-sm font-medium text-text-primary hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                >
-                  Try again
-                </button>
-              </li>
+                <ul className="grid grid-cols-2 gap-3">
+                  {STARTERS.map(({ question, hint, Icon }) => (
+                    <li key={question} className="flex">
+                      <button
+                        type="button"
+                        onClick={() => send(question)}
+                        className={`group flex min-h-28 w-full flex-col items-start gap-3 rounded-2xl border border-border-primary bg-bg-elevated p-3.5 text-left shadow-elev-1 transition-[transform,box-shadow,border-color,background-color] duration-150 hover:border-border-primary hover:shadow-elev-2 motion-safe:active:scale-[0.97] active:bg-bg-secondary ${FOCUS_RING}`}
+                      >
+                        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-bg-secondary text-text-primary">
+                          <Icon size={18} aria-hidden="true" />
+                        </span>
+                        <span className="space-y-0.5">
+                          <span className="block text-sm font-medium leading-snug text-text-primary">{question}</span>
+                          <span className="block text-xs text-text-tertiary">{hint}</span>
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <ul className="mx-auto flex w-full max-w-2xl flex-col gap-6">
+                {rows.map((r) => {
+                  const mine = r.role === 'user';
+                  if (!mine && r.text === '') return null;
+                  if (mine) {
+                    return (
+                      <li key={r.id} className="flex flex-col items-end">
+                        <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-bg-tertiary px-4 py-2.5 text-base leading-normal text-text-primary">
+                          {r.text}
+                        </div>
+                        <span className="mt-1 px-1 text-2xs text-text-tertiary">
+                          <span className="sr-only">You, </span>
+                          {r.time}
+                        </span>
+                      </li>
+                    );
+                  }
+                  return (
+                    <li key={r.id} className="flex items-start gap-2.5">
+                      <Avatar size={28} />
+                      <div className="min-w-0 flex-1">
+                        <div className="max-w-prose whitespace-pre-wrap break-words pt-0.5 text-base leading-relaxed text-text-primary">
+                          {r.text}
+                        </div>
+                        <div className="mt-1 flex items-center gap-1">
+                          <span className="text-2xs text-text-tertiary">
+                            <span className="sr-only">{`${FIRST_NAME}, `}</span>
+                            {r.time}
+                          </span>
+                          {r.id !== streamingId && <CopyButton text={r.text} />}
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+                {showTyping && (
+                  <li>
+                    <TypingDots />
+                  </li>
+                )}
+                {hasError && (
+                  <li role="alert" className="flex items-start gap-2.5">
+                    <Avatar size={28} />
+                    <div className="flex min-w-0 flex-1 flex-col items-start gap-2">
+                      <div className="max-w-prose rounded-2xl rounded-bl-md border border-danger bg-bg-elevated px-4 py-2.5 text-base leading-normal text-text-primary">
+                        {FALLBACK_ERROR}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={retry}
+                        className={`min-h-11 rounded-full border border-border-primary bg-bg-elevated px-5 text-sm font-medium text-text-primary hover:bg-bg-secondary motion-safe:active:scale-[0.97] ${FOCUS_RING}`}
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  </li>
+                )}
+              </ul>
             )}
-          </ul>
-        )}
-      </div>
+          </div>
 
-      <div className="shrink-0 border-t border-border-primary bg-bg-elevated px-3 pt-2 pb-[max(env(safe-area-inset-bottom),0.5rem)]">
-        <form
-          aria-label={`Ask ${FIRST_NAME}`}
-          onSubmit={(e) => {
-            e.preventDefault();
-            send(input);
-          }}
-          className="mx-auto flex w-full max-w-2xl items-end gap-2"
-        >
-          <label htmlFor="ask-input" className="sr-only">
-            Your question
-          </label>
-          <textarea
-            ref={textareaRef}
-            id="ask-input"
-            rows={1}
-            enterKeyHint="send"
-            autoComplete="off"
-            autoCapitalize="sentences"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={onKeyDown}
-            placeholder="Type a question"
-            className="min-h-11 flex-1 resize-none rounded-2xl border border-border-primary bg-bg-primary px-4 py-2 text-base leading-6 text-text-primary placeholder:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          />
-          {isLoading && stop ? (
+          {showJump && !isEmpty && (
             <button
               type="button"
-              onClick={() => stop()}
-              aria-label="Stop answer"
-              className="h-11 w-11 shrink-0 rounded-full border border-border-primary bg-bg-elevated text-text-primary flex items-center justify-center hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              onClick={jumpToLatest}
+              className={`absolute bottom-3 left-1/2 z-10 inline-flex min-h-11 -translate-x-1/2 items-center gap-1.5 rounded-full border border-border-primary bg-bg-elevated px-4 text-sm font-medium text-text-primary shadow-elev-2 hover:bg-bg-secondary ${FOCUS_RING}`}
             >
-              <Square size={16} aria-hidden="true" />
-            </button>
-          ) : (
-            <button
-              type="submit"
-              disabled={!canSend}
-              aria-label="Send question"
-              className="h-11 w-11 shrink-0 rounded-full bg-text-primary text-bg-primary flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-            >
-              <SendHorizontal size={20} aria-hidden="true" />
+              <ArrowDown size={16} aria-hidden="true" />
+              Jump to latest
             </button>
           )}
-        </form>
-        <p className="mx-auto mt-1.5 max-w-2xl text-center text-2xs text-text-secondary">
-          {`Answers are generated from ${FIRST_NAME}'s notes and can be wrong. Check anything important.`}
-        </p>
-      </div>
+        </div>
+
+        <div className="shrink-0 border-t border-border-primary bg-bg-elevated px-4 pt-3 pb-[max(env(safe-area-inset-bottom),1rem)]">
+          <form
+            aria-label={`Ask ${FIRST_NAME}`}
+            onSubmit={(e) => {
+              e.preventDefault();
+              send(input);
+            }}
+            className="mx-auto flex w-full max-w-2xl items-end gap-2 rounded-2xl border border-border-primary bg-bg-primary p-1.5 focus-within:ring-2 focus-within:ring-accent"
+          >
+            <label htmlFor="ask-input" className="sr-only">
+              Your question
+            </label>
+            <textarea
+              ref={textareaRef}
+              id="ask-input"
+              rows={1}
+              enterKeyHint="send"
+              autoComplete="off"
+              autoCapitalize="sentences"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={onKeyDown}
+              placeholder={`Ask ${FIRST_NAME} a question`}
+              className="min-h-11 min-w-0 flex-1 resize-none bg-transparent px-3 py-2.5 text-md leading-6 text-text-primary placeholder:text-text-tertiary focus:outline-none focus-visible:outline-none focus-visible:shadow-none focus-visible:ring-0"
+            />
+            {isLoading && stop ? (
+              <button
+                type="button"
+                onClick={() => stop()}
+                aria-label="Stop answer"
+                className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-full border border-border-primary bg-bg-elevated px-4 text-sm font-medium text-text-primary hover:bg-bg-secondary ${FOCUS_RING}`}
+              >
+                <Square size={14} fill="currentColor" aria-hidden="true" />
+                Stop
+              </button>
+            ) : (
+              <button
+                type="submit"
+                aria-disabled={!canSend}
+                aria-label="Send"
+                onClick={(e) => {
+                  if (!canSend) e.preventDefault();
+                }}
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors ${FOCUS_RING} ${
+                  canSend
+                    ? 'bg-text-primary text-bg-primary motion-safe:active:scale-95'
+                    : 'cursor-not-allowed bg-text-primary text-bg-primary opacity-40'
+                }`}
+              >
+                <SendHorizontal size={20} aria-hidden="true" />
+              </button>
+            )}
+          </form>
+          <p className="mx-auto mt-2.5 max-w-2xl px-1 text-center text-xs text-text-tertiary">
+            Answers are generated from published notes and may be wrong.
+          </p>
+        </div>
       </main>
 
       <dialog
@@ -459,19 +533,19 @@ export default function AskPage() {
         <h2 id="clear-title" className="text-lg font-semibold">
           Clear this chat?
         </h2>
-        <p className="mt-1 text-sm text-text-secondary">This removes every message from this screen. It cannot be undone.</p>
+        <p className="mt-1 text-sm text-text-tertiary">This removes every message from this screen.</p>
         <div className="mt-4 flex justify-end gap-2">
           <button
             type="button"
             onClick={() => dialogRef.current?.close()}
-            className="min-h-11 rounded-full border border-border-primary px-4 text-sm font-medium hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className={`min-h-11 rounded-full border border-border-primary px-4 text-sm font-medium hover:bg-bg-secondary ${FOCUS_RING}`}
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={clearChat}
-            className="min-h-11 rounded-full bg-danger px-4 text-sm font-medium text-bg-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className={`min-h-11 rounded-full bg-danger px-4 text-sm font-medium text-bg-elevated ${FOCUS_RING}`}
           >
             Clear chat
           </button>

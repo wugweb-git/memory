@@ -175,7 +175,7 @@ export default function ConsolePage() {
           <LayoutDashboard size={20} className="text-text-tertiary" />
         </div>
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Console</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-text-primary">Console</h1>
           <p className="text-sm text-text-tertiary">What needs you today, and how the system is doing</p>
         </div>
       </header>

@@ -5,6 +5,7 @@ import { checkRateLimit } from '@/lib/security/rate-limit';
 import { postgres } from "@/lib/db/postgres";
 import { waitUntil } from "@vercel/functions";
 import { readJsonObject, badRequest } from '@/lib/validation/http';
+import { recordFeedback } from '@/lib/cognitive/feedback-store';
 import { resolveUserId, parseFeedback } from '@/lib/cognitive/validation';
 
 /**
@@ -32,17 +33,10 @@ export async function POST(req: NextRequest) {
     const decision = await postgres.decisionLog.findFirst({ where: { id: decisionId, userId }, select: { id: true } });
     if (!decision) return NextResponse.json({ error: 'Decision not found' }, { status: 404 });
 
-    const existing = await postgres.feedbackLog.findFirst({
-      where: { decisionId, userId, feedbackType },
-      select: { id: true },
-    });
-    if (existing) {
-      return NextResponse.json({ status: 'success', id: existing.id, duplicate: true, message: 'Feedback already recorded.' });
+    const result = await recordFeedback(postgres, { decisionId, userId, feedbackType, comment });
+    if (result.duplicate) {
+      return NextResponse.json({ status: 'success', id: result.id, duplicate: true, message: 'Feedback already recorded.' });
     }
-
-    const feedback = await postgres.feedbackLog.create({
-      data: { decisionId, userId, feedbackType, comment },
-    });
 
     // waitUntil keeps the function alive until evolution finishes on Vercel.
     waitUntil(
@@ -55,7 +49,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       status: "success",
-      id: feedback.id,
+      id: result.id,
       message: "Feedback captured for Digital Twin evolution."
     });
 

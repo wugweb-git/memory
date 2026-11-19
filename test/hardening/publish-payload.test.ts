@@ -99,6 +99,61 @@ test('a configured platform that accepts the post reports the real external id',
   }
 });
 
+test('linkedin posts to /rest/posts with versioned headers and the Posts API body', async () => {
+  process.env.LINKEDIN_ACCESS_TOKEN = 'test-token';
+  process.env.LINKEDIN_AUTHOR_URN = 'urn:li:person:abc';
+  process.env.LINKEDIN_API_VERSION = '202601';
+  const realFetch = globalThis.fetch;
+  const calls: { url: string; init: RequestInit }[] = [];
+  globalThis.fetch = (async (url: string, init: RequestInit) => {
+    calls.push({ url: String(url), init });
+    return new Response(null, { status: 201, headers: { 'x-restli-id': 'urn:li:share:999' } });
+  }) as unknown as typeof fetch;
+  try {
+    const built = routeDistribution({ platform: 'linkedin', content: 'hello world' });
+    const res = await publishToPlatform('linkedin', built);
+    assert.equal(res.status, 'published');
+    assert.equal(res.externalId, 'urn:li:share:999');
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url, 'https://api.linkedin.com/rest/posts');
+    assert.equal(calls[0].init.method, 'POST');
+    const h = calls[0].init.headers as Record<string, string>;
+    assert.equal(h.Authorization, 'Bearer test-token');
+    assert.equal(h['LinkedIn-Version'], '202601');
+    assert.equal(h['X-Restli-Protocol-Version'], '2.0.0');
+    const body = JSON.parse(String(calls[0].init.body));
+    assert.equal(body.author, 'urn:li:person:abc');
+    assert.equal(typeof body.commentary, 'string');
+    assert.equal(body.visibility, 'PUBLIC');
+    assert.deepEqual(body.distribution, { feedDistribution: 'MAIN_FEED', targetEntities: [], thirdPartyDistributionChannels: [] });
+    assert.equal(body.lifecycleState, 'PUBLISHED');
+    assert.equal(body.isReclosedByOwner, false);
+    assert.equal(body.specificContent, undefined);
+  } finally {
+    globalThis.fetch = realFetch;
+    delete process.env.LINKEDIN_ACCESS_TOKEN;
+    delete process.env.LINKEDIN_AUTHOR_URN;
+    delete process.env.LINKEDIN_API_VERSION;
+  }
+});
+
+test('linkedin success without an x-restli-id header is an error, not a fake id', async () => {
+  process.env.LINKEDIN_ACCESS_TOKEN = 'test-token';
+  process.env.LINKEDIN_AUTHOR_URN = 'urn:li:person:abc';
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = (async () => new Response(null, { status: 201 })) as typeof fetch;
+  try {
+    const res = await publishToPlatform('linkedin', routeDistribution({ platform: 'linkedin', content: 'x' }));
+    assert.equal(res.status, 'error');
+    assert.equal(res.externalId, null);
+    assert.match(String(res.error), /LINKEDIN_NO_ID/);
+  } finally {
+    globalThis.fetch = realFetch;
+    delete process.env.LINKEDIN_ACCESS_TOKEN;
+    delete process.env.LINKEDIN_AUTHOR_URN;
+  }
+});
+
 test('routeDistribution validation behavior is intact', () => {
   assert.throws(() => routeDistribution({ platform: 'linkedin', content: '   ' }), /EMPTY_CONTENT/);
   assert.throws(
