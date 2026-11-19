@@ -133,6 +133,9 @@ export const API_ENDPOINTS = {
     features: { path: '/api/system/features', methods: ['GET', 'PATCH'] as const },
     cost: { path: '/api/system/cost', methods: ['GET'] as const },
   },
+  publishing: {
+    accounts: { path: '/api/publishing/accounts', methods: ['GET', 'PUT', 'DELETE'] as const },
+  },
   provenance: {
     list: { path: '/api/provenance', methods: ['GET'] as const },
   },

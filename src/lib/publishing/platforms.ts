@@ -1,3 +1,5 @@
+import { getCredential } from "./credentials";
+
 /**
  * Per-platform credential env vars. A platform listed here publishes to an
  * EXTERNAL service and needs its token configured before anything is sent.
@@ -53,7 +55,7 @@ export async function publishToPlatform(
   }
 
   const envName = PLATFORM_CREDENTIAL_ENV[platform];
-  const token = envName ? process.env[envName] : undefined;
+  const token = envName ? await getCredential(envName) : undefined;
 
   // No credential configured → be honest. Nothing was sent anywhere, so we
   // return a non-fabricated status with a null external id (NOT a fake
@@ -148,7 +150,7 @@ async function sendLinkedIn(token: string, payload: unknown): Promise<{ id: stri
     "X-Restli-Protocol-Version": "2.0.0",
     "LinkedIn-Version": process.env.LINKEDIN_API_VERSION || LINKEDIN_DEFAULT_VERSION,
   };
-  let author = process.env.LINKEDIN_AUTHOR_URN;
+  let author = (await getCredential("LINKEDIN_AUTHOR_URN"));
   if (!author) {
     const me = await httpJson("https://api.linkedin.com/v2/userinfo", { headers });
     if (!me.json?.sub) throw new Error("LINKEDIN_NO_USER");
@@ -201,7 +203,7 @@ const GRAPH = "https://graph.facebook.com/v21.0";
 async function sendFacebook(token: string, payload: unknown): Promise<{ id: string }> {
   const text = innerPayload(payload);
   if (typeof text !== "string" || !text.trim()) throw new Error("EMPTY_CONTENT");
-  const pageId = process.env.FACEBOOK_PAGE_ID;
+  const pageId = await getCredential("FACEBOOK_PAGE_ID");
   if (!pageId) throw new Error("FACEBOOK_PAGE_ID_MISSING");
   const { json } = await httpJson(`${GRAPH}/${encodeURIComponent(pageId)}/feed`, {
     method: "POST",
@@ -217,7 +219,7 @@ async function sendInstagram(token: string, payload: unknown): Promise<{ id: str
   const body = innerPayload(payload) as { caption?: string; imageUrl?: string | null };
   if (!body || typeof body.caption !== "string" || !body.caption.trim()) throw new Error("EMPTY_CONTENT");
   if (!body.imageUrl || !/^https:\/\//.test(body.imageUrl)) throw new Error("INSTAGRAM_IMAGE_REQUIRED");
-  const igUser = process.env.INSTAGRAM_USER_ID;
+  const igUser = await getCredential("INSTAGRAM_USER_ID");
   if (!igUser) throw new Error("INSTAGRAM_USER_ID_MISSING");
   const headers = { "Content-Type": "application/json" };
   const container = await httpJson(`${GRAPH}/${encodeURIComponent(igUser)}/media`, {
