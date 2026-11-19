@@ -247,7 +247,7 @@ export async function runL25Processing(batchSize = 20, deadline = Infinity) {
 export async function runL2Intelligence(deadline = Infinity) {
   if (deadline - Date.now() < INTEL_MIN_REMAINING_MS) return { ran: false, skipped: 'deadline' as const };
   try {
-    await withDeadline(IntelligenceEngine.scoringEngine('PROD'), deadline, 'l2-intel-scoring');
+    await withDeadline(IntelligenceEngine.scoringEngine('PROD', deadline), deadline, 'l2-intel-scoring');
     if (deadline - Date.now() >= INTEL_MIN_REMAINING_MS) {
       await withDeadline(IntelligenceEngine.detectPatterns('PROD'), deadline, 'l2-intel-patterns');
     }
@@ -257,7 +257,8 @@ export async function runL2Intelligence(deadline = Infinity) {
     }
     return { ran: true, insights };
   } catch (err: any) {
-    return { ran: true, error: err?.message as string | undefined };
+    // ran:false + error so the failure is visible in the pipeline result instead of looking successful.
+    return { ran: false, error: (err?.message as string | undefined) ?? 'unknown error' };
   }
 }
 

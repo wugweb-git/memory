@@ -162,7 +162,7 @@ export class IntelligenceEngine {
    * Recalculates relative intensity for signals based on a 30-day baseline.
    * Also applies time-based decay to signal weights.
    */
-  static async scoringEngine(testRunId: string = 'PROD') {
+  static async scoringEngine(testRunId: string = 'PROD', deadline: number = Infinity) {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -185,28 +185,37 @@ export class IntelligenceEngine {
 
     const now = new Date();
 
+    // Only rewrite rows whose score actually moved, in small parallel batches, and stop
+    // cooperatively at the deadline (withDeadline can reject the caller but cannot cancel this loop).
+    const updates: Array<{ id: string; relative: number; decay: number; metadata: any }> = [];
     for (const signal of recentSignals) {
       // 2. Time Decay Logic
       const daysSince = (now.getTime() - new Date(signal.timestamp).getTime()) / (1000 * 60 * 60 * 24);
       const timeDecay = Math.max(0.1, 1 - (daysSince / 30));
-      
+
       const baseWeight = (signal.metadata as any)?.signal_weight || 1.0;
       const effectiveWeight = baseWeight * timeDecay;
 
       // 3. Normalization
-      const relative = Math.min(1.0, (signal.intensity_absolute * effectiveWeight) / baseline);
-      
-      await prisma.signal.update({
-        where: { id: signal.id },
-        data: { 
-          intensity_relative: Math.max(0.05, relative),
-          metadata: {
-            ...signal.metadata as any,
-            decay_factor: timeDecay,
-            last_scored: now.toISOString()
-          }
-        }
-      });
+      const relative = Math.max(0.05, Math.min(1.0, (signal.intensity_absolute * effectiveWeight) / baseline));
+      if (Math.abs((signal.intensity_relative ?? 0) - relative) < 0.005) continue;
+      updates.push({ id: signal.id, relative, decay: timeDecay, metadata: signal.metadata });
+    }
+
+    const BATCH = 25;
+    for (let i = 0; i < updates.length; i += BATCH) {
+      if (deadline - Date.now() < 1_500) break;
+      await Promise.all(
+        updates.slice(i, i + BATCH).map((u) =>
+          prisma.signal.update({
+            where: { id: u.id },
+            data: {
+              intensity_relative: u.relative,
+              metadata: { ...(u.metadata as any), decay_factor: u.decay, last_scored: now.toISOString() },
+            },
+          }),
+        ),
+      );
     }
   }
 
@@ -228,9 +237,13 @@ export class IntelligenceEngine {
       const signals = await prisma.signal.findMany({
         where: { timestamp: { gte }, test_run_id: testRunId },
         select: { timestamp: true, type: true, source: true },
+        // Bound the 'all' window: newest 20k signals is ample for rhythm/concentration patterns.
+        orderBy: { timestamp: 'desc' },
+        take: 20_000,
       });
 
-      for (const p of computePatterns(signals)) {
+      const detected = computePatterns(signals);
+      for (const p of detected) {
         const insight = describePattern({
           type: p.type,
           window_type: windowType,
@@ -238,9 +251,16 @@ export class IntelligenceEngine {
           signal_count: signals.length,
           metadata: p.metadata,
         });
-        const existing = await prisma.pattern.findFirst({
+        // No unique key on (type, window_type, test_run_id), so a concurrent run can leave
+        // duplicates; keep the newest and delete the rest (self-heals on the next run).
+        const rows = await prisma.pattern.findMany({
           where: { type: p.type, window_type: windowType, test_run_id: testRunId },
+          orderBy: { last_detected: 'desc' },
         });
+        const existing = rows[0];
+        if (rows.length > 1) {
+          await prisma.pattern.deleteMany({ where: { id: { in: rows.slice(1).map((r) => r.id) } } });
+        }
         const data = {
           type: p.type,
           window_type: windowType,
@@ -257,6 +277,15 @@ export class IntelligenceEngine {
           await prisma.pattern.create({ data });
         }
       }
+
+      // Drop patterns of this window that are no longer detected, so stale rows are not served as current.
+      await prisma.pattern.deleteMany({
+        where: {
+          window_type: windowType,
+          test_run_id: testRunId,
+          type: { notIn: detected.map((d) => d.type) },
+        },
+      });
     }
   }
 

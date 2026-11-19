@@ -213,12 +213,16 @@ export async function retrieve(query: string, filters: any = {}) {
     ? Prisma.sql`AND packet_id IN (SELECT id FROM memory_packets WHERE is_public = true AND sensitivity <> 'restricted')`
     : Prisma.empty;
 
+  // Vectors (~15-25KB of text each) are only needed for MMR diversity; skip them when it is off.
+  const rerankCfg = rerankConfigFromEnv();
+  const vectorSelect = rerankCfg.mmr ? Prisma.sql`embedding::text` : Prisma.sql`NULL::text`;
+
   const results = await prisma.$queryRaw<
-    Array<{ id: string; packet_id: string; text_chunk: string; metadata: any; score: number; emb: string }>
+    Array<{ id: string; packet_id: string; text_chunk: string; metadata: any; score: number; emb: string | null }>
   >(Prisma.sql`
     SELECT id, packet_id, text_chunk, metadata,
            1 - (embedding <=> ${queryVec}::vector) AS score,
-           embedding::text AS emb
+           ${vectorSelect} AS emb
     FROM embeddings
     WHERE embedding IS NOT NULL
       AND test_run_id = ${test_run_id}
@@ -253,7 +257,7 @@ export async function retrieve(query: string, filters: any = {}) {
   }
 
   // 6. RECENCY BOOST + MMR RE-RANK
-  return rerank([...grouped.values()], rerankConfigFromEnv(), 10).map(({ vector, ...hit }) => hit);
+  return rerank([...grouped.values()], rerankCfg, 10).map(({ vector, ...hit }) => hit);
 }
 
 function parseVector(text: string | null | undefined): number[] | null {
