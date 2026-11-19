@@ -1,0 +1,35 @@
+{
+  "note": "Known pre-existing UX/a11y offenders, counted per (rule, file). Guards in test/hardening/ux-*.test.ts fail only when a file gains MORE offenders than listed. Regenerate with: npx tsx test/ux-baseline-update.ts",
+  "offenders": [
+    {
+      "rule": "page-h1",
+      "file": "src/app/p/[username]/page.tsx",
+      "count": 1
+    },
+    {
+      "rule": "page-h1",
+      "file": "src/app/persona/page.tsx",
+      "count": 1
+    },
+    {
+      "rule": "token-inline-radius",
+      "file": "src/app/component/KnowledgeSource.tsx",
+      "count": 1
+    },
+    {
+      "rule": "touch-target",
+      "file": "src/components/ui/button.tsx",
+      "count": 3
+    },
+    {
+      "rule": "touch-target",
+      "file": "src/components/ui/primitives.tsx",
+      "count": 2
+    },
+    {
+      "rule": "a11y-outline-none",
+      "file": "src/app/career/RoleForm.tsx",
+      "count": 1
+    }
+  ]
+}

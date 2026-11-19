@@ -1,0 +1,10 @@
+{
+  "allow": [
+    {
+      "rule": "token-hex",
+      "file": "src/app/layout.tsx",
+      "match": "#F5F5F0",
+      "reason": "Next.js viewport.themeColor feeds a <meta name=theme-color>, which the browser reads as a literal colour and cannot resolve CSS variables. Value mirrors --bg-primary in globals.css and manifest.json."
+    }
+  ]
+}
