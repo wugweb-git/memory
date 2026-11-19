@@ -36,3 +36,23 @@ test('a non-mail source produces no communication signal', () => {
   ).map((s) => s.type);
   assert.ok(!types.includes('communication'));
 });
+
+import { mapGmailMessage } from '../../src/lib/connectors/google-extra';
+import { mapPlay } from '../../src/lib/connectors/spotify';
+
+test('gmail messages keep subject, snippet and thread but never the body', () => {
+  const item = mapGmailMessage({
+    id: 'm1', threadId: 't1', snippet: 'Quick sync?', labelIds: ['INBOX'],
+    payload: { headers: [{ name: 'Subject', value: 'Project sync' }, { name: 'From', value: 'a@b.c' }, { name: 'Date', value: 'Mon' }], body: { data: 'SECRET' } },
+  });
+  assert.equal(item?.sourceId, 'gmail:m1');
+  assert.equal((item?.payload as any).thread_id, 't1');
+  assert.ok(!JSON.stringify(item).includes('SECRET'));
+});
+
+test('spotify plays map to a listening item and skip incomplete rows', () => {
+  const item = mapPlay({ played_at: '2026-11-19T01:00:00Z', track: { id: 'x', name: 'Song', artists: [{ name: 'Band' }], album: { name: 'LP' } } });
+  assert.equal(item?.type, 'spotify_play');
+  assert.match(String((item?.payload as any).text), /Song by Band/);
+  assert.equal(mapPlay({ track: { id: 'x' } }), null);
+});

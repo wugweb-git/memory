@@ -13,7 +13,8 @@ import { IDENTITY_CONFIG } from '@/config/identity';
 import { syncFeed } from './feed';
 import { notionConnector } from './notion';
 import { googleDriveConnector, googleCalendarConnector } from './google';
-import { googleCalendarEventsConnector, googleTasksConnector } from '@/lib/connectors/google-extra';
+import { googleCalendarEventsConnector, googleTasksConnector, gmailConnector } from '@/lib/connectors/google-extra';
+import { spotifyConnector } from '@/lib/connectors/spotify';
 import { linkedinConnector, twitterConnector } from '@/lib/connectors/exports';
 import { voiceConnector } from '@/lib/connectors/voice';
 import { getConfigValue, getCustomFeeds } from './config';
@@ -151,6 +152,8 @@ export const CONNECTORS: Connector[] = [
   googleCalendarConnector,
   googleCalendarEventsConnector,
   googleTasksConnector,
+  gmailConnector,
+  spotifyConnector,
   linkedinConnector,
   twitterConnector,
   oauthPlaceholder({ id: 'behance', label: 'Behance', category: 'design', setupHint: 'No public API/RSS — needs an app registration.' }),

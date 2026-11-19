@@ -19,7 +19,8 @@ export type ConnectorCategory =
   | 'design'
   | 'files'
   | 'device'
-  | 'email';
+  | 'email'
+  | 'media';
 
 /** How the connector talks to its source. */
 export type ConnectorKind = 'rss' | 'api' | 'oauth' | 'manual' | 'device';

@@ -148,5 +148,67 @@ export function makeTasksConnector(deps: Deps = {}): Connector {
   };
 }
 
+const GMAIL = 'https://gmail.googleapis.com/gmail/v1';
+
+/** Metadata + snippet only (never the full body); promotions, social and spam are skipped. */
+export function mapGmailMessage(m: any): PendingItem | null {
+  if (!m?.id) return null;
+  const headers: Array<{ name?: string; value?: string }> = m.payload?.headers ?? [];
+  const h = (n: string) => headers.find((x) => x.name?.toLowerCase() === n)?.value ?? '';
+  const subject = h('subject') || '(no subject)';
+  return {
+    sourceId: `gmail:${m.id}`,
+    type: 'gmail_message',
+    payload: {
+      title: subject,
+      subject,
+      text: `${subject}\n${m.snippet ?? ''}`.trim(),
+      from: h('from'),
+      date: h('date') || (m.internalDate ? new Date(Number(m.internalDate)).toISOString() : null),
+      thread_id: m.threadId ?? null,
+      labels: Array.isArray(m.labelIds) ? m.labelIds : [],
+    },
+  };
+}
+
+export function makeGmailConnector(deps: Deps = {}): Connector {
+  return {
+    id: 'gmail',
+    label: 'Gmail',
+    category: 'email',
+    kind: 'oauth',
+    requires: 'oauth',
+    cadenceMins: 360,
+    setupHint: 'Reconnect Google to grant read-only Gmail access. Only subjects and snippets of the last 14 days are read; promotions and social mail are skipped.',
+    authStartPath: AUTH_PATH,
+    configured: deps.configured ?? googleClientConfigured,
+    connected: deps.connected ?? googleConnected,
+    async sync(): Promise<SyncResult> {
+      const blocked = await gate(deps);
+      if (blocked) return { ingested: 0, skipped: 0, error: blocked };
+      const api = deps.api ?? googleApiGet;
+      try {
+        const q = encodeURIComponent('newer_than:14d -category:promotions -category:social -in:spam -in:trash');
+        const list = await api<{ messages?: Array<{ id: string }> }>(`${GMAIL}/users/me/messages?maxResults=25&q=${q}`);
+        const items: PendingItem[] = [];
+        for (const ref of (list.messages ?? []).slice(0, 25)) {
+          const m = await api(`${GMAIL}/users/me/messages/${encodeURIComponent(ref.id)}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date`);
+          const mapped = mapGmailMessage(m);
+          if (mapped) items.push(mapped);
+        }
+        return await ingestItems({ connectorId: 'gmail', source: 'gmail', items, max: 25 });
+      } catch (err: any) {
+        const msg: string = err?.message ?? String(err);
+        if (/insufficient|scope|permission|has not been used|disabled|forbidden|403/i.test(msg)) {
+          return recordError('gmail', `NOT_CONFIGURED: Gmail access not granted (reconnect Google; enable Gmail API). ${msg}`);
+        }
+        return recordError('gmail', msg);
+      }
+    },
+  };
+}
+
 export const googleCalendarEventsConnector = makeCalendarEventsConnector();
 export const googleTasksConnector = makeTasksConnector();
+
+export const gmailConnector = makeGmailConnector();

@@ -37,7 +37,7 @@ const KEYWORD_RULES: KeywordRule[] = [
     type: 'creation',
     category: 'authoring',
     pattern: /\b(published|wrote|drafted|drafting|designed|built|shipped|launched|released|composed|recorded|created|prototype)\b/gi,
-    sources: ['notion'],
+    sources: ['notion', 'blog', 'medium', 'substack', 'linkedin', 'x', 'twitter'],
   },
   {
     type: 'health',
@@ -78,7 +78,8 @@ export function extractSignals(packet: MemoryPacket): Signal[] {
   const isEmail = source === 'gmail' || source === 'email';
 
   // Rule: Work Activity
-  if (source === 'github' || (isEmail && /work|project|meeting|sprint|task/i.test((packet.metadata as any).subject || ''))) {
+  const isCalendar = source === 'google_calendar' || source === 'google_calendar_events';
+  if (source === 'github' || isCalendar || (isEmail && /work|project|meeting|sprint|task/i.test((packet.metadata as any).subject || ''))) {
     detected.push({
       packet_id: packetId,
       type: 'work_activity',
