@@ -13,6 +13,7 @@ export function AppToastContainer(props: ToastContainerProps) {
   return (
     <ToastContainer
       theme="light"
+      position="bottom-center"
       role="status"
       autoClose={6000}
       pauseOnHover

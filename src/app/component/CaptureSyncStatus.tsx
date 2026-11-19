@@ -52,7 +52,7 @@ export function CaptureSyncStatus() {
     <div
       role="status"
       aria-live="polite"
-      className="fixed inset-x-3 top-[calc(env(safe-area-inset-top)+4rem)] z-40 mx-auto flex w-fit max-w-full items-center gap-2 rounded-full border border-border-primary bg-bg-elevated px-4 py-2 text-xs font-bold text-text-primary shadow-3xl"
+      className="fixed inset-x-3 top-[calc(env(safe-area-inset-top)+6.5rem)] z-40 mx-auto flex w-fit max-w-full items-center gap-2 rounded-full border border-border-primary bg-bg-elevated px-4 py-2 text-xs font-bold text-text-primary shadow-3xl"
     >
       {pending > 0 ? (
         <>
