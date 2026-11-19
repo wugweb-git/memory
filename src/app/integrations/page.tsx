@@ -16,6 +16,7 @@ import { AppShell } from '@/app/component/AppShell';
 import { apiRequest } from '@/lib/ui/api-client';
 import { BrandIcon, brandIconFor } from '@/components/ui/brand-icon';
 import { AutoPromoteCard } from './AutoPromoteCard';
+import { PushCard } from './PushCard';
 
 type ConnectorStatus = {
   id: string;
@@ -431,6 +432,7 @@ export default function IntegrationsPage() {
               })}
 
               <AutoPromoteCard />
+              <PushCard />
 
               <M3Card title="Add a feed">
                 <p className="-mt-1 text-xs text-text-tertiary">
