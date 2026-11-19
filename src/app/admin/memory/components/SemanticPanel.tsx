@@ -109,7 +109,7 @@ export function SemanticPanel({ data, loading }: SemanticPanelProps) {
                 </div>
               ))}
               {data.topics.map((topic, i) => (
-                <div key={i} className="px-2 py-0.5 rounded border border-border-secondary text-text-tertiary bg-secondary text-2xs font-bold tracking-tight uppercase">
+                <div key={i} className="px-2 py-0.5 rounded border border-border-secondary text-text-tertiary bg-bg-secondary text-2xs font-bold tracking-tight uppercase">
                   # {topic.topic}
                 </div>
               ))}
@@ -129,7 +129,7 @@ export function SemanticPanel({ data, loading }: SemanticPanelProps) {
                     <div key={i} className="flex items-center gap-2 text-2xs text-text-tertiary">
                       <span className="text-text-primary font-bold">{rel.from}</span>
                       <div className="flex-1 border-t border-dashed border-border-secondary relative h-0">
-                        <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-1 bg-[#121212] text-2xs uppercase tracking-tighter text-accent font-black whitespace-nowrap">
+                        <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-1 bg-bg-elevated text-2xs uppercase tracking-tighter text-accent font-black whitespace-nowrap">
                           {rel.type}
                         </span>
                       </div>

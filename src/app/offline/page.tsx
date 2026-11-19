@@ -1,3 +1,5 @@
+import { RetryButton } from './RetryButton';
+
 export const metadata = { title: 'Offline | Identity Prism' };
 
 export default function OfflinePage() {
@@ -8,12 +10,7 @@ export default function OfflinePage() {
         <p className="text-sm text-text-secondary">
           Prism OS needs a connection to load your memory and signals. Reconnect and try again.
         </p>
-        <a
-          href="/console"
-          className="inline-flex min-h-11 items-center rounded-xl bg-text-primary px-5 text-sm font-bold text-bg-primary"
-        >
-          Try again
-        </a>
+        <RetryButton />
       </div>
     </main>
   );

@@ -6,8 +6,6 @@ import {
   Database, ShieldCheck, Archive, Zap, Brain, Cpu,
   ChevronRight, LayoutDashboard, FileText, Sparkles,
 } from 'lucide-react';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import { AppShell } from '@/app/component/AppShell';
 import { useDashboardData } from '@/app/hooks/useDashboardData';
 import { UI_API } from '@/lib/api/endpoints';
@@ -59,10 +57,10 @@ const Skeleton: React.FC<{ className?: string }> = ({ className = 'h-28' }) => (
 
 /* ── Console ──────────────────────────────────────────────────── */
 const QUICK = [
-  { href: '/ask',       label: 'Chat with Digital Twin', icon: Brain,    desc: 'Ask anything grounded in your memory' },
-  { href: '/memory',    label: 'Memory Vault',           icon: Database,  desc: 'Indexed knowledge packets' },
-  { href: '/buffer',    label: 'Buffer Queue',           icon: Archive,   desc: 'Pending intake for review' },
-  { href: '/cognitive', label: 'Decision Engine',        icon: Cpu,       desc: 'Architect · Founder · Operator' },
+  { href: '/ask',       label: 'Chat with your digital twin', icon: Brain,    desc: 'Ask anything grounded in your memory' },
+  { href: '/memory',    label: 'Memory vault',           icon: Database,  desc: 'Indexed knowledge packets' },
+  { href: '/buffer',    label: 'Buffer queue',           icon: Archive,   desc: 'Pending intake for review' },
+  { href: '/cognitive', label: 'Decision engine',        icon: Cpu,       desc: 'Architect · Founder · Operator' },
   { href: '/persona',   label: 'Persona',                icon: Sparkles,  desc: 'Behavioral & style intelligence' },
   { href: '/content',   label: 'Content',                icon: FileText,  desc: 'Generated & published output' },
 ] as const;
@@ -96,7 +94,7 @@ function useLayerHealth(): Record<string, LayerStatus> {
 
     async function probe() {
       // L0–L2 live in the ingestion store; one health call covers them.
-      const mongoLayers = fetch('/api/health/system')
+      const ingestionLayers = fetch('/api/health/system')
         .then((r) => (r.ok ? r.json() : Promise.reject()))
         .then((h) => {
           const s: LayerStatus =
@@ -109,15 +107,15 @@ function useLayerHealth(): Record<string, LayerStatus> {
       const ping = (url: string) =>
         fetch(url).then((r): LayerStatus => (r.ok ? 'Active' : 'Offline')).catch((): LayerStatus => 'Offline');
 
-      const [l012, l3, l4, l5] = await Promise.all([
-        mongoLayers,
+      const [ingestion, l3, l4, l5] = await Promise.all([
+        ingestionLayers,
         ping('/api/cognitive/history'),
         ping('/api/persona/profile'),
         ping('/api/output/history'),
       ]);
 
       if (!cancelled) {
-        setLayers({ L0: l012, L1: l012, L2: l012, L3: l3, L4: l4, L5: l5 });
+        setLayers({ L0: ingestion, L1: ingestion, L2: ingestion, L3: l3, L4: l4, L5: l5 });
       }
     }
 
@@ -140,10 +138,12 @@ type Recommendation = {
 function useRecommendations() {
   const [recs, setRecs] = useState<Recommendation[] | null>(null);
   useEffect(() => {
+    let cancelled = false;
     fetch(UI_API.recommendations)
       .then((r) => (r.ok ? r.json() : { recommendations: [] }))
-      .then((j) => setRecs(Array.isArray(j.recommendations) ? j.recommendations : []))
-      .catch(() => setRecs([]));
+      .then((j) => { if (!cancelled) setRecs(Array.isArray(j.recommendations) ? j.recommendations : []); })
+      .catch(() => { if (!cancelled) setRecs([]); });
+    return () => { cancelled = true; };
   }, []);
   return recs;
 }
@@ -152,14 +152,14 @@ export default function ConsolePage() {
   const { stats, loading } = useDashboardData();
   const layerHealth = useLayerHealth();
   const recommendations = useRecommendations();
+  const syncKey = String(stats.syncStatus).toLowerCase();
+  const syncUnknown = syncKey === 'unknown' || syncKey === '—';
+  const syncBad = syncKey === 'degraded' || syncKey === 'offline';
+  const syncColor = syncUnknown ? 'text-text-tertiary' : syncBad ? 'text-warning' : 'text-success';
+  const syncSub = syncUnknown ? 'Health check unavailable' : syncBad ? 'Some layers need attention' : 'All layers nominal';
 
   return (
     <AppShell>
-      <ToastContainer
-        position="bottom-right"
-        toastClassName="!bg-bg-elevated !border !border-border-secondary !rounded-2xl !shadow-3xl !text-text-primary !text-sm"
-      />
-
       <header className="flex items-center gap-3 mb-8">
         <div className="w-11 h-11 rounded-2xl bg-secondary border border-border-secondary flex items-center justify-center shrink-0">
           <LayoutDashboard size={20} className="text-text-tertiary" />
@@ -176,10 +176,10 @@ export default function ConsolePage() {
             [1, 2, 3, 4].map((i) => <Skeleton key={i} />)
           ) : (
             <>
-              <StatCard label="Memory Packets" value={String(stats.memoryPackets)} sub="Total indexed" icon={<Database size={18} className="text-accent" />} />
-              <StatCard label="Sync Status" value={String(stats.syncStatus)} sub={String(stats.syncStatus).toLowerCase() === "degraded" ? "Some layers need attention" : "All layers nominal"} color={String(stats.syncStatus).toLowerCase() === "degraded" ? "text-warning" : "text-success"} icon={<ShieldCheck size={18} className={String(stats.syncStatus).toLowerCase() === "degraded" ? "text-warning" : "text-success"} />} />
-              <StatCard label="Buffer Queue" value={String(stats.bufferQueue)} sub="Pending review" icon={<Archive size={18} className="text-warning" />} />
-              <StatCard label="Uplink" value={String(stats.uplink)} sub="Last 24h" icon={<Zap size={18} className="text-accent" />} />
+              <StatCard label="Memory packets" value={String(stats.memoryPackets)} sub="Total indexed" icon={<Database size={18} className="text-accent" />} />
+              <StatCard label="Sync status" value={String(stats.syncStatus)} sub={syncSub} color={syncColor} icon={<ShieldCheck size={18} className={syncColor} />} />
+              <StatCard label="Buffer queue" value={String(stats.bufferQueue)} sub="Pending review" icon={<Archive size={18} className="text-warning" />} />
+              <StatCard label="Uplink" value={String(stats.uplink)} sub="Logic stability" icon={<Zap size={18} className="text-accent" />} />
             </>
           )}
         </div>
@@ -219,7 +219,7 @@ export default function ConsolePage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div>
-            <Label>Quick Access</Label>
+            <Label>Quick access</Label>
             <div className="space-y-2">
               {QUICK.map(({ href, label, icon: Icon, desc }) => (
                 <Link
@@ -241,7 +241,7 @@ export default function ConsolePage() {
           </div>
 
           <div>
-            <Label>System Layers</Label>
+            <Label>System layers</Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {LAYER_DEFS.map((l) => {
                 const status = layerHealth[l.id] ?? 'Checking';

@@ -27,14 +27,18 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
   const [filterType, setFilterType] = useState('');
   const [selectedPacketId, setSelectedPacketId] = useState<string | null>(null);
 
+  const [loadError, setLoadError] = useState<string | null>(null);
   const fetchPackets = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/memory/list?limit=10&test_run_id=${testRunId}${filterType ? `&type=${filterType}` : ''}`);
-      const data = await response.json();
+      const response = await fetch(`/api/memory/list?limit=10&test_run_id=${encodeURIComponent(testRunId)}${filterType ? `&type=${encodeURIComponent(filterType)}` : ''}`, { credentials: 'include' });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data?.error || `HTTP ${response.status}`);
       setPackets(data.packets || []);
+      setLoadError(null);
     } catch (err) {
-      console.error('Failed to fetch packets');
+      setPackets([]);
+      setLoadError(err instanceof Error ? err.message : 'Failed to fetch packets');
     } finally {
       setLoading(false);
     }
@@ -45,8 +49,9 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
   }, [fetchPackets]);
 
   return (
-    <div className="bg-[#0a0a0a] rounded-xl border border-border-secondary overflow-hidden relative">
-      <div className="p-6 border-b border-border-secondary flex items-center justify-between bg-white/[0.02]">
+    <div className="bg-bg-elevated rounded-xl border border-border-secondary overflow-hidden relative">
+      {loadError && <p role="alert" className="px-6 pt-4 text-sm text-danger">{loadError}</p>}
+      <div className="p-6 border-b border-border-secondary flex items-center justify-between bg-bg-secondary">
         <div>
           <h2 className="text-xl font-semibold text-text-primary flex items-center gap-2">
             <Database className="w-5 h-5 text-text-tertiary" />
@@ -58,7 +63,7 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
           <select 
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="bg-bg-primary border border-border-secondary rounded-md px-3 py-1.5 text-xs text-text-secondary focus:outline-none focus:ring-1 focus:ring-white/20"
+            className="bg-bg-primary border border-border-secondary rounded-md px-3 py-1.5 text-xs text-text-secondary focus:outline-none focus:ring-1 focus:ring-accent"
           >
             <option value="">All Types</option>
             <option value="email">Email</option>
@@ -86,11 +91,11 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
             {loading ? (
               [...Array(5)].map((_, i) => (
                 <tr key={i} className="animate-pulse border-b border-border-secondary">
-                  <td colSpan={7} className="px-6 py-8 h-4 bg-secondary opacity-20"></td>
+                  <td colSpan={7} className="px-6 py-8 h-4 bg-bg-secondary opacity-20"></td>
                 </tr>
               ))
             ) : packets.map((packet) => (
-              <tr key={packet.id} className="border-b border-border-secondary hover:bg-white/[0.02] transition-all group">
+              <tr key={packet.id} className="border-b border-border-secondary hover:bg-bg-secondary transition-all group">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
                     <Hash className="w-3 h-3 text-text-tertiary" />
@@ -122,7 +127,7 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
                 <td className="px-6 py-4 text-right">
                   <button 
                     onClick={() => setSelectedPacketId(packet.id)}
-                    className="p-2 hover:bg-secondary rounded-md transition-all text-text-tertiary hover:text-text-primary"
+                    className="p-2 hover:bg-bg-secondary rounded-md transition-all text-text-tertiary hover:text-text-primary"
                   >
                     <Eye className="w-4 h-4" />
                   </button>

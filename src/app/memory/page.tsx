@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppShell } from '@/app/component/AppShell';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
-import { Activity, AlertTriangle, Database, FileLock2, Folder, HardDrive, Home, RefreshCcw, Server, ShieldAlert } from 'lucide-react';
+import { Activity, Database, HardDrive, RefreshCcw, Server, ShieldAlert } from 'lucide-react';
 import ManualUpload from '@/app/buffer/components/ManualUpload';
 
 type MonitorState = {
@@ -36,16 +36,6 @@ type MonitorState = {
   };
 };
 
-const SIDEBAR_ITEMS = [
-  { label: 'Home', icon: Home },
-  { label: 'Activity', icon: Activity },
-  { label: 'Knowledge', icon: Database },
-  { label: 'Documents', icon: Folder },
-  { label: 'Sources', icon: Server },
-  { label: 'Storage', icon: HardDrive },
-  { label: 'Buffer (Blob)', icon: FileLock2 }
-];
-
 function bytesToMb(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
@@ -56,18 +46,21 @@ export default function MemoryControlSurface() {
   const [selectedPacket, setSelectedPacket] = useState<any | null>(null);
   const [statusFilter, setStatusFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
-  const [activityFilter, setActivityFilter] = useState('');
-  const [activeSidebarItem, setActiveSidebarItem] = useState('Home');
-  const [loading, setLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [busyAction, setBusyAction] = useState<string | null>(null);
+  const requestSeq = useRef(0);
+  const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const fetchMonitor = useCallback(async () => {
+    const seq = ++requestSeq.current;
     setLoading(true);
     try {
       const [monitorRes, packetRes] = await Promise.all([
         fetch(API_ENDPOINTS.memory.monitor.path),
         fetch(`${API_ENDPOINTS.memory.packets.path}?limit=100&status=${encodeURIComponent(statusFilter)}&source=${encodeURIComponent(sourceFilter)}`)
       ]);
+      if (seq !== requestSeq.current) return;
       if (!monitorRes.ok || !packetRes.ok) {
         // An unreachable memory store must not masquerade as an empty vault.
         setLoadError('Memory store unreachable — this is a connection problem, not an empty vault.');
@@ -76,15 +69,18 @@ export default function MemoryControlSurface() {
       setLoadError(null);
       const monitorJson = await monitorRes.json();
       const packetJson = await packetRes.json();
+      if (seq !== requestSeq.current) return;
+      const rows: any[] = Array.isArray(packetJson.rows) ? packetJson.rows : [];
       setMonitor(monitorJson);
-      setPackets(packetJson.rows || []);
-      if (packetJson.rows?.length) {
-        setSelectedPacket((current: any) => current ?? packetJson.rows[0]);
-      }
+      setPackets(rows);
+      // Keep the selection only if it is still in the list (it may be deleted or filtered out).
+      setSelectedPacket((current: any) => rows.find((r) => r.id === current?.id) ?? rows[0] ?? null);
     } catch {
-      setLoadError('Memory store unreachable — this is a connection problem, not an empty vault.');
+      if (seq === requestSeq.current) {
+        setLoadError('Memory store unreachable — this is a connection problem, not an empty vault.');
+      }
     } finally {
-      setLoading(false);
+      if (seq === requestSeq.current) setLoading(false);
     }
   }, [sourceFilter, statusFilter]);
 
@@ -100,27 +96,39 @@ export default function MemoryControlSurface() {
     }));
   }, [monitor]);
 
-  const runAction = async (action: string, packetId: string) => {
-    const res = await fetch('/api/memory/packet/action', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, packet_id: packetId })
-    });
-    if (res.ok) fetchMonitor();
+  const callPacketApi = async (url: string, body: Record<string, string>, label: string) => {
+    setBusyAction(label);
+    setActionError(null);
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        setActionError(j?.error || `${label} failed (${res.status})`);
+        return;
+      }
+      await fetchMonitor();
+    } catch {
+      setActionError(`${label} failed. Check your connection and try again.`);
+    } finally {
+      setBusyAction(null);
+    }
   };
 
-  const replayPacket = async (packetId: string) => {
-    const res = await fetch('/api/memory/replay', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ packet_id: packetId })
-    });
-    if (res.ok) fetchMonitor();
+  const runAction = (action: string, packetId: string) => {
+    if (action === 'delete' && !window.confirm('Delete this packet permanently? This cannot be undone.')) return;
+    return callPacketApi('/api/memory/packet/action', { action, packet_id: packetId }, 'Delete');
   };
+
+  const replayPacket = (packetId: string) =>
+    callPacketApi('/api/memory/replay', { packet_id: packetId }, 'Replay');
 
   return (
     <AppShell>
-      <header className="flex items-end justify-between mb-8">
+      <header className="flex flex-wrap items-end justify-between gap-3 mb-8">
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-2xl bg-secondary border border-border-secondary flex items-center justify-center shrink-0">
             <Database size={20} className="text-text-tertiary" />
@@ -128,14 +136,16 @@ export default function MemoryControlSurface() {
           <div>
             <h1 className="text-3xl font-black tracking-tight text-text-primary">Memory</h1>
             <div className="flex items-center gap-2 mt-1">
-              <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
-              <p className="text-sm text-text-tertiary font-medium">L1 baseline active · secure enclave</p>
+              <span className={`w-2 h-2 rounded-full ${loadError ? 'bg-danger' : 'bg-success'}`} />
+              <p className="text-sm text-text-tertiary font-medium">{loadError ? 'Memory store unreachable' : 'L1 memory vault'}</p>
             </div>
           </div>
         </div>
         <button
+          type="button"
           onClick={fetchMonitor}
-          className="px-5 py-2.5 rounded-full bg-text-primary text-bg-primary text-xs font-bold flex items-center gap-2 hover:bg-accent transition-colors"
+          disabled={loading}
+          className="min-h-11 px-5 py-2.5 rounded-full bg-text-primary text-bg-primary text-xs font-bold flex items-center gap-2 hover:bg-accent transition-colors disabled:opacity-60"
         >
           <RefreshCcw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
         </button>
@@ -144,10 +154,10 @@ export default function MemoryControlSurface() {
       {/* Stats Grid */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {[
-          { label: 'Storage Usage', value: monitor ? `${monitor.storage.usage_percent}%` : '--', sub: monitor ? `${bytesToMb(monitor.storage.used_bytes)} / ${bytesToMb(monitor.storage.total_bytes)}` : '', icon: HardDrive, color: 'text-accent' },
-          { label: 'Neural Packets', value: monitor?.stats.packet_count ?? '--', sub: 'Total atomic units', icon: Database, color: 'text-accent' },
-          { label: 'Quarantine Queue', value: monitor ? monitor.stats.hold_count + monitor.stats.failed_count : '--', sub: 'Awaiting validation', icon: ShieldAlert, color: 'text-warning' },
-          { label: 'Source Integrity', value: monitor?.stats.source_count ?? '--', sub: `Growth: ${monitor?.stats.growth_rate_per_day ?? 0}/day`, icon: Server, color: 'text-success' }
+          { label: 'Storage usage', value: monitor ? `${monitor.storage.usage_percent}%` : '--', sub: monitor ? `${bytesToMb(monitor.storage.used_bytes)} / ${bytesToMb(monitor.storage.total_bytes)}` : '', icon: HardDrive, color: 'text-accent' },
+          { label: 'Memory packets', value: monitor?.stats.packet_count ?? '--', sub: 'Total atomic units', icon: Database, color: 'text-accent' },
+          { label: 'Quarantine queue', value: monitor ? monitor.stats.hold_count + monitor.stats.failed_count : '--', sub: 'Awaiting validation', icon: ShieldAlert, color: 'text-warning' },
+          { label: 'Sources', value: monitor?.stats.source_count ?? '--', sub: `Growth: ${monitor?.stats.growth_rate_per_day ?? 0}/day`, icon: Server, color: 'text-success' }
         ].map((stat) => (
           <div key={stat.label} className="glass-panel rounded-radius-xl border border-border-secondary p-5 flex items-start justify-between">
             <div>
@@ -166,15 +176,15 @@ export default function MemoryControlSurface() {
           <div className="px-6 py-5 border-b border-border-secondary flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-1.5 h-1.5 rounded-full bg-accent" />
-              <h3 className="text-sm font-bold uppercase tracking-widest text-text-secondary">Ingestion Matrix</h3>
+              <h3 className="text-sm font-bold uppercase tracking-widest text-text-secondary">Ingestion packets</h3>
             </div>
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-              <input className="min-h-11 w-full min-w-0 px-3 py-1.5 rounded-lg bg-bg-primary border border-border-secondary text-xs text-text-primary focus:border-accent/50 transition-colors" aria-label="Filter status" placeholder="Filter status..." value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} />
-              <input className="min-h-11 w-full min-w-0 px-3 py-1.5 rounded-lg bg-bg-primary border border-border-secondary text-xs text-text-primary focus:border-accent/50 transition-colors" aria-label="Filter source" placeholder="Filter source..." value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} />
+              <input className="min-h-11 w-full min-w-0 px-3 py-1.5 rounded-lg bg-bg-primary border border-border-secondary text-xs text-text-primary focus:border-accent/50 transition-colors" aria-label="Filter status" placeholder="Filter by status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} />
+              <input className="min-h-11 w-full min-w-0 px-3 py-1.5 rounded-lg bg-bg-primary border border-border-secondary text-xs text-text-primary focus:border-accent/50 transition-colors" aria-label="Filter source" placeholder="Filter by source" value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} />
             </div>
           </div>
 
-          <div className="flex-1 overflow-auto custom-scrollbar p-6 space-y-3">
+          <div className="flex-1 overflow-auto custom-scrollbar p-6 space-y-3" aria-busy={loading}>
             {packets.map((packet) => (
               <button
                 type="button"
@@ -186,7 +196,7 @@ export default function MemoryControlSurface() {
                   <span className={`px-2 py-0.5 rounded text-2xs font-bold uppercase ${packet.status === 'accepted' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
                     {packet.status}
                   </span>
-                  <span className="text-2xs font-mono text-text-tertiary">{new Date(packet.ingestion_time).toLocaleTimeString()}</span>
+                  <span className="text-2xs font-mono text-text-tertiary">{packet.ingestion_time ? new Date(packet.ingestion_time).toLocaleString() : ""}</span>
                 </div>
                 <h4 className="text-sm font-bold tracking-tight mb-1 text-text-primary">{packet.type}</h4>
                 <div className="flex items-center gap-2 text-2xs text-text-tertiary">
@@ -197,10 +207,15 @@ export default function MemoryControlSurface() {
               </button>
             ))}
             {!packets.length && (
-              loadError ? (
+              loading && !loadError ? (
+                <div className="h-40 flex items-center justify-center text-text-tertiary border border-dashed border-border-secondary rounded-2xl">
+                  <p className="text-xs font-bold">Loading packets…</p>
+                </div>
+              ) : loadError ? (
                 <div className="h-40 flex flex-col items-center justify-center gap-3 text-danger border border-dashed border-danger/30 rounded-2xl px-6 text-center">
                   <p className="text-sm font-bold">{loadError}</p>
                   <button
+                    type="button"
                     onClick={fetchMonitor}
                     className="px-4 py-1.5 rounded-xl border border-danger/40 text-xs font-bold hover:bg-danger/5"
                   >
@@ -223,13 +238,13 @@ export default function MemoryControlSurface() {
           </section>
 
           <section className="glass-panel rounded-radius-xl border border-border-secondary p-6">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-text-tertiary mb-5">Storage Topology</h3>
+            <h3 className="text-xs font-bold uppercase tracking-widest text-text-tertiary mb-5">Storage thresholds</h3>
             <div className="space-y-4">
               {thresholds.map((row) => (
                 <div key={row.threshold} className="space-y-2">
                   <div className="flex items-center justify-between text-2xs font-bold">
-                    <span className="text-text-tertiary uppercase tracking-tighter">Capacity Threshold {row.threshold}%</span>
-                    <span className={row.hit ? 'text-warning' : 'text-text-disabled'}>{row.hit ? 'TRIGGERED' : 'READY'}</span>
+                    <span className="text-text-tertiary uppercase tracking-tighter">Capacity threshold {row.threshold}%</span>
+                    <span className={row.hit ? 'text-warning' : 'text-text-disabled'}>{row.hit ? 'Triggered' : 'Ready'}</span>
                   </div>
                   <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
                     <div
@@ -244,7 +259,7 @@ export default function MemoryControlSurface() {
                 <div className="p-4 rounded-xl bg-danger/10 border border-danger/20 text-danger flex items-center gap-3">
                   <ShieldAlert size={18} />
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-widest leading-none">Ingestion Hard Lock</p>
+                    <p className="text-xs font-bold uppercase tracking-widest leading-none">Ingestion locked</p>
                     <p className="text-2xs font-medium opacity-70 mt-1">Storage limit exceeded. Actions restricted.</p>
                   </div>
                 </div>
@@ -253,36 +268,37 @@ export default function MemoryControlSurface() {
           </section>
 
           <section className="glass-panel rounded-radius-xl border border-border-secondary p-6 overflow-hidden">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-text-tertiary mb-5">Packet Diagnostics</h3>
+            <h3 className="text-xs font-bold uppercase tracking-widest text-text-tertiary mb-5">Packet details</h3>
             {selectedPacket ? (
               <div className="space-y-5">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <p className="text-2xs text-text-tertiary font-bold uppercase">Integrity</p>
+                    <p className="text-2xs text-text-tertiary font-bold uppercase">Status</p>
                     <p className="text-2xs font-mono uppercase text-success">{selectedPacket.status}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-2xs text-text-tertiary font-bold uppercase">Source Access</p>
+                    <p className="text-2xs text-text-tertiary font-bold uppercase">Source</p>
                     <p className="text-2xs font-mono uppercase text-text-secondary">{selectedPacket.source}</p>
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <p className="text-2xs text-text-tertiary font-bold uppercase">Payload Matrix</p>
+                  <p className="text-2xs text-text-tertiary font-bold uppercase">Payload</p>
                   <pre className="max-h-60 overflow-auto p-4 rounded-xl bg-bg-primary border border-border-secondary text-2xs font-mono text-text-secondary custom-scrollbar leading-relaxed">
-                    {JSON.stringify(selectedPacket.content, null, 2)}
+                    {JSON.stringify(selectedPacket.content ?? null, null, 2)}
                   </pre>
                 </div>
 
+                {actionError ? <p role="alert" className="text-2xs text-danger">{actionError}</p> : null}
                 <div className="grid grid-cols-2 gap-2 pt-2">
-                  <button onClick={() => runAction('delete', selectedPacket.id)} className="px-3 py-2 rounded-lg bg-danger/10 border border-danger/20 text-2xs font-bold text-danger uppercase hover:bg-danger/20 transition-colors">Terminate</button>
-                  <button onClick={() => replayPacket(selectedPacket.id)} className="px-3 py-2 rounded-lg bg-accent/10 border border-accent/20 text-2xs font-bold text-accent uppercase hover:bg-accent/20 transition-colors">Replay</button>
+                  <button type="button" disabled={busyAction !== null} onClick={() => runAction('delete', selectedPacket.id)} className="min-h-11 disabled:opacity-50 px-3 py-2 rounded-lg bg-danger/10 border border-danger/20 text-2xs font-bold text-danger uppercase hover:bg-danger/20 transition-colors">Delete</button>
+                  <button type="button" disabled={busyAction !== null} onClick={() => replayPacket(selectedPacket.id)} className="min-h-11 disabled:opacity-50 px-3 py-2 rounded-lg bg-accent/10 border border-accent/20 text-2xs font-bold text-accent uppercase hover:bg-accent/20 transition-colors">Replay</button>
                 </div>
               </div>
             ) : (
               <div className="py-12 flex flex-col items-center justify-center text-text-disabled border border-dashed border-border-secondary rounded-2xl">
                 <Activity size={20} className="mb-2 opacity-40" />
-                <p className="text-2xs font-bold uppercase tracking-widest">Select Packet</p>
+                <p className="text-2xs font-bold uppercase tracking-widest">Select a packet</p>
               </div>
             )}
           </section>

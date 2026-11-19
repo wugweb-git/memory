@@ -90,7 +90,7 @@ function secondaryLine(c: ConnectorStatus): { text: string; title?: string; dang
   return { text: c.setupHint };
 }
 
-const PILL = 'shrink-0 text-2xs font-bold rounded-lg px-2.5 py-1 transition-colors';
+const PILL = 'shrink-0 inline-flex min-h-11 items-center text-2xs font-bold rounded-lg px-2.5 py-1 transition-colors';
 
 const KIND_GROUPS: Array<{ key: string; title: string; subtitle: string; match: (c: ConnectorStatus) => boolean }> = [
   { key: 'auto', title: 'Auto-sync sources', subtitle: 'Fetched on a schedule — sync now anytime', match: (c) => c.kind === 'rss' || c.kind === 'api' || (c.kind === 'oauth' && c.configured) },
@@ -105,12 +105,18 @@ export default function IntegrationsPage() {
   const [syncing, setSyncing] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    setError(null);
     try {
       const data = await apiRequest<{ connectors: ConnectorStatus[] }>('/api/sources');
       setConnectors(data.connectors ?? []);
       setError(null);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to load sources');
+      const status = (e as { status?: number } | null)?.status;
+      setError(
+        status === 401
+          ? 'Your session expired. Sign in again to see your sources.'
+          : e instanceof Error ? e.message : 'Failed to load sources',
+      );
     } finally {
       setLoading(false);
     }
@@ -166,6 +172,7 @@ export default function IntegrationsPage() {
     }
     return (
       <button
+        type="button"
         onClick={() => syncNow(c)}
         disabled={syncing === c.id}
         className={`${PILL} text-accent hover:bg-bg-tertiary disabled:text-text-disabled disabled:hover:bg-transparent`}
@@ -183,7 +190,21 @@ export default function IntegrationsPage() {
           {loading ? (
             <M3State state="loading" message="Loading your sources…" />
           ) : error ? (
-            <M3State state="error" message={error} />
+            <div className="space-y-3">
+              <M3State state="error" message={error} />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setLoading(true); load(); }}
+                  className="min-h-11 px-4 rounded-xl border border-border-primary text-sm font-bold text-text-primary"
+                >
+                  Try again
+                </button>
+                <Link href="/login?next=/integrations" className="inline-flex min-h-11 items-center px-4 text-sm font-bold text-accent">Sign in</Link>
+              </div>
+            </div>
+          ) : connectors.length === 0 ? (
+            <M3State state="empty" message="No sources are registered yet." />
           ) : (
             KIND_GROUPS.map((group) => {
               const items = connectors.filter(group.match);

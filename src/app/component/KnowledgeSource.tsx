@@ -59,7 +59,7 @@ export const KnowledgeSource = () => {
                   </div>
                   <div className="flex items-center gap-2">
                      <div className="w-1.5 h-1.5 rounded-full bg-success opacity-60" />
-                     <span className="text-2xs font-black text-text-tertiary uppercase tracking-tighter opacity-0 group-hover:opacity-100 transition-opacity">Anchored</span>
+                     <span className="text-2xs font-semibold text-text-tertiary uppercase tracking-tight opacity-0 group-hover:opacity-100 transition-opacity">Anchored</span>
                   </div>
                 </motion.div>
               ))}
@@ -70,7 +70,7 @@ export const KnowledgeSource = () => {
 
       <style dangerouslySetInnerHTML={{ __html: `
         .filepond--panel-root { background-color: var(--bg-secondary) !important; border-radius: 1.5rem !important; }
-        .filepond--drop-label { color: var(--text-tertiary) !important; font-size: 11px !important; font-weight: 800 !important; text-transform: uppercase !important; letter-spacing: 0.1em !important; }
+        .filepond--drop-label { color: var(--text-tertiary) !important; font-size: var(--font-xs) !important; font-weight: 600 !important; }
         .filepond--label-action { color: var(--accent) !important; text-decoration: none !important; border-bottom: 2px solid var(--accent); }
         .filepond--item-panel { background-color: var(--bg-elevated) !important; border: 1px solid var(--border-primary) !important; }
       ` }} />

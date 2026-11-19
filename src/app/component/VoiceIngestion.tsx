@@ -190,10 +190,10 @@ export const VoiceIngestion = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-8 relative z-10">
         <div>
-          <h3 className="text-2xs font-black tracking-[0.4em] text-text-primary uppercase flex items-center gap-3">
+          <h3 className="text-2xs font-semibold tracking-widest text-text-primary uppercase flex items-center gap-3">
             <Waves size={16} className="text-accent" /> Cognitive_Ingress
           </h3>
-          <p className="text-2xs text-text-tertiary font-bold tracking-[0.2em] mt-1 uppercase opacity-50">
+          <p className="text-2xs text-text-tertiary font-bold tracking-widest mt-1 uppercase opacity-50">
             {SUPPORTED ? 'Voice + Text Signal Capture' : 'Text Signal Capture'}
           </p>
         </div>
@@ -237,7 +237,7 @@ export const VoiceIngestion = () => {
                 <Brain size={28} className="text-text-disabled opacity-40" />
               </div>
               <div className="space-y-1">
-                <p className="text-xs font-bold text-text-tertiary uppercase tracking-widest ">
+                <p className="text-xs font-bold text-text-tertiary tracking-widest ">
                   {SUPPORTED ? 'Tap mic or type below' : 'Type your signal below'}
                 </p>
                 <p className="text-2xs text-text-disabled max-w-[220px] leading-relaxed">
@@ -262,7 +262,7 @@ export const VoiceIngestion = () => {
                   />
                 ))}
               </div>
-              <p className="text-2xs font-black text-accent tracking-[0.4em] animate-pulse uppercase">
+              <p className="text-2xs font-semibold text-accent tracking-widest animate-pulse uppercase">
                 RECORDING… TAP MIC TO STOP
               </p>
             </motion.div>
@@ -273,7 +273,7 @@ export const VoiceIngestion = () => {
             <motion.div key="processing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="flex flex-col items-center gap-4" role="status">
               <Loader2 size={36} className="text-accent animate-spin" />
-              <p className="text-2xs font-black text-text-tertiary tracking-widest uppercase">Parsing signal…</p>
+              <p className="text-2xs font-semibold text-text-tertiary tracking-widest uppercase">Parsing signal…</p>
             </motion.div>
           )}
 
@@ -289,14 +289,14 @@ export const VoiceIngestion = () => {
                   { label: 'METHOD', val: parsed.how },
                 ] as const).map(item => (
                   <div key={item.label} className="p-3 rounded-xl bg-secondary/40 border border-border-primary group hover:border-accent/40 transition-colors">
-                    <span className="text-2xs font-black text-text-tertiary tracking-[0.2em] block mb-1 uppercase">{item.label}</span>
+                    <span className="text-2xs font-semibold text-text-tertiary tracking-widest block mb-1 uppercase">{item.label}</span>
                     <p className="text-2xs text-text-primary font-bold leading-tight line-clamp-2 ">{item.val}</p>
                   </div>
                 ))}
               </div>
               <div className="flex gap-3">
                 <button onClick={anchorMemory}
-                  className="flex-1 py-3.5 rounded-2xl bg-accent text-bg-primary text-2xs font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-accent-high transition-all shadow-lg active:scale-95">
+                  className="flex-1 py-3.5 rounded-2xl bg-accent text-bg-primary text-2xs font-semibold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-accent-high transition-all shadow-lg active:scale-95">
                   <CheckCircle2 size={15} /> Anchor to Buffer
                 </button>
                 <button onClick={reset}
@@ -312,7 +312,7 @@ export const VoiceIngestion = () => {
             <motion.div key="anchoring" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="flex flex-col items-center gap-4" role="status">
               <Loader2 size={36} className="text-success animate-spin" />
-              <p className="text-2xs font-black text-success tracking-widest uppercase">Writing to buffer…</p>
+              <p className="text-2xs font-semibold text-success tracking-widest uppercase">Writing to buffer…</p>
             </motion.div>
           )}
 
@@ -323,7 +323,7 @@ export const VoiceIngestion = () => {
               <AlertCircle size={32} className="text-danger" />
               <p className="text-2xs text-danger font-bold">{error}</p>
               <button onClick={reset}
-                className="text-2xs font-black text-accent hover:underline uppercase tracking-widest">
+                className="text-2xs font-semibold text-accent hover:underline uppercase tracking-widest">
                 Try again →
               </button>
             </motion.div>
@@ -350,7 +350,7 @@ const TextInput: React.FC<{ onSubmit: (text: string) => void }> = ({ onSubmit })
       <button
         disabled={!val.trim()}
         onClick={() => { onSubmit(val); setVal(''); }}
-        className="w-full py-2.5 rounded-xl bg-text-primary text-bg-primary text-2xs font-black uppercase tracking-widest disabled:opacity-30 hover:bg-accent-high transition-colors"
+        className="w-full py-2.5 rounded-xl bg-text-primary text-bg-primary text-2xs font-semibold uppercase tracking-widest disabled:opacity-30 hover:bg-accent-high transition-colors"
       >
         Capture Signal
       </button>

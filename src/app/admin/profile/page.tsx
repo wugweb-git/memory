@@ -13,7 +13,7 @@ import type { ProfileSection } from '@/lib/profile/types';
 
 export default function AdminProfilePage() {
   const {
-    profile, sections, loading, saving, saveError,
+    profile, sections, loading, saving, error: loadError,
     saveProfile, addSection, removeSection, refresh,
   } = useProfileEditor();
 
@@ -43,8 +43,8 @@ export default function AdminProfilePage() {
       await saveProfile({ displayName, bio, isPublished, avatarUrl: avatarUrl || null });
       toast.success('Profile saved');
       refresh();
-    } catch {
-      toast.error(saveError || 'Save failed');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Save failed');
     }
   }
 
@@ -61,7 +61,6 @@ export default function AdminProfilePage() {
           body: newBody,
           summary: newBody.slice(0, 200),
           source: newType === 'blog' ? 'Blog' : 'Portfolio',
-          url: `${IDENTITY_CONFIG.SITE_URL}/p/${IDENTITY_CONFIG.HANDLE}`,
           date: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
           tags: [],
         },
@@ -76,6 +75,7 @@ export default function AdminProfilePage() {
   }
 
   async function handleDeleteSection(id: string) {
+    if (!window.confirm('Remove this post from your public profile?')) return;
     try {
       await removeSection(id);
       toast.success('Removed');
@@ -91,7 +91,7 @@ export default function AdminProfilePage() {
       <header className="border-b border-border-secondary bg-bg-elevated rounded-radius-xl mb-6">
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/admin" className="p-2 rounded-xl hover:bg-secondary" aria-label="Back">
+            <Link href="/admin" className="p-2 rounded-xl hover:bg-bg-secondary" aria-label="Back">
               <ArrowLeft size={18} />
             </Link>
             <h1 className="text-sm font-black  tracking-tight">Profile Editor</h1>
@@ -133,7 +133,12 @@ export default function AdminProfilePage() {
           ))}
         </div>
 
-        {loading ? (
+        {loadError && !loading ? (
+          <div role="alert" className="rounded-2xl border border-danger p-4 text-sm text-danger flex items-center justify-between gap-3">
+            <span>Could not load the profile: {String(loadError)}</span>
+            <button type="button" onClick={() => refresh()} className="min-h-11 px-3 text-2xs font-bold uppercase text-accent">Retry</button>
+          </div>
+        ) : loading ? (
           <div className="flex justify-center py-20">
             <Loader2 className="animate-spin text-text-tertiary" size={32} />
           </div>

@@ -49,7 +49,7 @@ export default function RagTester({ testRunId = 'PROD' }: RagTesterProps) {
   };
 
   return (
-    <div className="bg-[#0a0a0a] rounded-xl border border-border-secondary p-6 overflow-hidden">
+    <div className="bg-bg-elevated rounded-xl border border-border-secondary p-6 overflow-hidden">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-xl font-semibold text-text-primary flex items-center gap-2">
@@ -73,13 +73,13 @@ export default function RagTester({ testRunId = 'PROD' }: RagTesterProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Ask your memory anything..."
-          className="w-full bg-secondary border border-border-secondary rounded-lg py-4 pl-12 pr-24 text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-border-active transition-all"
+          className="w-full bg-bg-secondary border border-border-secondary rounded-lg py-4 pl-12 pr-24 text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-border-active transition-all"
         />
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
         <button
           type="submit"
           disabled={isSearching || query.length < 3}
-          className="absolute right-2 top-1/2 -translate-y-1/2 bg-accent hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-4 py-2 rounded-md transition-opacity text-sm"
+          className="absolute right-2 top-1/2 -translate-y-1/2 bg-accent hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-bg-elevated font-bold px-4 py-2 rounded-md transition-opacity text-sm"
         >
           {isSearching ? 'Searching…' : 'Run query'}
         </button>
@@ -116,7 +116,7 @@ export default function RagTester({ testRunId = 'PROD' }: RagTesterProps) {
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-secondary rounded-lg">
+                  <div className="p-2 bg-bg-secondary rounded-lg">
                     <FileText className="w-4 h-4 text-warning" />
                   </div>
                   <div>

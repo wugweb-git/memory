@@ -50,7 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ current, onChange, mobileOpen,
           <Command size={14} className="text-bg-primary" />
         </div>
         <div>
-          <span className="text-sm font-black text-text-primary tracking-tight ">{APP_BRAND.name}</span>
+          <span className="text-sm font-semibold text-text-primary tracking-tight ">{APP_BRAND.name}</span>
           <div className="flex items-center gap-1 mt-0.5">
             <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
             <span className="text-2xs font-bold text-text-tertiary uppercase tracking-widest">Active</span>
@@ -62,7 +62,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ current, onChange, mobileOpen,
       <nav className="flex-1 overflow-y-auto py-4 px-3 custom-scrollbar">
         {WORKSPACE_NAV.map((group) => (
           <div key={group.group} className="mb-5">
-            <p className="text-2xs font-black text-text-disabled uppercase tracking-[0.3em] px-3 mb-1.5">
+            <p className="text-2xs font-semibold text-text-disabled uppercase tracking-widest px-3 mb-1.5">
               {group.group}
             </p>
             {group.items.map(({ id, label, icon: Icon }) => {

@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Share2, Check } from 'lucide-react';
 import { haptic, shareOrCopy } from '@/lib/pwa/browser';
 
 /** Native share sheet where available, copy-link fallback elsewhere. */
 export function ShareButton({ title, text, className = '' }: { title: string; text?: string; className?: string }) {
   const [status, setStatus] = useState('');
+  const clearTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (clearTimer.current) clearTimeout(clearTimer.current); }, []);
 
   const onClick = async () => {
     haptic('tap');
@@ -15,7 +17,7 @@ export function ShareButton({ title, text, className = '' }: { title: string; te
     else if (result === 'failed') setStatus('Could not share. Copy the address from the browser bar.');
     else setStatus('');
     if (result === 'copied') haptic('success');
-    if (result === 'copied' || result === 'failed') setTimeout(() => setStatus(''), 3000);
+    if (result === 'copied' || result === 'failed') { if (clearTimer.current) clearTimeout(clearTimer.current); clearTimer.current = setTimeout(() => setStatus(''), 3000); }
   };
 
   return (

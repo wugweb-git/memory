@@ -20,6 +20,12 @@ function str(v: unknown): string {
   return typeof v === 'string' ? v : '';
 }
 
+/** Only allow http(s) links from owner-authored content (blocks javascript: etc). */
+function safeUrl(v: unknown): string {
+  const u = typeof v === 'string' ? v.trim() : '';
+  return /^https?:\/\//i.test(u) ? u : '';
+}
+
 const SOCIAL_ICONS: Record<string, typeof Linkedin> = {
   linkedin: Linkedin,
   github: Github,
@@ -45,7 +51,7 @@ export function PublicProfileView({ username }: { username: string }) {
   const displayName = profile?.displayName ?? (isOwner ? IDENTITY_CONFIG.DISPLAY_NAME : username);
   const role = isOwner ? IDENTITY_CONFIG.ROLE : null;
   const bio = profile?.bio ?? null;
-  const avatar = profile?.avatarUrl || `https://api.dicebear.com/7.x/micah/svg?seed=${username}`;
+  const avatar = profile?.avatarUrl || `https://api.dicebear.com/7.x/micah/svg?seed=${encodeURIComponent(username)}`;
 
   const posts = useMemo(
     () => [...byType('blog'), ...byType('published')],
@@ -77,7 +83,7 @@ export function PublicProfileView({ username }: { username: string }) {
     );
   }
 
-  const socials = (profile?.socialLinks ?? []).filter((l) => l.url);
+  const socials = (profile?.socialLinks ?? []).filter((l) => safeUrl(l.url));
 
   return (
     <main className="max-w-2xl mx-auto px-5 sm:px-8 py-14 sm:py-20">
@@ -120,8 +126,8 @@ export function PublicProfileView({ username }: { username: string }) {
               const Icon = SOCIAL_ICONS[key] ?? ExternalLink;
               return (
                 <a
-                  key={link.platform}
-                  href={link.url}
+                  key={`${link.platform}-${link.url}`}
+                  href={safeUrl(link.url)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex min-h-11 items-center gap-2 px-3.5 rounded-xl border border-border-secondary text-sm font-medium text-text-secondary hover:border-border-primary hover:text-text-primary transition-colors"
@@ -209,7 +215,7 @@ export function PublicProfileView({ username }: { username: string }) {
             <div className="divide-y divide-border-secondary">
               {posts.slice(0, 8).map((post) => {
                 const c = sectionContent(post);
-                const url = str(c.url);
+                const url = safeUrl(c.url);
                 const summary = str(c.summary) || str(c.body);
                 const inner = (
                   <>
@@ -297,10 +303,12 @@ export function PublicProfileView({ username }: { username: string }) {
             <div className="divide-y divide-border-secondary">
               {references.map((ref) => {
                 const c = sectionContent(ref);
+                const refUrl = safeUrl(c.url);
+                if (!refUrl) return null;
                 return (
                   <a
                     key={ref.id}
-                    href={str(c.url) || '#'}
+                    href={refUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-between gap-4 py-3.5 group"
@@ -351,10 +359,12 @@ function SanityShowcase() {
   } | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     fetch('/api/showcase')
-      .then((r) => r.json())
-      .then(setData)
-      .catch(() => setData(null));
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!cancelled) setData(d); })
+      .catch(() => { if (!cancelled) setData(null); });
+    return () => { cancelled = true; };
   }, []);
 
   if (!data?.enabled) return null;
@@ -368,7 +378,7 @@ function SanityShowcase() {
 
   return (
     <section className="space-y-4">
-      <h2 className="text-2xs font-bold uppercase tracking-widest text-text-tertiary">Selected work</h2>
+      <Eyebrow>Selected work</Eyebrow>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {items.slice(0, 8).map((it: any) => {
           const body = (
@@ -383,7 +393,7 @@ function SanityShowcase() {
               )}
               <div className="flex items-center justify-between gap-3">
                 <span className="text-2xs font-bold text-accent">{it.kind}</span>
-                {it.url && <ArrowUpRight size={14} className="text-text-disabled group-hover:text-accent transition-colors" />}
+                {safeUrl(it.url) && <ArrowUpRight size={14} className="text-text-disabled group-hover:text-accent transition-colors" />}
               </div>
               <h3 className="text-base font-bold text-text-primary mt-2 group-hover:text-accent transition-colors">
                 {it.title}
@@ -401,9 +411,10 @@ function SanityShowcase() {
               )}
             </>
           );
+          const itUrl = safeUrl(it.url);
           const cls = "rounded-2xl border border-border-secondary p-5 block group hover:border-border-primary transition-colors";
-          return it.url ? (
-            <a key={it._id} href={it.url} target="_blank" rel="noopener noreferrer" className={cls}>
+          return itUrl ? (
+            <a key={it._id} href={itUrl} target="_blank" rel="noopener noreferrer" className={cls}>
               {body}
             </a>
           ) : (

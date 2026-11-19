@@ -32,7 +32,7 @@ export function IntelPanel({ metrics, loading }: IntelPanelProps) {
   return (
     <div className="space-y-4">
       <div className="bg-bg-secondary border border-border-secondary rounded-xl overflow-hidden shadow-2xl">
-        <div className="py-3 px-4 flex flex-row items-center justify-between border-b border-border-secondary bg-white/[0.02]">
+        <div className="py-3 px-4 flex flex-row items-center justify-between border-b border-border-secondary bg-bg-secondary">
           <h3 className="text-2xs font-bold uppercase tracking-[0.2em] flex items-center gap-2 text-text-tertiary">
             <BrainCircuit className="w-3.5 h-3.5 text-accent shadow-sm" />
             Intelligence Layer 2

@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { AppShell } from '@/app/component/AppShell';
 import { M3Card, M3Page, M3State } from '@/components/ui/m3';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
 import {
@@ -101,7 +100,7 @@ export default function PublicNotesPage() {
   const count = notes?.length ?? 0;
 
   return (
-    <AppShell>
+    <>
       <div className="max-w-3xl mx-auto px-4">
         <M3Page title="Public notes" subtitle="Choose which memory notes the public Ask chat may quote. Owner only.">
           <p className="text-sm">
@@ -135,7 +134,7 @@ export default function PublicNotesPage() {
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                className={`${buttonBase} bg-accent text-white`}
+                className={`${buttonBase} bg-accent text-bg-elevated`}
                 disabled={busy || selected.size === 0}
                 onClick={() => mark(true)}
               >
@@ -217,6 +216,6 @@ export default function PublicNotesPage() {
           </M3Card>
         </M3Page>
       </div>
-    </AppShell>
+    </>
   );
 }

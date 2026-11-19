@@ -48,9 +48,9 @@ export default function PacketInspector({ packetId, onClose }: PacketInspectorPr
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-end bg-bg-primary/80 backdrop-blur-md p-4">
-      <div className="w-full max-w-6xl h-full bg-[#0d0d0d] border-l border-border-secondary shadow-sm flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
+      <div className="w-full max-w-6xl h-full bg-bg-elevated border-l border-border-secondary shadow-sm flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
         {/* Header */}
-        <div className="p-6 border-b border-border-secondary flex items-center justify-between bg-white/[0.01]">
+        <div className="p-6 border-b border-border-secondary flex items-center justify-between bg-bg-secondary">
           <div className="flex items-center gap-5">
             <div className="p-3 bg-bg-secondary rounded-xl border border-border-primary shadow-sm">
               <Activity className="w-7 h-7 text-accent" />
@@ -62,7 +62,7 @@ export default function PacketInspector({ packetId, onClose }: PacketInspectorPr
           </div>
           <button 
             onClick={onClose}
-            className="p-3 hover:bg-secondary rounded-full transition-all text-text-tertiary hover:text-text-primary group"
+            className="p-3 hover:bg-bg-secondary rounded-full transition-all text-text-tertiary hover:text-text-primary group"
           >
             <X className="w-7 h-7 group-hover:rotate-90 transition-transform duration-300" />
           </button>
@@ -94,7 +94,7 @@ export default function PacketInspector({ packetId, onClose }: PacketInspectorPr
                   ))}
                 </div>
                 
-                <div className="bg-[#050505] rounded-2xl border border-border-secondary p-6 font-mono text-2xs overflow-x-auto min-h-[500px] shadow-inner relative group">
+                <div className="bg-bg-secondary rounded-2xl border border-border-secondary p-6 font-mono text-2xs overflow-x-auto min-h-[500px] shadow-inner relative group">
                   <div className="absolute top-4 right-4 text-2xs text-text-secondary font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
                     ReadOnly.raw
                   </div>
@@ -163,7 +163,7 @@ export default function PacketInspector({ packetId, onClose }: PacketInspectorPr
         <div className="p-4 border-t border-border-secondary bg-bg-primary flex items-center justify-between text-2xs text-text-tertiary font-bold uppercase tracking-widest px-8">
            <div className="flex items-center gap-6">
              <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-success" /> Vault Integrity Verified</span>
-             <span className="flex items-center gap-2 text-accent underline decoration-blue-500/20 cursor-pointer hover:text-accent">View Raw Trace Logs</span>
+             <span className="flex items-center gap-2 text-accent underline decoration-accent cursor-pointer hover:text-accent">View Raw Trace Logs</span>
            </div>
            <span>Identity Prism Diagnostic Tool v1.2</span>
         </div>

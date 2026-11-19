@@ -25,7 +25,7 @@ type ProfileSection = {
   id: string;
   type: string;
   title: string;
-  content: Record<string, any>;
+  content: Record<string, unknown>;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -101,6 +101,8 @@ export default function OutputStudioPage() {
 
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [decisions, setDecisions] = useState<DecisionRow[]>([]);
+  const [draftsError, setDraftsError] = useState<string | null>(null);
+  const [savedContent, setSavedContent] = useState("");
   const [versions, setVersions] = useState<{ ts: number; content: string }[]>([]);
 
   // Live profile (what the world sees)
@@ -114,10 +116,13 @@ export default function OutputStudioPage() {
   const userId = resolveUserId().userId;
 
   async function loadDrafts() {
+    setDraftsError(null);
     try {
       const rows = await apiRequest<Draft[]>(UI_API.outputDrafts);
       setDrafts(Array.isArray(rows) ? rows : []);
-    } catch { /* empty state */ }
+    } catch (e: unknown) {
+      setDraftsError(e instanceof Error ? e.message : "Could not load drafts");
+    }
   }
   async function loadDecisions() {
     try {
@@ -164,6 +169,7 @@ export default function OutputStudioPage() {
       const next = json?.content ?? content;
       setContent(next);
       if (json?.output_id) setOutputId(json.output_id);
+      setSavedContent(next);
       snapshot(next);
       toast.success("Draft generated");
       loadDrafts();
@@ -173,10 +179,19 @@ export default function OutputStudioPage() {
     } finally { setLoading(false); }
   }
 
+  /** Persist textarea edits so publish/schedule act on what the user sees. */
+  async function persistEdits() {
+    if (!outputId || content === savedContent) return;
+    if (!content.trim()) throw new Error("Draft is empty");
+    await apiRequest(UI_API.outputDrafts, { method: "PATCH", body: { id: outputId, content, platform } });
+    setSavedContent(content);
+  }
+
   async function schedule() {
     if (!outputId) { toast.error("Generate or open a draft first"); return; }
     try {
       setBusy(true);
+      await persistEdits();
       await apiRequest(UI_API.outputSchedule, { method: "POST", body: { outputId, platform, userId } });
       toast.success("Added to the publishing queue");
     } catch (e: unknown) {
@@ -188,11 +203,12 @@ export default function OutputStudioPage() {
     if (!outputId) { toast.error("Generate or open a draft first"); return; }
     try {
       setBusy(true);
+      await persistEdits();
       const res = await apiRequest<{ sanitySynced?: boolean }>(UI_API.outputPublish, {
         method: "POST", body: { outputId, userId },
       });
       toast.success(res?.sanitySynced ? "Live on your profile — CMS synced" : "Live on your profile");
-      setOutputId(null); setContent("");
+      setOutputId(null); setContent(""); setSavedContent(""); setVersions([]);
       loadDrafts();
       await loadLive();
       setTab("live");
@@ -202,7 +218,7 @@ export default function OutputStudioPage() {
   }
 
   function openDraft(d: Draft) {
-    setOutputId(d.id); setContent(d.content); setPlatform(d.platform);
+    setOutputId(d.id); setContent(d.content); setSavedContent(d.content); setPlatform(d.platform);
     if (d.decisionId) setDecisionId(d.decisionId);
     setVersions([]); setTab("compose");
   }
@@ -212,6 +228,7 @@ export default function OutputStudioPage() {
   }
   async function saveEdit() {
     if (!editingId) return;
+    if (!editTitle.trim()) { toast.error("Title can't be empty"); return; }
     try {
       setBusy(true);
       await apiRequest(profilePath(HANDLE, "sections"), {
@@ -252,9 +269,10 @@ export default function OutputStudioPage() {
             ] as [Tab, string][]).map(([id, label]) => (
               <button
                 key={id}
+                aria-pressed={tab === id}
                 onClick={() => setTab(id)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
-                  tab === id ? "bg-text-primary text-bg-primary" : "border border-border-primary bg-white text-text-secondary"
+                  tab === id ? "bg-text-primary text-bg-primary" : "border border-border-primary bg-bg-primary text-text-secondary"
                 }`}
               >
                 {label}
@@ -275,6 +293,7 @@ export default function OutputStudioPage() {
                   />
                   {decisions.length > 0 && (
                     <select
+                      aria-label="Pick a recent decision"
                       className="w-full rounded-2xl border border-border-primary p-3 text-sm text-text-secondary"
                       value=""
                       onChange={(e) => e.target.value && setDecisionId(e.target.value)}
@@ -288,6 +307,7 @@ export default function OutputStudioPage() {
                     </select>
                   )}
                   <select
+                    aria-label="Platform"
                     className="w-full rounded-2xl border border-border-primary p-3 text-sm"
                     value={platform}
                     onChange={(e) => setPlatform(e.target.value)}
@@ -308,12 +328,13 @@ export default function OutputStudioPage() {
                   <M3Card
                     title="Draft"
                     action={
-                      <button onClick={() => setShowPreview((s) => !s)} className="text-2xs font-bold uppercase tracking-wide text-accent">
+                      <button onClick={() => setShowPreview((s) => !s)} className="text-2xs font-bold text-accent">
                         {showPreview ? "Hide preview" : "Show preview"}
                       </button>
                     }
                   >
                     <textarea
+                      aria-label="Draft content"
                       className="w-full rounded-2xl border border-border-primary p-3 text-sm min-h-44"
                       value={content}
                       onChange={(e) => setContent(e.target.value)}
@@ -348,7 +369,7 @@ export default function OutputStudioPage() {
                             <span className="text-2xs text-text-tertiary truncate">
                               {new Date(v.ts).toLocaleTimeString()} · {wordCount(v.content)} words
                             </span>
-                            <button onClick={() => setContent(v.content)} className="text-2xs font-bold uppercase text-accent shrink-0">
+                            <button onClick={() => setContent(v.content)} className="text-2xs font-bold text-accent shrink-0">
                               Restore
                             </button>
                           </li>
@@ -368,8 +389,8 @@ export default function OutputStudioPage() {
                 title="On your profile"
                 action={
                   <div className="flex items-center gap-3">
-                    <Link href={`/p/${HANDLE}`} target="_blank" className="text-2xs font-bold uppercase text-accent">Open</Link>
-                    <button onClick={loadLive} className="text-2xs font-bold uppercase text-accent">Refresh</button>
+                    <Link href={`/p/${HANDLE}`} target="_blank" className="text-2xs font-bold text-accent">Open</Link>
+                    <button type="button" onClick={loadLive} className="text-2xs font-bold text-accent">Refresh</button>
                   </div>
                 }
               >
@@ -384,11 +405,11 @@ export default function OutputStudioPage() {
                 ) : (
                   <ul className="space-y-2">
                     {sections.map((s) => (
-                      <li key={s.id} className="rounded-2xl border border-border-secondary bg-white p-3">
+                      <li key={s.id} className="rounded-2xl border border-border-secondary bg-bg-primary p-3">
                         {editingId === s.id ? (
                           <div className="space-y-2">
-                            <input className="w-full rounded-xl border border-border-primary p-2 text-sm" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
-                            <textarea className="w-full rounded-xl border border-border-primary p-2 text-sm min-h-28" value={editBody} onChange={(e) => setEditBody(e.target.value)} />
+                            <input aria-label="Section title" className="w-full rounded-xl border border-border-primary p-2 text-sm" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+                            <textarea aria-label="Section body" className="w-full rounded-xl border border-border-primary p-2 text-sm min-h-28" value={editBody} onChange={(e) => setEditBody(e.target.value)} />
                             <div className="flex gap-2">
                               <M3Button onClick={saveEdit} disabled={busy}>Save</M3Button>
                               <M3Button tone="secondary" onClick={() => setEditingId(null)}>Cancel</M3Button>
@@ -403,8 +424,8 @@ export default function OutputStudioPage() {
                             <p className="text-sm font-bold text-text-primary mt-1">{s.title}</p>
                             <p className="text-sm text-text-secondary line-clamp-2">{sectionBody(s).slice(0, 180)}</p>
                             <div className="flex gap-3 mt-2">
-                              <button onClick={() => startEdit(s)} className="text-2xs font-bold uppercase text-accent">Edit</button>
-                              <button onClick={() => unpublish(s)} className="text-2xs font-bold uppercase text-danger">Remove</button>
+                              <button onClick={() => startEdit(s)} className="text-2xs font-bold text-accent">Edit</button>
+                              <button onClick={() => unpublish(s)} className="text-2xs font-bold text-danger">Remove</button>
                             </div>
                           </>
                         )}
@@ -420,7 +441,7 @@ export default function OutputStudioPage() {
                     key={previewKey}
                     src={`/p/${HANDLE}`}
                     title="Public profile preview"
-                    className="w-full h-[520px] bg-white"
+                    className="w-full h-[520px] bg-bg-primary"
                   />
                 </div>
               </M3Card>
@@ -429,19 +450,21 @@ export default function OutputStudioPage() {
 
           {/* ---------- DRAFTS ---------- */}
           {tab === "drafts" && (
-            <M3Card title="Drafts" action={<button onClick={loadDrafts} className="text-2xs font-bold uppercase text-accent">Refresh</button>}>
-              {drafts.length === 0 ? (
+            <M3Card title="Drafts" action={<button onClick={loadDrafts} className="text-2xs font-bold text-accent">Refresh</button>}>
+              {draftsError ? (
+                <M3State state="error" message={`Couldn't load drafts (${draftsError}).`} />
+              ) : drafts.length === 0 ? (
                 <M3State state="empty" message="No drafts yet. Generate one from a decision." />
               ) : (
                 <ul className="space-y-2">
                   {drafts.map((d) => (
                     <li key={d.id}>
-                      <button onClick={() => openDraft(d)} className="w-full text-left rounded-2xl border border-border-secondary bg-white p-3 hover:border-border-primary transition">
+                      <button onClick={() => openDraft(d)} className="w-full text-left rounded-2xl border border-border-secondary bg-bg-primary p-3 hover:border-border-primary transition">
                         <div className="flex items-center justify-between">
                           <span className="text-2xs font-bold uppercase tracking-wide text-accent">{d.platform}</span>
                           <span className="text-2xs text-text-tertiary">{relTime(d.createdAt)}</span>
                         </div>
-                        <p className="text-sm text-text-secondary mt-1 line-clamp-2">{d.content.slice(0, 160)}</p>
+                        <p className="text-sm text-text-secondary mt-1 line-clamp-2">{String(d.content ?? "").slice(0, 160)}</p>
                       </button>
                     </li>
                   ))}

@@ -44,7 +44,7 @@ export default function ManualUpload({ onComplete }: { onComplete: () => void })
       if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100));
     };
     xhr.onload = () => {
-      let body: any = {};
+      let body: { packetId?: string; reason?: string; error?: string; message?: string } = {};
       try { body = JSON.parse(xhr.responseText); } catch { /* non-JSON */ }
       if (xhr.status === 200) {
         setStatus('success');
@@ -82,6 +82,7 @@ export default function ManualUpload({ onComplete }: { onComplete: () => void })
         <div className="border-2 border-dashed border-border-primary rounded-xl p-8 flex flex-col items-center justify-center gap-3 hover:border-accent/50 hover:bg-accent/5 transition-all cursor-pointer relative group">
           <input
             type="file"
+            aria-label="Choose a file to ingest"
             accept=".pdf,.txt,.md,.html,.htm,.json,.csv"
             className="absolute inset-0 opacity-0 cursor-pointer"
             onChange={handleFileChange}
@@ -105,7 +106,7 @@ export default function ManualUpload({ onComplete }: { onComplete: () => void })
               </div>
             </div>
             {!uploading && (
-              <button onClick={() => { setFile(null); setStatus('idle'); setMessage(null); }} className="p-1.5 hover:bg-bg-secondary rounded-full text-text-disabled shrink-0">
+              <button aria-label="Remove file" onClick={() => { setFile(null); setStatus('idle'); setMessage(null); }} className="p-1.5 hover:bg-bg-secondary rounded-full text-text-disabled shrink-0">
                 <X size={15} />
               </button>
             )}

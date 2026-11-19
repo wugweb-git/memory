@@ -40,13 +40,16 @@ export default function PortfolioPage() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ ...emptyForm });
   const [showForm, setShowForm] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
+    setLoadError(null);
     try {
       const res = await apiRequest<Managed>(UI_API.cmsContent);
       setData(res);
-    } catch {
+    } catch (e: unknown) {
+      setLoadError(e instanceof Error ? e.message : "Could not load content");
       setData(null);
     } finally {
       setLoading(false);
@@ -56,9 +59,10 @@ export default function PortfolioPage() {
 
   async function create() {
     if (!form.title.trim()) { toast.error("Title required"); return; }
+    if (form.url.trim() && !/^https?:\/\//i.test(form.url.trim())) { toast.error("URL must start with http:// or https://"); return; }
     setSaving(true);
     try {
-      await apiRequest(UI_API.cmsContent, { method: "POST", body: { type: tab, ...form } });
+      await apiRequest(UI_API.cmsContent, { method: "POST", body: { type: tab, ...form, title: form.title.trim() } });
       toast.success("Published to your showcase");
       setForm({ ...emptyForm });
       setShowForm(false);
@@ -90,9 +94,10 @@ export default function PortfolioPage() {
             {TABS.map((t) => (
               <button
                 key={t.type}
+                aria-pressed={tab === t.type}
                 onClick={() => { setTab(t.type); setShowForm(false); }}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
-                  tab === t.type ? "bg-black text-white" : "border border-border-primary bg-white text-text-secondary"
+                  tab === t.type ? "bg-text-primary text-bg-primary" : "border border-border-primary bg-bg-primary text-text-secondary"
                 }`}
               >
                 {t.label}
@@ -105,14 +110,19 @@ export default function PortfolioPage() {
             title={TABS.find((t) => t.type === tab)!.label}
             action={
               <div className="flex items-center gap-3">
-                <Link href={`/p/${IDENTITY_CONFIG.HANDLE}`} target="_blank" className="text-2xs font-bold uppercase text-accent">View live</Link>
-                <button onClick={() => setShowForm((s) => !s)} className="text-2xs font-bold uppercase text-accent">
+                <Link href={`/p/${IDENTITY_CONFIG.HANDLE}`} target="_blank" className="text-2xs font-bold text-accent">View live</Link>
+                <button type="button" aria-expanded={showForm} onClick={() => setShowForm((s) => !s)} className="text-2xs font-bold text-accent">
                   {showForm ? "Close" : "New"}
                 </button>
               </div>
             }
           >
-            {data && !data.enabled ? (
+            {loadError ? (
+              <div>
+                <M3State state="error" message={`Couldn't load your content (${loadError}).`} />
+                <button type="button" onClick={load} className="mt-2 px-3 py-1.5 rounded-xl border border-border-primary text-sm font-medium text-text-primary">Try again</button>
+              </div>
+            ) : data && !data.enabled ? (
               <M3State state="error" message="Sanity CMS isn't configured in this environment." />
             ) : loading ? (
               <M3State state="loading" message="Loading your content…" />
@@ -136,6 +146,10 @@ export default function PortfolioPage() {
                       <input className="w-full rounded-xl border border-border-primary p-2 text-sm" aria-label="URL (optional)" placeholder="URL (optional)" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} />
                     )}
                     <input className="w-full rounded-xl border border-border-primary p-2 text-sm" aria-label="Tags (comma-separated)" placeholder="Tags (comma-separated)" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} />
+                    <label className="flex items-center gap-2 text-sm text-text-secondary">
+                      <input type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} />
+                      Feature this on your profile
+                    </label>
                     <M3Button onClick={create} disabled={saving}>{saving ? "Publishing…" : "Publish to showcase"}</M3Button>
                   </div>
                 )}
@@ -145,12 +159,12 @@ export default function PortfolioPage() {
                 ) : (
                   <ul className="space-y-2">
                     {docs.map((d) => (
-                      <li key={d._id} className="rounded-2xl border border-border-secondary bg-white p-3">
+                      <li key={d._id} className="rounded-2xl border border-border-secondary bg-bg-primary p-3">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <p className="text-sm font-bold text-text-primary truncate">
                               {d.title}
-                              {d.featured ? <span className="ml-2 text-2xs font-bold uppercase text-accent">Featured</span> : null}
+                              {d.featured ? <span className="ml-2 text-2xs font-bold text-accent">Featured</span> : null}
                             </p>
                             {(d.summary || d.excerpt || d.client) && (
                               <p className="text-sm text-text-secondary line-clamp-2">{d.summary || d.excerpt || d.client}</p>
@@ -159,7 +173,7 @@ export default function PortfolioPage() {
                               <p className="text-2xs text-text-tertiary mt-1">{d.tags.join(" · ")}</p>
                             ) : null}
                           </div>
-                          <button onClick={() => remove(d._id, d.title)} className="text-2xs font-bold uppercase text-danger shrink-0">Remove</button>
+                          <button onClick={() => remove(d._id, d.title)} aria-label={`Remove ${d.title}`} className="text-2xs font-bold text-danger shrink-0">Remove</button>
                         </div>
                       </li>
                     ))}

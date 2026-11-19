@@ -18,15 +18,18 @@ interface EmbeddingMonitorProps {
 export default function EmbeddingMonitor({ testRunId = 'PROD' }: EmbeddingMonitorProps) {
   const [stats, setStats] = useState<Stats>({ pending: 0, processing: 0, embedded: 0, failed: 0 });
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchStats = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      const response = await fetch(`/api/memory/stats?test_run_id=${testRunId}`);
-      const data = await response.json();
+      const response = await fetch(`/api/memory/stats?test_run_id=${encodeURIComponent(testRunId)}`, { credentials: 'include' });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data?.error || `HTTP ${response.status}`);
       setStats(data.embedding_stats || { pending: 0, processing: 0, embedded: 0, failed: 0 });
+      setError(null);
     } catch (err) {
-      console.error('Failed to fetch embedding stats');
+      setError(err instanceof Error ? err.message : 'Failed to fetch embedding stats');
     } finally {
       setIsRefreshing(false);
     }
@@ -39,7 +42,7 @@ export default function EmbeddingMonitor({ testRunId = 'PROD' }: EmbeddingMonito
   }, [fetchStats]);
 
   return (
-    <div className="bg-[#0a0a0a] rounded-xl border border-border-secondary p-6 flex flex-col gap-6">
+    <div className="bg-bg-elevated rounded-xl border border-border-secondary p-6 flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-text-primary flex items-center gap-2">
@@ -50,26 +53,21 @@ export default function EmbeddingMonitor({ testRunId = 'PROD' }: EmbeddingMonito
         </div>
         <button 
           onClick={fetchStats}
-          className={`p-2 hover:bg-secondary rounded-full transition-all ${isRefreshing ? 'animate-spin' : ''}`}
+          aria-label="Refresh embedding stats"
+          className={`p-2 hover:bg-bg-secondary rounded-full transition-all ${isRefreshing ? 'animate-spin' : ''}`}
         >
           <RefreshCw className="w-4 h-4 text-text-tertiary" />
         </button>
       </div>
 
+      {error && <p role="alert" className="text-sm text-danger">{error}</p>}
       <div className="grid grid-cols-2 gap-4">
         <StatusCard 
           label="Backlog" 
           count={stats.pending + stats.processing} 
           icon={<Clock className="w-4 h-4 text-warning" />} 
           color="amber"
-          subtext="Queueing for worker..."
-        />
-        <StatusCard 
-          label="Token Burn (Est)" 
-          count={Math.round(stats.embedded * 250)} 
-          icon={<Zap className="w-4 h-4 text-accent" />} 
-          color="blue"
-          subtext="OpenAI text-3-small"
+          subtext="Waiting for the pipeline"
         />
         <StatusCard 
           label="Embedded" 
@@ -82,22 +80,17 @@ export default function EmbeddingMonitor({ testRunId = 'PROD' }: EmbeddingMonito
           count={stats.failed} 
           icon={<AlertCircle className="w-4 h-4 text-danger" />} 
           color="red"
-          action={
-            <button className="text-2xs underline hover:text-danger font-bold">
-              RETRY ALL
-            </button>
-          }
         />
       </div>
 
-      <div className="mt-2 p-4 bg-secondary rounded-lg border border-border-secondary">
+      <div className="mt-2 p-4 bg-bg-secondary rounded-lg border border-border-secondary">
         <div className="flex items-center justify-between text-xs mb-2">
           <span className="text-text-tertiary">Memory Sync Progress</span>
           <span className="text-text-primary font-bold">
             {Math.round((stats.embedded / (stats.pending + stats.processing + stats.embedded + stats.failed || 1)) * 100)}%
           </span>
         </div>
-        <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
+        <div className="h-1.5 w-full bg-bg-secondary rounded-full overflow-hidden">
           <motion.div 
             initial={{ width: 0 }}
             animate={{ width: `${(stats.embedded / (stats.pending + stats.processing + stats.embedded + stats.failed || 1)) * 100}%` }}

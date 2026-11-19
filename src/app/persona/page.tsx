@@ -85,19 +85,25 @@ export default function PersonaIntelligencePage() {
   const [feedbackType, setFeedbackType] = useState<'accepted' | 'rejected' | 'ignored'>('accepted');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [rebuilding, setRebuilding] = useState(false);
   const [userId, setUserId] = useState<string>('');
 
   useEffect(() => {
     const { userId: resolved } = resolveUserId();
-    setUserId(resolved);
+    if (resolved) setUserId(resolved);
+    else {
+      setLoadError('Could not determine which user to load.');
+      setLoading(false);
+    }
   }, []);
 
   const fetchData = useCallback(async (uid: string) => {
     if (!uid) return;
     try {
-      setLoading(true);
-      setError(null);
+      setLoadError(null);
       const getJson = (path: string) =>
         fetch(path).then((r) => {
           if (!r.ok) throw new Error(`${path} failed (${r.status})`);
@@ -114,7 +120,7 @@ export default function PersonaIntelligencePage() {
       setAdaptive(a);
       setTimeline(Array.isArray(d?.timeline) ? d.timeline : []);
     } catch (e) {
-      setError(e instanceof Error ? `Failed to load persona data: ${e.message}` : 'Failed to load persona data');
+      setLoadError(e instanceof Error ? `Failed to load persona data: ${e.message}` : 'Failed to load persona data');
     } finally {
       setLoading(false);
     }
@@ -125,28 +131,31 @@ export default function PersonaIntelligencePage() {
   }, [userId, fetchData]);
 
   async function rebuildPersona() {
-    setSaving(true);
+    if (rebuilding) return;
+    setRebuilding(true);
     setError(null);
+    setNotice(null);
     try {
       const res = await fetch('/api/persona/rebuild', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, useProfileSource: true }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(
           data.reason === 'ai_contamination_detected'
             ? 'Rebuild blocked: profile text appears AI-generated.'
-            : data.reason ?? 'Rebuild failed',
+            : data.reason ?? data.error ?? 'Rebuild failed',
         );
         return;
       }
+      setNotice('Persona regenerated.');
       await fetchData(userId);
     } catch {
       setError('Persona rebuild failed');
     } finally {
-      setSaving(false);
+      setRebuilding(false);
     }
   }
 
@@ -157,17 +166,19 @@ export default function PersonaIntelligencePage() {
     if (!confirm(`Roll back ${field} to its value before this change?`)) return;
     setSaving(true);
     setError(null);
+    setNotice(null);
     try {
       const res = await fetch('/api/persona/rollback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ field, toLogId: logId }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(data.error ?? 'Rollback failed');
         return;
       }
+      setNotice('Rolled back.');
       await fetchData(userId);
     } catch {
       setError('Rollback failed');
@@ -178,6 +189,8 @@ export default function PersonaIntelligencePage() {
 
   async function sendFeedback() {
     setSaving(true);
+    setError(null);
+    setNotice(null);
     try {
       const res = await fetch('/api/persona/feedback', {
         method: 'POST',
@@ -185,6 +198,7 @@ export default function PersonaIntelligencePage() {
         body: JSON.stringify({ userId, feedbackType, targetType: 'persona' }),
       });
       if (!res.ok) throw new Error(`Feedback failed (${res.status})`);
+      setNotice('Feedback saved.');
       await fetchData(userId);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Feedback failed');
@@ -195,6 +209,8 @@ export default function PersonaIntelligencePage() {
 
   async function updateAdaptive(field: keyof AdaptiveProfile, value: string) {
     setSaving(true);
+    setError(null);
+    setNotice(null);
     try {
       const res = await fetch('/api/persona/adaptive-ui', {
         method: 'PATCH',
@@ -214,19 +230,19 @@ export default function PersonaIntelligencePage() {
     return (
       <AppShell>
         <div className="w-full min-h-[50vh] flex items-center justify-center px-4">
-          <p className="text-sm uppercase tracking-widest text-text-tertiary animate-pulse">Loading Digital Twin…</p>
+          <p role="status" className="text-sm text-text-tertiary animate-pulse">Loading persona…</p>
         </div>
       </AppShell>
     );
   }
 
-  if (error) {
+  if (loadError && !profile) {
     return (
       <AppShell>
         <div className="w-full min-h-[50vh] flex items-center justify-center px-4">
           <div className="text-center space-y-2">
-            <p className="text-sm text-danger">{error}</p>
-            <button onClick={() => fetchData(userId)} className="px-4 py-2 rounded-xl bg-text-primary text-bg-primary text-xs font-bold uppercase">Retry</button>
+            <p role="alert" className="text-sm text-danger">{loadError}</p>
+            {userId && <button onClick={() => { setLoading(true); fetchData(userId); }} className="px-4 py-2 rounded-xl bg-text-primary text-bg-primary text-xs font-bold">Retry</button>}
           </div>
         </div>
       </AppShell>
@@ -238,22 +254,25 @@ export default function PersonaIntelligencePage() {
     <div className="w-full max-w-3xl mx-auto px-4 py-8 space-y-8">
       <header className="space-y-3">
         <div className="space-y-1">
-          <h1 className="text-xl font-black ">Persona Intelligence</h1>
-          <p className="text-xs text-text-tertiary uppercase tracking-widest">Layer 4 — Digital Twin Evolution</p>
+          <h1 className="text-xl font-semibold text-text-primary">Persona</h1>
+          <p className="text-xs text-text-tertiary">How your digital twin writes, decides and evolves.</p>
         </div>
         <button
           type="button"
           onClick={rebuildPersona}
-          disabled={saving}
-          className="px-4 py-2 rounded-xl bg-text-primary text-bg-primary text-xs font-bold uppercase disabled:opacity-50"
+          disabled={rebuilding || saving}
+          className="px-4 py-2 rounded-xl bg-text-primary text-bg-primary text-xs font-bold disabled:opacity-50"
         >
-          {saving ? 'Rebuilding…' : 'Regenerate with LLM'}
+          {rebuilding ? 'Regenerating…' : 'Regenerate with AI'}
         </button>
+        {error && <p role="alert" className="text-sm text-danger">{error}</p>}
+        {loadError && <p role="alert" className="text-sm text-danger">{loadError}</p>}
+        {notice && <p role="status" className="text-sm text-success">{notice}</p>}
       </header>
 
-      {/* Communication Profile */}
+      {/* Communication profile */}
       <section className="glass-panel rounded-3xl border border-border-secondary p-5 space-y-3">
-        <h2 className="text-xs font-black uppercase tracking-widest text-text-tertiary">Communication Profile</h2>
+        <h2 className="text-sm font-semibold text-text-secondary">Communication profile</h2>
         <div className="flex items-center justify-between">
           <span className="text-sm">Confidence</span>
           <span className="text-sm font-bold">{Math.round((profile?.confidenceScore ?? 0.5) * 100)}%</span>
@@ -263,11 +282,11 @@ export default function PersonaIntelligencePage() {
         </div>
         <div className="grid grid-cols-1 gap-3">
           {(['communicationStyle', 'writingStyle', 'decisionStyle'] as const).map((key) => {
-            const val = (profile as any)?.[key];
+            const val = profile?.[key];
             const hasContent = val && typeof val === 'object' && Object.keys(val).length > 0;
             return (
               <div key={key} className="bg-secondary/40 rounded-xl p-3">
-                <p className="text-2xs font-bold uppercase tracking-widest text-text-tertiary mb-2">{STYLE_LABEL[key]}</p>
+                <p className="text-2xs font-bold text-text-tertiary mb-2">{STYLE_LABEL[key]}</p>
                 {hasContent ? <StyleValue value={val} /> : <p className="text-sm text-text-tertiary">Not enough signal yet.</p>}
               </div>
             );
@@ -275,9 +294,9 @@ export default function PersonaIntelligencePage() {
         </div>
       </section>
 
-      {/* Behavioral Traits */}
+      {/* Behavioral traits */}
       <section className="glass-panel rounded-3xl border border-border-secondary p-5 space-y-3">
-        <h2 className="text-xs font-black uppercase tracking-widest text-text-tertiary">Behavioral Traits</h2>
+        <h2 className="text-sm font-semibold text-text-secondary">Behavioral traits</h2>
         {traits.length === 0 ? (
           <p className="text-sm text-text-tertiary">No traits yet.</p>
         ) : (
@@ -296,9 +315,9 @@ export default function PersonaIntelligencePage() {
         )}
       </section>
 
-      {/* Evolution Timeline */}
+      {/* Evolution timeline */}
       <section className="glass-panel rounded-3xl border border-border-secondary p-5 space-y-3">
-        <h2 className="text-xs font-black uppercase tracking-widest text-text-tertiary">Evolution Timeline</h2>
+        <h2 className="text-sm font-semibold text-text-secondary">Evolution timeline</h2>
         {timeline.length === 0 ? (
           <p className="text-sm text-text-tertiary">No evolution logs yet.</p>
         ) : (
@@ -312,7 +331,7 @@ export default function PersonaIntelligencePage() {
                     <button
                       onClick={() => rollbackField(log.id, log.changedField!)}
                       disabled={saving}
-                      className="text-2xs font-bold uppercase text-accent disabled:opacity-50"
+                      className="text-2xs font-bold text-accent disabled:opacity-50"
                     >
                       Roll back
                     </button>
@@ -322,7 +341,7 @@ export default function PersonaIntelligencePage() {
                   <span className={`text-2xs font-bold ${(log.confidenceDelta || 0) >= 0 ? 'text-success' : 'text-danger'}`}>
                     {(log.confidenceDelta || 0) >= 0 ? '+' : ''}{Math.round((log.confidenceDelta || 0) * 100)}%
                   </span>
-                  <p className="text-2xs text-text-tertiary">{new Date(log.createdAt).toLocaleDateString()}</p>
+                  <p className="text-2xs text-text-tertiary">{log.createdAt ? new Date(log.createdAt).toLocaleDateString() : ''}</p>
                 </div>
               </div>
             ))}
@@ -332,22 +351,24 @@ export default function PersonaIntelligencePage() {
 
       {/* Adaptive UX Settings */}
       <section className="glass-panel rounded-3xl border border-border-secondary p-5 space-y-3">
-        <h2 className="text-xs font-black uppercase tracking-widest text-text-tertiary">Adaptive UX</h2>
+        <h2 className="text-sm font-semibold text-text-secondary">Adaptive interface</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[
-            { label: 'UI Density', field: 'uiDensity' as const, options: ['minimal', 'dense', 'comfortable'] },
-            { label: 'Output Length', field: 'preferredOutputLength' as const, options: ['short', 'medium', 'long'] },
+            { label: 'UI density', field: 'uiDensity' as const, options: ['minimal', 'dense', 'comfortable'] },
+            { label: 'Output length', field: 'preferredOutputLength' as const, options: ['short', 'medium', 'long'] },
             { label: 'Navigation', field: 'preferredNavigationStyle' as const, options: ['single-primary-action', 'tabbed', 'drawer'] },
             { label: 'Mode', field: 'preferredMode' as const, options: ['operator', 'founder', 'architect'] },
           ].map((ctrl) => (
             <div key={ctrl.field} className="space-y-1">
-              <p className="text-2xs uppercase tracking-widest text-text-tertiary">{ctrl.label}</p>
+              <p className="text-2xs text-text-tertiary">{ctrl.label}</p>
               <div className="flex flex-wrap gap-1">
                 {ctrl.options.map((opt) => (
                   <button
                     key={opt}
+                    aria-pressed={adaptive?.[ctrl.field] === opt}
+                    disabled={saving}
                     onClick={() => updateAdaptive(ctrl.field, opt)}
-                    className={`px-2 py-1 rounded-lg border text-2xs uppercase ${(adaptive as any)?.[ctrl.field] === opt ? 'bg-text-primary text-bg-primary border-text-primary' : 'border-border-secondary'}`}
+                    className={`px-2 py-1 rounded-lg border text-2xs ${adaptive?.[ctrl.field] === opt ? 'bg-text-primary text-bg-primary border-text-primary' : 'border-border-secondary'} disabled:opacity-50`}
                   >
                     {opt.replace(/-/g, ' ')}
                   </button>
@@ -360,13 +381,14 @@ export default function PersonaIntelligencePage() {
 
       {/* Feedback */}
       <section className="glass-panel rounded-3xl border border-border-secondary p-5 space-y-3">
-        <h2 className="text-xs font-black uppercase tracking-widest text-text-tertiary">Feedback</h2>
+        <h2 className="text-sm font-semibold text-text-secondary">Feedback on this persona</h2>
         <div className="flex gap-2">
           {(['accepted', 'rejected', 'ignored'] as const).map((t) => (
             <button
               key={t}
+              aria-pressed={feedbackType === t}
               onClick={() => setFeedbackType(t)}
-              className={`flex-1 px-3 py-2 rounded-xl border text-xs uppercase font-bold ${feedbackType === t ? 'bg-text-primary text-bg-primary border-text-primary' : 'border-border-secondary'}`}
+              className={`flex-1 px-3 py-2 rounded-xl border text-xs capitalize font-bold ${feedbackType === t ? 'bg-text-primary text-bg-primary border-text-primary' : 'border-border-secondary'}`}
             >
               {t}
             </button>
@@ -375,9 +397,9 @@ export default function PersonaIntelligencePage() {
         <button
           onClick={sendFeedback}
           disabled={saving}
-          className="w-full px-4 py-3 rounded-xl bg-text-primary text-bg-primary text-xs font-bold uppercase disabled:opacity-50"
+          className="w-full px-4 py-3 rounded-xl bg-text-primary text-bg-primary text-xs font-bold disabled:opacity-50"
         >
-          {saving ? 'Saving…' : 'Save Feedback'}
+          {saving ? 'Saving…' : 'Save feedback'}
         </button>
       </section>
     </div>

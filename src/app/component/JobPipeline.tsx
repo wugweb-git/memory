@@ -86,7 +86,7 @@ export const JobPipeline = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-2">
         <div>
-          <h2 className="text-2xl font-black text-text-primary tracking-tight flex items-center gap-3">
+          <h2 className="text-2xl font-semibold text-text-primary tracking-tight flex items-center gap-3">
             <Briefcase size={22} className="text-accent" /> Applications
           </h2>
           <p className="text-2xs font-bold uppercase tracking-widest text-text-tertiary mt-1">
@@ -99,10 +99,10 @@ export const JobPipeline = () => {
             aria-label="Refresh pipeline">
             <RefreshCcw size={15} className={loading ? 'animate-spin' : ''} />
           </button>
-          <div className="px-4 py-2 rounded-full bg-bg-secondary border border-border-secondary text-2xs font-black text-text-tertiary flex items-center gap-3 shadow-sm">
+          <div className="px-4 py-2 rounded-full bg-bg-secondary border border-border-secondary text-2xs font-semibold text-text-tertiary flex items-center gap-3 shadow-sm">
             <Chrome size={14} className="text-warning" /> BROWSER_SYNC
           </div>
-          <div className="px-4 py-2 rounded-full bg-bg-secondary border border-border-secondary text-2xs font-black text-text-tertiary flex items-center gap-3 shadow-sm">
+          <div className="px-4 py-2 rounded-full bg-bg-secondary border border-border-secondary text-2xs font-semibold text-text-tertiary flex items-center gap-3 shadow-sm">
             <Mail size={14} className="text-accent" /> EMAIL_ANCHOR
           </div>
         </div>
@@ -146,7 +146,7 @@ export const JobPipeline = () => {
                     <Briefcase size={20} />
                   </div>
                   <div className="text-left space-y-1">
-                    <h4 className="text-lg font-black text-text-primary tracking-tight kinetic-text">{app.role}</h4>
+                    <h4 className="text-lg font-semibold text-text-primary tracking-tight kinetic-text">{app.role}</h4>
                     <p className="text-2xs text-text-tertiary font-bold uppercase tracking-widest">
                       {app.company}{' // '}
                       <span className="opacity-50 ">via {app.source}</span>
@@ -156,25 +156,25 @@ export const JobPipeline = () => {
 
                 <div className="flex items-center gap-10 ml-auto overflow-x-auto pb-1 scrollbar-hide">
                   <div className="flex flex-col items-end shrink-0">
-                    <span className="text-2xs font-black text-text-disabled tracking-[0.3em] uppercase mb-1">Method</span>
-                    <span className="text-2xs font-black text-text-tertiary uppercase tracking-widest bg-secondary px-2 py-0.5 rounded border border-border-secondary ">
+                    <span className="text-2xs font-semibold text-text-disabled tracking-widest uppercase mb-1">Method</span>
+                    <span className="text-2xs font-semibold text-text-tertiary uppercase tracking-widest bg-secondary px-2 py-0.5 rounded border border-border-secondary ">
                       {app.via}
                     </span>
                   </div>
                   <div className="flex flex-col items-end shrink-0">
-                    <span className="text-2xs font-black text-text-disabled tracking-[0.3em] uppercase mb-1">State</span>
-                    <span className={`text-2xs font-black uppercase tracking-[0.2em]  ${STATUS_COLOR[app.status]}`}>
+                    <span className="text-2xs font-semibold text-text-disabled tracking-widest uppercase mb-1">State</span>
+                    <span className={`text-2xs font-semibold uppercase tracking-widest  ${STATUS_COLOR[app.status]}`}>
                       {STATUS_LABEL[app.status]}
                     </span>
                   </div>
                   <div className="flex flex-col items-end shrink-0">
-                    <span className="text-2xs font-black text-text-disabled tracking-[0.3em] uppercase mb-1">Temporal</span>
-                    <span className="text-2xs font-black text-text-tertiary uppercase tracking-widest ">{app.date}</span>
+                    <span className="text-2xs font-semibold text-text-disabled tracking-widest uppercase mb-1">Temporal</span>
+                    <span className="text-2xs font-semibold text-text-tertiary uppercase tracking-widest ">{app.date}</span>
                   </div>
                   {/* Navigate to job URL if available */}
                   {app.url ? (
                     <a href={app.url} target="_blank" rel="noopener noreferrer"
-                      className="w-10 h-10 rounded-xl bg-bg-elevated border border-border-secondary text-text-tertiary hover:text-bg-primary hover:bg-black transition-all flex items-center justify-center shadow-md active:scale-90"
+                      className="w-10 h-10 rounded-xl bg-bg-elevated border border-border-secondary text-text-tertiary hover:text-bg-primary hover:bg-text-primary transition-all flex items-center justify-center shadow-md active:scale-90"
                       aria-label={`View ${app.role} at ${app.company}`}>
                       <ArrowRight size={18} />
                     </a>
@@ -194,7 +194,7 @@ export const JobPipeline = () => {
             className="w-full glass-panel rounded-[2rem] p-6 border-2 border-dashed border-border-secondary hover:border-accent/40 hover:shadow-xl transition-all flex items-center justify-center gap-3 text-text-disabled hover:text-accent group"
           >
             <Plus size={18} className="group-hover:rotate-90 transition-transform" />
-            <span className="text-2xs font-black uppercase tracking-widest">Add Application</span>
+            <span className="text-2xs font-semibold uppercase tracking-widest">Add Application</span>
           </button>
         </div>
       )}
@@ -204,24 +204,24 @@ export const JobPipeline = () => {
         <div className="absolute top-0 right-1/2 bottom-0 w-px bg-gradient-to-b from-transparent via-border-primary to-transparent hidden md:block" />
 
         <div className="flex items-center gap-6 group">
-          <div className="w-16 h-16 rounded-2xl bg-bg-primary shadow-xl border border-border-secondary flex items-center justify-center text-3xl font-black text-text-primary group-hover:scale-110 transition-transform">
+          <div className="w-16 h-16 rounded-2xl bg-bg-primary shadow-xl border border-border-secondary flex items-center justify-center text-3xl font-semibold text-text-primary group-hover:scale-110 transition-transform">
             {loading ? '…' : activeCount}
           </div>
           <div>
-            <span className="text-2xs font-black text-text-tertiary tracking-[0.2em] uppercase block mb-1">Active_Ingress</span>
-            <p className="text-xs font-bold text-text-secondary uppercase tracking-tighter leading-snug ">
+            <span className="text-2xs font-semibold text-text-tertiary tracking-widest uppercase block mb-1">Active ingress</span>
+            <p className="text-xs font-bold text-text-secondary tracking-tight leading-snug ">
               Applications Captured<br />this weekly cycle
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-6 group">
-          <div className="w-16 h-16 rounded-2xl bg-success text-bg-primary shadow-xl shadow-success/20 flex items-center justify-center text-3xl font-black group-hover:scale-110 transition-transform">
+          <div className="w-16 h-16 rounded-2xl bg-success text-bg-primary shadow-xl shadow-success/20 flex items-center justify-center text-3xl font-semibold group-hover:scale-110 transition-transform">
             {loading ? '…' : interviewCount}
           </div>
           <div>
-            <span className="text-2xs font-black text-success tracking-[0.2em] uppercase block mb-1">Live_Synapse</span>
-            <p className="text-xs font-bold text-text-secondary uppercase tracking-tighter leading-snug ">
+            <span className="text-2xs font-semibold text-success tracking-widest uppercase block mb-1">Live synapse</span>
+            <p className="text-xs font-bold text-text-secondary tracking-tight leading-snug ">
               Interviews Scheduled<br />via Neural Parser
             </p>
           </div>

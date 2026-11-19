@@ -27,7 +27,12 @@ function LoginForm() {
   const [bioBusy, setBioBusy] = useState(false);
   const [status, setStatus] = useState('');
 
-  const safeNext = next.startsWith('/') && !next.startsWith('//') ? next : '/console';
+  // Same-origin paths only: blocks "//evil.com", "/\\evil.com" and absolute URLs,
+  // and never bounces back to /login itself.
+  const safeNext =
+    next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/\\') && !next.startsWith('/login')
+      ? next
+      : '/console';
 
   useEffect(() => {
     platformPasskeySupported().then((ok) => setBioReady(ok && hasDevicePasskey()));
@@ -54,10 +59,14 @@ function LoginForm() {
       .then((r) => (r.ok ? r.json() : null))
       .then((u) => {
         setUser(u);
-        if (u) window.location.replace(next.startsWith('/') && !next.startsWith('//') ? next : '/console');
+        // Only owner (admin) sessions can use the private app. A non-admin
+        // session would be bounced back here by middleware (redirect loop),
+        // so show the signed-in card instead of auto-redirecting.
+        if (u && u.role === 'admin') window.location.replace(safeNext);
       })
       .catch(() => setUser(null))
       .finally(() => setChecking(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function login(e: React.FormEvent) {
@@ -71,15 +80,14 @@ function LoginForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, remember }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Login failed');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || `Login failed (${res.status})`);
       haptic('success');
       // Hard navigation so the fresh session cookie is sent and the dashboard
       // (and PWA shell) loads with it.
-      window.location.assign(next.startsWith('/') && !next.startsWith('//') ? next : '/console');
+      window.location.assign(safeNext);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Login failed');
-    } finally {
       setBusy(false);
     }
   }
@@ -87,8 +95,11 @@ function LoginForm() {
   async function logout() {
     setBusy(true);
     try {
-      await fetch(UI_API.authLogout, { method: 'POST', credentials: 'include' });
+      const res = await fetch(UI_API.authLogout, { method: 'POST', credentials: 'include' });
+      if (!res.ok) throw new Error('Log out failed');
       setUser(null);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Log out failed');
     } finally {
       setBusy(false);
     }
@@ -102,7 +113,7 @@ function LoginForm() {
           <p className="text-sm text-text-tertiary mt-1">Sign in to manage your prism</p>
         </div>
 
-        <div className="rounded-3xl bg-white border border-border-secondary shadow-sm p-6">
+        <div className="rounded-3xl bg-bg-elevated border border-border-secondary shadow-sm p-6">
           {checking ? (
             <div className="flex justify-center py-8">
               <Loader2 className="animate-spin text-text-disabled" size={22} aria-label="Checking session" role="img" />
@@ -115,7 +126,7 @@ function LoginForm() {
               </p>
               <div className="flex gap-2 justify-center">
                 <Link
-                  href={next}
+                  href={safeNext}
                   className="inline-flex min-h-11 items-center px-4 rounded-xl bg-text-primary text-bg-primary text-sm font-bold"
                 >
                   Continue
@@ -128,6 +139,10 @@ function LoginForm() {
                   <LogOut size={14} /> Log out
                 </button>
               </div>
+              {user.role !== 'admin' && (
+                <p className="text-xs text-text-tertiary">This account cannot open the private app. Log out and sign in as the owner.</p>
+              )}
+              {error && <p role="alert" className="text-sm text-danger">{error}</p>}
             </div>
           ) : (
             <form onSubmit={login} className="space-y-3">

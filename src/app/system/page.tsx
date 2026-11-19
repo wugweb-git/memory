@@ -71,7 +71,7 @@ export default function SystemPage() {
       toast.success(`${MODULE_LABELS[key] ?? key} ${next ? "enabled" : "disabled"} — nav updates on next page load`);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Update failed";
-      toast.error(msg.includes("Admin") ? "Log in as admin to change modules" : msg);
+      toast.error(/admin|auth/i.test(msg) ? "Log in as admin to change modules" : msg);
     } finally {
       setSavingKey(null);
     }
@@ -100,13 +100,16 @@ export default function SystemPage() {
                         <p className="text-2xs text-text-tertiary">{on ? "Visible in the app" : "Hidden from navigation"}</p>
                       </div>
                       <button
+                        type="button"
+                        role="switch"
+                        aria-checked={on}
                         onClick={() => toggle(key)}
                         disabled={savingKey === key}
                         aria-label={`Toggle ${label}`}
                         className={`relative w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${on ? "bg-accent" : "bg-border-primary"}`}
                       >
                         <span
-                          className={`absolute top-0.5 h-5 w-5 rounded-full bg-bg-primary shadow transition-transform ${on ? "translate-x-[22px]" : "translate-x-0.5"}`}
+                          className={`absolute top-0.5 h-5 w-5 rounded-full bg-bg-primary shadow transition-transform ${on ? "translate-x-5" : "translate-x-0.5"}`}
                         />
                       </button>
                     </li>
@@ -125,7 +128,7 @@ export default function SystemPage() {
           {error ? <M3State state="error" message={error} /> : null}
           {Object.entries(health).map(([k, v]) => (
             <M3Card key={k} title={k}>
-              <pre className="text-xs overflow-auto">{JSON.stringify(v, null, 2)}</pre>
+              <pre className="text-xs text-text-secondary overflow-auto">{JSON.stringify(v, null, 2)}</pre>
             </M3Card>
           ))}
         </M3Page>

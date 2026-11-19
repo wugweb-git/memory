@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { M3Button, M3Card, M3Page, M3State } from '@/components/ui/m3';
-import { AppShell } from '@/app/component/AppShell';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
 import type { AdminChecklistItem } from '@/lib/admin/checklist';
 
@@ -55,7 +54,7 @@ export default function AdminConsole() {
   const loadChecklist = useCallback(async () => {
     try {
       const res = await fetch(API_ENDPOINTS.admin.checklist.path, { credentials: 'include' });
-      if (!res.ok) throw new Error();
+      if (!res.ok) throw new Error(String(res.status));
       // GET /api/admin/checklist returns { items: [...] }, not a bare array.
       // Storing the raw body here made `checklist` an object; every later
       // `checklist.map(...)` / `checklist.filter(...)` in this component then
@@ -95,8 +94,8 @@ export default function AdminConsole() {
   const runDiagnostics = () =>
     runOp('diagnose', 'Diagnostics', async () => {
       const res = await fetch(API_ENDPOINTS.admin.diagnose.path, { method: 'POST', credentials: 'include' });
-      const j = await res.json();
-      if (!res.ok) throw new Error(j.error ?? 'diagnostics failed');
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j.error ?? `diagnostics failed (${res.status})`);
       const failures = (j.results ?? []).filter((r: any) => r.status === 'FAIL');
       return [
         `Passed ${j.summary?.passed ?? '?'} / ${j.summary?.total ?? '?'} checks.`,
@@ -118,8 +117,8 @@ export default function AdminConsole() {
   const runJobs = () =>
     runOp('jobs', 'Jobs run', async () => {
       const res = await fetch(API_ENDPOINTS.jobs.run.path, { credentials: 'include' });
-      const j = await res.json();
-      if (!res.ok) throw new Error(j.error ?? 'jobs failed');
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j.error ?? `jobs failed (${res.status})`);
       const q = j.queue ?? {};
       return `Scheduler promoted ${j.scheduler?.processed ?? 0} (reclaimed ${j.scheduler?.reclaimed ?? 0}). Queue: ${q.published ?? 0} published, ${q.duplicates ?? 0} duplicates, ${q.retried ?? 0} retried, ${q.dead ?? 0} dead. Retention: ${j.retention?.deleted ?? j.retention?.removed ?? 0} rows cleaned.`;
     });
@@ -145,7 +144,7 @@ export default function AdminConsole() {
   const done = checklist?.filter((c) => c.completed).length ?? 0;
 
   return (
-    <AppShell>
+    <>
       <ToastContainer position="bottom-right" theme="light" />
       <div className="max-w-3xl mx-auto px-4">
         <M3Page title="Admin console" subtitle="Operations, health and setup — owner only">
@@ -172,7 +171,7 @@ export default function AdminConsole() {
 
           <M3Card
             title="Health"
-            action={<button onClick={loadHealth} className="text-2xs font-bold uppercase text-accent">Refresh</button>}
+            action={<button type="button" onClick={loadHealth} className="min-h-11 px-2 text-2xs font-bold uppercase text-accent">Refresh</button>}
           >
             {health === null ? (
               <M3State state="loading" message="Checking subsystems…" />
@@ -203,6 +202,8 @@ export default function AdminConsole() {
                 {checklist.map((item) => (
                   <li key={item.id}>
                     <button
+                      type="button"
+                      aria-pressed={item.completed}
                       onClick={() => toggleChecklist(item)}
                       className="w-full flex items-center gap-3 py-2 text-left group"
                     >
@@ -233,6 +234,6 @@ export default function AdminConsole() {
           </M3Card>
         </M3Page>
       </div>
-    </AppShell>
+    </>
   );
 }
