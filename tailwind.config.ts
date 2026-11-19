@@ -16,6 +16,7 @@ const config: Config = {
         elevated: "rgb(var(--bg-elevated-rgb) / <alpha-value>)",
         accent: "rgb(var(--accent) / <alpha-value>)",
         "accent-high": "rgb(var(--accent-high-rgb) / <alpha-value>)",
+        "accent-ink": "rgb(var(--accent-ink-rgb) / <alpha-value>)",
         success: "rgb(var(--success-rgb) / <alpha-value>)",
         danger: "rgb(var(--danger-rgb) / <alpha-value>)",
         warning: "rgb(var(--warning-rgb) / <alpha-value>)",
@@ -87,6 +88,12 @@ const config: Config = {
         "control-lg": "var(--control-h-lg)",
       },
       minWidth: {
+        control: "var(--control-h)",
+      },
+      height: {
+        control: "var(--control-h)",
+      },
+      width: {
         control: "var(--control-h)",
       },
       maxWidth: {

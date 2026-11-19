@@ -28,7 +28,7 @@ const variantClasses: Record<ButtonVariant, string> = {
  *  Text is 14px label-large (16px on lg). Use `lg` for the one primary action of a screen. */
 export const controlSizeClasses: Record<ButtonSize, string> = {
   default: "min-h-control px-5 py-2 text-sm",
-  sm: "min-h-10 px-4 py-2 text-sm",
+  sm: "min-h-control md:min-h-10 px-4 py-2 text-sm",
   lg: "min-h-control-lg px-6 py-2 text-base",
   icon: "h-control w-control p-0",
 };

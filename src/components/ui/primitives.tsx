@@ -18,6 +18,9 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   /** Material 3 container styles. outlined (default): white + border. filled: tonal stone, no border,
    *  for grouped or secondary content. elevated: white + border-secondary + resting shadow. */
   variant?: "outlined" | "filled" | "elevated";
+  /** Adds the pressed/hover/focus state layer. Only for cards that are themselves tappable
+   *  (render the Card inside a Link/button wrapper or give it tabIndex and a role). */
+  interactive?: boolean;
 }
 
 const cardElevation: Record<0 | 1 | 2, string> = {
@@ -32,11 +35,12 @@ const cardVariant: Record<NonNullable<CardProps["variant"]>, string> = {
   elevated: "border border-border-secondary bg-bg-elevated shadow-elev-1",
 };
 
-export function Card({ className, elevation = 0, variant = "outlined", ...props }: CardProps) {
+export function Card({ className, elevation = 0, variant = "outlined", interactive = false, ...props }: CardProps) {
   return (
     <div
       className={cn(
         "rounded-card p-4",
+        interactive && "state-layer cursor-pointer",
         cardVariant[variant],
         cardElevation[elevation],
         className
@@ -50,7 +54,7 @@ export function Card({ className, elevation = 0, variant = "outlined", ...props 
 const controlBase =
   "w-full rounded-control border bg-bg-elevated px-4 text-base md:text-sm text-text-primary placeholder:text-text-tertiary " +
   "transition-[border-color,box-shadow] duration-fast ease-standard " +
-  "focus-visible:border-text-primary disabled:opacity-50 disabled:cursor-not-allowed " +
+  "focus-visible:border-text-primary disabled:opacity-50 disabled:cursor-not-allowed read-only:bg-bg-secondary " +
   "aria-[invalid=true]:border-danger";
 
 function controlBorder(invalid?: boolean) {
@@ -670,6 +674,25 @@ export function SegmentedTabs({
           </button>
         );
       })}
+    </div>
+  );
+}
+
+/* ── ActionBar ────────────────────────────────────────────────────────────
+   Sticky primary-action row for forms and editors. On phones it sits just above the bottom
+   navigation (never under it); from md it sticks to the viewport bottom. One primary action,
+   right-aligned; secondary on the left of it. Buttons keep their 44px height. */
+export function ActionBar({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn(
+        "sticky z-20 -mx-4 flex flex-wrap items-center justify-end gap-2 border-t border-border-primary bg-bg-elevated px-4 py-3 " +
+          "bottom-[calc(var(--dock-h)+env(safe-area-inset-bottom))] md:bottom-0 md:mx-0 md:rounded-card md:border",
+        className
+      )}
+      {...props}
+    >
+      {children}
     </div>
   );
 }

@@ -165,15 +165,30 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
   // Sub-pages (two or more path segments) get a back arrow on phones, like a native app.
   const router = useRouter();
   const segments = pathname.split('/').filter(Boolean);
-  const parentHref = segments.length >= 2 ? `/${segments.slice(0, -1).join('/')}` : null;
+  // Pages that live only under More (Cognitive, Persona, System...) go back to More.
+  const parentHref =
+    segments.length >= 2
+      ? `/${segments.slice(0, -1).join('/')}`
+      : segments.length === 1 && pathname !== '/more' && pathname !== '/console' && moreActive
+        ? '/more'
+        : null;
   const goBack = () => {
     if (typeof window !== 'undefined' && window.history.length > 1) router.back();
     else if (parentHref) router.push(parentHref);
   };
 
   // Document title: routes without their own layout metadata would all read "Identity Prism | Neural OS".
+  // On client navigation Next applies the default metadata title AFTER this effect, so also watch <title>.
   useEffect(() => {
-    if (document.title.startsWith(APP_DEFAULT_DOC_TITLE)) document.title = `${pageTitle} | Identity Prism`;
+    const apply = () => {
+      if (document.title.startsWith(APP_DEFAULT_DOC_TITLE)) document.title = `${pageTitle} | Identity Prism`;
+    };
+    apply();
+    const el = document.querySelector('title');
+    if (!el) return;
+    const mo = new MutationObserver(apply);
+    mo.observe(el, { childList: true, characterData: true, subtree: true });
+    return () => mo.disconnect();
   }, [pathname, pageTitle]);
 
   // Top bar title: while the page's own h1 (PageHeader, data-page-title) is on screen the bar title
@@ -380,7 +395,14 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
             </Link>
           )}
           {view.state === 'signed-in' && (
-            <div ref={accountRef} className="relative">
+            <div
+              ref={accountRef}
+              className="relative"
+              onBlur={(e) => {
+                // Tabbing out of the open menu closes it (it is not a modal, so focus may leave).
+                if (accountOpen && !e.currentTarget.contains(e.relatedTarget as Node | null)) setAccountOpen(false);
+              }}
+            >
               <button
                 ref={accountBtnRef}
                 type="button"
