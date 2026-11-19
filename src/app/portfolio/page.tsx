@@ -109,7 +109,7 @@ export default function PortfolioPage() {
             title={TABS.find((t) => t.type === tab)!.label}
             action={
               <div className="flex items-center gap-3">
-                <Link href={`/p/${IDENTITY_CONFIG.HANDLE}`} target="_blank" className="text-2xs font-bold uppercase text-accent">View live</Link>
+                <Link href={`/p/${IDENTITY_CONFIG.HANDLE}`} target="_blank" rel="noopener noreferrer" className="text-2xs font-bold uppercase text-accent">View live<span className="sr-only"> (opens in a new tab)</span></Link>
                 <button onClick={() => setShowForm((s) => !s)} className="text-2xs font-bold uppercase text-accent">
                   {showForm ? "Close" : "New"}
                 </button>

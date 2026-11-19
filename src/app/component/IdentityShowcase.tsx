@@ -38,9 +38,10 @@ export const IdentityShowcase = () => {
             <Link
               href={publicUrl}
               target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-text-primary text-bg-primary text-2xs font-black uppercase tracking-widest hover:bg-accent transition-colors"
             >
-              <Eye size={14} /> View public profile <ExternalLink size={12} />
+              <Eye size={14} aria-hidden="true" /> View public profile<span className="sr-only"> (opens in a new tab)</span> <ExternalLink size={12} aria-hidden="true" />
             </Link>
             <Link
               href="/admin/profile"
@@ -75,7 +76,7 @@ export const IdentityShowcase = () => {
                       <span className="text-2xs font-black uppercase text-success">{f.status}</span>
                     </div>
                     <p className="text-2xs font-black text-text-tertiary uppercase tracking-widest">{f.platform}</p>
-                    <p className="text-sm font-bold text-text-primary mt-1">{f.label}</p>
+                    <p className="text-sm font-bold text-text-primary mt-1">{f.label}{f.href.startsWith('http') && <span className="sr-only"> (opens in a new tab)</span>}</p>
                     <div className="mt-4 h-1 bg-secondary rounded-full overflow-hidden">
                       <div className="h-full bg-accent rounded-full" style={{ width: `${f.score}%` }} />
                     </div>

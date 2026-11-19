@@ -377,14 +377,14 @@ export default function OutputStudioPage() {
                 title="On your profile"
                 action={
                   <div className="flex items-center gap-3">
-                    <Link href={`/p/${HANDLE}`} target="_blank" className="text-2xs font-bold uppercase text-accent">Open</Link>
+                    <Link href={`/p/${HANDLE}`} target="_blank" rel="noopener noreferrer" className="text-2xs font-bold uppercase text-accent">Open<span className="sr-only"> (opens in a new tab)</span></Link>
                     <button onClick={loadLive} className="text-2xs font-bold uppercase text-accent">Refresh</button>
                   </div>
                 }
               >
                 <p className="text-xs text-text-tertiary mb-2">
                   This is what the world sees at{" "}
-                  <Link href={`/p/${HANDLE}`} target="_blank" className="text-accent underline">/p/{HANDLE}</Link>. Manage it here — it stays read-only for visitors.
+                  <Link href={`/p/${HANDLE}`} target="_blank" rel="noopener noreferrer" className="text-accent underline">/p/{HANDLE}<span className="sr-only"> (opens in a new tab)</span></Link>. Manage it here — it stays read-only for visitors.
                 </p>
                 {liveError ? (
                   <M3State state="error" message={`Couldn't load your profile (${liveError}). The profile store may be unreachable in this environment.`} />

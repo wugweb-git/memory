@@ -101,9 +101,10 @@ export default function AdminProfilePage() {
             <Link
               href={`/p/${IDENTITY_CONFIG.HANDLE}`}
               target="_blank"
+              rel="noopener noreferrer"
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border-secondary text-2xs font-bold uppercase"
             >
-              <Eye size={14} /> Preview
+              <Eye size={14} aria-hidden="true" /> Preview<span className="sr-only"> (opens in a new tab)</span>
             </Link>
             <button
               onClick={handleSaveBasic}
@@ -268,7 +269,7 @@ function PostRow({ section, onDelete }: { section: ProfileSection; onDelete: () 
         </p>
         {url && (
           <a href={url} target="_blank" rel="noopener noreferrer" className="text-2xs text-accent flex items-center gap-1 mt-2">
-            <ExternalLink size={10} /> Link
+            <ExternalLink size={10} aria-hidden="true" /> Link<span className="sr-only"> (opens in a new tab)</span>
           </a>
         )}
       </div>

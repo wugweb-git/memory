@@ -70,7 +70,15 @@ function iconFor(c: ConnectorStatus): LucideIcon {
   return ID_ICONS[c.id] ?? CATEGORY_ICONS[c.category] ?? FileIcon;
 }
 
-/** Colour-only status (the label lives in the calm secondary line / action). */
+/** Text equivalent of the status dot (WCAG 1.4.1: colour is never the only signal). */
+function statusLabel(c: ConnectorStatus): string {
+  if (c.lastError) return 'Error';
+  if (!c.configured) return 'Not set up';
+  if (!isReady(c)) return 'Needs connection';
+  return c.lastSyncAt ? 'Synced' : 'Ready';
+}
+
+/** Status dot colour; always paired with statusLabel for assistive tech. */
 function statusColor(c: ConnectorStatus): string {
   if (c.lastError) return 'bg-danger';
   if (!c.configured) return 'bg-text-disabled';
@@ -78,7 +86,7 @@ function statusColor(c: ConnectorStatus): string {
   return c.lastSyncAt ? 'bg-success' : 'bg-warning';
 }
 
-/** One calm line; full sync metrics are tucked into the row's hover title. */
+/** One calm line; sync metrics render as a visible detail line (no hover-only title). */
 function secondaryLine(c: ConnectorStatus): { text: string; title?: string; danger?: boolean } {
   if (c.lastError) return { text: c.lastError, danger: true };
   if (isReady(c) && c.kind !== 'manual') {
@@ -91,7 +99,7 @@ function secondaryLine(c: ConnectorStatus): { text: string; title?: string; dang
   return { text: c.setupHint };
 }
 
-const PILL = 'shrink-0 text-2xs font-bold rounded-lg px-2.5 py-1 transition-colors';
+const PILL = 'shrink-0 inline-flex min-h-11 items-center text-2xs font-bold rounded-lg px-2.5 py-1 transition-colors';
 
 const KIND_GROUPS: Array<{ key: string; title: string; subtitle: string; match: (c: ConnectorStatus) => boolean }> = [
   { key: 'auto', title: 'Auto-sync sources', subtitle: 'Fetched on a schedule — sync now anytime', match: (c) => c.kind === 'rss' || c.kind === 'api' || (c.kind === 'oauth' && c.configured) },
@@ -157,18 +165,20 @@ export default function IntegrationsPage() {
 
   function renderAction(c: ConnectorStatus) {
     if (c.kind === 'manual') {
-      return <Link href="/buffer" className={`${PILL} text-accent hover:bg-bg-tertiary`}>Capture</Link>;
+      return <Link href="/buffer" aria-label={`Capture: ${c.label}`} className={`${PILL} text-accent hover:bg-bg-tertiary`}>Capture</Link>;
     }
     if (!c.configured) {
       return <span className={`${PILL} text-text-tertiary`}>{c.kind === 'oauth' ? 'Connect' : 'Needs setup'}</span>;
     }
     if (!isReady(c) && c.authStartPath) {
-      return <a href={c.authStartPath} className={`${PILL} text-accent hover:bg-bg-tertiary`}>Connect</a>;
+      return <a href={c.authStartPath} aria-label={`Connect: ${c.label}`} className={`${PILL} text-accent hover:bg-bg-tertiary`}>Connect</a>;
     }
     return (
       <button
+        type="button"
         onClick={() => syncNow(c)}
         disabled={syncing === c.id}
+        aria-label={`Sync now: ${c.label}`}
         className={`${PILL} text-accent hover:bg-bg-tertiary disabled:text-text-disabled disabled:hover:bg-transparent`}
       >
         {syncing === c.id ? 'Syncing…' : 'Sync now'}
@@ -198,18 +208,21 @@ export default function IntegrationsPage() {
                       return (
                         <li
                           key={c.id}
-                          title={sec.title}
                           className="flex items-center gap-3 rounded-xl border border-border-secondary bg-bg-primary p-3 hover:bg-bg-secondary transition-colors"
                         >
                           <div className="relative shrink-0">
                             <div className="h-9 w-9 rounded-xl bg-bg-secondary flex items-center justify-center">
-                              <Icon className="h-4 w-4 text-text-secondary" />
+                              <Icon className="h-4 w-4 text-text-secondary" aria-hidden="true" />
                             </div>
-                            <span className={`absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-bg-primary ${statusColor(c)}`} />
+                            <span aria-hidden="true" className={`absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-bg-primary ${statusColor(c)}`} />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm font-bold text-text-primary truncate">{c.label}</p>
-                            <p className={`text-2xs mt-0.5 ${sec.danger ? 'text-danger line-clamp-2' : 'text-text-tertiary'}`}>{sec.text}</p>
+                            <p className="text-sm font-bold text-text-primary break-words">
+                              {c.label}
+                              <span className="sr-only"> — status: {statusLabel(c)}</span>
+                            </p>
+                            <p className={`text-2xs mt-0.5 break-words ${sec.danger ? 'text-danger' : 'text-text-tertiary'}`}>{sec.text}</p>
+                            {sec.title && <p className="text-2xs mt-0.5 text-text-tertiary break-words">{sec.title}</p>}
                           </div>
                           {renderAction(c)}
                         </li>

@@ -175,7 +175,7 @@ export const ProfileHeader = () => {
                   rel="noopener noreferrer"
                   className="flex items-center gap-2.5 px-5 py-2.5 rounded-2xl bg-bg-elevated border border-border-primary text-2xs font-black text-text-tertiary uppercase tracking-widest transition-all hover:bg-black hover:text-bg-primary hover:scale-105 shadow-sm"
                 >
-                  <social.icon size={14} /> {social.label}
+                  <social.icon size={14} aria-hidden="true" /> {social.label}<span className="sr-only"> (opens in a new tab)</span>
                 </a>
               ))}
             </div>

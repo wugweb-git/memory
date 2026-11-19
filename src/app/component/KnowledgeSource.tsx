@@ -26,9 +26,9 @@ export const KnowledgeSource = () => {
   return (
     <div className="space-y-6">
       <div className="space-y-4">
-        <h3 className="text-2xs font-bold tracking-widest text-text-tertiary flex items-center justify-between uppercase">
+        <h2 className="text-2xs font-bold tracking-widest text-text-tertiary flex items-center justify-between uppercase">
           Files &amp; links <Database size={13} className="text-accent" aria-hidden="true" />
-        </h3>
+        </h2>
         
         <div className="relative glass-card p-4 rounded-radius-xl border-dashed border-border-primary hover:border-accent/40 transition-all duration-500">
           <FilePond

@@ -220,7 +220,25 @@ body {
   box-shadow: 0 0 0 4px rgb(var(--accent) / 0.55);
 }
 
-/* Fixed bars must not hide the focused element (WCAG 2.4.11). */
+/* Fixed bars must not hide the focused element (WCAG 2.4.11). scroll-margin covers
+   focus-driven scrolling inside nested scrollers; scroll-padding covers the window. */
+:focus-visible {
+  scroll-margin-top: calc(4rem + env(safe-area-inset-top));
+  scroll-margin-bottom: calc(6rem + env(safe-area-inset-bottom));
+}
+
+/* Pointer target size floor for every device (WCAG 2.5.8: 24x24 CSS px). */
+button,
+summary,
+[role='button'],
+[role='tab'],
+[role='switch'] {
+  min-height: 24px;
+}
+button:has(> svg:only-child) {
+  min-width: 24px;
+}
+
 html {
   scroll-padding-top: calc(4rem + env(safe-area-inset-top));
   scroll-padding-bottom: calc(6rem + env(safe-area-inset-bottom));

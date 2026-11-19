@@ -23,7 +23,7 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Identity Prism | Neural OS",
+  title: { default: "Identity Prism | Neural OS", template: "%s | Identity Prism" },
   metadataBase: new URL(IDENTITY_CONFIG.SITE_URL),
   description: "High-fidelity Personal Operating System & Neural RAG Matrix. A professional-grade OS for semantic memory and venture mapping.",
   keywords: ["Neural OS", "Identity Prism", "RAG", "Personal AI", "Venture Mapping", "Systems Architecture"],

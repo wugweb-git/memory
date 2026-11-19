@@ -45,6 +45,14 @@ Pipeline (`src/lib/cognitive/orchestrator.ts`): `buildContext → buildPrompt �
 - Prefer the **preview_*** tools (not Bash) to run the dev server + screenshot.
 - ⚠️ **Do NOT run `npm run build` while `next dev` is running** — it corrupts `.next` (rm -rf .next + restart if it happens).
 
+## Skills for a11y/mobile/PWA work
+Invoke these (Skill tool) before touching UI, shell, PWA or accessibility code, and follow them:
+- `web-quality-accessibility` — WCAG 2.2 AA criteria and code patterns (the audit baseline).
+- `design:accessibility-review` — structured audit/report format (contrast, keyboard, screen reader).
+- `ui-ux-pro-max` — UX rules: touch targets, forms and feedback, navigation, reduced motion.
+- `web-design-guidelines` — Vercel Web Interface Guidelines review of changed files.
+Audit checklist keyed to criteria numbers: `docs/mobile-pwa-a11y.md`.
+
 ## Gotchas
 - Local `.env.local` may be **dummy** — data-backed pages show loading/error states; layout still renders.
 - **No embedded Sanity Studio** (it needs React 19; app is React 18). Studio is standalone (`sanity.config.ts` at root → `npx sanity dev`) or hosted. App uses `@sanity/client`/`next-sanity` for reads/writes only.

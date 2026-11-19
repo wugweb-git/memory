@@ -66,7 +66,7 @@ export function PulseWidget() {
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <Activity size={15} className="text-accent" />
-        <h3 className="text-sm font-bold text-text-primary">Pulse check-in</h3>
+        <h2 className="text-sm font-bold text-text-primary">Pulse check-in</h2>
       </div>
       <p className="text-xs text-text-tertiary">How are you doing right now?</p>
 

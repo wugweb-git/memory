@@ -49,10 +49,10 @@ export default function ActivityLog({ testRunId = 'PROD' }: ActivityLogProps) {
   return (
     <div className="bg-bg-primary border border-border-secondary rounded-xl overflow-hidden h-[450px] flex flex-col shadow-2xl">
       <div className="py-4 px-6 border-b border-border-secondary flex flex-row items-center justify-between shrink-0 bg-white/[0.02]">
-        <h3 className="text-2xs font-bold uppercase tracking-[0.2em] flex items-center gap-2 text-text-tertiary">
+        <h2 className="text-2xs font-bold uppercase tracking-[0.2em] flex items-center gap-2 text-text-tertiary">
           <Terminal className="w-3.5 h-3.5" />
           Governance Activity Log
-        </h3>
+        </h2>
         <div className="flex items-center gap-2">
           <div className="px-2 py-0.5 rounded border border-border-primary text-2xs font-bold text-success bg-bg-secondary uppercase tracking-widest flex items-center gap-1.5">
             <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />

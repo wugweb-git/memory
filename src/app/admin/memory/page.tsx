@@ -75,7 +75,7 @@ function AdminMemoryContent() {
           <RagTester testRunId={testRunId} />
           <MemoryExplorer testRunId={testRunId} />
           <div className="p-6 bg-bg-secondary border border-border-secondary rounded-2xl">
-            <h3 className="text-2xs font-bold text-text-tertiary uppercase tracking-widest mb-4">Hardening audit (L2.5)</h3>
+            <h2 className="text-2xs font-bold text-text-tertiary uppercase tracking-widest mb-4">Hardening audit (L2.5)</h2>
             <ul className="grid grid-cols-2 gap-4 text-xs">
               {HARDENING.map((h) => (
                 <li key={h.label} className={`flex items-center justify-between ${h.tone}`}>
@@ -92,7 +92,7 @@ function AdminMemoryContent() {
         <span>Identity Prism OS · combined operations center</span>
         <div className="flex gap-6">
           <a href="/admin" className="hover:text-text-primary transition-colors">Admin console</a>
-          <a href="/api/health/system" target="_blank" rel="noopener noreferrer" className="hover:text-text-primary transition-colors">System health JSON</a>
+          <a href="/api/health/system" target="_blank" rel="noopener noreferrer" className="hover:text-text-primary transition-colors">System health JSON<span className="sr-only"> (opens in a new tab)</span></a>
         </div>
       </footer>
     </div>

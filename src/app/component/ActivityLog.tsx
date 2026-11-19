@@ -121,10 +121,10 @@ export const ActivityLog = () => {
                           </span>
                           <span className="text-2xs text-text-tertiary font-mono font-bold uppercase tracking-widest">Via_{signal.source}</span>
                         </div>
-                        <h4 className="text-lg font-black text-text-primary tracking-tighter group-hover:text-accent transition-colors flex items-center gap-3 group/title">
+                        <h3 className="text-lg font-black text-text-primary tracking-tighter group-hover:text-accent transition-colors flex items-center gap-3 group/title">
                           {signal.target} 
                           <MoveUpRight size={14} className="text-text-disabled group-hover/title:translate-x-1 group-hover/title:-translate-y-1 transition-transform" aria-hidden="true" />
-                        </h4>
+                        </h3>
                       </div>
                       <div className="flex flex-col items-start md:items-end shrink-0 gap-2">
                         <time dateTime={signal.time} className="text-2xs font-black font-mono text-text-tertiary tracking-widest">{signal.time}</time>

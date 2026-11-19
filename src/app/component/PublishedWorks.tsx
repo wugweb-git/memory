@@ -107,7 +107,7 @@ export const PublishedWorks = () => {
                   href={work.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label={`Open: ${work.title}`}
+                  aria-label={`Open: ${work.title} (opens in a new tab)`}
                   className="w-10 h-10 rounded-2xl bg-bg-elevated border border-border-primary text-text-tertiary hover:text-bg-primary hover:bg-black transition-all duration-500 flex items-center justify-center shadow-lg"
                 >
                   <ArrowUpRight size={18} aria-hidden="true" />
@@ -155,7 +155,7 @@ export const PublishedWorks = () => {
               rel="noopener noreferrer"
               className="mt-auto px-6 py-2.5 rounded-full bg-black text-bg-primary text-2xs font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl inline-flex items-center gap-2 w-fit"
             >
-              <Share2 size={14} /> Launch Portfolio
+              <Share2 size={14} aria-hidden="true" /> Launch Portfolio<span className="sr-only"> (opens in a new tab)</span>
             </a>
           </article>
         </div>

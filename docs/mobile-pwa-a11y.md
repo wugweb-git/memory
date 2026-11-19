@@ -35,3 +35,22 @@ Run on a real phone with the production build (service workers do not run under 
 - [ ] Keyboard only (external keyboard): every control is reachable, focus ring is visible, no focus traps.
 - [ ] Zoom text to 200% and enable reduced motion; layout holds and animations stop.
 - [ ] Share the site URL in a chat app; the preview shows the Identity Prism image.
+
+## WCAG 2.2 AA audit checklist
+Re-run when adding a route or shared component. Status = verified in code on this branch ([x]) or needs a device/browser pass ([ ]).
+- [x] **2.4.2 Page titled**: root `metadata.title` is `{ default, template: '%s | Identity Prism' }`; every route segment has a server `layout.tsx` exporting `metadata.title` (client pages cannot export metadata). New route = new `layout.tsx`. `offline` sets its own title.
+- [x] **2.4.11 Focus not obscured**: `scroll-padding` on `html` and `scroll-margin` on `:focus-visible` clear the fixed topbar (3.5rem + safe area) and bottom dock.
+- [ ] **1.4.10 Reflow**: no fixed widths found; wide tables sit in `overflow-x-auto` (buffer table fixed). Confirm at 320 px on a device; `html, body { overflow-x: hidden }` can mask overflow, so check with it disabled.
+- [x] **1.4.12 Text spacing**: no fixed-height containers clip text (fixed heights only on scroll regions); failed-item reasons wrap instead of truncating.
+- [x] **1.4.13 Content on hover/focus**: no hover-only `title=` disclosure left on data (integrations sync metrics are now visible text). Remaining `title=` props are component props, not tooltips, except `ThemeToggle` (informational).
+- [x] **2.5.7 Dragging movements**: no drag-only UI; the only drop zone (`MemoryVaultWithUpload`, unused) and `ManualUpload` also have click/file-picker paths.
+- [x] **2.5.8 Target size**: 24 px floor for buttons/tabs/switches on all pointers; 44 px on coarse pointers; row actions use `min-h-11`.
+- [x] **3.3.7 Redundant entry**: forms keep values after errors (login keeps the email).
+- [x] **3.3.8 Accessible authentication**: login allows paste, uses `autocomplete="username webauthn"` / `current-password`, and offers a passkey path.
+- [x] **3.2.3 / 3.2.4 Consistent navigation and identification**: one `AppShell` and one nav config (`ui-content.ts`) on every internal route; same labels for Sign in / Sign out / Menu. **3.2.6 Consistent help**: no repeated help mechanism exists; add it in the shell if one is introduced.
+- [x] **4.1.3 Status messages**: async results use `role="status"` or `role="alert"` (toasts, login, CSV import, device capture, RAG tester, cognitive feedback).
+- [x] **1.3.1 Headings**: one `h1` per page (`M3Page` or page header), no skipped levels (memory, admin/memory, buffer, career panels fixed).
+- [x] **2.4.4 Link purpose**: icon-only links have `aria-label`; every `target="_blank"` link announces "(opens in a new tab)" and has `rel="noopener noreferrer"`.
+- [x] **1.4.1 Use of colour**: integrations status dot has a text status for assistive tech plus the visible status line; job status badges carry label and icon.
+- [x] **2.3.3 / reduced motion** and **forced colors**: `prefers-reduced-motion`, `prefers-reduced-transparency` and `forced-colors` (focus ring uses `Highlight`) handled in `globals.css`.
+- Known gaps: `window.open(...)` buttons in `EnhancementHub` (unused component) do not announce a new tab; some pages still use `truncate` on single-line labels (title text, not essential data).

@@ -34,10 +34,10 @@ export function SignalTimeline({ signals, loading }: SignalTimelineProps) {
   return (
     <div className="bg-bg-secondary border border-border-secondary rounded-xl overflow-hidden shadow-2xl">
       <div className="py-3 px-4 border-b border-border-secondary bg-white/[0.02]">
-        <h3 className="text-2xs font-bold uppercase tracking-[0.2em] flex items-center gap-2 text-text-tertiary">
+        <h2 className="text-2xs font-bold uppercase tracking-[0.2em] flex items-center gap-2 text-text-tertiary">
           <Zap className="w-3 h-3 text-warning" />
           Signal Pulse
-        </h3>
+        </h2>
       </div>
       <div className="divide-y divide-slate-800/50 max-h-[300px] overflow-y-auto">
         {signals.map((signal) => (

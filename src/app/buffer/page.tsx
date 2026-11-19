@@ -245,7 +245,7 @@ export default function BufferControlSurface() {
               </div>
             </div>
 
-            <div className="rounded-2xl bg-secondary border border-border-secondary overflow-hidden backdrop-blur-sm">
+            <div className="rounded-2xl bg-secondary border border-border-secondary overflow-x-auto backdrop-blur-sm">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-secondary text-2xs uppercase tracking-widest text-text-tertiary">
@@ -319,7 +319,7 @@ export default function BufferControlSurface() {
               <div className="p-6 rounded-2xl bg-secondary border border-border-secondary animate-in slide-in-from-bottom-4 duration-300">
                 <div className="flex items-start justify-between mb-6">
                   <div>
-                    <h3 className="text-text-primary font-medium">Node Analysis</h3>
+                    <h2 className="text-text-primary font-medium">Node Analysis</h2>
                     <p className="text-xs text-text-tertiary">{selectedId}</p>
                   </div>
                   <button onClick={() => setSelectedId(null)} className="p-1 hover:bg-secondary rounded-full transition-colors text-text-tertiary">
@@ -329,7 +329,7 @@ export default function BufferControlSurface() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-4">
-                    <h4 className="text-2xs font-bold uppercase tracking-widest text-text-tertiary border-b border-border-secondary pb-2">Actions</h4>
+                    <h3 className="text-2xs font-bold uppercase tracking-widest text-text-tertiary border-b border-border-secondary pb-2">Actions</h3>
                     <div className="grid grid-cols-2 gap-3">
                       <button 
                          onClick={() => handleAction(selectedId, 'review')}
@@ -376,7 +376,7 @@ export default function BufferControlSurface() {
                   )}
 
                   <div className="space-y-4">
-                    <h4 className="text-2xs font-bold uppercase tracking-widest text-text-tertiary border-b border-border-secondary pb-2">Payload Data</h4>
+                    <h3 className="text-2xs font-bold uppercase tracking-widest text-text-tertiary border-b border-border-secondary pb-2">Payload Data</h3>
                     <div className="bg-bg-primary rounded-xl p-4 font-mono text-2xs overflow-auto max-h-64 scrollbar-thin scrollbar-thumb-white/10">
                        <pre className="text-success/80">
                          {JSON.stringify(items.find(i => i.id === selectedId)?.raw_payload, null, 2)}

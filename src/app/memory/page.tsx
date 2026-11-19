@@ -166,7 +166,7 @@ export default function MemoryControlSurface() {
           <div className="px-6 py-5 border-b border-border-secondary flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-1.5 h-1.5 rounded-full bg-accent" />
-              <h3 className="text-sm font-bold uppercase tracking-widest text-text-secondary">Ingestion Matrix</h3>
+              <h2 className="text-sm font-bold uppercase tracking-widest text-text-secondary">Ingestion Matrix</h2>
             </div>
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
               <input className="min-h-11 w-full min-w-0 px-3 py-1.5 rounded-lg bg-bg-primary border border-border-secondary text-xs text-text-primary focus:border-accent/50 transition-colors" aria-label="Filter status" placeholder="Filter status..." value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} />
@@ -188,7 +188,7 @@ export default function MemoryControlSurface() {
                   </span>
                   <span className="text-2xs font-mono text-text-tertiary">{new Date(packet.ingestion_time).toLocaleTimeString()}</span>
                 </div>
-                <h4 className="text-sm font-bold tracking-tight mb-1 text-text-primary">{packet.type}</h4>
+                <h3 className="text-sm font-bold tracking-tight mb-1 text-text-primary">{packet.type}</h3>
                 <div className="flex items-center gap-2 text-2xs text-text-tertiary">
                   <span className="font-medium text-text-secondary">{packet.source}</span>
                   <span className="w-1 h-1 rounded-full bg-border-primary" />
@@ -223,7 +223,7 @@ export default function MemoryControlSurface() {
           </section>
 
           <section className="glass-panel rounded-radius-xl border border-border-secondary p-6">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-text-tertiary mb-5">Storage Topology</h3>
+            <h2 className="text-xs font-bold uppercase tracking-widest text-text-tertiary mb-5">Storage Topology</h2>
             <div className="space-y-4">
               {thresholds.map((row) => (
                 <div key={row.threshold} className="space-y-2">
@@ -253,7 +253,7 @@ export default function MemoryControlSurface() {
           </section>
 
           <section className="glass-panel rounded-radius-xl border border-border-secondary p-6 overflow-hidden">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-text-tertiary mb-5">Packet Diagnostics</h3>
+            <h2 className="text-xs font-bold uppercase tracking-widest text-text-tertiary mb-5">Packet Diagnostics</h2>
             {selectedPacket ? (
               <div className="space-y-5">
                 <div className="grid grid-cols-2 gap-4">

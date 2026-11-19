@@ -33,10 +33,10 @@ export function IntelPanel({ metrics, loading }: IntelPanelProps) {
     <div className="space-y-4">
       <div className="bg-bg-secondary border border-border-secondary rounded-xl overflow-hidden shadow-2xl">
         <div className="py-3 px-4 flex flex-row items-center justify-between border-b border-border-secondary bg-white/[0.02]">
-          <h3 className="text-2xs font-bold uppercase tracking-[0.2em] flex items-center gap-2 text-text-tertiary">
+          <h2 className="text-2xs font-bold uppercase tracking-[0.2em] flex items-center gap-2 text-text-tertiary">
             <BrainCircuit className="w-3.5 h-3.5 text-accent shadow-sm" />
             Intelligence Layer 2
-          </h3>
+          </h2>
           <div className="px-2 py-0.5 rounded border border-border-primary text-2xs font-bold text-accent bg-bg-secondary uppercase tracking-widest">
             Rule Engine 1.0
           </div>
