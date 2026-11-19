@@ -21,10 +21,16 @@ function getLastUserText(messages: UIMessage[]): string {
   for (let i = messages.length - 1; i >= 0; i--) {
     const message = messages[i];
     if (message.role !== 'user') continue;
-    const text = message.parts
-      .filter((part): part is { type: 'text'; text: string } => part.type === 'text')
-      .map((part) => part.text)
-      .join('');
+    // Tolerate the legacy { role, content } shape: a malformed client body is a 400, never a 500.
+    const legacy = (message as unknown as { content?: unknown }).content;
+    const text = Array.isArray(message.parts)
+      ? message.parts
+          .filter((part): part is { type: 'text'; text: string } => part?.type === 'text')
+          .map((part) => part.text)
+          .join('')
+      : typeof legacy === 'string'
+        ? legacy
+        : '';
     if (text.trim()) return text.trim();
   }
   return '';
@@ -68,7 +74,11 @@ export async function POST(req: Request) {
     if (!body || typeof body !== 'object' || Array.isArray(body)) {
       return NextResponse.json({ message: 'Invalid JSON body' }, { status: 400 });
     }
-    const messages: UIMessage[] = Array.isArray(body.messages) ? body.messages.slice(-40) : [];
+    const messages: UIMessage[] = (Array.isArray(body.messages) ? body.messages.slice(-40) : []).map((m: any, i: number) =>
+      m && !Array.isArray(m.parts) && typeof m.content === 'string'
+        ? { id: m.id ?? `m${i}`, role: m.role, parts: [{ type: 'text', text: m.content }] }
+        : m,
+    ).filter((m: any) => m && typeof m === 'object');
     const searchMode = String(body.searchMode ?? 'mmr').toLowerCase();
     const rawTemp = Number(body.temperature ?? 0.75);
     const temperature = Number.isFinite(rawTemp) ? Math.max(0, Math.min(2, rawTemp)) : 0.75;
