@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   const adminGate = requireAdmin(req);
   if (adminGate instanceof NextResponse) return adminGate;
   try {
-    const { query, filters, test_run_id } = await req.json();
+    const { query, filters, test_run_id } = await req.json().catch(() => ({}));
 
     if (!query) {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 });

@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   const adminGate = requireAdmin(req);
   if (adminGate instanceof NextResponse) return adminGate;
   try {
-    const { packet_id } = await req.json();
+    const { packet_id } = await req.json().catch(() => ({}));
 
     if (!packet_id) {
       return NextResponse.json({ error: 'packet_id is required' }, { status: 400 });
