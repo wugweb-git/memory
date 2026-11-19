@@ -7,7 +7,8 @@
  * - Update flow: a new worker waits; the page shows a prompt and posts {type:'SKIP_WAITING'}.
  * - Background Sync tag prism-capture-sync replays offline captures (bottom of file).
  */
-const VERSION = 'v4';
+const VERSION = 'v5';
+/* v5: Web Share Target handler (bottom of file). Offline capture queue and push handlers unchanged. */
 const STATIC_CACHE = `prism-static-${VERSION}`;
 const OFFLINE_URL = '/offline';
 
@@ -44,8 +45,13 @@ const isStaticAsset = (url) =>
 
 self.addEventListener('fetch', (event) => {
   const req = event.request;
-  if (req.method !== 'GET') return;
   const url = new URL(req.url);
+  // Web Share Target: POST /share-target from another Android app (works offline, keeps files).
+  if (req.method === 'POST' && url.origin === self.location.origin && url.pathname === SHARE_PATH) {
+    event.respondWith(handleShare(req));
+    return;
+  }
+  if (req.method !== 'GET') return;
   if (url.origin !== self.location.origin) return;
   // Never intercept API or auth traffic.
   if (url.pathname.startsWith('/api/')) return;
@@ -170,6 +176,44 @@ async function replayCaptures() {
 self.addEventListener('sync', (event) => {
   if (event.tag === CAPTURE_SYNC_TAG) event.waitUntil(replayCaptures());
 });
+
+/* ---- Web Share Target ----
+ * Other apps POST multipart form data (title, text, url, files) to /share-target. The shared content is
+ * parked in the Cache API under a one-shot id (cache name deliberately not "prism-*" so activate cleanup
+ * leaves it alone) and the user is redirected to the review page, which reads it and queues a capture
+ * through the normal offline-capable intake. Nothing is sent to the server by the worker itself.
+ * Keep SHARE_INBOX and the /__share/<id>/... keys in sync with src/lib/native/share-data.ts and
+ * src/app/share-target/review/page.tsx.
+ */
+const SHARE_PATH = '/share-target';
+const SHARE_REVIEW = '/share-target/review';
+const SHARE_INBOX = 'share-inbox-v1';
+const SHARE_MAX_FILES = 5;
+const SHARE_MAX_FILE_BYTES = 1024 * 1024;
+
+async function handleShare(req) {
+  try {
+    const form = await req.formData();
+    const str = (k) => {
+      const v = form.get(k);
+      return typeof v === 'string' ? v : '';
+    };
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    const cache = await caches.open(SHARE_INBOX);
+    const metaFiles = [];
+    const files = form.getAll('files').filter((f) => typeof f !== 'string').slice(0, SHARE_MAX_FILES);
+    for (const f of files) {
+      if (f.size > SHARE_MAX_FILE_BYTES) continue;
+      await cache.put('/__share/' + id + '/file/' + metaFiles.length, new Response(f, { headers: { 'content-type': f.type || 'application/octet-stream' } }));
+      metaFiles.push({ name: f.name, type: f.type });
+    }
+    const meta = { title: str('title'), text: str('text'), url: str('url'), files: metaFiles };
+    await cache.put('/__share/' + id + '/meta', new Response(JSON.stringify(meta), { headers: { 'content-type': 'application/json' } }));
+    return Response.redirect(SHARE_REVIEW + '?share=' + id, 303);
+  } catch {
+    return Response.redirect(SHARE_REVIEW, 303);
+  }
+}
 
 /* ---- Web Push ----
  * Payload JSON: { title, body, url }. Click focuses an open tab (navigating it to url) or opens a new one.
