@@ -1,12 +1,13 @@
 /* Identity Prism OS service worker.
  * - /_next/static (content-hashed, immutable): cache-first.
  * - Icons, images, fonts: stale-while-revalidate (serve cached, refresh in background).
- * - Page navigations: network-first; only the /offline fallback is ever stored.
+ * - Page navigations: network-first (with navigation preload); only the /offline fallback is ever stored.
  *   Authenticated HTML is NEVER cached.
  * - /api/* (incl. /api/auth): never intercepted by fetch handling, always straight to the network.
+ * - Update flow: a new worker waits; the page shows a prompt and posts {type:'SKIP_WAITING'}.
  * - Background Sync tag prism-capture-sync replays offline captures (bottom of file).
  */
-const VERSION = 'v3';
+const VERSION = 'v4';
 const STATIC_CACHE = `prism-static-${VERSION}`;
 const OFFLINE_URL = '/offline';
 
@@ -17,7 +18,11 @@ self.addEventListener('install', (event) => {
       .then((c) => c.add(new Request(OFFLINE_URL, { cache: 'reload' })))
       .catch(() => {})
   );
-  self.skipWaiting();
+  // No automatic skipWaiting: the page prompts the user, then posts SKIP_WAITING.
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
@@ -27,6 +32,7 @@ self.addEventListener('activate', (event) => {
       .then((keys) =>
         Promise.all(keys.filter((k) => k.startsWith('prism-') && k !== STATIC_CACHE).map((k) => caches.delete(k)))
       )
+      .then(() => (self.registration.navigationPreload ? self.registration.navigationPreload.enable() : undefined))
       .then(() => self.clients.claim())
   );
 });
@@ -45,7 +51,16 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.startsWith('/api/')) return;
 
   if (req.mode === 'navigate') {
-    event.respondWith(fetch(req).catch(async () => (await caches.match(OFFLINE_URL)) || Response.error()));
+    event.respondWith(
+      (async () => {
+        try {
+          const preload = await event.preloadResponse;
+          return preload || (await fetch(req));
+        } catch {
+          return (await caches.match(OFFLINE_URL)) || Response.error();
+        }
+      })()
+    );
     return;
   }
 

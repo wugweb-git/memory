@@ -30,7 +30,7 @@ export function M3Button({ children, onClick, tone = "primary", disabled = false
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wide transition ${
+      className={`px-4 py-2 min-h-11 rounded-xl text-xs font-bold uppercase tracking-wide transition ${
         tone === "primary" ? "bg-black text-white" : "border border-border-primary text-text-primary bg-white"
       } disabled:opacity-40 disabled:cursor-not-allowed`}
     >
@@ -41,5 +41,5 @@ export function M3Button({ children, onClick, tone = "primary", disabled = false
 
 export function M3State({ state, message }: { state: "loading" | "error" | "empty"; message: string }) {
   const color = state === "error" ? "text-danger" : "text-text-tertiary";
-  return <p className={`text-sm ${color}`}>{message}</p>;
+  return <p role={state === "error" ? "alert" : "status"} className={`text-sm ${color}`}>{message}</p>;
 }
