@@ -23,6 +23,8 @@ import { UI_API } from '@/lib/api/endpoints';
 import { IDENTITY_CONFIG, avatarFallbackUrl } from '@/config/identity';
 import { haptic, prefersReducedMotion } from '@/lib/pwa/browser';
 import {
+  ASK_STOPPED_NOTE,
+  answerNotice,
   clampTextareaHeight,
   createTimestampStore,
   enterKeyAction,
@@ -183,9 +185,11 @@ export default function AskPage() {
   const menuRef = useRef<HTMLDivElement>(null);
   const nearBottomRef = useRef(true);
   const stamps = useRef(createTimestampStore());
+  const [userStopped, setUserStopped] = useState(false);
 
   const isLoading = status === 'submitted' || status === 'streaming';
   const hasError = status === 'error';
+  const notice = answerNotice({ hasError, userStopped, isLoading });
   const lastMessage = messages[messages.length - 1];
   const showTyping =
     status === 'submitted' ||
@@ -251,6 +255,7 @@ export default function AskPage() {
       haptic('tap');
       nearBottomRef.current = true;
       setShowJump(false);
+      setUserStopped(false);
       sendMessage({ text });
       setInput('');
       requestAnimationFrame(() => scrollToBottom(true));
@@ -262,6 +267,7 @@ export default function AskPage() {
     haptic('tap');
     nearBottomRef.current = true;
     setShowJump(false);
+    setUserStopped(false);
     if (regenerate) {
       regenerate();
       return;
@@ -272,6 +278,7 @@ export default function AskPage() {
 
   const clearChat = () => {
     stop?.();
+    setUserStopped(false);
     clearError?.();
     setMessages([]);
     clearSources();
@@ -458,12 +465,16 @@ export default function AskPage() {
                     <TypingDots />
                   </li>
                 )}
-                {hasError && (
-                  <li role="alert" className="flex items-start gap-2.5">
+                {notice !== 'none' && (
+                  <li role={notice === 'error' ? 'alert' : 'status'} className="flex items-start gap-2.5">
                     <Avatar size={28} />
                     <div className="flex min-w-0 flex-1 flex-col items-start gap-2">
-                      <div className="max-w-prose rounded-2xl rounded-bl-md border border-danger bg-bg-elevated px-4 py-2.5 text-base leading-normal text-text-primary">
-                        {FALLBACK_ERROR}
+                      <div
+                        className={`max-w-prose rounded-2xl rounded-bl-md border bg-bg-elevated px-4 py-2.5 text-base leading-normal ${
+                          notice === 'error' ? 'border-danger text-text-primary' : 'border-border-primary text-text-secondary'
+                        }`}
+                      >
+                        {notice === 'error' ? FALLBACK_ERROR : ASK_STOPPED_NOTE}
                       </div>
                       <button
                         type="button"
@@ -519,7 +530,10 @@ export default function AskPage() {
             {isLoading && stop ? (
               <button
                 type="button"
-                onClick={() => stop()}
+                onClick={() => {
+                  setUserStopped(true);
+                  stop();
+                }}
                 aria-label="Stop answer"
                 className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-full border border-border-primary bg-bg-elevated px-4 text-sm font-medium text-text-primary hover:bg-bg-secondary ${FOCUS_RING}`}
               >

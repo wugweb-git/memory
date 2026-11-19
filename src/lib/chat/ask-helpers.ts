@@ -58,3 +58,16 @@ export function clampTextareaHeight(scrollHeight: number, lineHeight: number, ma
 export function formatMessageTime(ms: number, locale = 'en-GB'): string {
   return new Date(ms).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 }
+
+export const ASK_STOPPED_NOTE = 'Stopped. Tap Retry to ask again.';
+
+/**
+ * What to show under the last answer. A user-initiated stop gets a calm
+ * neutral note, even if the aborted request surfaces as an error; genuine
+ * failures keep the error copy.
+ */
+export function answerNotice(opts: { hasError: boolean; userStopped: boolean; isLoading: boolean }): 'none' | 'stopped' | 'error' {
+  if (opts.isLoading) return 'none';
+  if (opts.userStopped) return 'stopped';
+  return opts.hasError ? 'error' : 'none';
+}

@@ -97,6 +97,7 @@ export const API_ENDPOINTS = {
     drafts: { path: '/api/output/drafts', methods: ['GET'] as const },
     history: { path: '/api/output/history', methods: ['GET'] as const },
     publish: { path: '/api/output/publish', methods: ['POST'] as const },
+    publishManualConfirm: { path: '/api/output/publish/manual-confirm', methods: ['POST'] as const },
     schedule: { path: '/api/output/schedule', methods: ['POST'] as const },
   },
   persona: {
@@ -150,6 +151,9 @@ export const API_ENDPOINTS = {
     process: { path: '/api/jobs/process', methods: ['GET', 'POST'] as const },
     publishing: { path: '/api/jobs/publishing', methods: ['GET', 'POST'] as const },
   },
+  push: {
+    subscribe: { path: '/api/push/subscribe', methods: ['GET', 'POST', 'DELETE'] as const },
+  },
   settings: {
     autoPromote: { path: '/api/settings/auto-promote', methods: ['GET', 'PUT'] as const },
   },
@@ -198,6 +202,7 @@ export const UI_API = {
   outputGenerate: API_ENDPOINTS.output.generate.path,
   outputSchedule: API_ENDPOINTS.output.schedule.path,
   outputPublish: API_ENDPOINTS.output.publish.path,
+  outputPublishManualConfirm: API_ENDPOINTS.output.publishManualConfirm.path,
   outputDrafts: API_ENDPOINTS.output.drafts.path,
   outputHistory: API_ENDPOINTS.output.history.path,
   cmsContent: API_ENDPOINTS.cms.content.path,

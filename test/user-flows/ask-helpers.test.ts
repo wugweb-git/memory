@@ -5,6 +5,7 @@ import {
   isNearBottom,
   enterKeyAction,
   clampTextareaHeight,
+  answerNotice,
 } from '../../src/lib/chat/ask-helpers';
 
 test('timestamp store keeps the first time for an id', () => {
@@ -37,4 +38,12 @@ test('enter key: send on desktop, newline on touch, shift or IME', () => {
 test('textarea height caps at four lines', () => {
   assert.equal(clampTextareaHeight(30, 24, 4, 16), 30);
   assert.equal(clampTextareaHeight(400, 24, 4, 16), 112);
+});
+
+test('answerNotice: user stop is neutral, real failure is an error', () => {
+  assert.equal(answerNotice({ hasError: true, userStopped: true, isLoading: false }), 'stopped');
+  assert.equal(answerNotice({ hasError: true, userStopped: false, isLoading: false }), 'error');
+  assert.equal(answerNotice({ hasError: false, userStopped: true, isLoading: false }), 'stopped');
+  assert.equal(answerNotice({ hasError: false, userStopped: false, isLoading: false }), 'none');
+  assert.equal(answerNotice({ hasError: true, userStopped: true, isLoading: true }), 'none');
 });
