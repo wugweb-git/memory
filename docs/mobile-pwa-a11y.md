@@ -57,3 +57,6 @@ Re-run when adding a route or shared component. Status = verified in code on thi
 
 ## Deployment status (2026-11-19)
 Shipped to production in main bda0120/cdbe97d. Open: full 375px route sweep on the deployed build, /ask interaction checks (streaming, Stop, Retry, Copy). Blue accent kept at `0 170 255` by owner decision; blue text on the light background is below 4.5:1 (the design pass had darkened it to `0 111 175`).
+
+## Update (2026-11-19, main b4ff0a3, promoted)
+New page `/integrations/publishing` (owner-only credentials for X, LinkedIn, Facebook, Instagram, Medium). Needs a signed-in 375px check; labels use `<label for>`, errors use `role="alert"`, status uses icon plus text. Gmail and Spotify connectors added on `/integrations`.
