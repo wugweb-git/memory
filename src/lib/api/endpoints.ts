@@ -60,6 +60,7 @@ export const API_ENDPOINTS = {
   },
   chat: { stream: { path: '/api/chat', methods: ['POST'] as const } },
   upload: { file: { path: '/api/upload', methods: ['POST'] as const } },
+  import: { aiChats: { path: '/api/import/ai-chats', methods: ['GET', 'POST'] as const } },
   connectors: { import: { path: '/api/connectors/import', methods: ['POST'] as const } },
   cognitive: {
     decide: { path: '/api/cognitive/decide', methods: ['POST'] as const },
