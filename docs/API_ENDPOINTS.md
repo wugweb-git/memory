@@ -80,6 +80,16 @@ Base path: `/api`. All routes use App Router unless noted.
 | POST | `/cognitive/prioritize` | Rank recommendations |
 | GET | `/cognitive/traces` | Recent decision traces |
 
+## Sources (owner only)
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/sources` | Every source with live status (set up, last sync, last error) |
+| POST | `/sources/[id]/sync` | Sync one source now |
+| PUT | `/sources/[id]/config` | Set up GitHub, YouTube or blog from the app (`{ value }`, empty clears; non-secret values only) |
+| POST | `/sources/feeds` | Add an RSS or Atom feed as a source (`{ label?, url }`, up to 10) |
+| DELETE | `/sources/feeds/[id]` | Remove a feed added in the app |
+
 ## Memory
 
 | Method | Path | Purpose |
