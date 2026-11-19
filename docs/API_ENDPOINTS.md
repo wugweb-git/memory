@@ -68,6 +68,13 @@ Base path: `/api`. All routes use App Router unless noted.
 | POST | `/chat` | RAG streaming chat (AI SDK v6) |
 | POST | `/upload` | File upload → memory ingest |
 
+## AI history import
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/import/ai-chats` | Limits for the importer (admin only) |
+| POST | `/import/ai-chats` | `mode: dry-run` returns counts and writes nothing; `mode: commit` + `confirm: true` writes packets (admin only, chunked, idempotent). See `docs/ai-import.md` |
+
 ## Cognitive
 
 | Method | Path | Purpose |
