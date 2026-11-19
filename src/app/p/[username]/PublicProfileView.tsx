@@ -68,18 +68,20 @@ export function PublicProfileView({ username }: { username: string }) {
 
   if (loading) {
     return (
-      <div className="min-h-dvh-fallback flex items-center justify-center">
-        <Loader2 className="animate-spin text-text-disabled" size={28} role="img" aria-label="Loading profile" />
-      </div>
+      <main className="min-h-dvh-fallback flex items-center justify-center" aria-busy="true">
+        <Loader2 className="animate-spin text-text-tertiary" size={28} role="img" aria-label="Loading profile" />
+      </main>
     );
   }
 
   if (error && !profile) {
     return (
-      <div role="alert" className="min-h-dvh-fallback flex flex-col items-center justify-center gap-3 px-6 text-center">
-        <p className="text-lg font-bold text-text-primary">This profile isn&rsquo;t live yet</p>
-        <p className="text-sm text-text-tertiary">Check the link, or come back soon.</p>
-      </div>
+      <main className="min-h-dvh-fallback flex items-center justify-center px-6 text-center">
+        <div role="status" className="flex flex-col gap-3">
+          <h1 className="text-lg font-bold text-text-primary">This profile isn&rsquo;t live yet</h1>
+          <p className="text-sm text-text-tertiary">Check the link, or come back soon.</p>
+        </div>
+      </main>
     );
   }
 
