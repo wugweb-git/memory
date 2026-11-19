@@ -26,7 +26,7 @@ const SHORTCUTS = [
   { href: '/admin/memory', label: 'Memory admin', desc: 'Packet-level inspection' },
   { href: '/admin/memory/public', label: 'Public notes', desc: 'Choose what Ask may quote' },
   { href: '/admin/profile', label: 'Profile admin', desc: 'Public profile internals' },
-  { href: '/buffer', label: 'Buffer', desc: 'Intake queue & capture' },
+  { href: '/buffer', label: 'Buffer', desc: 'Review and capture incoming items' },
 ];
 
 export default function AdminConsole() {
@@ -100,7 +100,7 @@ export default function AdminConsole() {
       const failures = (j.results ?? []).filter((r: any) => r.status === 'FAIL');
       return [
         `Passed ${j.summary?.passed ?? '?'} / ${j.summary?.total ?? '?'} checks.`,
-        ...failures.map((f: any) => `FAIL — ${f.name ?? f.check ?? 'unknown'}: ${f.detail ?? f.error ?? ''}`),
+        ...failures.map((f: any) => `FAIL: ${f.name ?? f.check ?? 'unknown'}: ${f.detail ?? f.error ?? ''}`),
       ].join('\n');
     });
 
@@ -111,7 +111,7 @@ export default function AdminConsole() {
       if (!res.ok) throw new Error(j.error ?? `audit failed (${res.status})`);
       const sectors = j.report?.sectors ?? {};
       return Object.entries(sectors)
-        .map(([k, v]: [string, any]) => `${k}: ${v.status}${v.provider ? ` (${v.provider})` : ''}${v.error ? ` — ${String(v.error).slice(0, 80)}` : ''}${v.note ? ` — ${v.note}` : ''}`)
+        .map(([k, v]: [string, any]) => `${k}: ${v.status}${v.provider ? ` (${v.provider})` : ''}${v.error ? ` - ${String(v.error).slice(0, 80)}` : ''}${v.note ? ` - ${v.note}` : ''}`)
         .join('\n') || 'No sectors reported.';
     });
 
@@ -148,53 +148,70 @@ export default function AdminConsole() {
     <>
       <AppToastContainer position="bottom-right" theme="light" />
       <div className="max-w-3xl mx-auto px-4">
-        <M3Page title="Admin console" subtitle="Operations, health and setup — owner only">
+        <M3Page title="Admin console" subtitle="Operations, health and setup. Owner only.">
 
           <M3Card title="Operations">
-            <div className="flex flex-wrap gap-2">
-              <M3Button onClick={runDiagnostics} disabled={busy !== null}>
-                {busy === 'diagnose' ? 'Running…' : 'Run diagnostics'}
-              </M3Button>
-              <M3Button tone="secondary" onClick={runAudit} disabled={busy !== null}>
-                {busy === 'audit' ? 'Running…' : 'Memory audit'}
-              </M3Button>
-              <M3Button tone="secondary" onClick={runJobs} disabled={busy !== null}>
-                {busy === 'jobs' ? 'Running…' : 'Run jobs now'}
-              </M3Button>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="flex flex-col gap-1.5">
+                <M3Button onClick={runDiagnostics} disabled={busy !== null}>
+                  {busy === 'diagnose' ? 'Running…' : 'Run diagnostics'}
+                </M3Button>
+                <p className="text-xs text-text-tertiary">Checks every subsystem. Read-only.</p>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <M3Button tone="secondary" onClick={runAudit} disabled={busy !== null}>
+                  {busy === 'audit' ? 'Running…' : 'Audit memory'}
+                </M3Button>
+                <p className="text-xs text-text-tertiary">Reports on each memory sector. Read-only.</p>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <M3Button tone="secondary" onClick={runJobs} disabled={busy !== null}>
+                  {busy === 'jobs' ? 'Running…' : 'Run jobs now'}
+                </M3Button>
+                <p className="text-xs text-text-tertiary">Publishes queued output and cleans old rows. This changes data.</p>
+              </div>
             </div>
+            {busy !== null && <p role="status" className="mt-3 text-xs text-text-tertiary">Running, this can take a few seconds…</p>}
             {opResult && (
-              <div className="mt-3 rounded-2xl bg-bg-secondary border border-border-secondary p-4">
-                <p className="text-2xs font-bold uppercase tracking-widest text-text-tertiary mb-2">{opResult.title}</p>
-                <pre className="text-xs text-text-secondary whitespace-pre-wrap">{opResult.body}</pre>
+              <div role="status" className="mt-3 rounded-2xl bg-bg-secondary border border-border-secondary p-4">
+                <p className="text-sm font-semibold text-text-primary mb-2">{opResult.title} result</p>
+                <pre className="text-xs text-text-secondary whitespace-pre-wrap break-words">{opResult.body}</pre>
               </div>
             )}
           </M3Card>
 
           <M3Card
             title="Health"
-            action={<button type="button" onClick={loadHealth} className="min-h-11 px-2 text-2xs font-bold uppercase text-accent">Refresh</button>}
+            action={<button type="button" onClick={loadHealth} className="min-h-11 px-3 text-xs font-bold text-accent">Refresh</button>}
           >
             {health === null ? (
               <M3State state="loading" message="Checking subsystems…" />
             ) : (
-              <ul className="divide-y divide-border-secondary">
-                {health.map((row) => (
-                  <li key={row.name} className="flex items-center justify-between py-2">
-                    <span className="text-sm text-text-primary">{row.name}</span>
-                    <span className={`inline-flex items-center gap-1.5 text-2xs font-bold uppercase tracking-widest ${row.ok ? 'text-success' : 'text-danger'}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${row.ok ? 'bg-success' : 'bg-danger'}`} />
-                      {row.status}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <>
+                <p role="status" className={`mb-2 text-sm font-medium ${health.every((r) => r.ok) ? 'text-success' : 'text-danger'}`}>
+                  {health.every((r) => r.ok)
+                    ? 'All subsystems are healthy.'
+                    : `${health.filter((r) => !r.ok).length} of ${health.length} subsystems need attention.`}
+                </p>
+                <ul className="divide-y divide-border-secondary">
+                  {health.map((row) => (
+                    <li key={row.name} className="flex items-center justify-between gap-3 py-3">
+                      <span className="text-sm text-text-primary">{row.name}</span>
+                      <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${row.ok ? 'text-success' : 'text-danger'}`}>
+                        <span aria-hidden="true" className={`w-1.5 h-1.5 rounded-full ${row.ok ? 'bg-success' : 'bg-danger'}`} />
+                        {row.status}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </>
             )}
           </M3Card>
 
           <M3Card title={`Setup checklist${checklist ? ` (${done}/${checklist.length})` : ''}`}>
             {checklist === null ? (
               checklistError ? (
-                <M3State state="error" message="Could not load checklist. Log in as admin and refresh." />
+                <M3State state="error" message="Could not load the checklist. Sign in as the admin, then refresh." />
               ) : (
                 <M3State state="loading" message="Loading checklist…" />
               )
@@ -206,9 +223,9 @@ export default function AdminConsole() {
                       type="button"
                       aria-pressed={item.completed}
                       onClick={() => toggleChecklist(item)}
-                      className="w-full flex items-center gap-3 py-2 text-left group"
+                      className="w-full min-h-11 flex items-center gap-3 py-2 text-left group"
                     >
-                      <span className={`w-4 h-4 rounded border shrink-0 flex items-center justify-center text-2xs ${item.completed ? 'bg-text-primary border-text-primary text-bg-primary' : 'border-border-primary text-transparent group-hover:border-text-tertiary'}`}>
+                      <span aria-hidden="true" className={`w-5 h-5 rounded border shrink-0 flex items-center justify-center text-2xs ${item.completed ? 'bg-text-primary border-text-primary text-bg-primary' : 'border-border-primary text-transparent group-hover:border-text-tertiary'}`}>
                         ✓
                       </span>
                       <span className={`text-sm ${item.completed ? 'text-text-disabled line-through' : 'text-text-primary'}`}>{item.text}</span>

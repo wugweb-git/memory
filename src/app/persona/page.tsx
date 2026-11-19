@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { IDENTITY_CONFIG, resolveUserId } from '@/config/identity';
 import { AppShell } from '@/app/component/AppShell';
+import { EmptyState, Skeleton } from '@/components/ui/primitives';
 
 type Trait = { id: string; traitName: string; traitValue: number; confidence: number; evidenceCount: number };
 type EvolutionLog = { id: string; changedField: string | null; reason: string | null; confidenceDelta: number | null; createdAt: string };
@@ -163,7 +164,7 @@ export default function PersonaIntelligencePage() {
 
   async function rollbackField(logId: string, field: string) {
     if (!ROLLBACK_FIELDS.includes(field)) return;
-    if (!confirm(`Roll back ${field} to its value before this change?`)) return;
+    if (!confirm(`Roll back ${(STYLE_LABEL[field] ?? humanize(field)).toLowerCase()} to how it was before this change? The change stays in the timeline.`)) return;
     setSaving(true);
     setError(null);
     setNotice(null);
@@ -198,7 +199,7 @@ export default function PersonaIntelligencePage() {
         body: JSON.stringify({ userId, feedbackType, targetType: 'persona' }),
       });
       if (!res.ok) throw new Error(`Feedback failed (${res.status})`);
-      setNotice('Feedback saved.');
+      setNotice('Thanks, your feedback was saved.');
       await fetchData(userId);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Feedback failed');
@@ -229,8 +230,10 @@ export default function PersonaIntelligencePage() {
   if (loading) {
     return (
       <AppShell>
-        <div className="w-full min-h-[50vh] flex items-center justify-center px-4">
-          <p role="status" className="text-sm text-text-tertiary animate-pulse">Loading persona…</p>
+        <div className="w-full max-w-3xl mx-auto px-4 py-8 space-y-4" role="status" aria-label="Loading persona">
+          <Skeleton className="h-8 w-40 motion-reduce:animate-none" />
+          <Skeleton className="h-40 w-full motion-reduce:animate-none" />
+          <Skeleton className="h-40 w-full motion-reduce:animate-none" />
         </div>
       </AppShell>
     );
@@ -240,9 +243,10 @@ export default function PersonaIntelligencePage() {
     return (
       <AppShell>
         <div className="w-full min-h-[50vh] flex items-center justify-center px-4">
-          <div className="text-center space-y-2">
+          <div className="text-center space-y-3 max-w-sm">
             <p role="alert" className="text-sm text-danger">{loadError}</p>
-            {userId && <button onClick={() => { setLoading(true); fetchData(userId); }} className="px-4 py-2 rounded-xl bg-text-primary text-bg-primary text-xs font-bold">Retry</button>}
+            <p className="text-xs text-text-tertiary">Your persona data could not be reached. Check your connection or sign in again, then retry.</p>
+            {userId && <button type="button" onClick={() => { setLoading(true); fetchData(userId); }} className="min-h-11 px-5 rounded-xl bg-text-primary text-bg-primary text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">Try again</button>}
           </div>
         </div>
       </AppShell>
@@ -255,15 +259,15 @@ export default function PersonaIntelligencePage() {
       <header className="space-y-3">
         <div className="space-y-1">
           <h1 className="text-xl font-semibold text-text-primary">Persona</h1>
-          <p className="text-xs text-text-tertiary">How your digital twin writes, decides and evolves.</p>
+          <p className="text-sm text-text-tertiary">How your digital twin writes, decides and changes over time. Review it, then regenerate when your writing has moved on.</p>
         </div>
         <button
           type="button"
           onClick={rebuildPersona}
           disabled={rebuilding || saving}
-          className="px-4 py-2 rounded-xl bg-text-primary text-bg-primary text-xs font-bold disabled:opacity-50"
+          className="min-h-11 px-5 rounded-xl bg-text-primary text-bg-primary text-sm font-semibold transition-colors hover:bg-accent disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
-          {rebuilding ? 'Regenerating…' : 'Regenerate with AI'}
+          {rebuilding ? 'Regenerating…' : 'Regenerate from my profile'}
         </button>
         {error && <p role="alert" className="text-sm text-danger">{error}</p>}
         {loadError && <p role="alert" className="text-sm text-danger">{loadError}</p>}
@@ -298,20 +302,31 @@ export default function PersonaIntelligencePage() {
       <section className="glass-panel rounded-3xl border border-border-secondary p-5 space-y-3">
         <h2 className="text-sm font-semibold text-text-secondary">Behavioral traits</h2>
         {traits.length === 0 ? (
-          <p className="text-sm text-text-tertiary">No traits yet.</p>
+          <EmptyState
+            title="No traits yet"
+            hint="Traits appear once enough of your writing and decisions have been analysed. Regenerate your persona to start."
+          />
         ) : (
-          traits.map((t) => (
-            <div key={t.id} className="space-y-1">
-              <div className="flex justify-between text-sm">
-                <span>{t.traitName}</span>
-                <span className="font-bold">{Math.round(t.traitValue * 100)}%</span>
-              </div>
-              <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
-                <div className="h-1.5 bg-text-primary rounded-full transition-all" style={{ width: `${t.traitValue * 100}%` }} />
-              </div>
-              <p className="text-2xs text-text-tertiary">Confidence {Math.round(t.confidence * 100)}% · Evidence {t.evidenceCount}</p>
-            </div>
-          ))
+          <ul className="space-y-3">
+            {[...traits].sort((a, b) => b.traitValue - a.traitValue).map((t) => (
+              <li key={t.id} className="space-y-1">
+                <div className="flex items-baseline justify-between gap-3 text-sm">
+                  <span className="font-medium text-text-primary">{humanize(t.traitName)}</span>
+                  <span className="font-bold tabular-nums">{Math.round(t.traitValue * 100)}%</span>
+                </div>
+                <div
+                  role="img"
+                  aria-label={`${humanize(t.traitName)}: ${Math.round(t.traitValue * 100)} percent`}
+                  className="h-1.5 bg-bg-tertiary rounded-full overflow-hidden"
+                >
+                  <div className="h-1.5 bg-text-primary rounded-full transition-[width] motion-reduce:transition-none" style={{ width: `${t.traitValue * 100}%` }} />
+                </div>
+                <p className="text-xs text-text-tertiary">
+                  {Math.round(t.confidence * 100)}% sure, based on {t.evidenceCount} {t.evidenceCount === 1 ? 'example' : 'examples'}
+                </p>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
 
@@ -319,29 +334,31 @@ export default function PersonaIntelligencePage() {
       <section className="glass-panel rounded-3xl border border-border-secondary p-5 space-y-3">
         <h2 className="text-sm font-semibold text-text-secondary">Evolution timeline</h2>
         {timeline.length === 0 ? (
-          <p className="text-sm text-text-tertiary">No evolution logs yet.</p>
+          <EmptyState title="No changes yet" hint="When your persona changes, each change is listed here and can be rolled back." />
         ) : (
           <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
             {timeline.map((log) => (
               <div key={log.id} className="flex items-start justify-between bg-secondary/40 rounded-xl p-3 gap-3">
                 <div className="space-y-0.5 min-w-0">
-                  <p className="text-xs font-bold">{log.changedField || 'general'}</p>
-                  <p className="text-2xs text-text-tertiary">{log.reason || 'no reason'}</p>
+                  <p className="text-sm font-semibold text-text-primary">{log.changedField ? (STYLE_LABEL[log.changedField] ?? humanize(log.changedField)) : 'General'}</p>
+                  <p className="text-xs text-text-tertiary">{log.reason || 'No reason recorded'}</p>
                   {log.changedField && ROLLBACK_FIELDS.includes(log.changedField) && log.reason !== 'rollback' && (
                     <button
                       onClick={() => rollbackField(log.id, log.changedField!)}
                       disabled={saving}
-                      className="text-2xs font-bold text-accent disabled:opacity-50"
+                      type="button"
+                      aria-label={`Roll back ${STYLE_LABEL[log.changedField!] ?? log.changedField}`}
+                      className="inline-flex min-h-11 items-center -ml-2 px-2 rounded-lg text-sm font-semibold text-accent hover:bg-bg-tertiary disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                     >
                       Roll back
                     </button>
                   )}
                 </div>
                 <div className="text-right shrink-0">
-                  <span className={`text-2xs font-bold ${(log.confidenceDelta || 0) >= 0 ? 'text-success' : 'text-danger'}`}>
+                  <span className={`text-xs font-bold ${(log.confidenceDelta || 0) >= 0 ? 'text-success' : 'text-danger'}`}>
                     {(log.confidenceDelta || 0) >= 0 ? '+' : ''}{Math.round((log.confidenceDelta || 0) * 100)}%
                   </span>
-                  <p className="text-2xs text-text-tertiary">{log.createdAt ? new Date(log.createdAt).toLocaleDateString() : ''}</p>
+                  <p className="text-xs text-text-tertiary">{log.createdAt ? new Date(log.createdAt).toLocaleDateString() : ''}</p>
                 </div>
               </div>
             ))}
@@ -360,15 +377,16 @@ export default function PersonaIntelligencePage() {
             { label: 'Mode', field: 'preferredMode' as const, options: ['operator', 'founder', 'architect'] },
           ].map((ctrl) => (
             <div key={ctrl.field} className="space-y-1">
-              <p className="text-2xs text-text-tertiary">{ctrl.label}</p>
+              <p className="text-xs font-medium text-text-secondary">{ctrl.label}</p>
               <div className="flex flex-wrap gap-1">
                 {ctrl.options.map((opt) => (
                   <button
                     key={opt}
                     aria-pressed={adaptive?.[ctrl.field] === opt}
                     disabled={saving}
+                    type="button"
                     onClick={() => updateAdaptive(ctrl.field, opt)}
-                    className={`px-2 py-1 rounded-lg border text-2xs ${adaptive?.[ctrl.field] === opt ? 'bg-text-primary text-bg-primary border-text-primary' : 'border-border-secondary'} disabled:opacity-50`}
+                    className={`min-h-11 px-3 rounded-lg border text-xs font-medium capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${adaptive?.[ctrl.field] === opt ? 'bg-text-primary text-bg-primary border-text-primary' : 'border-border-secondary hover:bg-bg-secondary'} disabled:opacity-50`}
                   >
                     {opt.replace(/-/g, ' ')}
                   </button>
@@ -381,25 +399,27 @@ export default function PersonaIntelligencePage() {
 
       {/* Feedback */}
       <section className="glass-panel rounded-3xl border border-border-secondary p-5 space-y-3">
-        <h2 className="text-sm font-semibold text-text-secondary">Feedback on this persona</h2>
+        <h2 className="text-sm font-semibold text-text-secondary">Does this persona sound like you?</h2>
         <div className="flex gap-2">
           {(['accepted', 'rejected', 'ignored'] as const).map((t) => (
             <button
               key={t}
               aria-pressed={feedbackType === t}
+              type="button"
               onClick={() => setFeedbackType(t)}
-              className={`flex-1 px-3 py-2 rounded-xl border text-xs capitalize font-bold ${feedbackType === t ? 'bg-text-primary text-bg-primary border-text-primary' : 'border-border-secondary'}`}
+              className={`flex-1 min-h-11 px-3 rounded-xl border text-sm capitalize font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${feedbackType === t ? 'bg-text-primary text-bg-primary border-text-primary' : 'border-border-secondary hover:bg-bg-secondary'}`}
             >
               {t}
             </button>
           ))}
         </div>
         <button
+          type="button"
           onClick={sendFeedback}
           disabled={saving}
-          className="w-full px-4 py-3 rounded-xl bg-text-primary text-bg-primary text-xs font-bold disabled:opacity-50"
+          className="w-full min-h-11 px-4 rounded-xl bg-text-primary text-bg-primary text-sm font-semibold hover:bg-accent disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
-          {saving ? 'Saving…' : 'Save feedback'}
+          {saving ? 'Saving…' : 'Send feedback'}
         </button>
       </section>
     </div>

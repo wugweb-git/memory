@@ -47,10 +47,11 @@ export const PrioritizeTab: React.FC<{ mode: Mode }> = ({ mode }) => {
           value={text}
           onChange={e => setText(e.target.value)}
           rows={6}
+          aria-describedby="prio-help"
           placeholder={'Reply to client proposal\nFix onboarding bug\nWrite weekly update'}
-          className="w-full rounded-xl border border-border-secondary bg-bg-elevated px-4 py-3 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent resize-y"
+          className="w-full rounded-xl border border-border-secondary bg-bg-elevated px-4 py-3 text-sm text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent resize-y"
         />
-        <p className={`text-xs ${tooMany ? 'text-danger' : 'text-text-tertiary'}`}>
+        <p id="prio-help" role={tooMany ? 'alert' : undefined} className={`text-xs ${tooMany ? 'text-danger' : 'text-text-tertiary'}`}>
           {items.length} of {MAX_ITEMS} items{tooMany ? ' (remove some to continue)' : ''}
         </p>
       </div>
@@ -63,13 +64,13 @@ export const PrioritizeTab: React.FC<{ mode: Mode }> = ({ mode }) => {
       {loading ? <SkeletonCard label="Weighing each item" /> : null}
 
       {!loading && !result && !error ? (
-        <p className="text-xs text-text-tertiary text-center">A ranked list with reasons will appear here.</p>
+        <p className="text-sm text-text-tertiary text-center">A ranked list with reasons will appear here.</p>
       ) : null}
 
       {!loading && result ? (
         <div className="space-y-4">
           {ranked.length === 0 ? (
-            <ErrorBox message="The ranking came back empty. Try again with clearer items." onRetry={run} />
+            <ErrorBox message="The ranking came back empty. Make each line a specific task, then try again." onRetry={run} />
           ) : (
             <ol className="space-y-3">
               {ranked.map((r, i) => (

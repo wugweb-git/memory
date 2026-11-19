@@ -5,7 +5,8 @@ import Link from "next/link";
 import { toast } from "react-toastify";
 import { AppToastContainer } from "@/app/component/AppToastContainer";
 import "react-toastify/dist/ReactToastify.css";
-import { M3Card, M3Page, M3State } from "@/components/ui/m3";
+import { M3Button, M3Card, M3Page, M3State } from "@/components/ui/m3";
+import { EmptyState, Skeleton } from "@/components/ui/primitives";
 import { AppShell } from "@/app/component/AppShell";
 import { JobPipeline } from "@/app/component/JobPipeline";
 import { JobSearchAgent } from "@/app/component/JobSearchAgent";
@@ -112,7 +113,7 @@ export default function CareerPage() {
     if (!confirm(`Remove "${s.title}" from your career tree?`)) return;
     try {
       await apiRequest(`${profilePath(HANDLE, "sections")}?sectionId=${encodeURIComponent(s.id)}`, { method: "DELETE" });
-      toast.success("Removed");
+      toast.success("Role removed");
       await load();
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Remove failed");
@@ -123,7 +124,7 @@ export default function CareerPage() {
     <AppShell>
       <AppToastContainer position="top-center" theme="light" />
       <div className="max-w-3xl mx-auto px-4 pb-24">
-        <M3Page title="Career" subtitle="Your career tree, applications and opportunities — the tree feeds your public profile">
+        <M3Page title="Career" subtitle="Your career tree, job applications and opportunities. The career tree is shown on your public profile.">
           <M3Card
             title="Career tree"
             action={
@@ -148,14 +149,21 @@ export default function CareerPage() {
             )}
 
             {loading ? (
-              <M3State state="loading" message="Loading your career tree…" />
+              <div className="space-y-3" role="status" aria-label="Loading your career tree">
+                <Skeleton className="h-14 w-full motion-reduce:animate-none" />
+                <Skeleton className="h-14 w-full motion-reduce:animate-none" />
+              </div>
             ) : loadFailed ? (
               <div>
-                <M3State state="error" message="Could not load your career tree." />
+                <M3State state="error" message="Could not load your career tree. Check your connection and try again." />
                 <button type="button" onClick={load} className="mt-2 min-h-[44px] px-3 rounded-xl border border-border-primary text-sm font-medium text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">Try again</button>
               </div>
             ) : sections.length === 0 ? (
-              <M3State state="empty" message="No roles yet. Add your first — it renders on your public profile." />
+              <EmptyState
+                title="No roles yet"
+                hint="Add a role and it appears on your public profile."
+                action={<M3Button onClick={startNew}>Add your first role</M3Button>}
+              />
             ) : (
               <ol className="relative border-l border-border-secondary ml-1.5 space-y-4">
                 {sections.map((s) => {

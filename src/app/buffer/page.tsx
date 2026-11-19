@@ -4,18 +4,19 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { AppShell } from '@/app/component/AppShell';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
 import { postBlobAction } from '@/lib/ui/blob';
-import { 
-  Database, 
-  Trash2, 
-  CheckCircle2, 
-  AlertTriangle, 
-  ChevronRight, 
-  Filter, 
+import { Card, EmptyState, Skeleton } from '@/components/ui/primitives';
+import {
+  Trash2,
+  CheckCircle2,
+  AlertTriangle,
+  ChevronRight,
   HardDrive,
+  Inbox,
   X,
   RefreshCw,
   Search,
-  MoreVertical
+  MoreVertical,
+  Plus,
 } from 'lucide-react';
 import ManualUpload from './components/ManualUpload';
 import { VoiceIngestion } from '@/app/component/VoiceIngestion';
@@ -44,16 +45,70 @@ interface BlobStats {
   status: 'healthy' | 'warning' | 'critical' | 'blocked';
 }
 
+type Tab = 'all' | 'raw' | 'reviewed' | 'promotable' | 'promoted';
+
+const TABS: Array<{ id: Tab; label: string; hint: string }> = [
+  { id: 'all', label: 'All', hint: 'Everything in the buffer' },
+  { id: 'raw', label: 'Raw', hint: 'Not looked at yet' },
+  { id: 'reviewed', label: 'Reviewed', hint: 'You have checked these' },
+  { id: 'promotable', label: 'Ready to promote', hint: 'Cleared to become memory' },
+  { id: 'promoted', label: 'Promoted', hint: 'Already moved into memory' },
+];
+
+const STATUS_LABEL: Record<BlobStats['status'], string> = {
+  healthy: 'Plenty of room',
+  warning: 'Getting full',
+  critical: 'Almost full',
+  blocked: 'Full, intake paused',
+};
+
+function formatSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function statusColor(status: string) {
+  switch (status) {
+    case 'healthy': return 'bg-success';
+    case 'warning': return 'bg-warning';
+    case 'critical':
+    case 'blocked': return 'bg-danger';
+    default: return 'bg-text-disabled';
+  }
+}
+
+function stateColor(state: string) {
+  switch (state) {
+    case 'reviewed':
+    case 'promotable': return 'bg-accent/10 text-accent';
+    case 'promoted': return 'bg-success/10 text-success';
+    case 'rejected': return 'bg-danger/10 text-danger';
+    case 'expired': return 'bg-bg-secondary text-text-tertiary';
+    default: return 'bg-bg-secondary text-text-secondary';
+  }
+}
+
+function stateLabel(state: string) {
+  if (state === 'promotable') return 'Ready to promote';
+  return state.charAt(0).toUpperCase() + state.slice(1);
+}
+
+function formatDate(value: string) {
+  return value ? new Date(value).toLocaleDateString() : 'Unknown date';
+}
+
 export default function BufferControlSurface() {
   const [items, setItems] = useState<BlobItem[]>([]);
   const [stats, setStats] = useState<BlobStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'all' | 'raw' | 'reviewed' | 'promotable' | 'promoted'>('all');
+  const [activeTab, setActiveTab] = useState<Tab>('all');
   const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [confirmingReject, setConfirmingReject] = useState(false);
   const reqId = useRef(0);
   const [captureMode, setCaptureMode] = useState<'upload' | 'voice' | 'knowledge' | 'link' | 'pulse' | 'device' | 'csv'>('upload');
 
@@ -78,7 +133,7 @@ export default function BufferControlSurface() {
       if (myReq !== reqId.current) return; // a newer request superseded this one
       if (!res.ok) {
         // A dead intake store must not look like an empty queue.
-        setLoadError('Intake store unreachable — items can’t be loaded right now.');
+        setLoadError('The intake store did not respond, so items could not be loaded.');
         setItems([]);
         return;
       }
@@ -89,7 +144,7 @@ export default function BufferControlSurface() {
     } catch (err) {
       if (myReq !== reqId.current) return;
       console.error('Failed to fetch blob items', err);
-      setLoadError('Intake store unreachable — items can’t be loaded right now.');
+      setLoadError('The intake store did not respond, so items could not be loaded.');
       setItems([]);
     } finally {
       if (myReq === reqId.current) setLoading(false);
@@ -104,19 +159,25 @@ export default function BufferControlSurface() {
     return () => clearInterval(interval);
   }, [fetchStats, fetchItems]);
 
+  // Switching items always resets the destructive confirmation and stale errors.
+  useEffect(() => {
+    setConfirmingReject(false);
+    setActionError(null);
+  }, [selectedId]);
+
   const handleAction = async (id: string, action: string) => {
     if (busyAction) return;
-    if (action === 'reject' && !window.confirm('Reject and purge this item? This cannot be undone.')) return;
     setBusyAction(action);
     setActionError(null);
     try {
       const res = await postBlobAction(action, id);
       if (res.ok) {
         if (action === 'reject' || action === 'promote') setSelectedId(null);
+        setConfirmingReject(false);
         fetchItems();
         fetchStats();
       } else {
-        let msg = `Could not ${action} this item (HTTP ${res.status}).`;
+        let msg = `Could not ${action} this item (HTTP ${res.status}). Try again in a moment.`;
         try {
           const body = await res.json();
           if (body?.error || body?.message) msg = String(body.error || body.message);
@@ -125,7 +186,7 @@ export default function BufferControlSurface() {
       }
     } catch (err) {
       console.error(`Failed to ${action} blob item`, err);
-      setActionError(`Network error — could not ${action} this item.`);
+      setActionError(`Network error. The ${action} request did not reach the server, so nothing changed.`);
     } finally {
       setBusyAction(null);
     }
@@ -138,95 +199,348 @@ export default function BufferControlSurface() {
   }, [items, search]);
   const selectedItem = useMemo(() => items.find(i => i.id === selectedId) ?? null, [items, selectedId]);
   const provenance = selectedItem?.trace_json?.provenance;
+  const showAlertStrip = !!stats && stats.status !== 'healthy';
 
-  const formatSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
+  const toggleSelected = (id: string) => setSelectedId(current => (current === id ? null : id));
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'healthy': return 'bg-success';
-      case 'warning': return 'bg-warning';
-      case 'critical': return 'bg-danger';
-      case 'blocked': return 'bg-danger';
-      default: return 'bg-text-disabled';
-    }
-  };
+  const retry = () => { fetchItems(); fetchStats(); };
 
-  const getStateColor = (state: string) => {
-    switch (state) {
-      case 'raw': return 'bg-bg-secondary text-text-secondary';
-      case 'reviewed': return 'bg-accent/10 text-accent';
-      case 'promotable': return 'bg-accent/10 text-accent';
-      case 'promoted': return 'bg-success/10 text-success';
-      case 'rejected': return 'bg-danger/10 text-danger';
-      case 'expired': return 'bg-bg-secondary text-text-tertiary';
-      default: return 'bg-bg-secondary text-text-secondary';
-    }
-  };
+  const emptyState = loadError ? (
+    <div role="alert" className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-danger/40 px-6 py-10 text-center">
+      <p className="text-sm font-semibold text-danger">{loadError}</p>
+      <p className="max-w-sm text-xs text-text-tertiary">This is a connection problem, not an empty buffer. Your items are safe.</p>
+      <button type="button" onClick={retry} className="min-h-11 rounded-xl border border-danger/40 px-5 text-xs font-bold text-danger hover:bg-danger/5">
+        Try again
+      </button>
+    </div>
+  ) : search.trim() ? (
+    <EmptyState
+      title="No loaded items match your search"
+      hint="Search only looks at the items already loaded in this view. Clear the search or switch filters."
+      action={
+        <button type="button" onClick={() => setSearch('')} className="min-h-11 rounded-xl border border-border-primary px-5 text-xs font-bold text-text-primary hover:bg-bg-secondary">
+          Clear search
+        </button>
+      }
+    />
+  ) : (
+    <EmptyState
+      title={activeTab === 'all' ? 'The buffer is empty' : `Nothing in "${TABS.find(t => t.id === activeTab)?.label}"`}
+      hint={activeTab === 'all' ? 'Upload a file, record a voice note or paste a link. New items land here for review before they become memory.' : 'Try another filter, or add something new to the buffer.'}
+      action={
+        <a href="#capture" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-text-primary px-5 text-xs font-bold text-bg-primary hover:bg-accent">
+          <Plus size={14} aria-hidden="true" /> Add an item
+        </a>
+      }
+    />
+  );
 
-  return (
-    <AppShell>
-      {/* Storage status strip */}
-      <div className="border border-border-secondary bg-secondary rounded-radius-xl mb-6">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className={`w-3 h-3 rounded-full animate-pulse ${stats ? getStatusColor(stats.status) : 'bg-text-disabled'}`} />
-            <h1 className="text-sm font-bold tracking-tight text-text-primary">Buffer</h1>
-            <span className="h-4 w-px bg-secondary mx-2" />
-            <div className="flex items-center gap-2 text-xs text-text-tertiary">
-              <HardDrive size={14} />
-              <span>{stats ? `${stats.usage_percent}% capacity` : 'Loading…'}</span>
-            </div>
-          </div>
-          
-          <div className="flex w-full min-w-0 items-center gap-4 md:w-auto md:gap-6">
-            <div className="h-1.5 min-w-0 flex-1 md:w-48 md:flex-none bg-secondary rounded-full overflow-hidden">
-              <div 
-                className={`h-full transition-all duration-1000 ease-out ${stats ? getStatusColor(stats.status) : 'bg-text-disabled'}`}
-                style={{ width: `${stats?.usage_percent || 0}%` }}
-              />
-            </div>
-            <button 
-              aria-label="Refresh buffer"
-              onClick={() => { fetchItems(); fetchStats(); }}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg hover:bg-secondary text-text-tertiary hover:text-text-primary transition-colors"
-            >
-              <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
-            </button>
-          </div>
+  const itemDetails = selectedItem ? (
+    <Card className="motion-safe:animate-in motion-safe:fade-in space-y-6 p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold text-text-primary">Item details</h2>
+          <p className="mt-0.5 break-all font-mono text-2xs text-text-tertiary">{selectedItem.id}</p>
+        </div>
+        <button
+          type="button"
+          aria-label="Close details"
+          onClick={() => setSelectedId(null)}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text-tertiary transition-colors hover:bg-bg-secondary hover:text-text-primary"
+        >
+          <X size={18} aria-hidden="true" />
+        </button>
+      </div>
+
+      {provenance && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border-secondary bg-bg-secondary/40 p-3">
+          <span className="text-xs font-semibold text-text-secondary">Authenticity check</span>
+          <span className={`rounded-full border px-2.5 py-1 text-2xs font-bold ${
+            provenance.reason === 'trusted' ? 'border-success/30 bg-success/5 text-success' : 'border-warning/30 bg-warning/5 text-warning'
+          }`}>
+            {provenance.reason === 'trusted' ? 'Likely human' : 'Possibly AI-generated'} - {typeof provenance.trustScore === 'number' ? `trust ${Math.round(provenance.trustScore * 100)}%` : 'trust unknown'}
+          </span>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-text-primary">Review</h3>
+        {actionError && <p role="alert" className="text-xs text-danger">{actionError}</p>}
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            disabled={!!busyAction}
+            onClick={() => handleAction(selectedItem.id, 'review')}
+            className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border-primary px-4 text-sm font-medium text-text-primary transition-colors hover:bg-bg-secondary disabled:opacity-50"
+          >
+            <CheckCircle2 size={16} aria-hidden="true" /> {busyAction === 'review' ? 'Saving…' : 'Mark reviewed'}
+          </button>
+          <button
+            type="button"
+            disabled={!!busyAction}
+            onClick={() => handleAction(selectedItem.id, 'promotable')}
+            className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border-primary px-4 text-sm font-medium text-text-primary transition-colors hover:bg-bg-secondary disabled:opacity-50"
+          >
+            <ChevronRight size={16} aria-hidden="true" /> {busyAction === 'promotable' ? 'Saving…' : 'Mark ready to promote'}
+          </button>
+          <button
+            type="button"
+            disabled={!!busyAction}
+            onClick={() => handleAction(selectedItem.id, 'promote')}
+            className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-text-primary px-4 text-sm font-bold text-bg-primary transition-colors hover:bg-accent disabled:opacity-50 sm:col-span-2"
+          >
+            <RefreshCw size={16} aria-hidden="true" className={busyAction === 'promote' ? 'motion-safe:animate-spin' : ''} /> {busyAction === 'promote' ? 'Promoting…' : 'Promote to memory'}
+          </button>
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* Filters and capture tools */}
-          <div className="lg:col-span-3 space-y-6">
-            <div className="p-5 rounded-2xl bg-secondary border border-border-secondary space-y-4">
-              <h2 className="text-2xs font-semibold uppercase text-text-tertiary tracking-widest">Filter items</h2>
-              <div className="space-y-1">
-                {(['all', 'raw', 'reviewed', 'promotable', 'promoted'] as const).map(tab => (
+      <div className="space-y-3 border-t border-border-secondary pt-5">
+        <h3 className="text-sm font-semibold text-danger">Remove</h3>
+        {confirmingReject ? (
+          <div role="group" aria-label="Confirm purge" className="space-y-3 rounded-xl border border-danger/30 bg-danger/5 p-4">
+            <p className="text-sm font-medium text-text-primary">Purge this item?</p>
+            <p className="text-xs text-text-secondary">It is deleted from the buffer for good and can&apos;t be recovered.</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                autoFocus
+                disabled={!!busyAction}
+                onClick={() => setConfirmingReject(false)}
+                className="min-h-11 rounded-xl border border-border-primary px-4 text-sm font-medium text-text-primary hover:bg-bg-secondary disabled:opacity-50"
+              >
+                Keep item
+              </button>
+              <button
+                type="button"
+                disabled={!!busyAction}
+                onClick={() => handleAction(selectedItem.id, 'reject')}
+                className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-danger px-4 text-sm font-bold text-bg-primary hover:opacity-90 disabled:opacity-50"
+              >
+                <Trash2 size={16} aria-hidden="true" /> {busyAction === 'reject' ? 'Purging…' : 'Purge item'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            disabled={!!busyAction}
+            onClick={() => setConfirmingReject(true)}
+            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-danger/30 px-4 text-sm font-medium text-danger transition-colors hover:bg-danger/10 disabled:opacity-50"
+          >
+            <Trash2 size={16} aria-hidden="true" /> Reject and purge
+          </button>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <h3 className="text-sm font-semibold text-text-primary">Payload</h3>
+        <pre className="max-h-64 overflow-auto rounded-xl bg-bg-primary p-4 font-mono text-2xs leading-relaxed text-text-secondary">
+          {JSON.stringify(selectedItem.raw_payload ?? null, null, 2)}
+        </pre>
+      </div>
+    </Card>
+  ) : null;
+
+  return (
+    <AppShell>
+      <div className={`mx-auto w-full max-w-7xl ${showAlertStrip ? 'pb-16' : ''}`}>
+        {/* Header and capacity */}
+        <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-3xl font-black tracking-tight text-text-primary">Buffer</h1>
+            <p className="mt-1 text-sm text-text-tertiary">Review what is waiting before it becomes memory.</p>
+          </div>
+          <div className="flex w-full items-center gap-3 sm:w-auto">
+            <a
+              href="#capture"
+              className="inline-flex min-h-11 items-center gap-2 rounded-full bg-text-primary px-5 text-xs font-bold text-bg-primary transition-colors hover:bg-accent lg:hidden"
+            >
+              <Plus size={14} aria-hidden="true" /> Add item
+            </a>
+            <div className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-border-primary bg-bg-elevated px-4 py-2 sm:flex-none">
+              <HardDrive size={16} aria-hidden="true" className="shrink-0 text-text-tertiary" />
+              <div className="min-w-0 flex-1 sm:w-44 sm:flex-none">
+                <div className="flex items-baseline justify-between gap-2 text-2xs text-text-tertiary">
+                  <span className="truncate">{stats ? STATUS_LABEL[stats.status] : 'Checking capacity…'}</span>
+                  <span className="tabular-nums">{stats ? `${stats.usage_percent}%` : ''}</span>
+                </div>
+                <div
+                  role="progressbar"
+                  aria-label="Buffer capacity used"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={stats?.usage_percent ?? 0}
+                  className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-bg-secondary"
+                >
+                  <div
+                    className={`h-full motion-safe:transition-all motion-safe:duration-700 ${stats ? statusColor(stats.status) : 'bg-text-disabled'}`}
+                    style={{ width: `${stats?.usage_percent || 0}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              aria-label="Refresh buffer"
+              onClick={retry}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border-primary text-text-tertiary transition-colors hover:bg-bg-secondary hover:text-text-primary"
+            >
+              <RefreshCw size={18} aria-hidden="true" className={loading ? 'motion-safe:animate-spin' : ''} />
+            </button>
+          </div>
+        </header>
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
+          {/* Item feed comes first on phones; capture tools follow and are one tap away via Add item */}
+          <section aria-label="Buffer items" className="space-y-4 lg:order-2 lg:col-span-9">
+            <div className="space-y-3">
+              <div className="relative">
+                <Search size={16} aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-disabled" />
+                <input
+                  type="search"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  aria-label="Search loaded items by ID, source or type"
+                  placeholder="Search by source, type or ID"
+                  className="min-h-11 w-full rounded-full border border-border-primary bg-bg-elevated pl-10 pr-4 text-sm text-text-primary placeholder:text-text-disabled focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                />
+              </div>
+              <div role="group" aria-label="Filter by review state" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+                {TABS.map(tab => (
                   <button
-                    key={tab}
+                    key={tab.id}
                     type="button"
-                    aria-pressed={activeTab === tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all ${
-                      activeTab === tab ? 'bg-secondary text-text-primary' : 'hover:bg-secondary text-text-tertiary'
+                    aria-pressed={activeTab === tab.id}
+                    title={tab.hint}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`min-h-11 shrink-0 rounded-full border px-4 text-sm font-medium transition-colors ${
+                      activeTab === tab.id
+                        ? 'border-text-primary bg-text-primary text-bg-primary'
+                        : 'border-border-primary bg-bg-elevated text-text-secondary hover:bg-bg-secondary'
                     }`}
                   >
-                    <span className="capitalize">{tab}</span>
-                    <ChevronRight size={14} className={activeTab === tab ? 'opacity-100' : 'opacity-0'} />
+                    {tab.label}
                   </button>
                 ))}
               </div>
+              <p role="status" aria-live="polite" className="text-xs text-text-tertiary">
+                {loading ? 'Loading items…' : (
+                  <>Showing <span className="font-medium text-text-secondary">{visibleItems.length}</span> {visibleItems.length === 1 ? 'item' : 'items'}</>
+                )}
+              </p>
             </div>
 
-            <div className="p-5 rounded-2xl bg-secondary border border-border-secondary space-y-4">
-              <div role="group" aria-label="Capture method" className="grid grid-cols-4 gap-1 sm:grid-cols-7">
+            {/* Phones: one readable card per item, key fields first */}
+            <div className="space-y-3 md:hidden" aria-busy={loading}>
+              {loading ? (
+                Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)
+              ) : visibleItems.length === 0 ? (
+                emptyState
+              ) : (
+                visibleItems.map(item => (
+                  <React.Fragment key={item.id}>
+                    <button
+                      type="button"
+                      aria-pressed={selectedId === item.id}
+                      aria-label={`${item.source}, ${item.type}, ${stateLabel(item.state)}. ${selectedId === item.id ? 'Hide' : 'Show'} details`}
+                      onClick={() => toggleSelected(item.id)}
+                      className={`block min-h-11 w-full rounded-2xl border p-4 text-left transition-colors ${
+                        selectedId === item.id ? 'border-accent/50 bg-accent/10' : 'border-border-primary bg-bg-elevated hover:bg-bg-secondary'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-text-primary">{item.source}</p>
+                          <p className="truncate text-xs text-text-tertiary">{item.type}</p>
+                        </div>
+                        <span className={`shrink-0 rounded-full px-2.5 py-1 text-2xs font-bold ${stateColor(item.state)}`}>{stateLabel(item.state)}</span>
+                      </div>
+                      <div className="mt-3 flex items-center justify-between gap-3 text-2xs text-text-tertiary">
+                        <span className="tabular-nums">{formatSize(item.size)} - {formatDate(item.created_at)}</span>
+                        <span className="truncate font-mono" title={item.id}>{item.id.substring(0, 10)}…</span>
+                      </div>
+                    </button>
+                    {selectedId === item.id && itemDetails}
+                  </React.Fragment>
+                ))
+              )}
+            </div>
+
+            {/* Tablet and up: table */}
+            <div className="hidden md:block" aria-busy={loading}>
+              <div className="overflow-x-auto rounded-2xl border border-border-primary bg-bg-elevated">
+                <table className="w-full border-collapse text-left">
+                  <caption className="sr-only">Buffer items. Select a row to open its details.</caption>
+                  <thead>
+                    <tr className="border-b border-border-secondary bg-bg-secondary/50 text-xs text-text-tertiary">
+                      <th scope="col" className="px-5 py-3 font-medium">Source</th>
+                      <th scope="col" className="px-5 py-3 font-medium">Type</th>
+                      <th scope="col" className="px-5 py-3 font-medium">State</th>
+                      <th scope="col" className="px-5 py-3 font-medium">Size</th>
+                      <th scope="col" className="px-5 py-3 font-medium">Added</th>
+                      <th scope="col" className="px-5 py-3 font-medium">Item ID</th>
+                      <th scope="col" className="px-5 py-3 text-right font-medium"><span className="sr-only">Details</span></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border-secondary text-sm">
+                    {loading ? (
+                      Array.from({ length: 5 }).map((_, i) => (
+                        <tr key={i}>
+                          <td colSpan={7} className="px-5 py-3"><Skeleton className="h-8 w-full" /></td>
+                        </tr>
+                      ))
+                    ) : visibleItems.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="p-4">{emptyState}</td>
+                      </tr>
+                    ) : (
+                      visibleItems.map(item => (
+                        <tr
+                          key={item.id}
+                          tabIndex={0}
+                          aria-selected={selectedId === item.id}
+                          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSelected(item.id); } }}
+                          onClick={() => toggleSelected(item.id)}
+                          className={`cursor-pointer transition-colors hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent ${selectedId === item.id ? 'bg-accent/10' : ''}`}
+                        >
+                          <td className="px-5 py-3 font-medium text-text-primary">{item.source}</td>
+                          <td className="px-5 py-3 text-xs text-text-tertiary">{item.type}</td>
+                          <td className="px-5 py-3">
+                            <span className={`rounded-full px-2.5 py-1 text-2xs font-bold ${stateColor(item.state)}`}>{stateLabel(item.state)}</span>
+                          </td>
+                          <td className="px-5 py-3 text-xs tabular-nums text-text-tertiary">{formatSize(item.size)}</td>
+                          <td className="px-5 py-3 text-xs text-text-tertiary">{formatDate(item.created_at)}</td>
+                          <td className="px-5 py-3 font-mono text-2xs text-text-tertiary">
+                            <span title={item.id}>{item.id.substring(0, 12)}…</span>
+                          </td>
+                          <td className="px-5 py-1 text-right">
+                            <button
+                              type="button"
+                              aria-label={`Open details for ${item.source} ${item.type}`}
+                              onClick={e => { e.stopPropagation(); setSelectedId(item.id); }}
+                              className="inline-flex h-11 w-11 items-center justify-center rounded-full text-text-tertiary transition-colors hover:bg-bg-secondary hover:text-text-primary"
+                            >
+                              <MoreVertical size={16} aria-hidden="true" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              {selectedItem && <div className="mt-4">{itemDetails}</div>}
+            </div>
+          </section>
+
+          {/* Capture tools */}
+          <aside id="capture" aria-label="Add to the buffer" className="scroll-mt-20 space-y-4 lg:order-1 lg:col-span-3">
+            <Card className="space-y-4 p-5">
+              <div>
+                <h2 className="text-base font-semibold text-text-primary">Add to the buffer</h2>
+                <p className="mt-0.5 text-xs text-text-tertiary">Pick how you want to capture something.</p>
+              </div>
+              <div role="group" aria-label="Capture method" className="grid grid-cols-4 gap-2 lg:grid-cols-2">
                 {([
                   ['upload', 'Upload'],
                   ['voice', 'Voice'],
@@ -241,8 +555,8 @@ export default function BufferControlSurface() {
                     type="button"
                     aria-pressed={captureMode === mode}
                     onClick={() => setCaptureMode(mode)}
-                    className={`px-2 py-1.5 rounded-lg text-2xs font-bold transition-colors ${
-                      captureMode === mode ? 'bg-text-primary text-bg-primary' : 'text-text-tertiary hover:bg-bg-secondary'
+                    className={`min-h-11 rounded-xl px-2 text-xs font-bold transition-colors ${
+                      captureMode === mode ? 'bg-text-primary text-bg-primary' : 'border border-border-primary text-text-secondary hover:bg-bg-secondary'
                     }`}
                   >
                     {label}
@@ -256,194 +570,26 @@ export default function BufferControlSurface() {
               {captureMode === 'pulse' && <PulseWidget />}
               {captureMode === 'device' && <DeviceCapture />}
               {captureMode === 'csv' && <CsvImport onComplete={() => fetchItems()} />}
-            </div>
-          </div>
-
-          {/* Blob feed */}
-          <div className="lg:col-span-9 space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-disabled" />
-                  <input 
-                    type="search"
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    aria-label="Search loaded items by ID, source or type" placeholder="Search by ID or source…"
-                    className="bg-secondary border border-border-secondary rounded-full pl-10 pr-4 py-2 text-sm text-text-primary focus:outline-none focus:border-accent/50 w-full sm:w-64 lg:w-80 transition-all"
-                  />
-                </div>
-              </div>
-              <div className="text-xs text-text-tertiary">
-                Showing <span className="text-text-secondary font-medium">{visibleItems.length}</span> {visibleItems.length === 1 ? 'item' : 'items'}
-              </div>
-            </div>
-
-            <div className="rounded-2xl bg-secondary border border-border-secondary overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-secondary text-2xs uppercase tracking-widest text-text-tertiary">
-                    <th className="px-6 py-4 font-medium">Item ID</th>
-                    <th className="px-6 py-4 font-medium">Source</th>
-                    <th className="px-6 py-4 font-medium">Type</th>
-                    <th className="px-6 py-4 font-medium">Size</th>
-                    <th className="px-6 py-4 font-medium">State</th>
-                    <th className="px-6 py-4 font-medium">Created</th>
-                    <th className="px-6 py-4 font-medium text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border-secondary text-sm">
-                  {loading ? (
-                    Array(5).fill(0).map((_, i) => (
-                      <tr key={i} className="animate-pulse">
-                        <td colSpan={7} className="px-6 py-8 bg-secondary" />
-                      </tr>
-                    ))
-                  ) : visibleItems.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className={`px-6 py-20 text-center ${loadError ? 'text-danger' : 'text-text-tertiary'}`}>
-                         <div className="flex flex-col items-center gap-3">
-                           <Database size={32} />
-                           <p className={loadError ? 'font-bold' : ''}>{loadError ?? (search.trim() ? 'No loaded items match your search.' : 'Nothing waiting for review.')}</p>
-                           {loadError && (
-                             <button onClick={() => { fetchItems(); fetchStats(); }} className="px-4 py-1.5 rounded-xl border border-danger/40 text-xs font-bold hover:bg-danger/5">
-                               Retry
-                             </button>
-                           )}
-                         </div>
-                      </td>
-                    </tr>
-                  ) : (
-                    visibleItems.map(item => (
-                      <tr 
-                        key={item.id} 
-                        tabIndex={0}
-                        aria-selected={selectedId === item.id}
-                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedId(item.id === selectedId ? null : item.id); } }}
-                        onClick={() => setSelectedId(item.id === selectedId ? null : item.id)}
-                        className={`hover:bg-secondary transition-colors cursor-pointer group ${selectedId === item.id ? 'bg-accent/10' : ''}`}
-                      >
-                        <td className="px-6 py-4 font-mono text-2xs text-text-secondary">
-                           <span title={item.id}>{item.id.substring(0, 18)}…</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="px-2 py-1 rounded bg-secondary text-2xs text-text-primary">{item.source}</span>
-                        </td>
-                        <td className="px-6 py-4 text-xs text-text-tertiary">{item.type}</td>
-                        <td className="px-6 py-4 text-xs tabular-nums text-text-tertiary">{formatSize(item.size)}</td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2 py-0.5 rounded-full text-2xs font-bold ${getStateColor(item.state)}`}>
-                            {item.state}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-2xs text-text-tertiary">
-                          {item.created_at ? new Date(item.created_at).toLocaleDateString() : '—'}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <button
-                            type="button"
-                            aria-label="Open item details"
-                            onClick={e => { e.stopPropagation(); setSelectedId(item.id); }}
-                            className="p-1 hover:bg-secondary rounded text-text-tertiary hover:text-text-primary transition-all">
-                             <MoreVertical size={16} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Item viewer */}
-            {selectedId && selectedItem && (
-              <div className="p-6 rounded-2xl bg-secondary border border-border-secondary animate-in slide-in-from-bottom-4 duration-300">
-                <div className="flex items-start justify-between mb-6">
-                  <div>
-                    <h2 className="text-text-primary font-medium">Item details</h2>
-                    <p className="text-xs text-text-tertiary">{selectedId}</p>
-                  </div>
-                  <button aria-label="Close details" onClick={() => setSelectedId(null)} className="p-1 hover:bg-secondary rounded-full transition-colors text-text-tertiary">
-                    <X size={18} />
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <h3 className="text-2xs font-bold uppercase tracking-widest text-text-tertiary border-b border-border-secondary pb-2">Actions</h3>
-                    {actionError && <p role="alert" className="text-xs text-danger">{actionError}</p>}
-                    <div className="grid grid-cols-2 gap-3">
-                      <button 
-                         disabled={!!busyAction}
-                         onClick={() => handleAction(selectedId, 'review')}
-                         className="disabled:opacity-50 flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-all text-sm font-medium"
-                      >
-                         <CheckCircle2 size={16} /> Mark reviewed
-                      </button>
-                      <button 
-                         disabled={!!busyAction}
-                         onClick={() => handleAction(selectedId, 'promotable')}
-                         className="disabled:opacity-50 flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-all text-sm font-medium"
-                      >
-                         <ChevronRight size={16} /> Mark promotable
-                      </button>
-                      <button 
-                         disabled={!!busyAction}
-                         onClick={() => handleAction(selectedId, 'promote')}
-                         className="disabled:opacity-50 flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-success/10 text-success border border-success/20 hover:bg-success/20 transition-all text-sm font-medium col-span-2"
-                      >
-                         < RefreshCw size={16} /> Promote to memory
-                      </button>
-                      <button 
-                         disabled={!!busyAction}
-                         onClick={() => handleAction(selectedId, 'reject')}
-                         className="disabled:opacity-50 flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-danger/10 text-danger border border-danger/20 hover:bg-danger/20 transition-all text-sm font-medium col-span-2"
-                      >
-                         <Trash2 size={16} /> Reject and purge
-                      </button>
-                    </div>
-                  </div>
-
-                  {provenance && (
-                    <div className="p-3 rounded-xl border border-border-secondary bg-secondary/40 flex items-center justify-between">
-                      <span className="text-2xs font-bold text-text-tertiary uppercase tracking-widest">Authenticity signal</span>
-                      {(() => {
-                        const p = provenance;
-                        const trusted = p.reason === 'trusted';
-                        return (
-                          <span className={`text-2xs font-bold px-2 py-0.5 rounded-full border ${
-                            trusted ? 'text-success border-success/30 bg-success/5' : 'text-warning border-warning/30 bg-warning/5'
-                          }`}>
-                            {trusted ? 'Likely human' : 'Possibly AI-generated'} · {typeof p.trustScore === 'number' ? `trust ${Math.round(p.trustScore * 100)}%` : 'trust unknown'}
-                          </span>
-                        );
-                      })()}
-                    </div>
-                  )}
-
-                  <div className="space-y-4">
-                    <h3 className="text-2xs font-bold uppercase tracking-widest text-text-tertiary border-b border-border-secondary pb-2">Payload</h3>
-                    <div className="bg-bg-primary rounded-xl p-4 font-mono text-2xs overflow-auto max-h-64 ">
-                       <pre className="text-success/80">
-                         {JSON.stringify(selectedItem?.raw_payload ?? null, null, 2)}
-                       </pre>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+            </Card>
+            <p className="flex items-start gap-2 px-1 text-xs text-text-tertiary">
+              <Inbox size={14} aria-hidden="true" className="mt-0.5 shrink-0" />
+              Captured items wait here until you review and promote them.
+            </p>
+          </aside>
         </div>
-      </main>
+      </div>
 
       {/* Storage alert strip */}
       {stats && stats.status !== 'healthy' && (
-        <div className={`fixed bottom-16 md:bottom-0 left-0 right-0 py-3 px-6 flex items-center justify-center gap-3 z-30 ${
-          stats.status === 'blocked' ? 'bg-danger text-bg-primary' : 'bg-warning text-bg-primary'
-        }`}>
-          <AlertTriangle size={18} />
+        <div
+          role="status"
+          className={`fixed bottom-16 left-0 right-0 z-30 flex items-center justify-center gap-3 px-6 py-3 md:bottom-0 ${
+            stats.status === 'blocked' ? 'bg-danger text-bg-primary' : 'bg-warning text-bg-primary'
+          }`}
+        >
+          <AlertTriangle size={18} aria-hidden="true" />
           <span className="text-sm font-bold">
-            {stats.status === 'blocked' ? 'Ingestion is blocked: the buffer is full.' : 'The buffer is nearly full.'}
+            {stats.status === 'blocked' ? 'The buffer is full, so new items are paused. Promote or purge items to free space.' : 'The buffer is nearly full. Promote or purge items soon.'}
           </span>
         </div>
       )}

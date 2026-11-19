@@ -5,12 +5,12 @@
 @import "tailwindcss/utilities";
 
 :root {
-  /* LIGHT (2026 Neo-Minimalist / Earthy) */
+  /* LIGHT (calm, warm-neutral). Full reference: design-system/MASTER.md */
   --bg-primary: #F5F5F0;      /* Off-white porcelain */
   --bg-secondary: #EDEDE8;    /* Warm stone */
   --bg-tertiary: #E0E0DB;     /* Basalt clay */
   --bg-elevated: #FFFFFF;     /* Pure bone */
-  
+
   --border-primary: rgba(0, 0, 0, 0.08);
   --border-secondary: rgba(0, 0, 0, 0.04);
   --border-active: rgba(0, 170, 255, 0.4);
@@ -19,7 +19,7 @@
   --text-secondary: #2D2D2A;   /* Warm charcoal */
   --text-tertiary: #5A5A54;    /* Muted stone (>=6:1 on porcelain) */
   --text-disabled: #6B6B65;    /* Dark pebble (>=4.5:1 on porcelain; WCAG AA) */
-  
+
   /* RGB channels so Tailwind opacity modifiers (bg-success/10) work. Keep in sync with the hex values above. */
   --bg-primary-rgb: 245 245 240;
   --bg-secondary-rgb: 237 237 232;
@@ -37,7 +37,7 @@
   --accent: 0 170 255;           /* Electric Cyan */
   --accent-high: #000000;      /* High contrast spark */
   --accent-muted: rgba(0, 170, 255, 0.08);
-  
+
   --success: #047857;
   --danger: #E11D48;
   --warning: #B45309;
@@ -63,16 +63,71 @@
   --leading-normal: 1.5;
   --leading-relaxed: 1.7;
 
-  /* Spacing */
-  --space-xs: 0.5rem;
-  --space-sm: 0.75rem;
-  --space-md: 1rem;
-  --space-lg: 1.5rem;
-  --space-xl: 2rem;
-  --space-2xl: 3rem;
+  /* ── Spacing: 4/8 rhythm ────────────────────────────────────────
+     Component gaps and padding use 2xs..2xl (4, 8, 12, 16, 24, 32, 48).
+     Page-level gutters use --gutter / --space-page. */
+  --space-2xs: 0.25rem;  /* 4  */
+  --space-xs: 0.5rem;    /* 8  */
+  --space-sm: 0.75rem;   /* 12 */
+  --space-md: 1rem;      /* 16 */
+  --space-lg: 1.5rem;    /* 24 */
+  --space-xl: 2rem;      /* 32 */
+  --space-2xl: 3rem;     /* 48 */
   --space-page: clamp(1.5rem, 4vw, 4rem);
+
+  /* ── Radius: one scale ──────────────────────────────────────────
+     Primitives: xs 6 / sm 8 / md 12 / lg 16 / panel 24 / xl 32 / 2xl 40 / full.
+     Semantic roles (use these in components):
+       control = inputs, buttons, selects      -> md
+       card    = cards, list rows, empty state -> lg
+       panel   = page header, M3 sections      -> panel
+       pill    = badges, status pills, avatars -> full
+     --radius-xl / --radius-2xl are legacy hero-level radii (rounded-radius-xl). */
+  --radius-xs: 0.375rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-panel: 1.5rem;
   --radius-xl: 2rem;
   --radius-2xl: 2.5rem;
+  --radius-full: 9999px;
+  --radius-control: var(--radius-md);
+  --radius-card: var(--radius-lg);
+  --radius-pill: var(--radius-full);
+
+  /* ── Elevation: one scale (warm-tinted, never pure black) ────────
+     0 flat (border only) · 1 resting card · 2 raised / hover · 3 overlay (drawer, sheet). */
+  --elev-0: none;
+  --elev-1: 0 1px 2px rgb(40 40 32 / 0.05);
+  --elev-2: 0 4px 12px rgb(40 40 32 / 0.08);
+  --elev-3: 0 12px 32px rgb(40 40 32 / 0.14);
+
+  /* ── Motion ─────────────────────────────────────────────────────
+     Duration by distance and complexity; exits are about 65% of enters.
+     instant = press feedback · fast = hover, focus, toggles
+     base = enter / expand · slow = drawer / sheet. */
+  --dur-instant: 80ms;
+  --dur-fast: 150ms;
+  --dur-base: 220ms;
+  --dur-slow: 320ms;
+  --dur-exit: 140ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);       /* arriving */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);           /* leaving */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);   /* in-place state change */
+
+  /* ── Layout chrome ──────────────────────────────────────────────
+     The shell reads these so content never slides under fixed bars. */
+  --topbar-h: 3.5rem;
+  --dock-h: 4rem;
+  --sidebar-w: 15rem;
+  --content-max: 72rem;
+  --gutter: 1rem;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --gutter: 2rem;
+  }
 }
 
 * {
@@ -88,29 +143,30 @@ body {
   .glass-panel {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(253, 253, 251, 0.95) 100%);
     border: 1px solid var(--border-secondary);
-    box-shadow: 
+    box-shadow:
       0 20px 60px rgba(0, 0, 0, 0.04),
       inset 0 1px 0 rgba(255, 255, 255, 1);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
   }
-  
+
+  /* Hover lift is deliberately small: border + one elevation step, no big travel. */
   .glass-card {
     background: rgba(255, 255, 255, 0.6);
     border: 1px solid var(--border-secondary);
-    box-shadow: 
-      0 4px 12px rgba(0, 0, 0, 0.02),
-      inset 0 1px 1px rgba(255, 255, 255, 1);
-    transition: all 700ms ease;
+    box-shadow: var(--elev-1), inset 0 1px 1px rgba(255, 255, 255, 1);
+    transition:
+      border-color var(--dur-fast) var(--ease-standard),
+      background-color var(--dur-fast) var(--ease-standard),
+      box-shadow var(--dur-base) var(--ease-standard),
+      transform var(--dur-base) var(--ease-out);
   }
 
   .glass-card:hover {
     border-color: rgb(var(--accent) / 0.4);
     background: #ffffff;
-    transform: translateY(-0.5rem);
-    box-shadow:
-      0 25px 50px -12px rgb(0 0 0 / 0.25),
-      inset 0 1px 1px rgba(255, 255, 255, 1);
+    transform: translateY(-2px);
+    box-shadow: var(--elev-2), inset 0 1px 1px rgba(255, 255, 255, 1);
   }
 
   .bento-grid {
@@ -127,6 +183,18 @@ body {
     transform: none;
     letter-spacing: inherit;
   }
+
+  /* Interactive surface: shared hover/press for tappable cards and rows. */
+  .surface-interactive {
+    transition:
+      background-color var(--dur-fast) var(--ease-standard),
+      border-color var(--dur-fast) var(--ease-standard),
+      box-shadow var(--dur-fast) var(--ease-standard);
+  }
+  .surface-interactive:hover {
+    background-color: rgb(var(--bg-secondary-rgb) / 0.6);
+    border-color: var(--border-primary);
+  }
 }
 
 .scanline {
@@ -142,7 +210,7 @@ body {
 }
 
 .grid-bg {
-  background-image: 
+  background-image:
     linear-gradient(var(--border-secondary) 1px, transparent 1px),
     linear-gradient(90deg, var(--border-secondary) 1px, transparent 1px);
   background-size: 80px 80px;
@@ -200,6 +268,36 @@ body {
     min-height: 100vh;
     min-height: 100dvh;
   }
+
+  /* Reserve space for the fixed mobile dock (plus the home-indicator inset). */
+  .pb-dock {
+    padding-bottom: calc(var(--dock-h) + env(safe-area-inset-bottom) + var(--space-lg));
+  }
+
+  /* Reserve space under the fixed topbar (plus the status-bar inset). */
+  .pt-topbar {
+    padding-top: calc(var(--topbar-h) + env(safe-area-inset-top));
+  }
+}
+
+/* ── Page enter: the one and only decorative motion ─────────────────
+   A short fade with a 4px rise on the content region when a route mounts.
+   Collapses to nothing under prefers-reduced-motion (see bottom of file). */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .page-enter {
+    animation: page-enter var(--dur-base) var(--ease-out) both;
+  }
 }
 
 /* ── Mobile / accessibility baseline ───────────────────────────── */
@@ -223,8 +321,8 @@ body {
 /* Fixed bars must not hide the focused element (WCAG 2.4.11). scroll-margin covers
    focus-driven scrolling inside nested scrollers; scroll-padding covers the window. */
 :focus-visible {
-  scroll-margin-top: calc(4rem + env(safe-area-inset-top));
-  scroll-margin-bottom: calc(6rem + env(safe-area-inset-bottom));
+  scroll-margin-top: calc(var(--topbar-h) + 0.5rem + env(safe-area-inset-top));
+  scroll-margin-bottom: calc(var(--dock-h) + 2rem + env(safe-area-inset-bottom));
 }
 
 /* Pointer target size floor for every device (WCAG 2.5.8: 24x24 CSS px). */
@@ -240,8 +338,8 @@ button:has(> svg:only-child) {
 }
 
 html {
-  scroll-padding-top: calc(4rem + env(safe-area-inset-top));
-  scroll-padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+  scroll-padding-top: calc(var(--topbar-h) + 0.5rem + env(safe-area-inset-top));
+  scroll-padding-bottom: calc(var(--dock-h) + 2rem + env(safe-area-inset-bottom));
 }
 
 /* Windows high contrast / forced colors: keep the focus ring visible. */
@@ -257,7 +355,7 @@ html {
   .Toastify__toast-container--bottom-right,
   .Toastify__toast-container--bottom-left,
   .Toastify__toast-container--bottom-center {
-    bottom: calc(5.5rem + env(safe-area-inset-bottom)) !important;
+    bottom: calc(var(--dock-h) + 1.5rem + env(safe-area-inset-bottom)) !important;
     left: 0.75rem !important;
     right: 0.75rem !important;
     width: auto !important;
@@ -316,8 +414,17 @@ html {
   }
 }
 
-/* Reduced motion: no decorative animation, no smooth scroll, no long transitions. */
+/* Reduced motion: no decorative animation, no smooth scroll, no long transitions.
+   Meaning is never carried by motion alone (active nav, status pills, errors all
+   have shape/text/icon), so collapsing durations loses no information. */
 @media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-instant: 0.01ms;
+    --dur-fast: 0.01ms;
+    --dur-base: 0.01ms;
+    --dur-slow: 0.01ms;
+    --dur-exit: 0.01ms;
+  }
   *,
   *::before,
   *::after {
@@ -328,5 +435,8 @@ html {
   }
   .scanline {
     display: none;
+  }
+  .glass-card:hover {
+    transform: none;
   }
 }

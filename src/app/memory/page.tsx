@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { AppShell } from '@/app/component/AppShell';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
-import { Activity, Database, HardDrive, RefreshCcw, Server, ShieldAlert } from 'lucide-react';
+import { Card, EmptyState, Skeleton } from '@/components/ui/primitives';
+import { Database, HardDrive, RefreshCcw, Server, ShieldAlert } from 'lucide-react';
 import ManualUpload from '@/app/buffer/components/ManualUpload';
 
 type MonitorState = {
@@ -48,6 +50,7 @@ export default function MemoryControlSurface() {
   const [sourceFilter, setSourceFilter] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const requestSeq = useRef(0);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -63,7 +66,7 @@ export default function MemoryControlSurface() {
       if (seq !== requestSeq.current) return;
       if (!monitorRes.ok || !packetRes.ok) {
         // An unreachable memory store must not masquerade as an empty vault.
-        setLoadError('Memory store unreachable — this is a connection problem, not an empty vault.');
+        setLoadError('The memory store did not respond. This is a connection problem, not an empty vault.');
         return;
       }
       setLoadError(null);
@@ -77,7 +80,7 @@ export default function MemoryControlSurface() {
       setSelectedPacket((current: any) => rows.find((r) => r.id === current?.id) ?? rows[0] ?? null);
     } catch {
       if (seq === requestSeq.current) {
-        setLoadError('Memory store unreachable — this is a connection problem, not an empty vault.');
+        setLoadError('The memory store did not respond. This is a connection problem, not an empty vault.');
       }
     } finally {
       if (seq === requestSeq.current) setLoading(false);
@@ -112,196 +115,297 @@ export default function MemoryControlSurface() {
       }
       await fetchMonitor();
     } catch {
-      setActionError(`${label} failed. Check your connection and try again.`);
+      setActionError(`${label} failed. Check your connection and try again; nothing was changed.`);
     } finally {
       setBusyAction(null);
     }
   };
 
-  const runAction = (action: string, packetId: string) => {
-    if (action === 'delete' && !window.confirm('Delete this packet permanently? This cannot be undone.')) return;
-    return callPacketApi('/api/memory/packet/action', { action, packet_id: packetId }, 'Delete');
-  };
+  const runDelete = (packetId: string) =>
+    callPacketApi('/api/memory/packet/action', { action: 'delete', packet_id: packetId }, 'Delete').then(() => setConfirmingDelete(false));
 
   const replayPacket = (packetId: string) =>
     callPacketApi('/api/memory/replay', { packet_id: packetId }, 'Replay');
 
+  const filtersActive = statusFilter.trim() !== '' || sourceFilter.trim() !== '';
+  const quarantined = monitor ? monitor.stats.hold_count + monitor.stats.failed_count : null;
+
+  const packetDetails = selectedPacket ? (
+    <Card className="space-y-5 p-5">
+      <div className="flex items-start justify-between gap-3">
+        <h2 className="text-base font-semibold text-text-primary">Packet details</h2>
+        <span className={`rounded-full px-2.5 py-1 text-2xs font-bold ${selectedPacket.status === 'accepted' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
+          {selectedPacket.status}
+        </span>
+      </div>
+      <dl className="grid grid-cols-2 gap-4 text-sm">
+        <div>
+          <dt className="text-xs text-text-tertiary">Source</dt>
+          <dd className="mt-0.5 break-words font-medium text-text-primary">{selectedPacket.source}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-text-tertiary">Type</dt>
+          <dd className="mt-0.5 break-words font-medium text-text-primary">{selectedPacket.type}</dd>
+        </div>
+      </dl>
+      <div className="space-y-1.5">
+        <h3 className="text-xs font-medium text-text-tertiary">Payload</h3>
+        <pre className="max-h-60 overflow-auto rounded-xl border border-border-secondary bg-bg-primary p-4 font-mono text-2xs leading-relaxed text-text-secondary custom-scrollbar">
+          {JSON.stringify(selectedPacket.content ?? null, null, 2)}
+        </pre>
+      </div>
+
+      {actionError ? <p role="alert" className="text-xs text-danger">{actionError}</p> : null}
+
+      <div className="space-y-2">
+        <button
+          type="button"
+          disabled={busyAction !== null}
+          onClick={() => replayPacket(selectedPacket.id)}
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-text-primary px-4 text-sm font-bold text-bg-primary transition-colors hover:bg-accent disabled:opacity-50"
+        >
+          <RefreshCcw size={14} aria-hidden="true" className={busyAction === 'Replay' ? 'motion-safe:animate-spin' : ''} />
+          {busyAction === 'Replay' ? 'Replaying…' : 'Replay packet'}
+        </button>
+        <p className="text-xs text-text-tertiary">Replay sends this packet through ingestion again.</p>
+      </div>
+
+      <div className="space-y-3 border-t border-border-secondary pt-4">
+        {confirmingDelete ? (
+          <div role="group" aria-label="Confirm delete" className="space-y-3 rounded-xl border border-danger/30 bg-danger/5 p-4">
+            <p className="text-sm font-medium text-text-primary">Delete this packet?</p>
+            <p className="text-xs text-text-secondary">It is removed from memory permanently and can&apos;t be recovered.</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                autoFocus
+                disabled={busyAction !== null}
+                onClick={() => setConfirmingDelete(false)}
+                className="min-h-11 rounded-xl border border-border-primary px-4 text-sm font-medium text-text-primary hover:bg-bg-secondary disabled:opacity-50"
+              >
+                Keep packet
+              </button>
+              <button
+                type="button"
+                disabled={busyAction !== null}
+                onClick={() => runDelete(selectedPacket.id)}
+                className="min-h-11 rounded-xl bg-danger px-4 text-sm font-bold text-bg-primary hover:opacity-90 disabled:opacity-50"
+              >
+                {busyAction === 'Delete' ? 'Deleting…' : 'Delete packet'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            disabled={busyAction !== null}
+            onClick={() => setConfirmingDelete(true)}
+            className="min-h-11 w-full rounded-xl border border-danger/30 px-4 text-sm font-medium text-danger transition-colors hover:bg-danger/10 disabled:opacity-50"
+          >
+            Delete packet
+          </button>
+        )}
+      </div>
+    </Card>
+  ) : null;
+
+  const stats = [
+    { label: 'Storage used', value: monitor ? `${monitor.storage.usage_percent}%` : null, sub: monitor ? `${bytesToMb(monitor.storage.used_bytes)} of ${bytesToMb(monitor.storage.total_bytes)}` : '', icon: HardDrive, color: 'text-accent' },
+    { label: 'Memory packets', value: monitor ? String(monitor.stats.packet_count) : null, sub: 'Stored memory units', icon: Database, color: 'text-accent' },
+    { label: 'Needs attention', value: quarantined === null ? null : String(quarantined), sub: 'Held or failed packets', icon: ShieldAlert, color: 'text-warning' },
+    { label: 'Sources', value: monitor ? String(monitor.stats.source_count) : null, sub: `${monitor?.stats.growth_rate_per_day ?? 0} new per day`, icon: Server, color: 'text-success' },
+  ];
+
   return (
     <AppShell>
-      <header className="flex flex-wrap items-end justify-between gap-3 mb-8">
+      <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-secondary border border-border-secondary flex items-center justify-center shrink-0">
-            <Database size={20} className="text-text-tertiary" />
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-border-secondary bg-secondary">
+            <Database size={20} aria-hidden="true" className="text-text-tertiary" />
           </div>
           <div>
             <h1 className="text-3xl font-black tracking-tight text-text-primary">Memory</h1>
-            <div className="flex items-center gap-2 mt-1">
-              <span className={`w-2 h-2 rounded-full ${loadError ? 'bg-danger' : 'bg-success'}`} />
-              <p className="text-sm text-text-tertiary font-medium">{loadError ? 'Memory store unreachable' : 'L1 memory vault'}</p>
-            </div>
+            <p role="status" className="mt-1 flex items-center gap-2 text-sm font-medium text-text-tertiary">
+              <span aria-hidden="true" className={`h-2 w-2 rounded-full ${loadError ? 'bg-danger' : 'bg-success'}`} />
+              {loadError ? 'Memory store unreachable' : 'Your memory vault'}
+            </p>
           </div>
         </div>
         <button
           type="button"
           onClick={fetchMonitor}
           disabled={loading}
-          className="min-h-11 px-5 py-2.5 rounded-full bg-text-primary text-bg-primary text-xs font-bold flex items-center gap-2 hover:bg-accent transition-colors disabled:opacity-60"
+          className="flex min-h-11 items-center gap-2 rounded-full bg-text-primary px-5 text-xs font-bold text-bg-primary transition-colors hover:bg-accent disabled:opacity-60"
         >
-          <RefreshCcw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
+          <RefreshCcw size={14} aria-hidden="true" className={loading ? 'motion-safe:animate-spin' : ''} /> {loading ? 'Refreshing…' : 'Refresh'}
         </button>
       </header>
 
-      {/* Stats Grid */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {[
-          { label: 'Storage usage', value: monitor ? `${monitor.storage.usage_percent}%` : '--', sub: monitor ? `${bytesToMb(monitor.storage.used_bytes)} / ${bytesToMb(monitor.storage.total_bytes)}` : '', icon: HardDrive, color: 'text-accent' },
-          { label: 'Memory packets', value: monitor?.stats.packet_count ?? '--', sub: 'Total atomic units', icon: Database, color: 'text-accent' },
-          { label: 'Quarantine queue', value: monitor ? monitor.stats.hold_count + monitor.stats.failed_count : '--', sub: 'Awaiting validation', icon: ShieldAlert, color: 'text-warning' },
-          { label: 'Sources', value: monitor?.stats.source_count ?? '--', sub: `Growth: ${monitor?.stats.growth_rate_per_day ?? 0}/day`, icon: Server, color: 'text-success' }
-        ].map((stat) => (
-          <div key={stat.label} className="glass-panel rounded-radius-xl border border-border-secondary p-5 flex items-start justify-between">
-            <div>
-              <p className="text-2xs uppercase tracking-widest text-text-tertiary font-bold mb-1">{stat.label}</p>
-              <p className="text-2xl font-black tracking-tight text-text-primary">{stat.value}</p>
-              <p className="text-2xs text-text-tertiary font-medium mt-1">{stat.sub}</p>
-            </div>
-            <stat.icon size={20} className={stat.color} />
+      {monitor?.storage.ingestion_blocked && (
+        <div role="alert" className="mb-6 flex items-start gap-3 rounded-2xl border border-danger/30 bg-danger/10 p-4 text-danger">
+          <ShieldAlert size={18} aria-hidden="true" className="mt-0.5 shrink-0" />
+          <div>
+            <p className="text-sm font-bold">Ingestion is locked</p>
+            <p className="mt-0.5 text-xs">Storage is over its limit, so new packets are paused. Delete packets you no longer need to free space.</p>
           </div>
+        </div>
+      )}
+
+      {/* Stats */}
+      <section aria-label="Memory summary" className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+        {stats.map((stat) => (
+          <Card key={stat.label} className="flex items-start justify-between gap-2 p-4">
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-text-tertiary">{stat.label}</p>
+              {stat.value === null ? (
+                loading ? <Skeleton className="mt-2 h-7 w-16" /> : <p className="mt-1 text-2xl font-black text-text-tertiary">--</p>
+              ) : (
+                <p className="mt-1 text-2xl font-black tracking-tight text-text-primary tabular-nums">{stat.value}</p>
+              )}
+              <p className="mt-1 text-2xs text-text-tertiary">{stat.sub}</p>
+            </div>
+            <stat.icon size={18} aria-hidden="true" className={`shrink-0 ${stat.color}`} />
+          </Card>
         ))}
       </section>
 
-      {/* Intelligence Hub */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <section className="lg:col-span-2 glass-panel rounded-radius-xl border border-border-secondary overflow-hidden flex flex-col">
-          <div className="px-6 py-5 border-b border-border-secondary flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="w-1.5 h-1.5 rounded-full bg-accent" />
-              <h2 className="text-sm font-bold uppercase tracking-widest text-text-secondary">Ingestion packets</h2>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <section aria-label="Ingestion packets" className="flex flex-col overflow-hidden rounded-2xl border border-border-primary bg-bg-elevated lg:col-span-2">
+          <div className="space-y-3 border-b border-border-secondary p-4 sm:p-5">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-base font-semibold text-text-primary">Ingestion packets</h2>
+              <p role="status" aria-live="polite" className="text-xs text-text-tertiary">
+                {loading ? 'Loading…' : `${packets.length} ${packets.length === 1 ? 'packet' : 'packets'}`}
+              </p>
             </div>
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-              <input className="min-h-11 w-full min-w-0 px-3 py-1.5 rounded-lg bg-bg-primary border border-border-secondary text-xs text-text-primary focus:border-accent/50 transition-colors" aria-label="Filter status" placeholder="Filter by status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} />
-              <input className="min-h-11 w-full min-w-0 px-3 py-1.5 rounded-lg bg-bg-primary border border-border-secondary text-xs text-text-primary focus:border-accent/50 transition-colors" aria-label="Filter source" placeholder="Filter by source" value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+              <label className="block">
+                <span className="mb-1 block text-xs font-medium text-text-secondary">Status</span>
+                <input
+                  className="min-h-11 w-full min-w-0 rounded-xl border border-border-primary bg-bg-primary px-3 text-sm text-text-primary placeholder:text-text-disabled focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  placeholder="For example accepted or hold"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs font-medium text-text-secondary">Source</span>
+                <input
+                  className="min-h-11 w-full min-w-0 rounded-xl border border-border-primary bg-bg-primary px-3 text-sm text-text-primary placeholder:text-text-disabled focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  placeholder="For example upload"
+                  value={sourceFilter}
+                  onChange={(e) => setSourceFilter(e.target.value)}
+                />
+              </label>
+              {filtersActive && (
+                <button
+                  type="button"
+                  onClick={() => { setStatusFilter(''); setSourceFilter(''); }}
+                  className="min-h-11 rounded-xl border border-border-primary px-4 text-xs font-bold text-text-secondary hover:bg-bg-secondary"
+                >
+                  Clear filters
+                </button>
+              )}
             </div>
           </div>
 
-          <div className="flex-1 overflow-auto custom-scrollbar p-6 space-y-3" aria-busy={loading}>
+          <div className="flex-1 space-y-3 overflow-auto p-4 custom-scrollbar sm:p-5" aria-busy={loading}>
             {packets.map((packet) => (
-              <button
-                type="button"
-                key={packet.id}
-                onClick={() => setSelectedPacket(packet)}
-                className={`w-full text-left p-4 rounded-xl border transition-all ${selectedPacket?.id === packet.id ? 'bg-accent/10 border-accent/40' : 'bg-bg-primary border-border-secondary hover:border-border-primary'}`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className={`px-2 py-0.5 rounded text-2xs font-bold uppercase ${packet.status === 'accepted' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
-                    {packet.status}
-                  </span>
-                  <span className="text-2xs font-mono text-text-tertiary">{packet.ingestion_time ? new Date(packet.ingestion_time).toLocaleString() : ""}</span>
-                </div>
-                <h3 className="text-sm font-bold tracking-tight mb-1 text-text-primary">{packet.type}</h3>
-                <div className="flex items-center gap-2 text-2xs text-text-tertiary">
-                  <span className="font-medium text-text-secondary">{packet.source}</span>
-                  <span className="w-1 h-1 rounded-full bg-border-primary" />
-                  <span>Attempts: {packet.retry_count ?? 0}</span>
-                </div>
-              </button>
+              <React.Fragment key={packet.id}>
+                <button
+                  type="button"
+                  aria-pressed={selectedPacket?.id === packet.id}
+                  onClick={() => { setSelectedPacket(packet); setConfirmingDelete(false); setActionError(null); }}
+                  className={`block min-h-11 w-full rounded-xl border p-4 text-left transition-colors ${selectedPacket?.id === packet.id ? 'border-accent/40 bg-accent/10' : 'border-border-secondary bg-bg-primary hover:border-border-primary'}`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <h3 className="min-w-0 break-words text-sm font-semibold text-text-primary">{packet.type}</h3>
+                    <span className={`shrink-0 rounded-full px-2.5 py-1 text-2xs font-bold ${packet.status === 'accepted' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
+                      {packet.status}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-tertiary">
+                    <span className="font-medium text-text-secondary">{packet.source}</span>
+                    <span>{packet.retry_count ?? 0} {(packet.retry_count ?? 0) === 1 ? 'attempt' : 'attempts'}</span>
+                    {packet.ingestion_time ? <span>{new Date(packet.ingestion_time).toLocaleString()}</span> : null}
+                  </div>
+                </button>
+                {/* On phones the details open right under the packet, not far below the list */}
+                {selectedPacket?.id === packet.id && <div className="lg:hidden">{packetDetails}</div>}
+              </React.Fragment>
             ))}
             {!packets.length && (
               loading && !loadError ? (
-                <div className="h-40 flex items-center justify-center text-text-tertiary border border-dashed border-border-secondary rounded-2xl">
-                  <p className="text-xs font-bold">Loading packets…</p>
+                <div className="space-y-3">
+                  {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
                 </div>
               ) : loadError ? (
-                <div className="h-40 flex flex-col items-center justify-center gap-3 text-danger border border-dashed border-danger/30 rounded-2xl px-6 text-center">
-                  <p className="text-sm font-bold">{loadError}</p>
+                <div role="alert" className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-danger/40 px-6 py-10 text-center">
+                  <p className="text-sm font-semibold text-danger">{loadError}</p>
                   <button
                     type="button"
                     onClick={fetchMonitor}
-                    className="px-4 py-1.5 rounded-xl border border-danger/40 text-xs font-bold hover:bg-danger/5"
+                    className="min-h-11 rounded-xl border border-danger/40 px-5 text-xs font-bold text-danger hover:bg-danger/5"
                   >
-                    Retry
+                    Try again
                   </button>
                 </div>
+              ) : filtersActive ? (
+                <EmptyState
+                  title="No packets match these filters"
+                  hint="Check the spelling of the status or source, or clear the filters to see everything."
+                  action={
+                    <button type="button" onClick={() => { setStatusFilter(''); setSourceFilter(''); }} className="min-h-11 rounded-xl border border-border-primary px-5 text-xs font-bold text-text-primary hover:bg-bg-secondary">
+                      Clear filters
+                    </button>
+                  }
+                />
               ) : (
-                <div className="h-40 flex flex-col items-center justify-center text-text-tertiary border border-dashed border-border-secondary rounded-2xl">
-                  <Database size={24} className="mb-2 opacity-40" />
-                  <p className="text-xs font-bold">No packets yet</p>
-                </div>
+                <EmptyState
+                  title="No packets yet"
+                  hint="Upload a file on this page, or capture something in the buffer. Accepted items show up here as memory packets."
+                  action={
+                    <Link href="/buffer" className="inline-flex min-h-11 items-center rounded-xl bg-text-primary px-5 text-xs font-bold text-bg-primary hover:bg-accent">
+                      Open the buffer
+                    </Link>
+                  }
+                />
               )
             )}
           </div>
         </section>
 
         <aside className="space-y-6">
-          <section className="glass-panel rounded-radius-xl border border-border-secondary p-6">
+          <Card className="p-5">
             <ManualUpload onComplete={() => fetchMonitor()} />
-          </section>
+          </Card>
 
-          <section className="glass-panel rounded-radius-xl border border-border-secondary p-6">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-text-tertiary mb-5">Storage thresholds</h2>
-            <div className="space-y-4">
+          <Card className="p-5">
+            <h2 className="mb-4 text-base font-semibold text-text-primary">Storage thresholds</h2>
+            <ul className="space-y-4">
               {thresholds.map((row) => (
-                <div key={row.threshold} className="space-y-2">
-                  <div className="flex items-center justify-between text-2xs font-bold">
-                    <span className="text-text-tertiary uppercase tracking-tighter">Capacity threshold {row.threshold}%</span>
-                    <span className={row.hit ? 'text-warning' : 'text-text-tertiary'}>{row.hit ? 'Triggered' : 'Ready'}</span>
+                <li key={row.threshold} className="space-y-2">
+                  <div className="flex items-center justify-between text-xs font-medium">
+                    <span className="text-text-secondary">Alert at {row.threshold}% full</span>
+                    <span className={row.hit ? 'text-warning' : 'text-text-tertiary'}>{row.hit ? 'Reached' : 'Not reached'}</span>
                   </div>
-                  <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary" aria-hidden="true">
                     <div
-                      className={`h-full transition-all duration-1000 ${row.hit ? 'bg-warning' : 'bg-border-primary'}`}
+                      className={`h-full motion-safe:transition-all motion-safe:duration-700 ${row.hit ? 'bg-warning' : 'bg-border-primary'}`}
                       style={{ width: row.hit ? '100%' : '0%' }}
                     />
                   </div>
-                </div>
+                </li>
               ))}
+              {!monitor && !loading && <li className="text-xs text-text-tertiary">Thresholds appear once the memory store responds.</li>}
+            </ul>
+          </Card>
 
-              {monitor?.storage.ingestion_blocked && (
-                <div className="p-4 rounded-xl bg-danger/10 border border-danger/20 text-danger flex items-center gap-3">
-                  <ShieldAlert size={18} />
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-widest leading-none">Ingestion locked</p>
-                    <p className="text-2xs font-medium opacity-70 mt-1">Storage limit exceeded. Actions restricted.</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </section>
-
-          <section className="glass-panel rounded-radius-xl border border-border-secondary p-6 overflow-hidden">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-text-tertiary mb-5">Packet details</h2>
-            {selectedPacket ? (
-              <div className="space-y-5">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <p className="text-2xs text-text-tertiary font-bold uppercase">Status</p>
-                    <p className="text-2xs font-mono uppercase text-success">{selectedPacket.status}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-2xs text-text-tertiary font-bold uppercase">Source</p>
-                    <p className="text-2xs font-mono uppercase text-text-secondary">{selectedPacket.source}</p>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <p className="text-2xs text-text-tertiary font-bold uppercase">Payload</p>
-                  <pre className="max-h-60 overflow-auto p-4 rounded-xl bg-bg-primary border border-border-secondary text-2xs font-mono text-text-secondary custom-scrollbar leading-relaxed">
-                    {JSON.stringify(selectedPacket.content ?? null, null, 2)}
-                  </pre>
-                </div>
-
-                {actionError ? <p role="alert" className="text-2xs text-danger">{actionError}</p> : null}
-                <div className="grid grid-cols-2 gap-2 pt-2">
-                  <button type="button" disabled={busyAction !== null} onClick={() => runAction('delete', selectedPacket.id)} className="min-h-11 disabled:opacity-50 px-3 py-2 rounded-lg bg-danger/10 border border-danger/20 text-2xs font-bold text-danger uppercase hover:bg-danger/20 transition-colors">Delete</button>
-                  <button type="button" disabled={busyAction !== null} onClick={() => replayPacket(selectedPacket.id)} className="min-h-11 disabled:opacity-50 px-3 py-2 rounded-lg bg-accent/10 border border-accent/20 text-2xs font-bold text-accent uppercase hover:bg-accent/20 transition-colors">Replay</button>
-                </div>
-              </div>
-            ) : (
-              <div className="py-12 flex flex-col items-center justify-center text-text-tertiary border border-dashed border-border-secondary rounded-2xl">
-                <Activity size={20} className="mb-2 opacity-40" />
-                <p className="text-2xs font-bold uppercase tracking-widest">Select a packet</p>
-              </div>
+          <div className="hidden lg:block">
+            {packetDetails ?? (
+              <EmptyState title="Select a packet" hint="Pick a packet from the list to inspect it, replay it or delete it." />
             )}
-          </section>
+          </div>
         </aside>
       </div>
     </AppShell>

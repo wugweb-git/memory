@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { M3Card, M3State } from '@/components/ui/m3';
+import { EmptyState, Skeleton } from '@/components/ui/primitives';
 import { UI_API } from '@/lib/api/endpoints';
 import { platformPasskeySupported, registerThisDevice } from '@/lib/passkey-client';
 
@@ -43,7 +44,7 @@ export function PasskeyCard() {
   async function add() {
     setBusy(true);
     setError(null);
-    setStatus('Waiting for Face ID or fingerprint');
+    setStatus('Waiting for your device to confirm');
     try {
       await registerThisDevice(name);
       setName('');
@@ -81,9 +82,9 @@ export function PasskeyCard() {
   }
 
   return (
-    <M3Card title="Biometric sign-in">
+    <M3Card title="Passkeys">
       <p className="text-sm text-text-secondary">
-        Sign in with Face ID, fingerprint or Windows Hello on devices you add here.
+        Add this device to sign in with Face ID, a fingerprint or Windows Hello instead of a password.
       </p>
 
       {devices === null ? (
@@ -93,16 +94,16 @@ export function PasskeyCard() {
             <button
               type="button"
               onClick={load}
-              className="min-h-11 px-4 rounded-xl border border-border-primary text-sm font-bold text-text-primary"
+              className="min-h-11 px-4 rounded-xl border border-border-primary text-sm font-semibold text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
               Try again
             </button>
           </div>
         ) : (
-          <M3State state="loading" message="Loading devices…" />
+          <div role="status" aria-label="Loading devices"><Skeleton className="h-12 w-full motion-reduce:animate-none" /></div>
         )
       ) : devices.length === 0 ? (
-        <p className="text-sm text-text-tertiary">No devices added yet.</p>
+        <EmptyState title="No devices added yet" hint="Add this device below. You will confirm with Face ID or your fingerprint once." />
       ) : (
         <ul className="divide-y divide-border-secondary">
           {devices.map((d) => (
@@ -118,7 +119,7 @@ export function PasskeyCard() {
                 onClick={() => remove(d)}
                 disabled={removing === d.id}
                 aria-label={`Remove ${d.deviceName}`}
-                className="min-h-11 shrink-0 px-4 rounded-xl border border-border-primary text-sm font-bold text-danger disabled:opacity-50"
+                className="min-h-11 shrink-0 px-4 rounded-xl border border-border-primary text-sm font-semibold text-danger disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 {removing === d.id ? 'Removing…' : 'Remove'}
               </button>
@@ -131,7 +132,7 @@ export function PasskeyCard() {
         <p className="text-sm text-text-tertiary">This browser or device does not support biometric sign-in.</p>
       ) : (
         <div className="space-y-2">
-          <label htmlFor="passkey-device-name" className="text-2xs font-bold text-text-tertiary">
+          <label htmlFor="passkey-device-name" className="block text-sm font-medium text-text-primary">
             Device name
           </label>
           <input
@@ -141,13 +142,13 @@ export function PasskeyCard() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="For example, My phone"
-            className="w-full min-h-11 rounded-2xl border border-border-primary p-3 text-base"
+            className="w-full min-h-11 rounded-xl border border-border-primary bg-bg-elevated px-3 py-2 text-base placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           />
           <button
             type="button"
             onClick={add}
             disabled={busy || supported === null}
-            className="w-full min-h-11 py-3 rounded-2xl bg-text-primary text-bg-primary text-sm font-bold disabled:opacity-40"
+            className="w-full min-h-11 rounded-xl bg-text-primary text-bg-primary text-sm font-semibold hover:bg-accent disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             {busy ? 'Waiting for your device…' : 'Add this device'}
           </button>

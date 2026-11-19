@@ -44,10 +44,10 @@ export const GapsTab: React.FC = () => {
           type="button"
           onClick={run}
           disabled={loading}
-          aria-label="Re-run analysis"
-          className="min-h-11 min-w-11 rounded-xl border border-border-secondary flex items-center justify-center text-text-secondary disabled:opacity-40"
+          aria-label="Run the coverage check again"
+          className="min-h-11 min-w-11 shrink-0 rounded-xl border border-border-secondary flex items-center justify-center text-text-secondary disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
-          <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+          <RefreshCw size={16} aria-hidden="true" className={loading ? 'motion-safe:animate-spin' : ''} />
         </button>
       </div>
 
@@ -67,7 +67,8 @@ export const GapsTab: React.FC = () => {
                 const missing = missingDomains.includes(d);
                 return (
                   <li key={d} className={`flex items-center gap-2 rounded-xl border px-3 min-h-11 text-sm ${missing ? 'border-danger/30 bg-danger/5 text-danger' : 'border-success/30 bg-success/5 text-success'}`}>
-                    {missing ? <Minus size={14} /> : <Check size={14} />}
+                    {missing ? <Minus size={14} aria-hidden="true" /> : <Check size={14} aria-hidden="true" />}
+                    <span className="sr-only">{missing ? 'Missing: ' : 'Covered: '}</span>
                     <span className="capitalize">{d}</span>
                   </li>
                 );
@@ -98,7 +99,7 @@ export const GapsTab: React.FC = () => {
                   </li>
                 ))}
               </ul>
-            ) : <p className="text-sm text-text-tertiary">No thin entities.</p>}
+            ) : <p className="text-sm text-text-tertiary">Nothing is thin. Every entity has several mentions.</p>}
           </Card>
 
           <Card eyebrow="Weak signals">

@@ -7,7 +7,7 @@ import { currentUserId, Intent, ErrorBox, EmptyState, SkeletonCard, FeedbackBar 
 const FEEDBACK_DOT: Record<string, string> = {
   accepted: 'bg-success',
   rejected: 'bg-danger',
-  ignored: 'bg-text-disabled',
+  ignored: 'bg-text-tertiary',
 };
 
 function dayLabel(iso: string): string {
@@ -29,7 +29,7 @@ export const HistoryTab: React.FC = () => {
     setError(null);
     try {
       const res = await fetch('/api/cognitive/history');
-      if (!res.ok) throw new Error(`Could not load history (${res.status})`);
+      if (!res.ok) throw new Error(`Could not load history (error ${res.status}). Try again in a moment.`);
       const d = await res.json();
       setItems(Array.isArray(d) ? d : []);
     } catch (e: any) {
@@ -50,7 +50,7 @@ export const HistoryTab: React.FC = () => {
       {items === null ? <SkeletonCard label="Loading timeline" /> : null}
 
       {items && items.length === 0 ? (
-        <EmptyState icon={<History size={28} strokeWidth={1.5} />} title="No runs yet" hint="Use Decide, Evaluate or Rank and each run will show up here." />
+        <EmptyState icon={<History size={28} strokeWidth={1.5} />} title="No runs yet" hint="Run Decide, Evaluate or Rank and each result is saved here so you can review it later." />
       ) : null}
 
       {items && items.length > 0 ? (
@@ -64,14 +64,14 @@ export const HistoryTab: React.FC = () => {
             const conf = typeof h.confidence === 'number' ? Math.round(h.confidence * 100) : null;
             return (
               <li key={h.id} className="pl-5 relative">
-                <span className={`absolute -left-[6px] top-4 w-2.5 h-2.5 rounded-full ring-2 ring-bg-primary ${FEEDBACK_DOT[h.lastFeedback] ?? 'bg-accent'}`} />
+                <span aria-hidden="true" className={`absolute -left-[6px] top-4 w-2.5 h-2.5 rounded-full ring-2 ring-bg-primary ${FEEDBACK_DOT[h.lastFeedback] ?? 'bg-accent'}`} />
                 {showDay ? <p className="text-2xs font-semibold text-text-tertiary uppercase tracking-widest mb-2">{dayLabel(h.createdAt)}</p> : null}
                 <div className="rounded-2xl border border-border-secondary bg-bg-elevated overflow-hidden">
                   <button
                     type="button"
                     onClick={() => setOpen(isOpen ? null : h.id)}
                     aria-expanded={isOpen}
-                    className="w-full min-h-14 px-4 py-3 flex items-center gap-3 text-left"
+                    className="w-full min-h-14 px-4 py-3 flex items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
                   >
                     <div className="flex-1 min-w-0 space-y-1">
                       <p className="text-sm font-medium text-text-primary truncate">{headline}</p>
@@ -82,7 +82,7 @@ export const HistoryTab: React.FC = () => {
                         {h.lastFeedback ? ` · ${h.lastFeedback}` : ''}
                       </p>
                     </div>
-                    <ChevronDown size={16} className={`text-text-tertiary shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown size={16} aria-hidden="true" className={`text-text-tertiary shrink-0 transition-transform motion-reduce:transition-none ${isOpen ? 'rotate-180' : ''}`} />
                   </button>
                   {isOpen ? (
                     <div className="px-4 pb-4 pt-3 space-y-3 border-t border-border-secondary">
@@ -108,8 +108,8 @@ export const HistoryTab: React.FC = () => {
       ) : null}
 
       {items && items.length > 0 ? (
-        <button type="button" onClick={load} className="w-full min-h-11 text-xs font-semibold text-text-secondary flex items-center justify-center gap-2">
-          <RefreshCw size={13} /> Refresh
+        <button type="button" onClick={load} className="w-full min-h-11 text-sm font-semibold text-text-secondary flex items-center justify-center gap-2 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+          <RefreshCw size={13} aria-hidden="true" /> Refresh
         </button>
       ) : null}
     </div>

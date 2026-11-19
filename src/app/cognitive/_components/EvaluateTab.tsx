@@ -51,11 +51,12 @@ export const EvaluateTab: React.FC<{ mode: Mode }> = ({ mode }) => {
           value={input}
           onChange={e => setInput(e.target.value)}
           rows={7}
+          aria-describedby="eval-help"
           placeholder="Paste the full description here…"
-          className="w-full rounded-xl border border-border-secondary bg-bg-elevated px-4 py-3 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent resize-y"
+          className="w-full rounded-xl border border-border-secondary bg-bg-elevated px-4 py-3 text-sm text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent resize-y"
         />
-        <p className="text-xs text-text-tertiary flex justify-between">
-          <span>{len < MIN ? `Add at least ${MIN} characters` : 'Ready to evaluate'}</span>
+        <p id="eval-help" className="text-xs text-text-tertiary flex justify-between">
+          <span>{len < MIN ? `Add at least ${MIN} characters to evaluate` : 'Ready to evaluate'}</span>
           <span>{len} characters</span>
         </p>
       </div>
@@ -68,19 +69,19 @@ export const EvaluateTab: React.FC<{ mode: Mode }> = ({ mode }) => {
       {loading ? <SkeletonCard label="Comparing against your memory" /> : null}
 
       {!loading && !result && !error ? (
-        <div className="rounded-2xl border border-dashed border-border-secondary p-6 text-center text-xs text-text-tertiary flex flex-col items-center gap-2">
-          <FileText size={22} className="text-text-disabled" />
+        <div className="rounded-2xl border border-dashed border-border-secondary p-6 text-center text-sm text-text-tertiary flex flex-col items-center gap-2" role="status">
+          <FileText size={22} className="text-text-tertiary" aria-hidden="true" />
           A fit score, pros, cons and next steps will appear here.
         </div>
       ) : null}
 
       {!loading && result ? (
         <div className="space-y-4">
-          <div className="rounded-2xl border border-border-secondary bg-bg-elevated p-5 flex items-center gap-5">
+          <div className="rounded-2xl border border-border-secondary bg-bg-elevated p-5 flex flex-col sm:flex-row items-center gap-5">
             <ScoreRing value={fit} label="fit" />
             <div className="flex-1 space-y-3 min-w-0">
               <span className={`inline-block text-sm font-semibold px-3 py-1 rounded-full border ${VERDICT_STYLE[tone]}`}>
-                {result.verdict || 'Moderate Fit'}
+                {result.verdict || 'Moderate fit'}
               </span>
               {typeof result.confidence === 'number' ? <Meter label="Confidence" value={result.confidence} /> : null}
             </div>
@@ -94,7 +95,7 @@ export const EvaluateTab: React.FC<{ mode: Mode }> = ({ mode }) => {
                 <ul className="space-y-2">
                   {result.why_yes.map((r: string, i: number) => (
                     <li key={i} className="flex gap-2.5 text-sm text-text-secondary">
-                      <Check size={15} className="text-success shrink-0 mt-0.5" /> {r}
+                      <Check size={15} className="text-success shrink-0 mt-0.5" aria-hidden="true" /> {r}
                     </li>
                   ))}
                 </ul>
@@ -105,7 +106,7 @@ export const EvaluateTab: React.FC<{ mode: Mode }> = ({ mode }) => {
                 <ul className="space-y-2">
                   {result.why_no.map((r: string, i: number) => (
                     <li key={i} className="flex gap-2.5 text-sm text-text-secondary">
-                      <X size={15} className="text-danger shrink-0 mt-0.5" /> {r}
+                      <X size={15} className="text-danger shrink-0 mt-0.5" aria-hidden="true" /> {r}
                     </li>
                   ))}
                 </ul>
@@ -118,7 +119,7 @@ export const EvaluateTab: React.FC<{ mode: Mode }> = ({ mode }) => {
               <ul className="space-y-2.5">
                 {result.action_items.map((a: string, i: number) => (
                   <li key={i} className="flex gap-3 text-sm text-text-secondary">
-                    <ListChecks size={16} className="text-accent shrink-0 mt-0.5" /> {a}
+                    <ListChecks size={16} className="text-accent shrink-0 mt-0.5" aria-hidden="true" /> {a}
                   </li>
                 ))}
               </ul>

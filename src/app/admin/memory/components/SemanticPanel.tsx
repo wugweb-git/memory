@@ -63,7 +63,7 @@ export function SemanticPanel({ data, loading }: SemanticPanelProps) {
             </div>
           )}
           {data.verification_status === 'unverified' && (
-            <div className="px-2 py-0.5 rounded bg-orange-600 text-2xs font-bold text-text-primary uppercase tracking-[0.2em]">
+            <div className="px-2 py-0.5 rounded bg-warning text-2xs font-bold text-bg-primary uppercase tracking-[0.2em]">
               UNVERIFIED
             </div>
           )}

@@ -72,19 +72,19 @@ export const PrimaryButton: React.FC<{
     type="button"
     onClick={onClick}
     disabled={disabled || loading}
-    className="w-full min-h-12 px-5 rounded-xl bg-text-primary text-bg-primary text-sm font-semibold flex items-center justify-center gap-2 transition-opacity disabled:opacity-40"
+    className="w-full min-h-12 px-5 rounded-xl bg-text-primary text-bg-primary text-sm font-semibold flex items-center justify-center gap-2 transition-opacity disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg-primary"
   >
-    {loading ? <><Loader2 size={16} className="animate-spin" /> {loadingLabel}</> : <>{icon} {children}</>}
+    {loading ? <><Loader2 size={16} className="motion-safe:animate-spin" aria-hidden="true" /> {loadingLabel}</> : <><span aria-hidden="true">{icon}</span> {children}</>}
   </button>
 );
 
 export const ErrorBox: React.FC<{ message: string; onRetry?: () => void }> = ({ message, onRetry }) => (
   <div role="alert" className="rounded-2xl border border-danger/30 bg-danger/5 p-4 flex items-start gap-3">
-    <AlertCircle size={16} className="text-danger shrink-0 mt-0.5" />
+    <AlertCircle size={16} className="text-danger shrink-0 mt-0.5" aria-hidden="true" />
     <div className="flex-1 space-y-2">
       <p className="text-sm text-danger">{message}</p>
       {onRetry ? (
-        <button type="button" onClick={onRetry} className="text-xs font-semibold text-danger underline underline-offset-2 min-h-8">
+        <button type="button" onClick={onRetry} className="text-sm font-semibold text-danger underline underline-offset-2 min-h-11 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
           Try again
         </button>
       ) : null}
@@ -101,11 +101,11 @@ export const EmptyState: React.FC<{ icon: React.ReactNode; title: string; hint: 
 );
 
 export const SkeletonCard: React.FC<{ label: string }> = ({ label }) => (
-  <div className="rounded-2xl border border-border-secondary bg-bg-elevated p-5 space-y-3" aria-busy="true" aria-live="polite">
-    <p className="text-xs text-text-tertiary flex items-center gap-2"><RefreshCw size={13} className="animate-spin" /> {label}</p>
-    <div className="h-3 rounded bg-secondary animate-pulse w-2/3" />
-    <div className="h-3 rounded bg-secondary animate-pulse w-full" />
-    <div className="h-3 rounded bg-secondary animate-pulse w-5/6" />
+  <div className="rounded-2xl border border-border-secondary bg-bg-elevated p-5 space-y-3" role="status" aria-busy="true">
+    <p className="text-xs text-text-tertiary flex items-center gap-2"><RefreshCw size={13} className="motion-safe:animate-spin" aria-hidden="true" /> {label}</p>
+    <div className="h-3 rounded bg-secondary motion-safe:animate-pulse w-2/3" />
+    <div className="h-3 rounded bg-secondary motion-safe:animate-pulse w-full" />
+    <div className="h-3 rounded bg-secondary motion-safe:animate-pulse w-5/6" />
   </div>
 );
 
@@ -127,7 +127,7 @@ export const Meter: React.FC<{ label: string; value: number }> = ({ label, value
         <span className="font-semibold text-text-primary">{Math.round(v * 100)}%</span>
       </div>
       <div className="h-2 bg-secondary rounded-full overflow-hidden" role="progressbar" aria-valuenow={Math.round(v * 100)} aria-valuemin={0} aria-valuemax={100} aria-label={label}>
-        <div className={`h-full rounded-full ${BG_TONE[tone]} transition-all duration-700`} style={{ width: `${v * 100}%` }} />
+        <div className={`h-full rounded-full ${BG_TONE[tone]} transition-all duration-700 motion-reduce:transition-none`} style={{ width: `${v * 100}%` }} />
       </div>
     </div>
   );
@@ -145,7 +145,7 @@ export const ScoreRing: React.FC<{ value: number; label: string; size?: number }
         <circle
           cx="50" cy="50" r={r} fill="none" strokeWidth="8" strokeLinecap="round"
           strokeDasharray={c} strokeDashoffset={c * (1 - v)}
-          className={`${TEXT_TONE[tone]} transition-all duration-700`} stroke="currentColor"
+          className={`${TEXT_TONE[tone]} transition-all duration-700 motion-reduce:transition-none`} stroke="currentColor"
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -176,15 +176,15 @@ export const FeedbackBar: React.FC<{ decisionId: string }> = ({ decisionId }) =>
 
   if (sent) {
     return (
-      <p className="flex items-center gap-2 text-xs text-success font-semibold">
-        <CheckCircle size={14} /> Marked as {sent}
+      <p role="status" className="flex items-center gap-2 text-sm text-success font-semibold">
+        <CheckCircle size={14} aria-hidden="true" /> Thanks, marked as {sent}
       </p>
     );
   }
   return (
     <div className="space-y-2">
       <p className="text-xs text-text-tertiary">Was this useful?</p>
-      {failed ? <p role="alert" className="text-xs text-danger">Could not record feedback. Try again.</p> : null}
+      {failed ? <p role="alert" className="text-xs text-danger">Feedback was not saved. Check your connection and tap again.</p> : null}
       <div className="grid grid-cols-3 gap-2">
         {[
           { key: 'accepted', label: 'Accept' },
@@ -196,7 +196,7 @@ export const FeedbackBar: React.FC<{ decisionId: string }> = ({ decisionId }) =>
             type="button"
             disabled={busy}
             onClick={() => submit(f.key)}
-            className="min-h-11 rounded-xl border border-border-secondary text-xs font-semibold text-text-secondary hover:bg-secondary disabled:opacity-40"
+            className="min-h-11 rounded-xl border border-border-secondary text-sm font-semibold text-text-secondary hover:bg-secondary disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             {f.label}
           </button>

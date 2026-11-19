@@ -56,7 +56,36 @@ const config: Config = {
         normal: "var(--leading-normal)",
         relaxed: "var(--leading-relaxed)",
       },
+      borderRadius: {
+        // Semantic radius roles (see design-system/MASTER.md). Default rounded-* keys are untouched.
+        control: "var(--radius-control)",
+        card: "var(--radius-card)",
+        panel: "var(--radius-panel)",
+        pill: "var(--radius-pill)",
+      },
+      boxShadow: {
+        // One elevation scale: 1 resting, 2 raised, 3 overlay.
+        "elev-1": "var(--elev-1)",
+        "elev-2": "var(--elev-2)",
+        "elev-3": "var(--elev-3)",
+      },
+      transitionDuration: {
+        instant: "var(--dur-instant)",
+        fast: "var(--dur-fast)",
+        base: "var(--dur-base)",
+        slow: "var(--dur-slow)",
+        exit: "var(--dur-exit)",
+      },
+      transitionTimingFunction: {
+        "out-soft": "var(--ease-out)",
+        "in-soft": "var(--ease-in)",
+        standard: "var(--ease-standard)",
+      },
+      maxWidth: {
+        content: "var(--content-max)",
+      },
       spacing: {
+        "2xs": "var(--space-2xs)",
         xs: "var(--space-xs)",
         sm: "var(--space-sm)",
         md: "var(--space-md)",

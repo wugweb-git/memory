@@ -72,9 +72,12 @@ export const SIDEBAR_STATS = [
 ] as const;
 
 /** Unified route-based navigation — single source of truth for the app shell.
- *  Grouped sidebar (desktop) + mobile drawer all read from this. */
-type NavItem = { href: string; label: string; icon: LucideIcon; feature?: FeatureKey };
-type NavGroup = { group: string; items: ReadonlyArray<NavItem> };
+ *  Grouped sidebar (desktop) + mobile drawer all read from this.
+ *  Groups use plain language: Workspace (daily use), Intelligence (the thinking
+ *  layers), Output (what you publish), Admin (setup and access). `hint` is a
+ *  short plain-language description shown in the mobile drawer. */
+export type NavItem = { href: string; label: string; icon: LucideIcon; hint?: string; feature?: FeatureKey };
+export type NavGroup = { group: string; items: ReadonlyArray<NavItem> };
 
 /** Full nav definition. `feature` tags gate visibility via MVP flags; untagged
  *  items are core and always shown. Filtered exports are derived below. */
@@ -82,40 +85,35 @@ const RAW_NAV_GROUPS: ReadonlyArray<NavGroup> = [
   {
     group: 'Workspace',
     items: [
-      { href: '/console', label: 'Console', icon: LayoutDashboard },
-      { href: '/ask', label: 'Ask', icon: MessageSquare, feature: 'ask' },
-    ],
-  },
-  {
-    group: 'Data',
-    items: [
-      { href: '/memory', label: 'Memory', icon: Database, feature: 'memory' },
-      { href: '/buffer', label: 'Buffer', icon: Archive, feature: 'buffer' },
-      { href: '/integrations', label: 'Integrations', icon: Link2 },
-      { href: '/content', label: 'Content', icon: FileText },
-      { href: '/history', label: 'History', icon: History, feature: 'history' },
+      { href: '/console', label: 'Console', icon: LayoutDashboard, hint: 'Your overview for today' },
+      { href: '/ask', label: 'Ask', icon: MessageSquare, hint: 'Ask your memory a question', feature: 'ask' },
+      { href: '/memory', label: 'Memory', icon: Database, hint: 'Everything you have saved', feature: 'memory' },
+      { href: '/buffer', label: 'Buffer', icon: Archive, hint: 'Captured items waiting to be sorted', feature: 'buffer' },
+      { href: '/history', label: 'History', icon: History, hint: 'Past decisions and activity', feature: 'history' },
     ],
   },
   {
     group: 'Intelligence',
     items: [
-      { href: '/cognitive', label: 'Cognitive', icon: Cpu, feature: 'cognitive' },
-      { href: '/persona', label: 'Persona', icon: Sparkles, feature: 'persona' },
+      { href: '/cognitive', label: 'Cognitive', icon: Cpu, hint: 'How the system weighs your goals', feature: 'cognitive' },
+      { href: '/persona', label: 'Persona', icon: Sparkles, hint: 'Who you are becoming', feature: 'persona' },
+      { href: '/career', label: 'Career', icon: Briefcase, hint: 'Roles, skills and next moves', feature: 'career' },
     ],
   },
   {
-    group: 'Identity',
+    group: 'Output',
     items: [
-      { href: '/career', label: 'Career', icon: Briefcase, feature: 'career' },
-      { href: '/portfolio', label: 'Portfolio', icon: Eye },
-      { href: `/p/${IDENTITY_CONFIG.HANDLE}`, label: 'Profile', icon: User },
+      { href: '/content', label: 'Content', icon: FileText, hint: 'Draft and publish posts' },
+      { href: '/portfolio', label: 'Portfolio', icon: Eye, hint: 'Your showcase projects' },
+      { href: `/p/${IDENTITY_CONFIG.HANDLE}`, label: 'Profile', icon: User, hint: 'Your public page' },
     ],
   },
   {
-    group: 'System',
+    group: 'Admin',
     items: [
-      { href: '/system', label: 'System', icon: Settings, feature: 'system' },
-      { href: '/admin', label: 'Admin', icon: ShieldCheck, feature: 'admin' },
+      { href: '/integrations', label: 'Integrations', icon: Link2, hint: 'Connect accounts and sources' },
+      { href: '/system', label: 'System', icon: Settings, hint: 'Modules, health and access', feature: 'system' },
+      { href: '/admin', label: 'Admin', icon: ShieldCheck, hint: 'Owner settings', feature: 'admin' },
     ],
   },
 ];
@@ -125,20 +123,39 @@ export const NAV_GROUPS: ReadonlyArray<NavGroup> = RAW_NAV_GROUPS
   .map((g) => ({ ...g, items: g.items.filter((i) => featureEnabled(i.feature)) }))
   .filter((g) => g.items.length > 0);
 
-/** Primary mobile-dock items (compact subset of NAV_GROUPS), feature-filtered. */
+/** Primary mobile-dock items: the top four destinations (feature-filtered).
+ *  The shell appends a fifth "More" control that opens the full drawer. */
 const RAW_MOBILE_DOCK_ITEMS: ReadonlyArray<NavItem> = [
-  { href: '/', label: 'Console', icon: LayoutDashboard },
-  { href: '/content', label: 'Content', icon: FileText },
-  { href: '/portfolio', label: 'Portfolio', icon: Eye },
+  { href: '/console', label: 'Console', icon: LayoutDashboard },
+  { href: '/ask', label: 'Ask', icon: MessageSquare, feature: 'ask' },
   { href: '/memory', label: 'Memory', icon: Database, feature: 'memory' },
-  { href: '/cognitive', label: 'Cognitive', icon: Cpu, feature: 'cognitive' },
-  { href: '/persona', label: 'Persona', icon: Sparkles, feature: 'persona' },
-  { href: '/system', label: 'System', icon: Settings, feature: 'system' },
+  { href: '/content', label: 'Content', icon: FileText },
+  { href: '/buffer', label: 'Buffer', icon: Archive, feature: 'buffer' },
 ];
+
+export const MOBILE_DOCK_MAX = 4;
 
 export const MOBILE_DOCK_ITEMS: ReadonlyArray<NavItem> = RAW_MOBILE_DOCK_ITEMS
   .filter((i) => featureEnabled(i.feature))
-  .slice(0, 5);
+  .slice(0, MOBILE_DOCK_MAX);
+
+/** Route matching shared by the sidebar, drawer, dock and topbar title.
+ *  `/` is the console. Matching is segment-aware, so `/content` never matches `/console`. */
+export function isNavActive(pathname: string, href: string): boolean {
+  if (href === '/console' && pathname === '/') return true;
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+/** Resolve the nav item for a path (longest href wins) to label the topbar. */
+export function findNavItem(pathname: string): NavItem | undefined {
+  let best: NavItem | undefined;
+  for (const group of RAW_NAV_GROUPS) {
+    for (const item of group.items) {
+      if (isNavActive(pathname, item.href) && (!best || item.href.length > best.href.length)) best = item;
+    }
+  }
+  return best;
+}
 
 export const CHAT_HIGHLIGHT_KEYWORDS = [
   'AI', 'Fintech', 'Identity', 'UX', 'Architecture', 'Prism', 'RAG', 'Vector',
