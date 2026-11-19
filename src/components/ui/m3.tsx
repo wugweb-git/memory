@@ -1,24 +1,50 @@
 import { ReactNode } from "react";
-import { AlertCircle } from "lucide-react";
-import { Button } from "./button";
+import { AlertTriangle, Inbox, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/primitives";
 
-export function M3Page({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
+/* M3* components are the page-level wrappers pages already use. They now delegate
+   to the shared primitives so spacing, radius and motion have one source. */
+
+export function M3Page({
+  title,
+  subtitle,
+  actions,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  /** Optional header actions (buttons, filters). Wraps below the title on phones. */
+  actions?: ReactNode;
+  children: ReactNode;
+}) {
+  // AppShell already supplies the page gutter, so only vertical rhythm lives here.
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
-      <div className="rounded-2xl bg-bg-elevated border border-border-secondary p-5">
-        <h1 className="text-lg font-semibold text-text-primary">{title}</h1>
-        {subtitle ? <p className="text-sm text-text-tertiary mt-1">{subtitle}</p> : null}
-      </div>
+    <div className="max-w-3xl mx-auto py-2 md:py-4 space-y-4">
+      <PageHeader title={title} subtitle={subtitle} actions={actions} />
       {children}
     </div>
   );
 }
 
-export function M3Card({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
+export function M3Card({
+  title,
+  children,
+  action,
+  description,
+}: {
+  title: string;
+  children: ReactNode;
+  action?: ReactNode;
+  description?: string;
+}) {
   return (
-    <section className="rounded-2xl bg-bg-elevated border border-border-secondary p-4 space-y-3">
+    <section className="rounded-panel bg-bg-elevated border border-border-secondary p-4 space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-text-primary">{title}</h2>
+        <div className="min-w-0">
+          <h2 className="text-sm font-semibold text-text-primary">{title}</h2>
+          {description ? <p className="mt-1 text-xs text-text-tertiary">{description}</p> : null}
+        </div>
         {action}
       </div>
       {children}
@@ -53,15 +79,17 @@ export function M3Button({
       disabled={disabled}
       loading={loading}
       variant={tone === "primary" ? "default" : "outline"}
-      size="default"
+      size="lg"
       aria-label={ariaLabel}
-      className={`min-h-11 ${className ?? ""}`}
+      className={className}
     >
       {children}
     </Button>
   );
 }
 
+/** Loading, error and empty feedback. Each state has an icon plus text, not colour alone.
+ *  Error uses role=alert; loading and empty use role=status. */
 export function M3State({ state, message }: { state: "loading" | "error" | "empty"; message: string }) {
   const color = state === "error" ? "text-danger" : "text-text-tertiary";
   return (
@@ -71,7 +99,13 @@ export function M3State({ state, message }: { state: "loading" | "error" | "empt
       aria-live={state === "error" ? "assertive" : "polite"}
       aria-busy={state === "loading" || undefined}
     >
-      {state === "error" ? <AlertCircle size={16} aria-hidden="true" className="mt-0.5 shrink-0" /> : null}
+      {state === "loading" ? (
+        <Loader2 size={16} aria-hidden="true" className="mt-0.5 shrink-0 motion-safe:animate-spin" />
+      ) : state === "error" ? (
+        <AlertTriangle size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
+      ) : (
+        <Inbox size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
+      )}
       <span>{message}</span>
     </p>
   );

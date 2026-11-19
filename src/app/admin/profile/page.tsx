@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { toast } from 'react-toastify';
 import { AppToastContainer } from "@/app/component/AppToastContainer";
 import 'react-toastify/dist/ReactToastify.css';
+import { Card, EmptyState, Skeleton } from '@/components/ui/primitives';
 import {
   ArrowLeft, Save, Eye, Plus, Trash2, BookOpen, ExternalLink, Loader2,
 } from 'lucide-react';
@@ -100,7 +101,7 @@ export default function AdminProfilePage() {
           tags: [],
         },
       });
-      toast.success('Post added to profile');
+      toast.success('Post added to your profile');
       setNewTitle('');
       setNewBody('');
       refresh();
@@ -110,10 +111,9 @@ export default function AdminProfilePage() {
   }
 
   async function handleDeleteSection(id: string) {
-    if (!window.confirm('Remove this post from your public profile?')) return;
     try {
       await removeSection(id);
-      toast.success('Removed');
+      toast.success('Post removed from your profile');
       refresh();
     } catch {
       toast.error('Could not remove the post. Try again.');
@@ -126,25 +126,25 @@ export default function AdminProfilePage() {
       <header className="border-b border-border-secondary bg-bg-elevated rounded-radius-xl mb-6">
         <div className="max-w-5xl mx-auto px-4 min-h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/admin" className="inline-flex items-center justify-center min-h-11 min-w-11 rounded-xl hover:bg-bg-secondary" aria-label="Back to admin console">
+            <Link href="/admin" className="inline-flex h-11 w-11 items-center justify-center rounded-xl hover:bg-bg-secondary" aria-label="Back to admin console">
               <ArrowLeft size={18} aria-hidden="true" />
             </Link>
-            <h1 className="text-sm font-black tracking-tight">Profile editor</h1>
+            <h1 className="text-base font-bold tracking-tight">Profile editor</h1>
           </div>
           <div className="flex items-center gap-2">
             <Link
               href={`/p/${IDENTITY_CONFIG.HANDLE}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 min-h-11 px-3 py-1.5 rounded-xl border border-border-secondary text-xs font-bold"
+              className="flex min-h-11 items-center gap-1.5 rounded-xl border border-border-secondary px-3 text-xs font-bold hover:bg-bg-secondary"
             >
               <Eye size={14} aria-hidden="true" /> Preview profile<span className="sr-only"> (opens in a new tab)</span>
             </Link>
             <button
+              type="button"
               onClick={handleSaveBasic}
               disabled={saving || loading}
-              type="button"
-              className="flex items-center gap-1.5 min-h-11 px-4 py-1.5 rounded-xl bg-text-primary text-bg-primary text-xs font-bold disabled:opacity-50"
+              className="flex min-h-11 items-center gap-1.5 rounded-xl bg-text-primary px-4 text-xs font-bold text-bg-primary hover:bg-accent disabled:opacity-50"
             >
               {saving ? <Loader2 size={14} aria-hidden="true" className="animate-spin motion-reduce:animate-none" /> : <Save size={14} aria-hidden="true" />}
               {saving ? 'Saving…' : 'Save profile'}
@@ -153,7 +153,7 @@ export default function AdminProfilePage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+      <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
         <div className="flex gap-2" role="tablist" aria-label="Profile sections">
           {TABS.map((tab, i) => (
             <button
@@ -167,13 +167,13 @@ export default function AdminProfilePage() {
               ref={(el) => { tabRefs.current[tab] = el; }}
               onClick={() => selectTab(tab)}
               onKeyDown={(e) => onTabKeyDown(e, i)}
-              className={`min-h-11 px-4 py-2 rounded-full text-xs font-bold border ${
+              className={`min-h-11 rounded-full border px-5 text-sm font-medium transition-colors ${
                 activeTab === tab
                   ? 'bg-text-primary text-bg-primary border-text-primary'
-                  : 'border-border-secondary text-text-tertiary'
+                  : 'border-border-primary text-text-secondary hover:bg-bg-secondary'
               }`}
             >
-              {tab === 'basic' ? 'Basic' : 'Blog and posts'}
+              {tab === 'basic' ? 'Basics' : 'Blog and posts'}
             </button>
           ))}
         </div>
@@ -181,34 +181,34 @@ export default function AdminProfilePage() {
         {loadError && !loading ? (
           <div role="alert" className="rounded-2xl border border-danger p-4 text-sm text-danger flex items-center justify-between gap-3">
             <span>Could not load the profile: {String(loadError)}</span>
-            <button type="button" onClick={() => refresh()} className="min-h-11 px-3 text-xs font-bold text-accent">Retry</button>
+            <button type="button" onClick={() => refresh()} className="min-h-11 shrink-0 px-3 text-xs font-bold text-accent">Try again</button>
           </div>
         ) : loading ? (
-          <div role="status" className="flex flex-col items-center gap-2 py-20">
-            <Loader2 aria-hidden="true" className="animate-spin motion-reduce:animate-none text-text-tertiary" size={32} />
-            <span className="text-sm text-text-tertiary">Loading profile…</span>
+          <div role="status" aria-label="Loading profile" className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+            <Skeleton className="h-96 w-full" />
+            <Skeleton className="h-96 w-full" />
           </div>
         ) : activeTab === 'basic' ? (
           <div role="tabpanel" id="ap-panel-basic" aria-labelledby="ap-tab-basic" className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <section className="glass-panel rounded-3xl border border-border-secondary p-6 space-y-4">
-              <h2 className="text-sm font-bold text-text-secondary">Identity</h2>
-              <label htmlFor="ap-name" className="block text-xs font-bold text-text-secondary">Display name</label>
+            <section className="rounded-2xl border border-border-primary bg-bg-elevated p-5 sm:p-6 space-y-4">
+              <h2 className="text-base font-semibold text-text-primary">Identity</h2>
+              <label htmlFor="ap-name" className="block text-xs font-medium text-text-secondary">Display name</label>
               <input
                 id="ap-name"
                 autoComplete="name"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                className="w-full rounded-2xl border border-border-secondary bg-bg-primary px-4 py-3 text-base sm:text-sm"
+                className="min-h-11 w-full rounded-xl border border-border-primary bg-bg-primary px-4 py-2.5 text-base sm:text-sm text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               />
-              <label htmlFor="ap-bio" className="block text-xs font-bold text-text-secondary">Bio</label>
+              <label htmlFor="ap-bio" className="block text-xs font-medium text-text-secondary">Bio</label>
               <textarea
                 id="ap-bio"
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 rows={4}
-                className="w-full rounded-2xl border border-border-secondary bg-bg-primary px-4 py-3 text-base sm:text-sm resize-none"
+                className="w-full rounded-xl border border-border-primary bg-bg-primary px-4 py-2.5 text-base sm:text-sm text-text-primary resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               />
-              <label htmlFor="ap-avatar" className="block text-xs font-bold text-text-secondary">Avatar URL</label>
+              <label htmlFor="ap-avatar" className="block text-xs font-medium text-text-secondary">Avatar URL</label>
               <input
                 id="ap-avatar"
                 type="url"
@@ -217,26 +217,35 @@ export default function AdminProfilePage() {
                 value={avatarUrl}
                 onChange={(e) => setAvatarUrl(e.target.value)}
                 placeholder="https://example.com/photo.jpg"
-                className="w-full rounded-2xl border border-border-secondary bg-bg-primary px-4 py-3 text-base sm:text-sm"
+                className="min-h-11 w-full rounded-xl border border-border-primary bg-bg-primary px-4 py-2.5 text-base sm:text-sm text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               />
-              <label className="flex items-center gap-3 text-sm min-h-11">
+              <label className="flex min-h-11 items-center gap-3 text-sm">
                 <input
-                  className="w-5 h-5"
                   type="checkbox"
+                  className="h-5 w-5 accent-[var(--accent)]"
                   checked={isPublished}
                   onChange={(e) => setIsPublished(e.target.checked)}
                 />
-                <span>Public profile visible at /p/{IDENTITY_CONFIG.HANDLE}</span>
+                <span>Show my public profile at /p/{IDENTITY_CONFIG.HANDLE}</span>
               </label>
+              <button
+                type="button"
+                onClick={handleSaveBasic}
+                disabled={saving}
+                className="min-h-11 w-full rounded-xl bg-text-primary px-6 text-sm font-bold text-bg-primary hover:bg-accent disabled:opacity-50 sm:w-auto"
+              >
+                {saving ? 'Saving…' : 'Save profile'}
+              </button>
             </section>
 
-            <section className="glass-panel rounded-3xl border border-border-secondary p-6 flex flex-col items-center text-center">
+            <section className="rounded-2xl border border-border-primary bg-bg-elevated p-5 sm:p-6 flex flex-col items-center text-center">
               <img
                 src={avatarUrl || avatarFallbackUrl(200)}
                 alt={`Avatar preview for ${displayName}`}
                 className="w-32 h-32 rounded-full object-cover border-4 border-border-secondary mb-4"
               />
-              <h2 className="text-2xl font-black">{displayName}</h2>
+              <p className="text-xs font-medium text-text-tertiary mb-1">How your profile looks</p>
+              <h2 className="text-2xl font-semibold">{displayName}</h2>
               <p className="text-sm text-text-tertiary mt-2 max-w-sm">{bio || 'No bio yet.'}</p>
               <p className="text-2xs text-text-tertiary mt-4 font-mono">
                 {sections.length} sections, {contentSections.length} posts
@@ -245,18 +254,18 @@ export default function AdminProfilePage() {
           </div>
         ) : (
           <div role="tabpanel" id="ap-panel-content" aria-labelledby="ap-tab-content" className="space-y-8">
-            <section className="glass-panel rounded-3xl border border-border-secondary p-6 space-y-4">
-              <h2 className="text-sm font-bold text-text-secondary flex items-center gap-2">
-                <Plus size={14} aria-hidden="true" /> New post
+            <section className="rounded-2xl border border-border-primary bg-bg-elevated p-5 sm:p-6 space-y-4">
+              <h2 className="flex items-center gap-2 text-base font-semibold text-text-primary">
+                <Plus size={16} aria-hidden="true" /> New post
               </h2>
               <p className="text-xs text-text-tertiary">
-                Posts appear on your public profile and in the workspace Published Works feed.
+                Posts appear on your public profile and in the Published works feed.
               </p>
               <select
                 aria-label="Post type"
                 value={newType}
                 onChange={(e) => setNewType(e.target.value as 'blog' | 'published')}
-                className="w-full rounded-2xl border border-border-secondary bg-bg-primary px-4 py-3 text-base sm:text-sm"
+                className="min-h-11 w-full rounded-xl border border-border-primary bg-bg-primary px-4 py-2.5 text-base sm:text-sm text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 <option value="blog">Blog</option>
                 <option value="published">Published work</option>
@@ -269,7 +278,7 @@ export default function AdminProfilePage() {
                 aria-invalid={titleError ? true : undefined}
                 aria-describedby={titleError ? 'ap-title-error' : undefined}
                 placeholder="Title"
-                className="w-full rounded-2xl border border-border-secondary bg-bg-primary px-4 py-3 text-base sm:text-sm"
+                className="min-h-11 w-full rounded-xl border border-border-primary bg-bg-primary px-4 py-2.5 text-base sm:text-sm text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               />
               {titleError ? <p id="ap-title-error" role="alert" className="text-xs text-danger -mt-2">{titleError}</p> : null}
               <textarea
@@ -278,24 +287,24 @@ export default function AdminProfilePage() {
                 onChange={(e) => setNewBody(e.target.value)}
                 placeholder="Body or excerpt"
                 rows={6}
-                className="w-full rounded-2xl border border-border-secondary bg-bg-primary px-4 py-3 text-base sm:text-sm resize-none"
+                className="w-full rounded-xl border border-border-primary bg-bg-primary px-4 py-2.5 text-base sm:text-sm text-text-primary resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               />
               <button
                 type="button"
                 onClick={handleAddPost}
                 disabled={saving}
-                className="min-h-11 px-6 py-3 rounded-xl bg-text-primary text-bg-primary text-xs font-bold disabled:opacity-50"
+                className="min-h-11 w-full rounded-xl bg-text-primary px-6 text-sm font-bold text-bg-primary hover:bg-accent disabled:opacity-50 sm:w-auto"
               >
-                Add to profile
+                {saving ? 'Adding…' : 'Add to profile'}
               </button>
             </section>
 
             <section className="space-y-3">
-              <h2 className="text-sm font-bold text-text-secondary flex items-center gap-2">
-                <BookOpen size={14} aria-hidden="true" /> On profile ({contentSections.length})
+              <h2 className="flex items-center gap-2 text-base font-semibold text-text-primary">
+                <BookOpen size={16} aria-hidden="true" /> On your profile ({contentSections.length})
               </h2>
               {contentSections.length === 0 ? (
-                <p className="text-sm text-text-tertiary">No posts yet. Add one above or publish from Output Studio.</p>
+                <EmptyState title="No posts on your profile yet" hint="Add one with the form above, or publish from Output Studio." />
               ) : (
                 contentSections.map((s) => (
                   <PostRow key={s.id} section={s} onDelete={() => handleDeleteSection(s.id)} />
@@ -304,36 +313,58 @@ export default function AdminProfilePage() {
             </section>
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }
 
 function PostRow({ section, onDelete }: { section: ProfileSection; onDelete: () => void }) {
+  const [confirming, setConfirming] = useState(false);
   const c = section.content ?? {};
   const url = String(c.url ?? '');
   return (
-    <div className="glass-panel rounded-2xl border border-border-secondary p-4 flex items-start justify-between gap-4">
+    <Card className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
       <div className="min-w-0">
-        <span className="text-2xs font-bold uppercase text-accent">{section.type}</span>
-        <h3 className="font-bold text-text-primary truncate">{section.title}</h3>
+        <span className="text-xs font-medium capitalize text-accent">{section.type}</span>
+        <h3 className="font-bold text-text-primary break-words">{section.title}</h3>
         <p className="text-xs text-text-tertiary line-clamp-2 mt-1">
           {String(c.summary ?? c.body ?? '').slice(0, 120)}
         </p>
         {url && (
-          <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-accent inline-flex items-center gap-1 mt-2 min-h-6">
-            <ExternalLink size={12} aria-hidden="true" /> View link<span className="sr-only"> (opens in a new tab)</span>
+          <a href={url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex min-h-11 items-center gap-1 text-xs text-accent">
+            <ExternalLink size={12} aria-hidden="true" /> Open link<span className="sr-only"> (opens in a new tab)</span>
           </a>
         )}
       </div>
-      <button
-        type="button"
-        onClick={onDelete}
-        className="inline-flex items-center justify-center min-h-11 min-w-11 rounded-xl border border-danger/20 text-danger hover:bg-danger/5 shrink-0"
-        aria-label={`Delete post: ${section.title}`}
-      >
-        <Trash2 size={16} aria-hidden="true" />
-      </button>
-    </div>
+      {confirming ? (
+        <div role="group" aria-label={`Confirm removing ${section.title}`} className="flex shrink-0 flex-wrap items-center gap-2">
+          <p className="w-full text-xs text-text-secondary sm:text-right">Remove from your public profile?</p>
+          <button
+            type="button"
+            autoFocus
+            onClick={() => setConfirming(false)}
+            className="min-h-11 rounded-xl border border-border-primary px-4 text-xs font-bold text-text-primary hover:bg-bg-secondary"
+          >
+            Keep post
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            className="min-h-11 rounded-xl bg-danger px-4 text-xs font-bold text-bg-primary hover:opacity-90"
+          >
+            Remove post
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setConfirming(true)}
+          className="flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-danger/30 px-4 text-xs font-bold text-danger hover:bg-danger/5"
+          aria-label={`Remove post ${section.title}`}
+        >
+          <Trash2 size={16} aria-hidden="true" /> Remove
+        </button>
+      )}
+    </Card>
   );
 }

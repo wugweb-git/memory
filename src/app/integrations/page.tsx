@@ -10,7 +10,8 @@ import {
   Smartphone, Mail, Calendar, HardDrive, Mic, Upload, Link2, Rss,
   type LucideIcon,
 } from 'lucide-react';
-import { M3Card, M3Page, M3State } from '@/components/ui/m3';
+import { M3Button, M3Card, M3Page, M3State } from '@/components/ui/m3';
+import { EmptyState, Skeleton } from '@/components/ui/primitives';
 import { AppShell } from '@/app/component/AppShell';
 import { apiRequest } from '@/lib/ui/api-client';
 
@@ -30,15 +31,17 @@ type ConnectorStatus = {
   lastResult: { ingested: number; skipped: number; scanned?: number } | null;
 };
 
+type Health = 'error' | 'unset' | 'needs-connect' | 'waiting' | 'healthy' | 'manual';
+
 function relTime(iso: string | null): string {
   if (!iso) return 'never';
   const mins = Math.floor((Date.now() - Date.parse(iso)) / 60_000);
   if (Number.isNaN(mins)) return 'never';
   if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 60) return `${mins} min ago`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
+  if (hrs < 24) return `${hrs} h ago`;
+  return `${Math.floor(hrs / 24)} d ago`;
 }
 
 /** OAuth connectors need consent (connected) on top of configured (creds set). */
@@ -46,7 +49,15 @@ function isReady(c: ConnectorStatus): boolean {
   return c.configured && (c.connected ?? true);
 }
 
-// Per-connector iconography — an id override where a clean icon fits, else by category.
+function healthOf(c: ConnectorStatus): Health {
+  if (c.kind === 'manual') return 'manual';
+  if (c.lastError) return 'error';
+  if (!c.configured) return 'unset';
+  if (!isReady(c)) return 'needs-connect';
+  return c.lastSyncAt ? 'healthy' : 'waiting';
+}
+
+// Per-connector iconography: an id override where a clean icon fits, else by category.
 const ID_ICONS: Record<string, LucideIcon> = {
   'google-calendar': Calendar,
   'google-drive': HardDrive,
@@ -70,61 +81,64 @@ function iconFor(c: ConnectorStatus): LucideIcon {
   return ID_ICONS[c.id] ?? CATEGORY_ICONS[c.category] ?? FileIcon;
 }
 
-/** Text equivalent of the status dot (WCAG 1.4.1: colour is never the only signal). */
-function statusLabel(c: ConnectorStatus): string {
-  if (c.lastError) return 'Sync error';
-  if (!c.configured) return 'Needs setup';
-  if (!isReady(c)) return 'Not connected';
-  if (c.kind === 'manual') return 'Manual capture';
-  return c.lastSyncAt ? 'Connected' : 'Ready, not synced yet';
-}
+/** Plain-language status; the dot colour is never the only signal (WCAG 1.4.1). */
+const HEALTH_COPY: Record<Health, { label: string; dot: string }> = {
+  error: { label: 'Last sync failed', dot: 'bg-danger' },
+  unset: { label: 'Not set up', dot: 'bg-text-disabled' },
+  'needs-connect': { label: 'Needs connecting', dot: 'bg-warning' },
+  waiting: { label: 'Ready, not synced yet', dot: 'bg-warning' },
+  healthy: { label: 'Working', dot: 'bg-success' },
+  manual: { label: 'Manual', dot: 'bg-text-disabled' },
+};
 
-/** Status dot colour; always paired with statusLabel for assistive tech. */
-function statusColor(c: ConnectorStatus): string {
-  if (c.lastError) return 'bg-danger';
-  if (!c.configured) return 'bg-text-disabled';
-  if (!isReady(c)) return 'bg-warning';
-  if (c.kind === 'manual') return 'bg-text-tertiary';
-  return c.lastSyncAt ? 'bg-success' : 'bg-warning';
-}
-
-/** One calm line; sync metrics render as a visible detail line (no hover-only title). */
-function secondaryLine(c: ConnectorStatus): { text: string; title?: string; danger?: boolean } {
-  if (c.lastError) {
-    return { text: `Last sync failed: ${c.lastError}`, danger: true, title: c.lastSyncAt ? `Last successful sync ${relTime(c.lastSyncAt)}` : undefined };
+/** One calm line explaining the status and what happens next. */
+function detailLine(c: ConnectorStatus): { text: string; danger?: boolean } {
+  const h = healthOf(c);
+  const cadence = c.cadenceMins >= 60 ? `${Math.round(c.cadenceMins / 60)} h` : `${c.cadenceMins} min`;
+  if (h === 'error') {
+    const reason = c.lastError ?? 'The last sync did not finish.';
+    return { text: c.lastSyncAt ? `${reason} (last worked ${relTime(c.lastSyncAt)})` : reason, danger: true };
   }
-  if (!c.configured) return { text: c.setupHint };
-  if (!isReady(c)) return { text: 'Credentials are set. Connect your account to start syncing.' };
-  if (c.kind === 'manual') return { text: c.setupHint };
-  const cadence = c.cadenceMins >= 60 ? `${Math.round(c.cadenceMins / 60)}h` : `${c.cadenceMins}m`;
-  const detail = c.lastResult
-    ? `Last run: ${c.lastResult.ingested} new, ${c.lastResult.skipped} skipped. Syncs about every ${cadence}.`
-    : `Syncs about every ${cadence}.`;
-  return { text: c.lastSyncAt ? `Last synced ${relTime(c.lastSyncAt)}` : 'Never synced yet', title: detail };
+  if (h === 'healthy') {
+    const r = c.lastResult;
+    const counts = r ? `${r.ingested} new, ${r.skipped} skipped. ` : '';
+    return { text: `Synced ${relTime(c.lastSyncAt)}. ${counts}Runs every ${cadence}.` };
+  }
+  if (h === 'waiting') return { text: `Nothing synced yet. Runs every ${cadence}, or sync now.` };
+  return { text: c.setupHint };
 }
 
-const PILL = 'shrink-0 inline-flex min-h-11 items-center text-xs font-bold rounded-lg px-3 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent';
+const ACTION_BASE =
+  'inline-flex min-h-11 w-full items-center justify-center rounded-xl px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:w-auto sm:shrink-0';
+const ACTION_PRIMARY = `${ACTION_BASE} bg-text-primary text-bg-primary hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed`;
+const ACTION_QUIET = `${ACTION_BASE} border border-border-primary bg-bg-elevated text-text-primary hover:bg-bg-secondary disabled:opacity-40 disabled:cursor-not-allowed`;
 
 const KIND_GROUPS: Array<{ key: string; title: string; subtitle: string; match: (c: ConnectorStatus) => boolean }> = [
-  { key: 'auto', title: 'Auto-sync sources', subtitle: 'Fetched on a schedule. You can also sync on demand.', match: (c) => c.kind === 'rss' || c.kind === 'api' || (c.kind === 'oauth' && c.configured) },
-  { key: 'manual', title: 'Manual capture', subtitle: 'Added by hand from the Buffer page', match: (c) => c.kind === 'manual' },
-  { key: 'oauth', title: 'Needs setup', subtitle: 'Not syncing until credentials are added', match: (c) => (c.kind === 'oauth' && !c.configured) || c.kind === 'device' },
+  { key: 'auto', title: 'Auto-sync sources', subtitle: 'Fetched on a schedule. You can sync any of them now.', match: (c) => c.kind === 'rss' || c.kind === 'api' || (c.kind === 'oauth' && c.configured) },
+  { key: 'manual', title: 'Manual capture', subtitle: 'Added by hand from the Buffer page.', match: (c) => c.kind === 'manual' },
+  { key: 'oauth', title: 'Needs credentials', subtitle: 'These start syncing as soon as their keys are added.', match: (c) => (c.kind === 'oauth' && !c.configured) || c.kind === 'device' },
 ];
+
+// Errors first, then things that need a step from you, then the healthy ones.
+const HEALTH_ORDER: Record<Health, number> = { error: 0, 'needs-connect': 1, waiting: 2, healthy: 3, unset: 4, manual: 5 };
 
 export default function IntegrationsPage() {
   const [connectors, setConnectors] = useState<ConnectorStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expired, setExpired] = useState(false);
   const [syncing, setSyncing] = useState<string | null>(null);
+  const [announce, setAnnounce] = useState('');
 
   const load = useCallback(async () => {
     setError(null);
+    setExpired(false);
     try {
       const data = await apiRequest<{ connectors: ConnectorStatus[] }>('/api/sources');
       setConnectors(data.connectors ?? []);
-      setError(null);
     } catch (e: unknown) {
       const status = (e as { status?: number } | null)?.status;
+      setExpired(status === 401);
       setError(
         status === 401
           ? 'Your session expired. Sign in again to see your sources.'
@@ -144,11 +158,11 @@ export default function IntegrationsPage() {
     const status = new URLSearchParams(window.location.search).get('google');
     if (!status) return;
     const messages: Record<string, [string, 'ok' | 'err']> = {
-      connected: ['Google connected — sources can sync now.', 'ok'],
-      denied: ['Google connection was denied.', 'err'],
+      connected: ['Google connected. Your sources can sync now.', 'ok'],
+      denied: ['Google connection was denied. Try Connect again and allow access.', 'err'],
       error: ['Google connection failed. Check the OAuth app settings, then try again.', 'err'],
-      badstate: ['Google connection expired — try again.', 'err'],
-      nocode: ['Google did not return an authorization code. Start the connection again.', 'err'],
+      badstate: ['Google connection expired. Start Connect again.', 'err'],
+      nocode: ['Google did not return an authorization code. Start Connect again.', 'err'],
     };
     const [msg, tone] = messages[status] ?? [`Google: ${status}`, 'err'];
     if (tone === 'ok') toast.success(msg);
@@ -158,6 +172,7 @@ export default function IntegrationsPage() {
 
   async function syncNow(c: ConnectorStatus) {
     setSyncing(c.id);
+    setAnnounce(`Syncing ${c.label}`);
     try {
       const res = await apiRequest<{ ingested: number; skipped: number }>(`/api/sources/${c.id}/sync`, {
         method: 'POST',
@@ -165,100 +180,145 @@ export default function IntegrationsPage() {
         timeoutMs: 30_000,
       });
       toast.success(`${c.label}: ${res.ingested} new, ${res.skipped} skipped`);
+      setAnnounce(`${c.label} synced`);
       await load();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : `Sync failed for ${c.label}`);
+      const msg = e instanceof Error ? e.message : `Sync failed for ${c.label}`;
+      toast.error(msg);
+      setAnnounce(`Sync failed for ${c.label}`);
     } finally {
       setSyncing(null);
     }
   }
 
+  /** The single next step for a connector. */
   function renderAction(c: ConnectorStatus) {
+    const h = healthOf(c);
     if (c.kind === 'manual') {
-      return <Link href="/buffer" aria-label={`Open Buffer to capture: ${c.label}`} className={`${PILL} border border-border-primary text-text-primary hover:bg-bg-secondary`}>Open Buffer</Link>;
+      return <Link href="/buffer" aria-label={`Capture with ${c.label}`} className={ACTION_QUIET}>Capture</Link>;
     }
-    if (!c.configured) {
-      // No action is possible from the UI; the hint on the card says what to set.
-      return null;
+    if (h === 'unset') {
+      return (
+        <span className="inline-flex min-h-11 items-center text-xs text-text-tertiary sm:max-w-[10rem] sm:text-right">
+          Add the keys listed above to turn this on
+        </span>
+      );
     }
-    if (!isReady(c) && c.authStartPath) {
-      return <a href={c.authStartPath} aria-label={`Connect ${c.label}`} className={`${PILL} bg-text-primary text-bg-primary hover:bg-text-secondary`}>Connect</a>;
+    if (h === 'needs-connect' && c.authStartPath) {
+      return <a href={c.authStartPath} aria-label={`Connect ${c.label}`} className={ACTION_PRIMARY}>Connect</a>;
     }
-    if (!isReady(c)) return null; // consent still missing and no connect link: nothing to run
+    // Consent is still missing and there is no connect link: nothing to run.
+    if (h === 'needs-connect') return null;
+    const busy = syncing === c.id;
     return (
-      <button
-        type="button"
-        onClick={() => syncNow(c)}
-        disabled={syncing === c.id}
-        aria-label={`${c.lastError ? 'Retry sync' : 'Sync now'}: ${c.label}`}
-        className={`${PILL} border border-border-primary text-text-primary hover:bg-bg-secondary disabled:text-text-tertiary disabled:hover:bg-transparent`}
-      >
-        {syncing === c.id ? 'Syncing…' : c.lastError ? 'Retry sync' : 'Sync now'}
-      </button>
+      <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+        <button
+          type="button"
+          onClick={() => syncNow(c)}
+          disabled={busy}
+          aria-label={`${h === 'error' ? 'Retry sync' : 'Sync now'}: ${c.label}`}
+          className={h === 'error' || h === 'waiting' ? ACTION_PRIMARY : ACTION_QUIET}
+        >
+          {busy ? 'Syncing…' : h === 'error' ? 'Retry sync' : 'Sync now'}
+        </button>
+        {h === 'error' && c.authStartPath ? (
+          <a href={c.authStartPath} aria-label={`Reconnect ${c.label}`} className={ACTION_QUIET}>Reconnect</a>
+        ) : null}
+      </div>
     );
   }
+
+  const trackable = connectors.filter((c) => c.kind !== 'manual');
+  const attention = trackable.filter((c) => ['error', 'needs-connect'].includes(healthOf(c))).length;
+  const working = trackable.filter((c) => ['healthy', 'waiting'].includes(healthOf(c))).length;
+  const notSetUp = trackable.filter((c) => healthOf(c) === 'unset').length;
 
   return (
     <AppShell>
       <AppToastContainer position="bottom-right" theme="light" />
-      <div>
-        <M3Page title="Integrations" subtitle="Every source that feeds your memory. See what is connected, what needs setup, and when each last synced.">
+      <M3Page title="Integrations" subtitle="The sources that feed your memory. Check they are healthy, connect new ones and sync on demand.">
+          <p role="status" aria-live="polite" className="sr-only">{announce}</p>
           {loading ? (
-            <M3State state="loading" message="Loading your sources…" />
+            <div className="space-y-3" role="status" aria-label="Loading your sources">
+              <Skeleton className="h-16 w-full motion-reduce:animate-none" />
+              <Skeleton className="h-20 w-full motion-reduce:animate-none" />
+              <Skeleton className="h-20 w-full motion-reduce:animate-none" />
+              <Skeleton className="h-20 w-full motion-reduce:animate-none" />
+            </div>
           ) : error ? (
             <div className="space-y-3">
               <M3State state="error" message={error} />
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => { setLoading(true); load(); }}
-                  className="min-h-11 px-4 rounded-xl bg-text-primary text-sm font-bold text-bg-primary"
-                >
-                  Try again
-                </button>
-                <Link href="/login?next=/integrations" className="inline-flex min-h-11 items-center rounded-xl border border-border-primary px-4 text-sm font-bold text-text-primary">Sign in again</Link>
+              <div className="flex flex-wrap gap-2">
+                {expired ? (
+                  <Link href="/login?next=/integrations" className="inline-flex min-h-11 items-center rounded-xl bg-text-primary px-4 text-sm font-semibold text-bg-primary">Sign in</Link>
+                ) : null}
+                <M3Button tone={expired ? 'secondary' : 'primary'} onClick={() => { setLoading(true); load(); }}>Try again</M3Button>
               </div>
             </div>
           ) : connectors.length === 0 ? (
-            <M3State state="empty" message="No sources are available. If this looks wrong, reload the page or check the server logs." />
+            <EmptyState
+              title="No sources yet"
+              hint="Sources show up here once they are registered. Capture something by hand in the meantime."
+              action={<Link href="/buffer" className="inline-flex min-h-11 items-center rounded-xl bg-text-primary px-4 text-sm font-semibold text-bg-primary">Open the Buffer</Link>}
+            />
           ) : (
-            KIND_GROUPS.map((group) => {
-              const items = connectors.filter(group.match);
-              if (items.length === 0) return null;
-              return (
-                <M3Card key={group.key} title={group.title} action={<span className="text-xs text-text-tertiary text-right">{group.subtitle}</span>}>
-                  <ul className="space-y-2">
-                    {items.map((c) => {
-                      const Icon = iconFor(c);
-                      const sec = secondaryLine(c);
-                      return (
-                        <li
-                          key={c.id}
-                          className="flex flex-wrap items-center gap-3 rounded-xl border border-border-secondary bg-bg-primary p-3"
-                        >
-                          <div className="h-9 w-9 shrink-0 rounded-xl bg-bg-secondary flex items-center justify-center">
-                            <Icon className="h-4 w-4 text-text-secondary" aria-hidden="true" />
-                          </div>
-                          <div className="min-w-0 flex-1 basis-48">
-                            <p className="text-sm font-bold text-text-primary break-words">{c.label}</p>
-                            <p className="mt-0.5 inline-flex items-center gap-1.5 text-xs font-semibold text-text-secondary">
-                              <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${statusColor(c)}`} />
-                              {statusLabel(c)}
-                            </p>
-                            <p className={`text-xs mt-0.5 break-words ${sec.danger ? 'text-danger' : 'text-text-tertiary'}`}>{sec.text}</p>
-                            {sec.title && <p className="text-xs mt-0.5 text-text-tertiary break-words">{sec.title}</p>}
-                          </div>
-                          {renderAction(c)}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </M3Card>
-              );
-            })
+            <>
+              <section aria-label="Connection health" className="rounded-3xl border border-border-secondary bg-bg-elevated p-4">
+                <p className="text-md font-semibold text-text-primary">
+                  {attention > 0
+                    ? `${attention} ${attention === 1 ? 'source needs' : 'sources need'} your attention`
+                    : working > 0 ? 'Everything you connected is working' : 'No sources are connected yet'}
+                </p>
+                <p className="mt-1 text-xs text-text-tertiary">
+                  {working} working, {attention} need attention, {notSetUp} not set up
+                </p>
+              </section>
+
+              {KIND_GROUPS.map((group) => {
+                const items = connectors
+                  .filter(group.match)
+                  .sort((a, b) => HEALTH_ORDER[healthOf(a)] - HEALTH_ORDER[healthOf(b)]);
+                if (items.length === 0) return null;
+                return (
+                  <M3Card key={group.key} title={group.title}>
+                    <p className="-mt-1 text-xs text-text-tertiary">{group.subtitle}</p>
+                    <ul className="space-y-2">
+                      {items.map((c) => {
+                        const Icon = iconFor(c);
+                        const h = healthOf(c);
+                        const copy = HEALTH_COPY[h];
+                        const sec = detailLine(c);
+                        return (
+                          <li
+                            key={c.id}
+                            className="flex flex-col gap-3 rounded-2xl border border-border-secondary bg-bg-primary p-3 sm:flex-row sm:items-center"
+                          >
+                            <div className="flex min-w-0 flex-1 items-start gap-3">
+                              <div className="h-10 w-10 shrink-0 rounded-xl bg-bg-secondary flex items-center justify-center">
+                                <Icon className="h-4 w-4 text-text-secondary" aria-hidden="true" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-bold text-text-primary break-words">{c.label}</p>
+                                {h !== 'manual' ? (
+                                  <p className="mt-0.5 inline-flex items-center gap-1.5 text-xs font-medium text-text-secondary">
+                                    <span aria-hidden="true" className={`h-2 w-2 rounded-full ${copy.dot}`} />
+                                    <span>{copy.label}</span>
+                                  </p>
+                                ) : null}
+                                <p className={`mt-0.5 text-xs break-words ${sec.danger ? 'text-danger' : 'text-text-tertiary'}`}>{sec.text}</p>
+                              </div>
+                            </div>
+                            {renderAction(c)}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </M3Card>
+                );
+              })}
+            </>
           )}
-        </M3Page>
-      </div>
+      </M3Page>
     </AppShell>
   );
 }

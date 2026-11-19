@@ -51,11 +51,12 @@ export const EvaluateTab: React.FC<{ mode: Mode }> = ({ mode }) => {
           value={input}
           onChange={e => setInput(e.target.value)}
           rows={7}
+          aria-describedby="eval-help"
           placeholder="Paste the full description here…"
           className="w-full rounded-xl border border-border-secondary bg-bg-elevated px-4 py-3 text-md text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent resize-y"
         />
-        <p className="text-xs text-text-tertiary flex justify-between" aria-live="polite">
-          <span>{len < MIN ? `Add at least ${MIN} characters` : 'Ready to evaluate'}</span>
+        <p id="eval-help" className="text-xs text-text-tertiary flex justify-between">
+          <span aria-live="polite">{len < MIN ? `Add at least ${MIN} characters to evaluate` : 'Ready to evaluate'}</span>
           <span>{len} characters</span>
         </p>
       </div>
@@ -68,15 +69,15 @@ export const EvaluateTab: React.FC<{ mode: Mode }> = ({ mode }) => {
       {loading ? <SkeletonCard label="Comparing against your memory" /> : null}
 
       {!loading && !result && !error ? (
-        <div className="rounded-2xl border border-dashed border-border-secondary p-6 text-center text-xs text-text-tertiary flex flex-col items-center gap-2">
-          <FileText size={22} className="text-text-disabled" aria-hidden="true" />
+        <div className="rounded-2xl border border-dashed border-border-secondary p-6 text-center text-sm text-text-tertiary flex flex-col items-center gap-2" role="status">
+          <FileText size={22} className="text-text-tertiary" aria-hidden="true" />
           A fit score, pros, cons and next steps will appear here.
         </div>
       ) : null}
 
       {!loading && result ? (
         <div className="space-y-4">
-          <div className="rounded-2xl border border-border-secondary bg-bg-elevated p-5 flex items-center gap-5">
+          <div className="rounded-2xl border border-border-secondary bg-bg-elevated p-5 flex flex-col sm:flex-row items-center gap-5">
             <ScoreRing value={fit} label="fit" />
             <div className="flex-1 space-y-3 min-w-0">
               <span className={`inline-block text-sm font-semibold px-3 py-1 rounded-full border ${VERDICT_STYLE[tone]}`}>

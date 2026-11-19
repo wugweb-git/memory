@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import { AppToastContainer } from "@/app/component/AppToastContainer";
 import "react-toastify/dist/ReactToastify.css";
 import { M3Card, M3Page, M3Button, M3State } from "@/components/ui/m3";
+import { EmptyState, Skeleton } from "@/components/ui/primitives";
 import { AppShell } from "@/app/component/AppShell";
 import { UI_API } from "@/lib/ui/contracts";
 import { apiRequest } from "@/lib/ui/api-client";
@@ -123,8 +124,8 @@ export default function PortfolioPage() {
               type="button"
               aria-pressed={tab === t.type}
               onClick={() => { setTab(t.type); setShowForm(false); setTitleErr(""); setUrlErr(""); }}
-              className={`min-h-[44px] px-4 rounded-xl text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
-                tab === t.type ? "bg-text-primary text-bg-primary" : "border border-border-primary bg-bg-primary text-text-secondary"
+              className={`min-h-11 px-4 rounded-xl text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                tab === t.type ? "bg-text-primary text-bg-primary" : "border border-border-primary bg-bg-primary text-text-secondary hover:bg-bg-secondary"
               }`}
             >
               {t.label}
@@ -147,12 +148,15 @@ export default function PortfolioPage() {
           {loadError ? (
             <div>
               <M3State state="error" message={`Could not load your content: ${loadError}`} />
-              <button type="button" onClick={load} className="mt-2 min-h-[44px] px-4 rounded-xl border border-border-primary text-sm font-medium text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">Try again</button>
+              <div className="mt-2"><M3Button tone="secondary" onClick={load}>Try again</M3Button></div>
             </div>
           ) : data && !data.enabled ? (
-            <M3State state="error" message="The Sanity showcase is not configured in this environment. Set the Sanity project variables, then reload." />
+            <EmptyState title="The CMS is not connected here" hint="Add the Sanity project ID and token to this environment, then reload. Your showcase content is safe." />
           ) : loading ? (
-            <M3State state="loading" message="Loading your content…" />
+            <div className="space-y-2" role="status" aria-label="Loading your content">
+              <Skeleton className="h-16 w-full motion-reduce:animate-none" />
+              <Skeleton className="h-16 w-full motion-reduce:animate-none" />
+            </div>
           ) : (
             <>
               {showForm && (
@@ -205,8 +209,8 @@ export default function PortfolioPage() {
                     <input id={id("tags")} autoComplete="off" aria-describedby={`${id("tags")}-hint`} className={`${inputCls} border-border-primary`} value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} />
                     <p id={`${id("tags")}-hint`} className="mt-1 text-xs text-text-tertiary">Separate tags with commas.</p>
                   </Field>
-                  <label className="flex items-center gap-3 min-h-[44px] text-sm text-text-secondary">
-                    <input type="checkbox" className="h-5 w-5 accent-[rgb(var(--accent))]" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} />
+                  <label className="flex items-center gap-3 min-h-11 text-sm text-text-secondary">
+                    <input type="checkbox" className="h-5 w-5 accent-accent" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} />
                     Feature this on your profile
                   </label>
                   <M3Button type="submit" disabled={saving}>{saving ? "Publishing…" : "Publish to showcase"}</M3Button>
@@ -214,7 +218,11 @@ export default function PortfolioPage() {
               )}
 
               {docs.length === 0 ? (
-                <M3State state="empty" message={`No ${tabLabel.toLowerCase()} yet. Choose "Add to ${tabLabel.toLowerCase()}" to create the first one.`} />
+                <EmptyState
+                  title={`No ${tabLabel.toLowerCase()} yet`}
+                  hint="Add one and it appears on your public profile straight away."
+                  action={<M3Button onClick={() => setShowForm(true)}>Add the first one</M3Button>}
+                />
               ) : (
                 <ul className="space-y-2">
                   {docs.map((d) => (
@@ -229,7 +237,7 @@ export default function PortfolioPage() {
                             <p className="text-sm text-text-secondary line-clamp-2">{d.summary || d.excerpt || d.client}</p>
                           )}
                           {d.tags?.length ? (
-                            <p className="text-xs text-text-tertiary mt-1">{d.tags.join(" · ")}</p>
+                            <p className="text-xs text-text-tertiary mt-1">{d.tags.join(", ")}</p>
                           ) : null}
                         </div>
                         <button type="button" onClick={() => remove(d._id, d.title)} aria-label={`Remove ${d.title}`} className={`${linkBtnCls} text-danger shrink-0`}>Remove</button>

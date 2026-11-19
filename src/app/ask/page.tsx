@@ -284,7 +284,7 @@ export default function AskPage() {
         <Link
           href={profileHref}
           aria-label={`Back to ${FIRST_NAME}'s profile`}
-          className="min-h-11 min-w-11 flex items-center justify-center rounded-full text-text-secondary hover:bg-bg-secondary hover:text-text-primary"
+          className="min-h-11 min-w-11 flex items-center justify-center rounded-full text-text-secondary hover:bg-bg-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           <ArrowLeft size={22} aria-hidden="true" />
         </Link>
@@ -301,7 +301,7 @@ export default function AskPage() {
             aria-haspopup="menu"
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((v) => !v)}
-            className="min-h-11 min-w-11 flex items-center justify-center rounded-full text-text-secondary hover:bg-bg-secondary hover:text-text-primary"
+            className="min-h-11 min-w-11 flex items-center justify-center rounded-full text-text-secondary hover:bg-bg-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             <MoreVertical size={22} aria-hidden="true" />
           </button>
@@ -315,7 +315,7 @@ export default function AskPage() {
                 role="menuitem"
                 disabled={messages.length === 0}
                 onClick={openClearDialog}
-                className="min-h-11 w-full px-4 text-left text-sm text-text-primary hover:bg-bg-secondary disabled:text-text-tertiary disabled:hover:bg-transparent"
+                className="min-h-11 w-full px-4 text-left text-sm text-text-primary hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset disabled:text-text-tertiary disabled:hover:bg-transparent"
               >
                 Clear chat
               </button>
@@ -324,6 +324,7 @@ export default function AskPage() {
         </div>
       </header>
 
+      <main id="main-content" tabIndex={-1} className="flex min-h-0 flex-1 flex-col focus:outline-none">
       <div
         ref={scrollRef}
         onScroll={(e) => {
@@ -345,7 +346,7 @@ export default function AskPage() {
                   key={q}
                   type="button"
                   onClick={() => send(q)}
-                  className="min-h-11 rounded-2xl border border-border-primary bg-bg-elevated px-4 py-2 text-left text-sm text-text-primary hover:bg-bg-secondary"
+                  className="min-h-11 rounded-2xl border border-border-primary bg-bg-elevated px-4 py-2 text-left text-sm text-text-primary hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
                   {q}
                 </button>
@@ -389,7 +390,7 @@ export default function AskPage() {
                 <button
                   type="button"
                   onClick={retry}
-                  className="min-h-11 rounded-full border border-border-primary bg-bg-elevated px-4 text-sm font-medium text-text-primary hover:bg-bg-secondary"
+                  className="min-h-11 rounded-full border border-border-primary bg-bg-elevated px-4 text-sm font-medium text-text-primary hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
                   Try again
                 </button>
@@ -422,14 +423,14 @@ export default function AskPage() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder="Type a question"
-            className="min-h-11 flex-1 resize-none rounded-2xl border border-border-primary bg-bg-primary px-4 py-2 text-base leading-6 text-text-primary placeholder:text-text-secondary"
+            className="min-h-11 flex-1 resize-none rounded-2xl border border-border-primary bg-bg-primary px-4 py-2 text-base leading-6 text-text-primary placeholder:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           />
           {isLoading && stop ? (
             <button
               type="button"
               onClick={() => stop()}
               aria-label="Stop answer"
-              className="h-11 w-11 shrink-0 rounded-full border border-border-primary bg-bg-elevated text-text-primary flex items-center justify-center hover:bg-bg-secondary"
+              className="h-11 w-11 shrink-0 rounded-full border border-border-primary bg-bg-elevated text-text-primary flex items-center justify-center hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
               <Square size={16} aria-hidden="true" />
             </button>
@@ -438,7 +439,7 @@ export default function AskPage() {
               type="submit"
               disabled={!canSend}
               aria-label="Send question"
-              className="h-11 w-11 shrink-0 rounded-full bg-text-primary text-bg-primary flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+              className="h-11 w-11 shrink-0 rounded-full bg-text-primary text-bg-primary flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
             >
               <SendHorizontal size={20} aria-hidden="true" />
             </button>
@@ -448,6 +449,7 @@ export default function AskPage() {
           {`Answers are generated from ${FIRST_NAME}'s notes and can be wrong. Check anything important.`}
         </p>
       </div>
+      </main>
 
       <dialog
         ref={dialogRef}
@@ -462,14 +464,14 @@ export default function AskPage() {
           <button
             type="button"
             onClick={() => dialogRef.current?.close()}
-            className="min-h-11 rounded-full border border-border-primary px-4 text-sm font-medium hover:bg-bg-secondary"
+            className="min-h-11 rounded-full border border-border-primary px-4 text-sm font-medium hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={clearChat}
-            className="min-h-11 rounded-full bg-danger px-4 text-sm font-medium text-bg-elevated"
+            className="min-h-11 rounded-full bg-danger px-4 text-sm font-medium text-bg-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             Clear chat
           </button>

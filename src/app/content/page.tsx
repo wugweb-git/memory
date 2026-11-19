@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
+import { Check } from "lucide-react";
 import { AppToastContainer } from "@/app/component/AppToastContainer";
 import "react-toastify/dist/ReactToastify.css";
 import { M3Button, M3Card, M3Page, M3State } from "@/components/ui/m3";
+import { EmptyState, Input, Skeleton } from "@/components/ui/primitives";
 import { UI_API, resolveUserId } from "@/lib/ui/contracts";
 import { apiRequest } from "@/lib/ui/api-client";
 import { AppShell } from "@/app/component/AppShell";
@@ -37,10 +39,11 @@ type Tab = "compose" | "live" | "drafts";
 
 const HANDLE = IDENTITY_CONFIG.HANDLE;
 
-const inputCls =
-  "w-full min-h-[44px] rounded-xl border border-border-primary bg-bg-elevated px-3 py-2 text-base sm:text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent";
-const linkBtnCls =
-  "inline-flex items-center min-h-[44px] px-2 text-sm font-medium rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-accent";
+const FIELD_CLS =
+  "w-full min-h-11 rounded-xl border border-border-primary bg-bg-elevated px-3 py-2 text-base text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50";
+const LINK_BTN =
+  "inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-semibold text-accent transition-colors hover:bg-bg-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
+const LEAVE_MESSAGE = "You have unsaved changes to this draft. Discard them?";
 
 function platformLabel(value: string) {
   return OUTPUT_PLATFORMS.find((p) => p.value === value)?.label ?? value;
@@ -69,10 +72,10 @@ function PlatformPreview({ platform, content }: { platform: string; content: str
     return (
       <div className="rounded-2xl border border-border-secondary bg-bg-secondary p-4">
         <div className="flex items-center gap-2 mb-3">
-          <div aria-hidden="true" className="h-8 w-8 rounded-full bg-accent/20" />
+          <div className="h-8 w-8 rounded-full bg-accent/20" aria-hidden="true" />
           <div>
             <p className="text-sm font-semibold text-text-primary">{HANDLE}</p>
-            <p className="text-2xs text-text-tertiary">LinkedIn · preview</p>
+            <p className="text-2xs text-text-tertiary">LinkedIn, preview</p>
           </div>
         </div>
         <p className="text-sm text-text-primary whitespace-pre-wrap leading-relaxed">
@@ -98,6 +101,42 @@ function PlatformPreview({ platform, content }: { platform: string; content: str
   );
 }
 
+/** Guided path: pick a decision, edit the draft, publish. One current step at a time. */
+function Stepper({ step }: { step: 1 | 2 | 3 }) {
+  const steps = ["Pick a decision", "Edit the draft", "Publish"];
+  return (
+    <ol className="flex items-center gap-2" aria-label="Progress">
+      {steps.map((label, i) => {
+        const n = i + 1;
+        const done = n < step;
+        const current = n === step;
+        return (
+          <li
+            key={label}
+            aria-current={current ? "step" : undefined}
+            className={`flex min-w-0 flex-1 items-center gap-2 text-xs ${current ? "font-semibold text-text-primary" : "text-text-tertiary"}`}
+          >
+            <span
+              aria-hidden="true"
+              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-2xs font-semibold ${
+                done
+                  ? "border-success bg-success text-bg-primary"
+                  : current
+                    ? "border-text-primary bg-text-primary text-bg-primary"
+                    : "border-border-primary text-text-tertiary"
+              }`}
+            >
+              {done ? <Check size={12} strokeWidth={3} /> : n}
+            </span>
+            <span className="truncate">{label}</span>
+            <span className="sr-only">{done ? " (done)" : current ? " (current step)" : ""}</span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 export default function OutputStudioPage() {
   const [tab, setTab] = useState<Tab>("compose");
   const [decisionId, setDecisionId] = useState("");
@@ -108,49 +147,74 @@ export default function OutputStudioPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(true);
+  const [lastSaved, setLastSaved] = useState<string | null>(null);
 
   const [drafts, setDrafts] = useState<Draft[]>([]);
+  const [draftsLoading, setDraftsLoading] = useState(true);
   const [decisions, setDecisions] = useState<DecisionRow[]>([]);
   const [draftsError, setDraftsError] = useState<string | null>(null);
-  const [draftsLoaded, setDraftsLoaded] = useState(false);
-  const [liveLoaded, setLiveLoaded] = useState(false);
   const [savedContent, setSavedContent] = useState("");
   const [versions, setVersions] = useState<{ ts: number; content: string }[]>([]);
 
   // Live profile (what the world sees)
   const [sections, setSections] = useState<ProfileSection[]>([]);
+  const [liveLoading, setLiveLoading] = useState(true);
   const [liveError, setLiveError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editBody, setEditBody] = useState("");
+  const [editOriginal, setEditOriginal] = useState({ title: "", body: "" });
   const [previewKey, setPreviewKey] = useState(0);
 
   const userId = resolveUserId().userId;
 
-  async function loadDrafts() {
+  const dirty = content.trim() !== "" && content !== savedContent;
+  const editDirty = editingId !== null && (editTitle !== editOriginal.title || editBody !== editOriginal.body);
+  const step: 1 | 2 | 3 = !content ? 1 : dirty ? 2 : 3;
+
+  // Warn before the browser tab closes or reloads with unsaved work.
+  useEffect(() => {
+    if (!dirty && !editDirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty, editDirty]);
+
+  /** True when it is safe to replace the draft in the editor. */
+  function canReplaceDraft() {
+    return !dirty || window.confirm(LEAVE_MESSAGE);
+  }
+
+  const loadDrafts = useCallback(async () => {
     setDraftsError(null);
+    setDraftsLoading(true);
     try {
       const rows = await apiRequest<Draft[]>(UI_API.outputDrafts);
       setDrafts(Array.isArray(rows) ? rows : []);
     } catch (e: unknown) {
       setDraftsError(e instanceof Error ? e.message : "The drafts service did not respond.");
     } finally {
-      setDraftsLoaded(true);
+      setDraftsLoading(false);
     }
-  }
-  async function loadDecisions() {
+  }, []);
+
+  const loadDecisions = useCallback(async () => {
     try {
       const rows = await apiRequest<DecisionRow[]>(UI_API.cognitiveHistory);
       const list = Array.isArray(rows) ? rows.slice(0, 10) : [];
       setDecisions(list);
-      // First-run UX: Compose is gated on a Decision ID with no default,
-      // which makes the whole page look dead until you know to paste one
-      // in. Default to the most recent decision instead.
+      // First-run UX: default to the most recent decision so Compose never
+      // looks dead before you know to paste an ID.
       if (list.length > 0) setDecisionId((current) => current || list[0].id);
     } catch { /* optional */ }
-  }
-  async function loadLive() {
+  }, []);
+
+  const loadLive = useCallback(async () => {
     setLiveError(null);
+    setLiveLoading(true);
     try {
       const res = await apiRequest<{ sections?: ProfileSection[] }>(profilePath(HANDLE, "sections"));
       setSections(Array.isArray(res?.sections) ? res.sections : []);
@@ -158,23 +222,27 @@ export default function OutputStudioPage() {
     } catch (e: unknown) {
       setLiveError(e instanceof Error ? e.message : "The profile service did not respond.");
     } finally {
-      setLiveLoaded(true);
+      setLiveLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     loadDrafts();
     loadDecisions();
     loadLive();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadDrafts, loadDecisions, loadLive]);
 
   function snapshot(next: string) {
     setVersions((v) => [{ ts: Date.now(), content: next }, ...v].slice(0, 10));
   }
 
+  function stamp() {
+    setLastSaved(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+  }
+
   async function generate() {
     if (!decisionId) { toast.error("Choose a decision first. Pick a recent one or paste its ID."); return; }
+    if (!canReplaceDraft()) return;
     try {
       setLoading(true); setError(null);
       const json = await apiRequest<{ output_id?: string; content?: string }>(UI_API.outputGenerate, {
@@ -187,7 +255,8 @@ export default function OutputStudioPage() {
       if (json?.output_id) setOutputId(json.output_id);
       setSavedContent(next);
       snapshot(next);
-      toast.success("Draft ready to review");
+      stamp();
+      toast.success("Draft generated and saved");
       loadDrafts();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Could not generate a draft. Try again in a moment.";
@@ -201,10 +270,23 @@ export default function OutputStudioPage() {
     if (!content.trim()) throw new Error("Draft is empty");
     await apiRequest(UI_API.outputDrafts, { method: "PATCH", body: { id: outputId, content, platform } });
     setSavedContent(content);
+    stamp();
+  }
+
+  async function saveDraft() {
+    if (!outputId) { toast.error("Generate or open a draft first"); return; }
+    try {
+      setBusy(true);
+      await persistEdits();
+      toast.success("Draft saved");
+      loadDrafts();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Could not save the draft. Try again.");
+    } finally { setBusy(false); }
   }
 
   async function schedule() {
-    if (!outputId) { toast.error("Generate or open a draft first."); return; }
+    if (!outputId) { toast.error("Generate or open a draft first"); return; }
     try {
       setBusy(true);
       await persistEdits();
@@ -223,8 +305,8 @@ export default function OutputStudioPage() {
       const res = await apiRequest<{ sanitySynced?: boolean }>(UI_API.outputPublish, {
         method: "POST", body: { outputId, userId },
       });
-      toast.success(res?.sanitySynced ? "Live on your profile — CMS synced" : "Live on your profile");
-      setOutputId(null); setContent(""); setSavedContent(""); setVersions([]);
+      toast.success(res?.sanitySynced ? "Published to your profile and CMS" : "Published to your profile");
+      setOutputId(null); setContent(""); setSavedContent(""); setVersions([]); setLastSaved(null);
       loadDrafts();
       await loadLive();
       setTab("live");
@@ -234,13 +316,20 @@ export default function OutputStudioPage() {
   }
 
   function openDraft(d: Draft) {
+    if (!canReplaceDraft()) return;
     setOutputId(d.id); setContent(d.content); setSavedContent(d.content); setPlatform(d.platform);
     if (d.decisionId) setDecisionId(d.decisionId);
-    setVersions([]); setTab("compose");
+    setVersions([]); setLastSaved(null); setTab("compose");
   }
 
   function startEdit(s: ProfileSection) {
-    setEditingId(s.id); setEditTitle(s.title); setEditBody(sectionBody(s));
+    const body = sectionBody(s);
+    setEditingId(s.id); setEditTitle(s.title); setEditBody(body);
+    setEditOriginal({ title: s.title, body });
+  }
+  function cancelEdit() {
+    if (editDirty && !window.confirm("Discard your changes to this section?")) return;
+    setEditingId(null);
   }
   async function saveEdit() {
     if (!editingId) return;
@@ -272,23 +361,33 @@ export default function OutputStudioPage() {
 
   const words = useMemo(() => wordCount(content), [content]);
 
+  const tabs: [Tab, string][] = [
+    ["compose", dirty ? "Compose (unsaved)" : "Compose"],
+    ["live", `Live${sections.length ? ` (${sections.length})` : ""}`],
+    ["drafts", `Drafts${drafts.length ? ` (${drafts.length})` : ""}`],
+  ];
+
+  const saveStatus = !content
+    ? ""
+    : dirty
+      ? "Unsaved changes"
+      : lastSaved
+        ? `All changes saved at ${lastSaved}`
+        : "All changes saved";
+
   return (
     <AppShell>
       <AppToastContainer position="bottom-right" theme="light" />
-      <M3Page title="Output studio" subtitle="Shape what the world sees on your public profile">
+        <M3Page title="Output studio" subtitle="Write a draft from a decision, review it, then publish it to your public profile">
           <div className="flex flex-wrap gap-2" role="group" aria-label="Output studio sections">
-            {([
-              ["compose", "Compose"],
-              ["live", `Live${sections.length ? ` (${sections.length})` : ""}`],
-              ["drafts", `Drafts${drafts.length ? ` (${drafts.length})` : ""}`],
-            ] as [Tab, string][]).map(([id, label]) => (
+            {tabs.map(([id, label]) => (
               <button
                 key={id}
                 aria-pressed={tab === id}
                 type="button"
                 onClick={() => setTab(id)}
-                className={`min-h-[44px] px-4 rounded-xl text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
-                  tab === id ? "bg-text-primary text-bg-primary" : "border border-border-primary bg-bg-primary text-text-secondary"
+                className={`min-h-11 px-4 rounded-xl text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                  tab === id ? "bg-text-primary text-bg-primary" : "border border-border-primary bg-bg-primary text-text-secondary hover:bg-bg-secondary"
                 }`}
               >
                 {label}
@@ -299,13 +398,16 @@ export default function OutputStudioPage() {
           {/* ---------- COMPOSE ---------- */}
           {tab === "compose" && (
             <>
-              <M3Card title="Compose">
+              <Stepper step={step} />
+
+              <M3Card title="1. Source">
                 <div className="space-y-3">
-                  <div>
-                    <label htmlFor="compose-decision" className="block text-sm font-medium text-text-primary mb-1">Decision ID</label>
-                    <input
+                  <div className="space-y-1">
+                    <label htmlFor="compose-decision" className="block text-sm font-medium text-text-primary">Decision</label>
+                    <Input
                       id="compose-decision"
-                      className={inputCls}
+                      className="min-h-11 text-base"
+                      placeholder="Paste a decision ID"
                       aria-required="true" required
                       aria-invalid={error && !decisionId ? true : undefined}
                       aria-describedby={error && !decisionId ? "compose-error compose-decision-hint" : "compose-decision-hint"}
@@ -313,31 +415,33 @@ export default function OutputStudioPage() {
                       value={decisionId}
                       onChange={(e) => setDecisionId(e.target.value)}
                     />
-                    <p id="compose-decision-hint" className="mt-1 text-xs text-text-tertiary">The decision the draft is based on. The latest one is filled in for you.</p>
+                    <p id="compose-decision-hint" className="text-xs text-text-tertiary">
+                      The draft is written from this decision. We filled in your latest one.
+                    </p>
                   </div>
                   {decisions.length > 0 && (
-                    <div>
-                      <label htmlFor="compose-recent" className="block text-sm font-medium text-text-primary mb-1">Recent decisions</label>
+                    <div className="space-y-1">
+                      <label htmlFor="compose-recent" className="block text-sm font-medium text-text-primary">Recent decisions</label>
                       <select
                         id="compose-recent"
-                        className={`${inputCls} text-text-secondary`}
+                        className={`${FIELD_CLS} text-text-secondary`}
                         value=""
                         onChange={(e) => e.target.value && setDecisionId(e.target.value)}
                       >
-                        <option value="">Choose a recent decision…</option>
+                        <option value="">Choose a recent decision</option>
                         {decisions.map((d) => (
                           <option key={d.id} value={d.id}>
-                            {(d.mode ? d.mode + " · " : "") + d.id.slice(0, 8)} — {relTime(d.createdAt)}
+                            {(d.mode ? d.mode + ": " : "") + d.id.slice(0, 8)} on {relTime(d.createdAt)}
                           </option>
                         ))}
                       </select>
                     </div>
                   )}
-                  <div>
-                    <label htmlFor="compose-platform" className="block text-sm font-medium text-text-primary mb-1">Platform</label>
+                  <div className="space-y-1">
+                    <label htmlFor="compose-platform" className="block text-sm font-medium text-text-primary">Format</label>
                     <select
                       id="compose-platform"
-                      className={inputCls}
+                      className={FIELD_CLS}
                       value={platform}
                       onChange={(e) => setPlatform(e.target.value)}
                     >
@@ -346,43 +450,88 @@ export default function OutputStudioPage() {
                       ))}
                     </select>
                   </div>
-                  <M3Button onClick={generate} disabled={loading || !decisionId}>
-                    {loading ? "Generating…" : outputId ? "Regenerate draft" : "Generate draft"}
-                  </M3Button>
-                  {loading ? <p role="status" className="sr-only">Generating your draft</p> : null}
-                  {error ? <div id="compose-error" role="alert"><M3State state="error" message={error} /></div> : null}
+                  {content ? (
+                    <M3Button tone="secondary" onClick={generate} disabled={loading || !decisionId}>
+                      {loading ? "Generating…" : "Regenerate draft"}
+                    </M3Button>
+                  ) : (
+                    <M3Button onClick={generate} disabled={loading || !decisionId}>
+                      {loading ? "Generating…" : "Generate draft"}
+                    </M3Button>
+                  )}
+                  {loading ? <p role="status" className="text-xs text-text-tertiary">This can take up to 30 seconds.</p> : null}
+                  {error ? (
+                    <div id="compose-error" role="alert" className="space-y-1">
+                      <M3State state="error" message={`${error}. Check the decision ID and try again.`} />
+                    </div>
+                  ) : null}
                 </div>
               </M3Card>
+
+              {loading && !content ? (
+                <div className="space-y-2" aria-hidden="true">
+                  <Skeleton className="h-6 w-1/3 motion-reduce:animate-none" />
+                  <Skeleton className="h-40 w-full motion-reduce:animate-none" />
+                </div>
+              ) : null}
+
+              {!content && !loading ? (
+                <EmptyState
+                  title="No draft yet"
+                  hint="Generate a draft from your decision. You can edit it before anything goes public."
+                />
+              ) : null}
 
               {content && (
                 <>
                   <M3Card
-                    title="Draft"
+                    title="2. Edit the draft"
                     action={
-                      <button type="button" aria-expanded={showPreview} onClick={() => setShowPreview((s) => !s)} className={`${linkBtnCls} text-accent`}>
+                      <button
+                        type="button"
+                        aria-pressed={showPreview}
+                        onClick={() => setShowPreview((s) => !s)}
+                        className={LINK_BTN}
+                      >
                         {showPreview ? "Hide preview" : "Show preview"}
                       </button>
                     }
                   >
-                    <label htmlFor="draft-content" className="sr-only">Draft content</label>
+                    <label htmlFor="compose-draft" className="sr-only">Draft content</label>
                     <textarea
-                      id="draft-content"
-                      className={`${inputCls} min-h-44`}
+                      id="compose-draft"
+                      className={`${FIELD_CLS} min-h-44`}
                       value={content}
                       onChange={(e) => setContent(e.target.value)}
                       onBlur={(e) => e.target.value && snapshot(e.target.value)}
                     />
-                    <div className="flex items-center justify-between text-xs text-text-tertiary">
-                      <span>{words} words · {content.length} chars</span>
-                      {outputId && <span className="font-mono">Draft {outputId.slice(0, 8)}</span>}
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-text-tertiary">
+                      <span>{words} words, {content.length} characters</span>
+                      <span
+                        role="status"
+                        aria-live="polite"
+                        className={dirty ? "font-semibold text-warning" : "text-text-tertiary"}
+                      >
+                        {saveStatus}
+                      </span>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      <M3Button onClick={publish} disabled={busy || !outputId}>
-                        {busy ? "Working…" : "Publish to profile"}
-                      </M3Button>
-                      <M3Button tone="secondary" onClick={schedule} disabled={busy || !outputId}>
-                        Add to publish queue
-                      </M3Button>
+                    <div className="space-y-2 border-t border-border-secondary pt-3">
+                      <p className="text-xs text-text-tertiary">
+                        {outputId
+                          ? "3. Publish puts this draft on your public profile. Your edits are saved first."
+                          : "Generate or open a draft to publish it."}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <M3Button onClick={publish} disabled={busy || !outputId}>
+                          {busy ? "Working…" : "Publish to profile"}
+                        </M3Button>
+                        <M3Button tone="secondary" onClick={saveDraft} disabled={busy || !outputId || !dirty}>
+                          Save draft
+                        </M3Button>
+                        <M3Button tone="secondary" onClick={schedule} disabled={busy || !outputId}>
+                          Add to queue
+                        </M3Button>
+                      </div>
                     </div>
                   </M3Card>
 
@@ -394,13 +543,18 @@ export default function OutputStudioPage() {
 
                   {versions.length > 0 && (
                     <M3Card title="Version history">
-                      <ul className="space-y-2">
+                      <ul className="space-y-1">
                         {versions.map((v) => (
                           <li key={v.ts} className="flex items-center justify-between gap-3">
                             <span className="text-xs text-text-tertiary truncate">
-                              {new Date(v.ts).toLocaleTimeString()} · {wordCount(v.content)} words
+                              {new Date(v.ts).toLocaleTimeString()}, {wordCount(v.content)} words
                             </span>
-                            <button type="button" onClick={() => setContent(v.content)} aria-label={`Restore version from ${new Date(v.ts).toLocaleTimeString()}`} className={`${linkBtnCls} text-accent shrink-0`}>
+                            <button
+                              type="button"
+                              onClick={() => setContent(v.content)}
+                              aria-label={`Restore version from ${new Date(v.ts).toLocaleTimeString()}`}
+                              className={`${LINK_BTN} shrink-0`}
+                            >
                               Restore
                             </button>
                           </li>
@@ -420,24 +574,31 @@ export default function OutputStudioPage() {
                 title="On your profile"
                 action={
                   <div className="flex items-center gap-1">
-                    <Link href={`/p/${HANDLE}`} target="_blank" rel="noopener noreferrer" className={`${linkBtnCls} text-accent`}>Open profile<span className="sr-only"> (opens in a new tab)</span></Link>
-                    <button type="button" onClick={loadLive} className={`${linkBtnCls} text-accent`}>Refresh</button>
+                    <Link href={`/p/${HANDLE}`} target="_blank" rel="noopener noreferrer" className={LINK_BTN}>Open profile<span className="sr-only"> (opens in a new tab)</span></Link>
+                    <button type="button" onClick={loadLive} className={LINK_BTN}>Refresh</button>
                   </div>
                 }
               >
-                <p className="text-xs text-text-tertiary mb-2">
-                  This is what the world sees at{" "}
-                  <Link href={`/p/${HANDLE}`} target="_blank" rel="noopener noreferrer" className="text-accent underline">/p/{HANDLE}<span className="sr-only"> (opens in a new tab)</span></Link>. Edit or remove sections here. Visitors can only read them.
+                <p className="text-xs text-text-tertiary">
+                  This is what visitors see at{" "}
+                  <Link href={`/p/${HANDLE}`} target="_blank" rel="noopener noreferrer" className="text-accent underline">/p/{HANDLE}<span className="sr-only"> (opens in a new tab)</span></Link>. Edit or remove sections here.
                 </p>
-                {liveError ? (
-                  <div>
-                    <M3State state="error" message={`Could not load your profile: ${liveError}`} />
-                    <button type="button" onClick={loadLive} className="mt-2 min-h-[44px] px-4 rounded-xl border border-border-primary text-sm font-medium text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">Try again</button>
+                {liveLoading && sections.length === 0 && !liveError ? (
+                  <div className="space-y-2" aria-hidden="true">
+                    <Skeleton className="h-20 w-full motion-reduce:animate-none" />
+                    <Skeleton className="h-20 w-full motion-reduce:animate-none" />
                   </div>
-                ) : !liveLoaded ? (
-                  <M3State state="loading" message="Loading your profile…" />
+                ) : liveError ? (
+                  <div className="space-y-2">
+                    <M3State state="error" message={`Could not load your profile: ${liveError}`} />
+                    <M3Button tone="secondary" onClick={loadLive}>Try again</M3Button>
+                  </div>
                 ) : sections.length === 0 ? (
-                  <M3State state="empty" message="Nothing live yet. Publish a draft from Compose." />
+                  <EmptyState
+                    title="Nothing is live yet"
+                    hint="Publish a draft and it will appear here and on your public profile."
+                    action={<M3Button onClick={() => setTab("compose")}>Write a draft</M3Button>}
+                  />
                 ) : (
                   <ul className="space-y-2">
                     {sections.map((s) => (
@@ -445,12 +606,13 @@ export default function OutputStudioPage() {
                         {editingId === s.id ? (
                           <div className="space-y-2">
                             <label htmlFor={`edit-title-${s.id}`} className="block text-sm font-medium text-text-primary">Section title</label>
-                            <input id={`edit-title-${s.id}`} required aria-required="true" autoComplete="off" className={inputCls} value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+                            <Input id={`edit-title-${s.id}`} required aria-required="true" autoComplete="off" className="min-h-11 text-base" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
                             <label htmlFor={`edit-body-${s.id}`} className="block text-sm font-medium text-text-primary">Section body</label>
-                            <textarea id={`edit-body-${s.id}`} className={`${inputCls} min-h-28`} value={editBody} onChange={(e) => setEditBody(e.target.value)} />
-                            <div className="flex gap-2">
-                              <M3Button onClick={saveEdit} disabled={busy}>{busy ? "Saving…" : "Save changes"}</M3Button>
-                              <M3Button tone="secondary" onClick={() => setEditingId(null)}>Cancel</M3Button>
+                            <textarea id={`edit-body-${s.id}`} className={`${FIELD_CLS} min-h-28`} value={editBody} onChange={(e) => setEditBody(e.target.value)} />
+                            <div className="flex flex-wrap items-center gap-2">
+                              <M3Button onClick={saveEdit} disabled={busy || !editDirty}>{busy ? "Saving…" : "Save changes"}</M3Button>
+                              <M3Button tone="secondary" onClick={cancelEdit}>Cancel</M3Button>
+                              {editDirty ? <span role="status" className="text-xs font-semibold text-warning">Unsaved changes</span> : null}
                             </div>
                           </div>
                         ) : (
@@ -462,8 +624,8 @@ export default function OutputStudioPage() {
                             <p className="text-sm font-semibold text-text-primary mt-1">{s.title}</p>
                             <p className="text-sm text-text-secondary line-clamp-2">{sectionBody(s).slice(0, 180)}</p>
                             <div className="flex gap-1 mt-1 -ml-2">
-                              <button type="button" onClick={() => startEdit(s)} aria-label={`Edit ${s.title}`} className={`${linkBtnCls} text-accent`}>Edit</button>
-                              <button type="button" onClick={() => unpublish(s)} disabled={busy} aria-label={`Remove ${s.title}`} className={`${linkBtnCls} text-danger disabled:opacity-50`}>Remove</button>
+                              <button type="button" onClick={() => startEdit(s)} aria-label={`Edit ${s.title}`} className={LINK_BTN}>Edit</button>
+                              <button type="button" onClick={() => unpublish(s)} disabled={busy} aria-label={`Remove ${s.title}`} className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-semibold text-danger transition-colors hover:bg-bg-tertiary disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">Remove</button>
                             </div>
                           </>
                         )}
@@ -489,21 +651,33 @@ export default function OutputStudioPage() {
 
           {/* ---------- DRAFTS ---------- */}
           {tab === "drafts" && (
-            <M3Card title="Drafts" action={<button type="button" onClick={loadDrafts} className={`${linkBtnCls} text-accent`}>Refresh</button>}>
-              {draftsError ? (
-                <div>
-                  <M3State state="error" message={`Could not load drafts: ${draftsError}`} />
-                  <button type="button" onClick={loadDrafts} className="mt-2 min-h-[44px] px-4 rounded-xl border border-border-primary text-sm font-medium text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">Try again</button>
+            <M3Card title="Drafts" action={<button type="button" onClick={loadDrafts} className={LINK_BTN}>Refresh</button>}>
+              {draftsLoading && drafts.length === 0 && !draftsError ? (
+                <div className="space-y-2" aria-hidden="true">
+                  <Skeleton className="h-16 w-full motion-reduce:animate-none" />
+                  <Skeleton className="h-16 w-full motion-reduce:animate-none" />
                 </div>
-              ) : !draftsLoaded ? (
-                <M3State state="loading" message="Loading drafts…" />
+              ) : draftsError ? (
+                <div className="space-y-2">
+                  <M3State state="error" message={`Could not load drafts: ${draftsError}`} />
+                  <M3Button tone="secondary" onClick={loadDrafts}>Try again</M3Button>
+                </div>
               ) : drafts.length === 0 ? (
-                <M3State state="empty" message="No drafts yet. Generate one from the Compose tab." />
+                <EmptyState
+                  title="No drafts yet"
+                  hint="Drafts you generate are saved here so you can pick them up later."
+                  action={<M3Button onClick={() => setTab("compose")}>Write a draft</M3Button>}
+                />
               ) : (
                 <ul className="space-y-2">
                   {drafts.map((d) => (
                     <li key={d.id}>
-                      <button type="button" onClick={() => openDraft(d)} className="w-full min-h-[44px] text-left rounded-2xl border border-border-secondary bg-bg-primary p-3 hover:border-border-primary transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                      <button
+                        type="button"
+                        onClick={() => openDraft(d)}
+                        aria-label={`Open ${platformLabel(d.platform)} draft from ${relTime(d.createdAt)}`}
+                        className="w-full min-h-11 text-left rounded-2xl border border-border-secondary bg-bg-primary p-3 transition-colors hover:border-border-primary hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                      >
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-xs font-medium text-accent">{platformLabel(d.platform)}</span>
                           <span className="text-xs text-text-tertiary">{relTime(d.createdAt)}</span>
@@ -516,7 +690,7 @@ export default function OutputStudioPage() {
               )}
             </M3Card>
           )}
-      </M3Page>
+        </M3Page>
     </AppShell>
   );
 }

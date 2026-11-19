@@ -5,7 +5,8 @@ import Link from "next/link";
 import { toast } from "react-toastify";
 import { AppToastContainer } from "@/app/component/AppToastContainer";
 import "react-toastify/dist/ReactToastify.css";
-import { M3Card, M3Page, M3State } from "@/components/ui/m3";
+import { M3Button, M3Card, M3Page, M3State } from "@/components/ui/m3";
+import { EmptyState, Skeleton } from "@/components/ui/primitives";
 import { AppShell } from "@/app/component/AppShell";
 import { JobPipeline } from "@/app/component/JobPipeline";
 import { JobSearchAgent } from "@/app/component/JobSearchAgent";
@@ -147,14 +148,21 @@ export default function CareerPage() {
             )}
 
             {loading ? (
-              <M3State state="loading" message="Loading your career tree…" />
+              <div className="space-y-3" role="status" aria-label="Loading your career tree">
+                <Skeleton className="h-14 w-full motion-reduce:animate-none" />
+                <Skeleton className="h-14 w-full motion-reduce:animate-none" />
+              </div>
             ) : loadFailed ? (
               <div>
                 <M3State state="error" message="Could not load your career tree. Check your connection, then try again." />
                 <button type="button" onClick={load} className="mt-2 min-h-[44px] px-3 rounded-xl border border-border-primary text-sm font-medium text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">Try again</button>
               </div>
             ) : sections.length === 0 ? (
-              <M3State state="empty" message="No roles yet. Add your first role and it appears on your public profile." />
+              <EmptyState
+                title="No roles yet"
+                hint="Add your first role and it appears on your public profile."
+                action={<M3Button onClick={startNew}>Add your first role</M3Button>}
+              />
             ) : (
               <ol className="relative border-l border-border-secondary ml-1.5 space-y-4">
                 {sections.map((s) => {

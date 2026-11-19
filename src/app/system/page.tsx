@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import { AppToastContainer } from "@/app/component/AppToastContainer";
 import "react-toastify/dist/ReactToastify.css";
 import { M3Card, M3Page, M3State } from "@/components/ui/m3";
+import { Skeleton } from "@/components/ui/primitives";
 import { UI_API } from "@/lib/ui/contracts";
 import { apiRequest } from "@/lib/ui/api-client";
 import { AppShell } from "@/app/component/AppShell";
@@ -76,10 +77,10 @@ export default function SystemPage() {
         body: { features: { [key]: next } },
       });
       setFeatures(j.features);
-      toast.success(`${MODULE_LABELS[key] ?? key} ${next ? "enabled" : "disabled"} — the navigation updates on your next page load`);
+      toast.success(`${MODULE_LABELS[key] ?? key} ${next ? "turned on" : "turned off"}. The menu updates on the next page load.`);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Update failed";
-      toast.error(/admin|auth/i.test(msg) ? "Sign in as the owner to change modules." : msg);
+      toast.error(/admin|auth/i.test(msg) ? "Sign in as the owner to change modules" : msg);
     } finally {
       setSavingKey(null);
     }
@@ -88,24 +89,27 @@ export default function SystemPage() {
   return (
     <AppShell>
       <AppToastContainer position="bottom-right" theme="light" />
-      <div>
-        <M3Page title="System" subtitle="Module switches, operational checks and runtime status">
+      <M3Page title="System" subtitle="Module switches, operational checks and runtime status">
           <M3Card title="Modules">
             {features === null ? (
               featuresError ? (
-                <M3State state="error" message={`Could not load module switches: ${featuresError}`} />
+                <M3State state="error" message={`Module switches could not load (${featuresError}). Reload the page, or sign in as the owner.`} />
               ) : (
-                <M3State state="loading" message="Loading module flags…" />
+                <div className="space-y-2" role="status" aria-label="Loading module switches">
+                  <Skeleton className="h-12 w-full motion-reduce:animate-none" />
+                  <Skeleton className="h-12 w-full motion-reduce:animate-none" />
+                  <Skeleton className="h-12 w-full motion-reduce:animate-none" />
+                </div>
               )
             ) : (
               <ul className="divide-y divide-border-secondary">
                 {Object.entries(MODULE_LABELS).map(([key, label]) => {
                   const on = features[key] !== false;
                   return (
-                    <li key={key} className="flex items-center justify-between gap-3 py-1">
+                    <li key={key} className="flex min-h-14 items-center justify-between gap-3 py-2">
                       <div id={`mod-${key}-desc`}>
                         <p className="text-sm font-medium text-text-primary">{label}</p>
-                        <p className="text-xs text-text-tertiary">{on ? "On: visible in the app" : "Off: hidden from navigation"}</p>
+                        <p className="text-xs text-text-tertiary">{on ? "On: shown in the menu" : "Off: hidden from the menu"}</p>
                       </div>
                       <button
                         type="button"
@@ -117,7 +121,7 @@ export default function SystemPage() {
                         aria-describedby={`mod-${key}-desc`}
                         className="group inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50"
                       >
-                        <span className={`relative block h-6 w-11 rounded-full border border-border-primary transition-colors ${on ? "bg-accent" : "bg-bg-tertiary"}`}>
+                        <span className={`relative block h-6 w-11 rounded-full border border-border-primary transition-colors motion-reduce:transition-none ${on ? "bg-accent" : "bg-bg-tertiary"}`}>
                           <span
                             className={`absolute top-0.5 h-5 w-5 rounded-full bg-bg-elevated shadow transition-transform motion-reduce:transition-none ${on ? "translate-x-5" : "translate-x-0.5"}`}
                           />
@@ -129,21 +133,20 @@ export default function SystemPage() {
               </ul>
             )}
             <p className="text-2xs text-text-tertiary mt-2">
-              Switches are saved to the database and apply across the whole app. Only the signed-in owner can change them.
+              Switches are saved and apply across the whole app. Only the owner can change them.
             </p>
           </M3Card>
 
           <PasskeyCard />
 
-          {loading ? <M3State state="loading" message="Loading health checks…" /> : null}
+          {loading ? <div className="space-y-2" role="status" aria-label="Loading health checks"><Skeleton className="h-24 w-full motion-reduce:animate-none" /></div> : null}
           {error ? <M3State state="error" message={error} /> : null}
           {Object.entries(health).map(([k, v]) => (
             <M3Card key={k} title={HEALTH_LABELS[k] ?? k}>
               <pre tabIndex={0} aria-label={`${HEALTH_LABELS[k] ?? k} details`} className="text-xs text-text-secondary overflow-auto rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">{JSON.stringify(v, null, 2)}</pre>
             </M3Card>
           ))}
-        </M3Page>
-      </div>
+      </M3Page>
     </AppShell>
   );
 }

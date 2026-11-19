@@ -35,7 +35,7 @@ export const DecideTab: React.FC<{ mode: Mode }> = ({ mode }) => {
       });
       if (data.status === 'insufficient_data') {
         setOutput(null);
-        setError(data.message || 'Your memory does not have enough data for a decision yet. Add notes or connect a source, then try again.');
+        setError(data.message || 'Your memory does not have enough data for a decision yet. Add notes in the Memory vault or connect a source, then try again.');
       } else {
         setOutput(data);
       }
@@ -64,6 +64,8 @@ export const DecideTab: React.FC<{ mode: Mode }> = ({ mode }) => {
           id="decide-context"
           value={context}
           onChange={e => setContext(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && !loading) { e.preventDefault(); run(); } }}
+          enterKeyHint="go"
           placeholder="For example, I have 2 hours free and a client call at 4"
           className="w-full min-h-12 rounded-xl border border-border-secondary bg-bg-elevated px-4 text-md text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent"
         />
@@ -74,10 +76,10 @@ export const DecideTab: React.FC<{ mode: Mode }> = ({ mode }) => {
       </PrimaryButton>
 
       {error ? <ErrorBox message={error} onRetry={run} /> : null}
-      {loading ? <SkeletonCard label="Synthesising your next move" /> : null}
+      {loading ? <SkeletonCard label="Working out your next move" /> : null}
 
       {!loading && !output && !error ? (
-        <p className="text-xs text-text-tertiary text-center">Your direction will appear here.</p>
+        <p className="text-sm text-text-tertiary text-center">Your direction will appear here.</p>
       ) : null}
 
       {!loading && output ? (
@@ -138,7 +140,7 @@ export const DecideTab: React.FC<{ mode: Mode }> = ({ mode }) => {
 
           {output.reasoning ? (
             <details className="rounded-2xl border border-border-secondary px-4 py-3">
-              <summary className="text-xs font-semibold text-text-secondary cursor-pointer min-h-11 flex items-center">Why this direction</summary>
+              <summary className="text-sm font-semibold text-text-secondary cursor-pointer min-h-11 flex items-center">Why this direction</summary>
               <p className="text-sm text-text-tertiary mt-2">{output.reasoning}</p>
             </details>
           ) : null}

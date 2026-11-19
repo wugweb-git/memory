@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Database, Eye, Hash, Tag } from 'lucide-react';
+import { EmptyState, Skeleton } from '@/components/ui/primitives';
 import PacketInspector from './PacketInspector';
 
 interface Packet {
@@ -53,25 +54,29 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
     fetchPackets();
   }, [fetchPackets]);
 
-  const headCell = 'px-4 sm:px-6 py-3 text-xs font-semibold text-text-tertiary';
+  const openPacket = (id: string) => setSelectedPacketId(id);
+
+  const headCell = 'px-6 py-3 font-medium';
+  const emptyTitle = filterType ? `No ${filterType} packets` : 'No packets yet';
+  const emptyHint = filterType ? 'Try another packet type.' : 'Ingest something from the buffer and it appears here.';
 
   return (
-    <section aria-labelledby="memory-explorer-title" className="bg-bg-elevated rounded-xl border border-border-secondary overflow-hidden relative">
-      <div className="p-4 sm:p-6 border-b border-border-secondary flex flex-wrap items-center justify-between gap-3 bg-bg-secondary">
-        <div>
-          <h2 id="memory-explorer-title" className="text-lg font-semibold text-text-primary flex items-center gap-2">
-            <Database aria-hidden="true" className="w-5 h-5 text-text-tertiary" />
-            Memory data explorer
+    <section aria-labelledby="memory-explorer-title" className="relative overflow-hidden rounded-2xl border border-border-primary bg-bg-elevated">
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border-secondary bg-bg-secondary p-4 sm:p-6">
+        <div className="min-w-0">
+          <h2 id="memory-explorer-title" className="flex items-center gap-2 text-xl font-semibold text-text-primary">
+            <Database aria-hidden="true" className="h-5 w-5 text-text-tertiary" />
+            Memory explorer
           </h2>
-          <p className="text-sm text-text-tertiary mt-1">Latest stored memory packets with their processing status.</p>
+          <p className="mt-1 text-sm text-text-tertiary">Browse the latest memory packets and open one to inspect it.</p>
         </div>
-        <div>
-          <label htmlFor="explorer-type-filter" className="sr-only">Filter by packet type</label>
+        <div className="w-full sm:w-auto">
+          <label htmlFor="explorer-type-filter" className="mb-1 block text-xs font-medium text-text-secondary">Packet type</label>
           <select
             id="explorer-type-filter"
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="min-h-11 bg-bg-primary border border-border-secondary rounded-md px-3 py-1.5 text-base sm:text-xs text-text-secondary"
+            className="min-h-11 w-full rounded-xl border border-border-primary bg-bg-primary px-3 text-base text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:w-44 sm:text-sm"
           >
             <option value="">All types</option>
             <option value="email">Email</option>
@@ -83,75 +88,102 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
       </div>
 
       {loadError && (
-        <div role="alert" className="px-4 sm:px-6 pt-4 flex flex-wrap items-center gap-3 text-sm text-danger">
-          <span>{loadError}</span>
-          <button type="button" onClick={fetchPackets} className="min-h-11 px-3 rounded-lg border border-danger text-xs font-bold">Retry</button>
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 border-b border-danger/20 bg-danger/5 px-4 py-3 sm:px-6">
+          <p className="text-sm text-danger">{loadError}</p>
+          <button type="button" onClick={fetchPackets} className="min-h-11 rounded-xl border border-danger/40 px-4 text-xs font-bold text-danger hover:bg-danger/5">
+            Try again
+          </button>
         </div>
       )}
 
-      <div className="overflow-x-auto" role="region" aria-label="Memory packets table, scrollable" tabIndex={0} aria-busy={loading}>
-        <table className="w-full text-left border-collapse min-w-[640px]">
+      {/* Phones: one card per packet, type first */}
+      <div className="space-y-3 p-4 md:hidden" aria-busy={loading}>
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)
+        ) : packets.length === 0 && !loadError ? (
+          <EmptyState title={emptyTitle} hint={emptyHint} />
+        ) : (
+          packets.map((packet) => (
+            <button
+              key={packet.id}
+              type="button"
+              onClick={() => openPacket(packet.id)}
+              aria-label={`Inspect ${packet.type} packet from ${packet.source}`}
+              className="block min-h-11 w-full rounded-xl border border-border-secondary bg-bg-primary p-4 text-left transition-colors hover:border-border-primary"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2 text-sm font-semibold text-text-primary">
+                  <Tag aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-text-tertiary" />
+                  <span className="truncate">{packet.type}</span>
+                </div>
+                <StatusBadge status={packet.status} />
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-tertiary">
+                <span className="font-medium text-text-secondary">{packet.source}</span>
+                <EmbedStatusBadge status={packet.embedding_status} />
+              </div>
+              <div className="mt-2 flex items-center justify-between text-2xs text-text-tertiary">
+                <span className="flex items-center gap-1 font-mono"><Hash aria-hidden="true" className="h-3 w-3" />{packet.id.slice(-8)}</span>
+                <span>{formatDate(packet.ingestion_time)}</span>
+              </div>
+            </button>
+          ))
+        )}
+      </div>
+
+      {/* Tablet and up: table */}
+      <div className="hidden overflow-x-auto md:block" role="region" aria-label="Memory packets table, scrollable" tabIndex={0} aria-busy={loading}>
+        <table className="w-full border-collapse text-left">
           <caption className="sr-only">Latest {PAGE_SIZE} memory packets{filterType ? ` of type ${filterType}` : ''}</caption>
           <thead>
-            <tr className="border-b border-border-secondary bg-bg-primary">
-              <th scope="col" className={headCell}>Packet ID</th>
-              <th scope="col" className={headCell}>Source</th>
+            <tr className="border-b border-border-secondary bg-bg-primary text-xs text-text-tertiary">
               <th scope="col" className={headCell}>Type</th>
+              <th scope="col" className={headCell}>Source</th>
               <th scope="col" className={headCell}>Status</th>
               <th scope="col" className={headCell}>Embedding</th>
-              <th scope="col" className={headCell}>Date</th>
-              <th scope="col" className={headCell}><span className="sr-only">Actions</span></th>
+              <th scope="col" className={headCell}>Added</th>
+              <th scope="col" className={headCell}>Packet ID</th>
+              <th scope="col" className="px-6 py-3"><span className="sr-only">Inspect</span></th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr>
-                <td colSpan={7} className="px-6 py-8 text-sm text-text-tertiary" role="status">Loading packets…</td>
-              </tr>
+              Array.from({ length: 5 }).map((_, i) => (
+                <tr key={i} className="border-b border-border-secondary">
+                  <td colSpan={7} className="px-6 py-3"><Skeleton className="h-8 w-full" /></td>
+                </tr>
+              ))
             ) : packets.length === 0 && !loadError ? (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-sm text-text-tertiary">
-                  {filterType ? `No ${filterType} packets found. Choose another type.` : 'No packets stored yet. Capture something in the buffer to see it here.'}
+                <td colSpan={7} className="p-6">
+                  <EmptyState title={emptyTitle} hint={emptyHint} />
                 </td>
               </tr>
             ) : packets.map((packet) => (
-              <tr key={packet.id} className="border-b border-border-secondary hover:bg-bg-secondary transition-colors">
-                <td className="px-4 sm:px-6 py-3">
-                  <div className="flex items-center gap-2">
-                    <Hash aria-hidden="true" className="w-3 h-3 text-text-tertiary" />
-                    <span className="text-xs font-mono text-text-secondary" title={packet.id}>
-                      {packet.id.slice(-8)}
-                    </span>
-                  </div>
-                </td>
-                <td className="px-4 sm:px-6 py-3">
-                  <span className="px-2 py-0.5 rounded bg-bg-secondary border border-border-primary text-2xs text-accent font-bold inline-block">
-                    {packet.source}
-                  </span>
-                </td>
-                <td className="px-4 sm:px-6 py-3">
-                  <div className="flex items-center gap-2 text-xs text-text-secondary">
-                    <Tag aria-hidden="true" className="w-3 h-3 text-text-tertiary" />
+              <tr key={packet.id} className="group border-b border-border-secondary transition-colors hover:bg-bg-secondary">
+                <td className="px-6 py-3">
+                  <div className="flex items-center gap-2 text-sm font-medium text-text-primary">
+                    <Tag aria-hidden="true" className="h-3 w-3 text-text-tertiary" />
                     {packet.type}
                   </div>
                 </td>
-                <td className="px-4 sm:px-6 py-3">
-                  <StatusBadge status={packet.status} />
+                <td className="px-6 py-3 text-sm text-text-secondary">{packet.source}</td>
+                <td className="px-6 py-3"><StatusBadge status={packet.status} /></td>
+                <td className="px-6 py-3"><EmbedStatusBadge status={packet.embedding_status} /></td>
+                <td className="whitespace-nowrap px-6 py-3 text-xs text-text-tertiary">{formatDate(packet.ingestion_time)}</td>
+                <td className="px-6 py-3">
+                  <span className="flex items-center gap-1 font-mono text-xs text-text-tertiary" title={packet.id}>
+                    <Hash aria-hidden="true" className="h-3 w-3" />{packet.id.slice(-8)}
+                  </span>
                 </td>
-                <td className="px-4 sm:px-6 py-3">
-                  <EmbedStatusBadge status={packet.embedding_status} />
-                </td>
-                <td className="px-4 sm:px-6 py-3 text-xs text-text-tertiary whitespace-nowrap">
-                  {formatDate(packet.ingestion_time)}
-                </td>
-                <td className="px-4 sm:px-6 py-1 text-right">
+                <td className="px-6 py-1 text-right">
                   <button
                     type="button"
-                    onClick={() => setSelectedPacketId(packet.id)}
-                    aria-label={`View details for packet ${packet.id.slice(-8)}`}
-                    className="inline-flex items-center justify-center min-h-11 min-w-11 hover:bg-bg-tertiary rounded-md transition-colors text-text-tertiary hover:text-text-primary"
+                    aria-label={`Inspect ${packet.type} packet from ${packet.source}`}
+                    onClick={() => openPacket(packet.id)}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full text-text-tertiary transition-colors hover:bg-bg-primary hover:text-text-primary"
                   >
-                    <Eye aria-hidden="true" className="w-4 h-4" />
+                    <Eye aria-hidden="true" className="h-4 w-4" />
                   </button>
                 </td>
               </tr>
@@ -160,9 +192,9 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
         </table>
       </div>
 
-      <div className="p-4 bg-bg-primary border-t border-border-secondary text-xs text-text-tertiary">
-        Showing the latest {PAGE_SIZE} records. Use the type filter to narrow the list.
-      </div>
+      <p role="status" className="border-t border-border-secondary bg-bg-primary px-4 py-3 text-xs text-text-tertiary sm:px-6">
+        {loading ? 'Loading packets…' : `Showing the latest ${packets.length} ${packets.length === 1 ? 'packet' : 'packets'}. Use the type filter to narrow the list.`}
+      </p>
 
       {selectedPacketId && (
         <PacketInspector
@@ -183,7 +215,7 @@ const STATUS_STYLES: Record<string, string> = {
 
 function StatusBadge({ status }: { status: string }) {
   return (
-    <span className={`px-2 py-0.5 rounded bg-bg-secondary text-xs font-semibold ${STATUS_STYLES[status] || STATUS_STYLES.active}`}>
+    <span className={`rounded-full bg-bg-secondary px-2.5 py-1 text-2xs font-bold ${STATUS_STYLES[status] || STATUS_STYLES.active}`}>
       {status}
     </span>
   );
@@ -199,8 +231,8 @@ const EMBED_STYLES: Record<string, string> = {
 function EmbedStatusBadge({ status }: { status: string }) {
   return (
     <div className="flex items-center gap-2">
-      <span aria-hidden="true" className={`w-1.5 h-1.5 rounded-full ${status === 'embedded' ? 'bg-accent' : status === 'failed' ? 'bg-danger' : 'bg-border-primary'}`} />
-      <span className={`text-xs font-semibold ${EMBED_STYLES[status] || 'text-text-tertiary'}`}>
+      <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${status === 'embedded' ? 'bg-accent' : status === 'failed' ? 'bg-danger' : 'bg-border-primary'}`} />
+      <span className={`text-2xs font-bold ${EMBED_STYLES[status] || 'text-text-tertiary'}`}>
         {status}
       </span>
     </div>

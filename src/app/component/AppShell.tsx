@@ -1,10 +1,18 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Command, Menu, LogOut, LogIn, X } from 'lucide-react';
-import { APP_BRAND, NAV_GROUPS, MOBILE_DOCK_ITEMS, SIDEBAR_STATS } from '@/config/ui-content';
+import {
+  APP_BRAND,
+  NAV_GROUPS,
+  MOBILE_DOCK_ITEMS,
+  SIDEBAR_STATS,
+  findNavItem,
+  isNavActive,
+} from '@/config/ui-content';
 import { toSessionView } from '@/lib/auth/session-view';
 import { UI_API } from '@/lib/api/endpoints';
 
@@ -14,21 +22,33 @@ type AppShellProps = {
   bottomDock?: boolean;
 };
 
-function isActive(pathname: string, href: string) {
-  return href === '/' ? pathname === '/' : pathname.startsWith(href);
+const ACTION_SLOT_ID = 'shell-action-slot';
+
+/** Puts one contextual action (a button, a short menu) in the topbar, right of the page title.
+ *  Render it anywhere inside a page that is wrapped by AppShell. Keep it to one primary action. */
+export function TopbarAction({ children }: { children: React.ReactNode }) {
+  const [slot, setSlot] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    setSlot(document.getElementById(ACTION_SLOT_ID));
+  }, []);
+  return slot ? createPortal(children, slot) : null;
 }
 
 /** Single source of truth for app chrome: route-aware sidebar (desktop),
- *  top bar, mobile drawer, and bottom dock (mobile). */
+ *  top bar (page title + one action slot), mobile drawer, and bottom dock (mobile). */
 export function AppShell({ children, bottomDock = false }: AppShellProps) {
   const pathname = usePathname() || '/';
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerRef = useRef<HTMLElement | null>(null);
-  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
   const skipFocusReturn = useRef(false);
   const firstRoute = useRef(true);
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+  const openDrawer = useCallback(() => {
+    openerRef.current = document.activeElement as HTMLElement | null;
+    setDrawerOpen(true);
+  }, []);
 
   // On route change: close the drawer (without pulling focus back to the menu button) and move
   // focus to <main> so keyboard and screen-reader users land on the new page, not the old link.
@@ -43,11 +63,11 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
   }, [pathname]);
 
   // Drawer behaves as a modal dialog: focus moves in, Tab is trapped, Esc closes,
-  // body scroll is locked, and focus returns to the menu button on close.
+  // body scroll is locked, and focus returns to the control that opened it.
   useEffect(() => {
     if (!drawerOpen) return;
     const drawer = drawerRef.current;
-    const opener = menuButtonRef.current;
+    const opener = openerRef.current;
     const focusables = () =>
       Array.from(
         drawer?.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])') ?? []
@@ -123,59 +143,75 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
     .map((g) => ({ ...g, items: g.items.filter((i) => featureOn(i.feature)) }))
     .filter((g) => g.items.length > 0);
   const dockItems = MOBILE_DOCK_ITEMS.filter((i) => featureOn(i.feature));
+  // "More" reads as current when the page lives only in the drawer.
+  const moreActive = !dockItems.some((i) => isNavActive(pathname, i.href));
+  const pageTitle = findNavItem(pathname)?.label ?? APP_BRAND.name;
 
   // Plain render helpers (not components) so state changes never remount the drawer and drop focus.
-  const NavList = ({ onNavigate, label }: { onNavigate?: () => void; label: string }) => (
+  const NavList = ({ onNavigate, label, hints }: { onNavigate?: () => void; label: string; hints?: boolean }) => (
     <nav aria-label={label} className="flex-1 overflow-y-auto py-4 px-3 custom-scrollbar">
-      {navGroups.map((group) => (
-        <div key={group.group} className="mb-5">
-          <p className="text-2xs font-black text-text-tertiary uppercase tracking-widest px-3 mb-1.5">
-            {group.group}
-          </p>
-          {group.items.map(({ href, label, icon: Icon }) => {
-            const active = isActive(pathname, href);
-            return (
-              <Link
-                key={href}
-                href={href}
-                onClick={onNavigate}
-                aria-current={active ? 'page' : undefined}
-                className={`w-full flex items-center gap-3 px-3 min-h-11 rounded-2xl text-sm font-medium transition-all duration-150 mb-0.5 ${
-                  active
-                    ? 'bg-accent-high text-bg-primary shadow-sm'
-                    : 'text-text-tertiary hover:bg-secondary hover:text-text-primary'
-                }`}
-              >
-                <Icon size={16} aria-hidden="true" className={active ? 'text-bg-primary' : 'text-text-tertiary'} strokeWidth={active ? 2.5 : 2} />
-                <span className="flex-1 text-left leading-none">{label}</span>
-              </Link>
-            );
-          })}
-        </div>
-      ))}
+      {navGroups.map((group) => {
+        const headingId = `${label.replace(/\s+/g, '-').toLowerCase()}-${group.group.toLowerCase()}`;
+        return (
+          <div key={group.group} role="group" aria-labelledby={headingId} className="mb-6">
+            <p
+              id={headingId}
+              className="text-2xs font-semibold text-text-tertiary uppercase tracking-widest px-3 mb-2"
+            >
+              {group.group}
+            </p>
+            {group.items.map(({ href, label: itemLabel, icon: Icon, hint }) => {
+              const active = isNavActive(pathname, href);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={onNavigate}
+                  aria-current={active ? 'page' : undefined}
+                  className={`w-full flex items-center gap-3 px-3 min-h-11 rounded-control text-sm transition-colors duration-fast ease-standard mb-0.5 ${
+                    active
+                      ? 'bg-accent-high text-bg-primary font-semibold'
+                      : 'text-text-secondary font-medium hover:bg-secondary hover:text-text-primary'
+                  }`}
+                >
+                  <Icon size={18} aria-hidden="true" className="shrink-0" strokeWidth={active ? 2.5 : 2} />
+                  <span className="flex-1 min-w-0 text-left">
+                    <span className="block leading-snug">{itemLabel}</span>
+                    {hints && hint ? (
+                      <span className={`block text-2xs leading-snug font-normal ${active ? 'text-bg-secondary' : 'text-text-tertiary'}`}>
+                        {hint}
+                      </span>
+                    ) : null}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        );
+      })}
     </nav>
   );
 
-  const SidebarInner = ({ onNavigate, navLabel }: { onNavigate?: () => void; navLabel: string }) => (
+  const SidebarInner = ({ onNavigate, navLabel, hints }: { onNavigate?: () => void; navLabel: string; hints?: boolean }) => (
     <>
       <div className="h-14 flex items-center gap-3 px-5 border-b border-border-secondary shrink-0">
-        <div className="w-7 h-7 rounded-xl bg-text-primary flex items-center justify-center shadow-lg">
+        <div className="w-7 h-7 rounded-control bg-text-primary flex items-center justify-center">
           <Command size={14} aria-hidden="true" className="text-bg-primary" />
         </div>
         <div>
-          <span className="text-sm font-black text-text-primary tracking-tight ">{APP_BRAND.name}</span>
-          <div className="flex items-center gap-1 mt-0.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" aria-hidden="true" />
-            <span className="text-2xs font-bold text-text-tertiary uppercase tracking-widest">{APP_BRAND.statusLabel}</span>
+          <span className="text-sm font-bold text-text-primary tracking-tight">{APP_BRAND.name}</span>
+          <div className="flex items-center gap-1 mt-0.5" role="status">
+            <div className="w-1.5 h-1.5 rounded-full bg-success motion-safe:animate-pulse" aria-hidden="true" />
+            <span className="text-2xs font-semibold text-text-tertiary uppercase tracking-widest">{APP_BRAND.statusLabel}</span>
           </div>
         </div>
       </div>
 
-      {NavList({ onNavigate, label: navLabel })}
+      {NavList({ onNavigate, label: navLabel, hints })}
 
       <div className="px-4 py-3 border-t border-border-secondary space-y-2">
         {SIDEBAR_STATS.map((s) => (
-          <div key={s.label} className="flex items-center gap-2.5">
+          <div key={s.label} className="flex items-center gap-2">
             <span aria-hidden="true" className={`w-1.5 h-1.5 rounded-full ${s.colorClass === 'text-accent' ? 'bg-accent' : 'bg-success'}`} />
             <span className="text-2xs text-text-tertiary flex-1 font-mono">{s.label}</span>
             <span className="text-2xs font-bold text-text-secondary font-mono">{s.value}</span>
@@ -185,18 +221,18 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
 
       <div className="px-3 py-3 border-t border-border-secondary space-y-1">
         {view.state === 'loading' && (
-          <div className="flex items-center gap-3 p-2.5 min-h-[44px]" role="status" aria-busy="true" aria-label="Checking session">
-            <div aria-hidden="true" className="w-8 h-8 rounded-full bg-secondary animate-pulse" />
+          <div className="flex items-center gap-3 p-2 min-h-11" role="status" aria-busy="true" aria-label="Checking session">
+            <div aria-hidden="true" className="w-8 h-8 rounded-pill bg-secondary motion-safe:animate-pulse" />
             <div className="flex-1 space-y-1.5">
-              <div className="h-2.5 w-24 rounded bg-secondary animate-pulse" />
-              <div className="h-2 w-14 rounded bg-secondary animate-pulse" />
+              <div className="h-2.5 w-24 rounded-xs bg-secondary motion-safe:animate-pulse" />
+              <div className="h-2 w-14 rounded-xs bg-secondary motion-safe:animate-pulse" />
             </div>
           </div>
         )}
         {view.state === 'signed-in' && (
           <>
-            <div className="flex items-center gap-3 p-2.5 min-h-[44px]">
-              <span className="w-8 h-8 shrink-0 rounded-full bg-text-primary text-bg-primary text-xs font-bold flex items-center justify-center">
+            <div className="flex items-center gap-3 p-2 min-h-11">
+              <span className="w-8 h-8 shrink-0 rounded-pill bg-text-primary text-bg-primary text-xs font-bold flex items-center justify-center">
                 {view.initial}
               </span>
               <div className="flex-1 min-w-0">
@@ -208,7 +244,7 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
               type="button"
               onClick={signOut}
               disabled={signingOut}
-              className="w-full flex items-center gap-3 px-3 min-h-[44px] rounded-2xl text-sm font-medium text-text-secondary hover:bg-secondary hover:text-text-primary transition-colors disabled:opacity-60"
+              className="w-full flex items-center gap-3 px-3 min-h-11 rounded-control text-sm font-medium text-text-secondary hover:bg-secondary hover:text-text-primary transition-colors duration-fast ease-standard disabled:opacity-60"
             >
               <LogOut size={16} aria-hidden="true" />
               <span>{signingOut ? 'Signing out…' : 'Sign out'}</span>
@@ -219,7 +255,7 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
           <Link
             href={loginHref}
             onClick={onNavigate}
-            className="w-full flex items-center gap-3 px-3 min-h-[44px] rounded-2xl text-sm font-medium text-text-primary hover:bg-secondary transition-colors"
+            className="w-full flex items-center gap-3 px-3 min-h-11 rounded-control text-sm font-medium text-text-primary hover:bg-secondary transition-colors duration-fast ease-standard"
           >
             <LogIn size={16} aria-hidden="true" />
             <span>Sign in</span>
@@ -233,13 +269,13 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
     <div className="min-h-dvh bg-bg-primary text-text-primary">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-[calc(env(safe-area-inset-top)+0.75rem)] focus:z-[100] focus:rounded-xl focus:bg-text-primary focus:px-4 focus:py-3 focus:text-sm focus:font-bold focus:text-bg-primary"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-[calc(env(safe-area-inset-top)+0.75rem)] focus:z-[100] focus:rounded-control focus:bg-text-primary focus:px-4 focus:py-3 focus:text-sm focus:font-bold focus:text-bg-primary"
       >
         Skip to main content
       </a>
 
       {/* Desktop sidebar */}
-      <aside aria-label="Sidebar" className="hidden md:flex fixed top-0 left-0 h-dvh w-60 flex-col z-40 select-none bg-bg-elevated border-r border-border-secondary">
+      <aside aria-label="Sidebar" className="hidden md:flex fixed top-0 left-0 h-dvh w-[var(--sidebar-w)] flex-col z-40 select-none bg-bg-elevated border-r border-border-secondary">
         {SidebarInner({ navLabel: 'Primary' })}
       </aside>
 
@@ -258,96 +294,126 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
             role="dialog"
             aria-modal="true"
             aria-label="Navigation menu"
-            className="md:hidden fixed top-0 left-0 h-dvh w-[min(16rem,85vw)] flex flex-col z-[60] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] overscroll-contain bg-bg-elevated border-r border-border-secondary"
+            className="md:hidden fixed top-0 left-0 h-dvh w-[min(19rem,88vw)] flex flex-col z-[60] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] overscroll-contain bg-bg-elevated border-r border-border-secondary shadow-elev-3"
           >
             <button
               type="button"
               aria-label="Close menu"
               onClick={closeDrawer}
-              className="absolute right-2 top-[calc(env(safe-area-inset-top)+0.5rem)] z-10 flex h-11 w-11 items-center justify-center rounded-xl text-text-secondary hover:bg-secondary"
+              className="absolute right-2 top-[calc(env(safe-area-inset-top)+0.5rem)] z-10 flex h-11 w-11 items-center justify-center rounded-control text-text-secondary hover:bg-secondary"
             >
               <X size={18} aria-hidden="true" />
             </button>
-            {SidebarInner({ onNavigate: closeDrawer, navLabel: 'Mobile primary' })}
+            {SidebarInner({ onNavigate: closeDrawer, navLabel: 'Mobile primary', hints: true })}
           </aside>
         </>
       )}
 
-      {/* Top bar */}
-      <header className="fixed top-0 right-0 left-0 md:left-60 z-30 h-[calc(3.5rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] bg-bg-elevated/90 backdrop-blur-xl border-b border-border-secondary flex items-center justify-between pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] md:px-8">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            ref={menuButtonRef}
-            aria-label="Open menu"
-            aria-haspopup="dialog"
-            aria-expanded={drawerOpen}
-            className="md:hidden min-w-[44px] min-h-[44px] -ml-2 flex items-center justify-center text-text-secondary hover:text-text-primary"
-            onClick={() => setDrawerOpen(true)}
-          >
-            <Menu size={20} aria-hidden="true" />
-          </button>
-          <Link href="/console" className="md:hidden flex min-h-11 items-center gap-2">
-            <div className="w-7 h-7 rounded-xl bg-text-primary flex items-center justify-center">
-              <Command size={14} aria-hidden="true" className="text-bg-primary" />
-            </div>
-            <span className="text-sm font-bold tracking-tight text-text-primary">{APP_BRAND.name}</span>
-          </Link>
-        </div>
-        {view.state === 'signed-in' && (
-          <div className="flex items-center gap-2 px-3 min-h-[44px]">
-            <span className="w-6 h-6 rounded-full bg-text-primary text-bg-primary text-2xs font-bold flex items-center justify-center">
-              {view.initial}
-            </span>
-            <span className="text-xs font-semibold text-text-secondary hidden sm:block">{view.role}</span>
-          </div>
-        )}
-        {view.state === 'signed-out' && (
+      {/* Top bar: page title on the left, one contextual action slot, then the account entry. */}
+      <header className="fixed top-0 right-0 left-0 md:left-[var(--sidebar-w)] z-30 h-[calc(var(--topbar-h)+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] bg-bg-elevated/90 backdrop-blur-xl border-b border-border-secondary flex items-center justify-between gap-2 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] md:px-8">
+        <div className="flex min-w-0 items-center gap-2">
           <Link
-            href={loginHref}
-            className="flex items-center min-h-[44px] px-4 rounded-full bg-text-primary text-bg-primary text-sm font-semibold hover:opacity-90 transition-opacity"
+            href="/console"
+            aria-label={`${APP_BRAND.name} home`}
+            className="md:hidden -ml-2 flex min-h-11 min-w-11 shrink-0 items-center justify-center"
           >
-            Sign in
+            <span className="w-7 h-7 rounded-control bg-text-primary flex items-center justify-center">
+              <Command size={14} aria-hidden="true" className="text-bg-primary" />
+            </span>
           </Link>
-        )}
+          <p className="truncate text-base font-semibold tracking-tight text-text-primary">{pageTitle}</p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <div id={ACTION_SLOT_ID} className="flex items-center gap-2" />
+          {view.state === 'signed-in' && (
+            <div className="flex items-center gap-2 min-h-11">
+              <span className="w-6 h-6 rounded-pill bg-text-primary text-bg-primary text-2xs font-bold flex items-center justify-center">
+                {view.initial}
+              </span>
+              <span className="text-xs font-semibold text-text-secondary hidden sm:block">{view.role}</span>
+            </div>
+          )}
+          {view.state === 'signed-out' && (
+            <Link
+              href={loginHref}
+              className="flex items-center min-h-11 px-4 rounded-pill bg-text-primary text-bg-primary text-sm font-semibold hover:bg-text-secondary transition-colors duration-fast ease-standard"
+            >
+              Sign in
+            </Link>
+          )}
+        </div>
       </header>
 
-      {/* Content */}
+      {/* Content: padded under the topbar and above the dock, so nothing is hidden behind fixed bars. */}
       <main
         ref={mainRef}
         id="main-content"
         tabIndex={-1}
-        className={`md:pl-60 pt-[calc(3.5rem+env(safe-area-inset-top))] focus:outline-none ${
-          bottomDock ? 'pb-[calc(11rem+env(safe-area-inset-bottom))] md:pb-12' : 'pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-12'
+        className={`md:pl-[var(--sidebar-w)] pt-topbar focus:outline-none ${
+          bottomDock
+            ? 'pb-[calc(var(--dock-h)+env(safe-area-inset-bottom)+6rem)] md:pb-12'
+            : 'pb-dock md:pb-12'
         }`}
       >
-        <div className="max-w-6xl mx-auto pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] md:px-8 py-6 md:py-8">
+        <div className="page-enter max-w-content mx-auto pl-[max(var(--gutter),env(safe-area-inset-left))] pr-[max(var(--gutter),env(safe-area-inset-right))] py-6 md:py-8">
           {children}
         </div>
       </main>
 
-      {/* Mobile bottom dock */}
-      <nav aria-label="Quick navigation" className="md:hidden fixed bottom-0 left-0 right-0 z-30 glass-panel border-t border-border-secondary safe-navbar">
-        <div className="flex items-stretch justify-around px-2 pt-2">
+      {/* Mobile bottom dock: four top destinations plus More (opens the full menu).
+          Current page = filled pill + bold label + aria-current, never colour alone. */}
+      <nav
+        aria-label="Quick navigation"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-30 glass-panel border-t border-border-secondary pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]"
+      >
+        <ul className="flex h-[var(--dock-h)] items-stretch px-2">
           {dockItems.map(({ href, label, icon: Icon }) => {
-            const active = isActive(pathname, href);
+            const active = isNavActive(pathname, href);
             return (
-              <Link
-                key={href}
-                href={href}
-                aria-current={active ? 'page' : undefined}
-                className={`flex min-h-11 min-w-11 flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-colors ${
-                  active ? 'text-text-primary' : 'text-text-tertiary'
-                }`}
-              >
-                <span className={`flex items-center justify-center w-9 h-7 rounded-full ${active ? 'bg-accent-high text-bg-primary' : ''}`}>
-                  <Icon size={16} aria-hidden="true" />
-                </span>
-                <span className="text-2xs font-bold">{label}</span>
-              </Link>
+              <li key={href} className="flex-1">
+                <Link
+                  href={href}
+                  aria-current={active ? 'page' : undefined}
+                  className={`flex h-full flex-col items-center justify-center gap-1 rounded-control transition-colors duration-fast ease-standard ${
+                    active ? 'text-text-primary' : 'text-text-secondary'
+                  }`}
+                >
+                  <span
+                    className={`flex h-7 w-12 items-center justify-center rounded-pill transition-colors duration-fast ease-standard ${
+                      active ? 'bg-accent-high text-bg-primary' : ''
+                    }`}
+                  >
+                    <Icon size={18} aria-hidden="true" strokeWidth={active ? 2.5 : 2} />
+                  </span>
+                  <span className={`text-2xs leading-none ${active ? 'font-bold' : 'font-medium'}`}>{label}</span>
+                </Link>
+              </li>
             );
           })}
-        </div>
+          <li className="flex-1">
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              aria-expanded={drawerOpen}
+              onClick={openDrawer}
+              className={`flex h-full w-full flex-col items-center justify-center gap-1 rounded-control transition-colors duration-fast ease-standard ${
+                moreActive ? 'text-text-primary' : 'text-text-secondary'
+              }`}
+            >
+              <span
+                className={`flex h-7 w-12 items-center justify-center rounded-pill transition-colors duration-fast ease-standard ${
+                  moreActive ? 'bg-accent-high text-bg-primary' : ''
+                }`}
+              >
+                <Menu size={18} aria-hidden="true" strokeWidth={moreActive ? 2.5 : 2} />
+              </span>
+              <span className={`text-2xs leading-none ${moreActive ? 'font-bold' : 'font-medium'}`}>
+                More
+                {moreActive ? <span className="sr-only"> (current page is in this menu)</span> : null}
+              </span>
+            </button>
+          </li>
+        </ul>
       </nav>
     </div>
   );
