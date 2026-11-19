@@ -20,7 +20,7 @@ export function M3Page({
 }) {
   // AppShell already supplies the page gutter, so only vertical rhythm lives here.
   return (
-    <div className="max-w-3xl mx-auto py-2 md:py-4 space-y-4">
+    <div className="max-w-3xl mx-auto py-2 md:py-4 space-y-6">
       <PageHeader title={title} subtitle={subtitle} actions={actions} />
       {children}
     </div>
@@ -39,11 +39,11 @@ export function M3Card({
   description?: string;
 }) {
   return (
-    <section className="rounded-panel bg-bg-elevated border border-border-secondary p-4 space-y-3">
+    <section className="rounded-panel bg-bg-elevated border border-border-secondary p-4 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-text-primary">{title}</h2>
-          {description ? <p className="mt-1 text-xs text-text-tertiary">{description}</p> : null}
+          <h2 className="type-title text-text-primary">{title}</h2>
+          {description ? <p className="mt-0.5 text-sm text-text-tertiary">{description}</p> : null}
         </div>
         {action}
       </div>

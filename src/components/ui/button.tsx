@@ -1,7 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-type ButtonVariant = "default" | "outline" | "ghost" | "danger";
+type ButtonVariant = "default" | "tonal" | "outline" | "ghost" | "danger";
 type ButtonSize = "default" | "sm" | "lg" | "icon";
 
 export interface ButtonProps
@@ -14,21 +14,23 @@ export interface ButtonProps
   loadingLabel?: string;
 }
 
+/** Filled = default, tonal = secondary emphasis, outline = medium, ghost = text button.
+ *  Every variant carries a Material state layer (hover / focus / pressed overlay). */
 const variantClasses: Record<ButtonVariant, string> = {
-  default: "bg-text-primary text-bg-primary hover:bg-text-secondary",
-  outline:
-    "bg-bg-elevated border border-border-primary text-text-primary hover:bg-bg-secondary",
-  ghost:
-    "bg-transparent text-text-tertiary hover:bg-bg-secondary hover:text-text-primary",
-  danger: "bg-danger text-bg-elevated hover:opacity-90",
+  default: "bg-text-primary text-bg-primary",
+  tonal: "bg-bg-tertiary text-text-primary",
+  outline: "bg-bg-elevated border border-border-primary text-text-primary",
+  ghost: "bg-transparent text-text-secondary hover:text-text-primary",
+  danger: "bg-danger text-bg-elevated",
 };
 
-/** Heights follow the 4/8 rhythm: sm 36, default 40, lg 44. Every size meets the 44px touch floor on coarse pointers (see globals.css). */
+/** Heights: sm 40, default 44, lg 48, icon 44x44 (Material 3 minimum target, WCAG 2.5.5).
+ *  Text is 14px label-large (16px on lg). Use `lg` for the one primary action of a screen. */
 export const controlSizeClasses: Record<ButtonSize, string> = {
-  default: "min-h-10 px-4 py-2 text-sm",
-  sm: "min-h-9 px-3 py-2 text-xs",
-  lg: "min-h-11 px-5 py-2 text-sm",
-  icon: "h-10 w-10 p-0",
+  default: "min-h-control px-5 py-2 text-sm",
+  sm: "min-h-10 px-4 py-2 text-sm",
+  lg: "min-h-control-lg px-6 py-2 text-base",
+  icon: "h-control w-control p-0",
 };
 
 /** Tiny inline spinner; reduced-motion users get a static ring (see globals.css). */
@@ -66,11 +68,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled || loading}
         aria-busy={loading || undefined}
         className={cn(
-          "inline-flex items-center justify-center gap-2 rounded-control font-semibold touch-manipulation",
-          "transition-[background-color,color,opacity,transform] duration-fast ease-standard",
-          "active:scale-[0.98] active:duration-instant",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-          "disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100",
+          "state-layer inline-flex items-center justify-center gap-2 rounded-control font-medium",
+          "transition-[background-color,color,opacity] duration-fast ease-standard",
+          "disabled:opacity-40 disabled:cursor-not-allowed",
           variantClasses[variant],
           controlSizeClasses[size],
           className
@@ -85,3 +85,28 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 
 Button.displayName = "Button";
+
+/** Icon-only button, always 44x44. `label` is required and becomes the accessible name
+ *  (and the native tooltip). Pass the icon as children with aria-hidden. */
+export interface IconButtonProps
+  extends Omit<ButtonProps, "size" | "aria-label" | "children"> {
+  label: string;
+  children: React.ReactNode;
+}
+
+export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
+  ({ label, variant = "ghost", className, children, ...props }, ref) => (
+    <Button
+      ref={ref}
+      variant={variant}
+      size="icon"
+      aria-label={label}
+      title={label}
+      className={className}
+      {...props}
+    >
+      {children}
+    </Button>
+  )
+);
+IconButton.displayName = "IconButton";

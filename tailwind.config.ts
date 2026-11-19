@@ -81,6 +81,14 @@ const config: Config = {
         "in-soft": "var(--ease-in)",
         standard: "var(--ease-standard)",
       },
+      minHeight: {
+        // 44px touch floor and 48px primary-action height (Material 3 / WCAG 2.5.5).
+        control: "var(--control-h)",
+        "control-lg": "var(--control-h-lg)",
+      },
+      minWidth: {
+        control: "var(--control-h)",
+      },
       maxWidth: {
         content: "var(--content-max)",
       },
