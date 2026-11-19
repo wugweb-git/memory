@@ -10,6 +10,7 @@ import { chatRetrievalFilters, emptyContextText } from '@/lib/memory/visibility'
 import { isAdminRequest } from '@/lib/security/auth';
 import { loadStyleHints } from '@/lib/persona/styleHintsLoader';
 import { checkRateLimit } from '@/lib/security/rate-limit';
+import { ASK_SOURCES_HEADER, buildAskSources, buildSourcesHeader } from '@/lib/chat/sources';
 
 const SYSTEM_PROMPT = `IDENTITY: You are the Antigravity AI integrated into the Identity Prism OS.
 MISSION: Ground all responses strictly in the provided context nodes (Memory).
@@ -90,6 +91,7 @@ export async function POST(req: Request) {
     // searchMode kept for API compat; MMR re-ranking is a future refinement.
     void searchMode;
     let context = '';
+    let sourcesHeader: string | null = null;
     try {
       const retrieved = await retrieve(question, chatRetrievalFilters(admin));
       const packets = Array.isArray(retrieved) ? retrieved : [];
@@ -97,12 +99,17 @@ export async function POST(req: Request) {
         .map((p: any) => (Array.isArray(p.context) ? p.context.join('\n') : ''))
         .filter(Boolean)
         .join('\n\n');
+      // Visitor answers only: cite the same public-only hits that fed the prompt.
+      // No hits -> no header (never invent sources). Owner console gets none.
+      if (!admin && context) sourcesHeader = buildSourcesHeader(buildAskSources(packets));
     } catch (retrievalErr) {
       console.warn('[Chat] retrieval unavailable, answering without memory context:', retrievalErr);
     }
 
     // L4 persona style hints: soft, best-effort, time-boxed; '' on any failure.
     const styleHints = await loadStyleHints();
+
+    const sourceHeaders: Record<string, string> = sourcesHeader ? { [ASK_SOURCES_HEADER]: sourcesHeader } : {};
 
     const systemText = `${SYSTEM_PROMPT}\n\nContext nodes:\n${context || emptyContextText(admin)}${styleHints ? `\n\n${styleHints}` : ''}`;
 
@@ -145,7 +152,7 @@ export async function POST(req: Request) {
           }
         },
       });
-      routed = createUIMessageStreamResponse({ stream, headers: model ? { 'X-Model': model } : undefined });
+      routed = createUIMessageStreamResponse({ stream, headers: { ...sourceHeaders, ...(model ? { 'X-Model': model } : {}) } });
       } catch (err) {
         // Whole free chain failed (e.g. daily cap): fall back to the old provider if one is set.
         if (!otherProvider) throw err;
@@ -183,7 +190,7 @@ export async function POST(req: Request) {
       messages: await convertToModelMessages(messages),
     });
 
-    return result.toUIMessageStreamResponse();
+    return result.toUIMessageStreamResponse({ headers: sourceHeaders });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : 'Unknown error';
     console.error('CRITICAL_RAG_FAILURE:', e);

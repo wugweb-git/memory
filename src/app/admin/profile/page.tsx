@@ -153,7 +153,7 @@ export default function AdminProfilePage() {
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+      <div className="max-w-5xl mx-auto space-y-8">
         <div className="flex gap-2" role="tablist" aria-label="Profile sections">
           {TABS.map((tab, i) => (
             <button

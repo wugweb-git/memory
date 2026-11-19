@@ -5,6 +5,7 @@ import { createGeneratedOutput } from '@/lib/cms/queries';
 import { routeDistribution } from '@/lib/distribution/router';
 import { publishNow } from '@/lib/publishing/publisher';
 import type { PlatformPublishResult } from '@/lib/publishing/platforms';
+import { buildDeliveryRecord } from '@/lib/publishing/delivery';
 
 export type PublishMode = 'published' | 'skipped' | 'duplicate';
 
@@ -97,6 +98,42 @@ export async function publishOutput(
     }
   } catch (err) {
     console.error('[Publish] Distribution routing failed:', err);
+    // A throw from the external send must still be visible to the owner (no retry).
+    if (profilePublished && !platformResult) {
+      platformResult = {
+        platform: output.platform,
+        status: 'error',
+        externalId: null,
+        delivered: false,
+        payload,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+  }
+
+  // Persist the external delivery outcome so the owner can see a failed or
+  // unconfigured send. Stored under `delivery` in the existing Json column
+  // published_outputs.published_content. Never retried automatically (a retry
+  // could create a duplicate public post).
+  if (platformResult) {
+    try {
+      const row = await (postgres as any).publishedOutput.findFirst({
+        where: { outputId },
+        select: { id: true, publishedContent: true },
+      });
+      if (row) {
+        const prev =
+          row.publishedContent && typeof row.publishedContent === 'object' && !Array.isArray(row.publishedContent)
+            ? row.publishedContent
+            : {};
+        await (postgres as any).publishedOutput.update({
+          where: { id: row.id },
+          data: { publishedContent: { ...prev, delivery: buildDeliveryRecord(platformResult) } },
+        });
+      }
+    } catch (err) {
+      console.error('[Publish] Could not record delivery outcome:', err);
+    }
   }
 
 

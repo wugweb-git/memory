@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/security/auth';
 import { postgres as prisma } from '@/lib/db/postgres';
 import { DB_SETUP_HINT, isPrismaConfigError } from '@/lib/db/degraded';
-import { clampLimit } from '@/lib/validation/http';
+import { parsePagination, LIST_ORDER_BY } from '@/lib/memory/list-pagination';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     const type = searchParams.get('type');
     const source = searchParams.get('source');
     const status = searchParams.get('status');
-    const limit = clampLimit(searchParams.get('limit'), 10, 200);
+    const { limit, offset } = parsePagination(searchParams);
     const test_run_id = searchParams.get('test_run_id') || 'PROD';
 
     const where: any = { test_run_id };
@@ -22,16 +22,20 @@ export async function GET(req: NextRequest) {
     if (source) where.source = source;
     if (status) where.status = status;
 
-    const packets = await prisma.memoryPacket.findMany({
-      where,
-      orderBy: { ingestion_time: 'desc' },
-      take: limit
-    });
+    const [packets, total] = await Promise.all([
+      prisma.memoryPacket.findMany({
+        where,
+        orderBy: LIST_ORDER_BY,
+        take: limit,
+        skip: offset,
+      }),
+      prisma.memoryPacket.count({ where }),
+    ]);
 
-    return NextResponse.json({ packets });
+    return NextResponse.json({ packets, total, offset, limit });
   } catch (error: unknown) {
     if (isPrismaConfigError(error)) {
-      return NextResponse.json({ packets: [], warning: DB_SETUP_HINT });
+      return NextResponse.json({ packets: [], total: 0, offset: 0, limit: 10, warning: DB_SETUP_HINT });
     }
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Memory List API Error:', error);

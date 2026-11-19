@@ -482,7 +482,7 @@ export default function BufferControlSurface() {
 
             {/* Tablet and up: table */}
             <div className="hidden md:block" aria-busy={loading}>
-              <div className="overflow-x-auto rounded-2xl border border-border-primary bg-bg-elevated">
+              <div role="region" aria-label="Buffer items table, scrollable" tabIndex={0} className="overflow-x-auto rounded-2xl border border-border-primary bg-bg-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
                 <table className="w-full border-collapse text-left">
                   <caption className="sr-only">Buffer items. Select a row to open its details.</caption>
                   <thead>
