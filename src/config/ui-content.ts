@@ -124,11 +124,10 @@ export const NAV_GROUPS: ReadonlyArray<NavGroup> = RAW_NAV_GROUPS
   .map((g) => ({ ...g, items: g.items.filter((i) => featureEnabled(i.feature)) }))
   .filter((g) => g.items.length > 0);
 
-/** Primary mobile-dock items: the top four destinations (feature-filtered).
- *  The shell appends a fifth "More" control that opens the full drawer. */
+/** Primary mobile bottom-bar items: the top four destinations (feature-filtered).
+ *  Ask lives in the More list, not here. The shell appends a fifth "More" tab. */
 const RAW_MOBILE_DOCK_ITEMS: ReadonlyArray<NavItem> = [
   { href: '/console', label: 'Console', icon: LayoutDashboard },
-  { href: '/ask', label: 'Ask', icon: MessageSquare, feature: 'ask' },
   { href: '/memory', label: 'Memory', icon: Database, feature: 'memory' },
   { href: '/content', label: 'Content', icon: FileText },
   { href: '/buffer', label: 'Buffer', icon: Archive, feature: 'buffer' },
@@ -139,16 +138,6 @@ export const MOBILE_DOCK_MAX = 4;
 export const MOBILE_DOCK_ITEMS: ReadonlyArray<NavItem> = RAW_MOBILE_DOCK_ITEMS
   .filter((i) => featureEnabled(i.feature))
   .slice(0, MOBILE_DOCK_MAX);
-
-/** Dock for the current visitor. Signed-in owners work from their own tools, so
- *  /ask (the public chat) leaves the dock and the next destination takes its place.
- *  It stays in the menu. Visitors keep Ask in the dock. */
-export function dockItemsFor(signedIn: boolean): ReadonlyArray<NavItem> {
-  if (!signedIn) return MOBILE_DOCK_ITEMS;
-  return RAW_MOBILE_DOCK_ITEMS
-    .filter((i) => i.href !== '/ask' && featureEnabled(i.feature))
-    .slice(0, MOBILE_DOCK_MAX);
-}
 
 /** Route matching shared by the sidebar, drawer, dock and topbar title.
  *  `/` is the console. Matching is segment-aware, so `/content` never matches `/console`. */

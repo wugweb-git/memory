@@ -4,15 +4,16 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Command, Menu, LogOut, LogIn, Settings, ShieldCheck } from 'lucide-react';
+import { Command, Menu, LogOut, LogIn, Settings, ShieldCheck, Eye } from 'lucide-react';
 import {
   APP_BRAND,
   NAV_GROUPS,
-  dockItemsFor,
+  MOBILE_DOCK_ITEMS,
   SIDEBAR_STATS,
   findNavItem,
   isNavActive,
 } from '@/config/ui-content';
+import { IDENTITY_CONFIG } from '@/config/identity';
 import { toSessionView } from '@/lib/auth/session-view';
 import { UI_API } from '@/lib/api/endpoints';
 
@@ -111,7 +112,7 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
   const navGroups = NAV_GROUPS
     .map((g) => ({ ...g, items: g.items.filter((i) => featureOn(i.feature)) }))
     .filter((g) => g.items.length > 0);
-  const dockItems = dockItemsFor(view.state === 'signed-in').filter((i) => featureOn(i.feature));
+  const dockItems = MOBILE_DOCK_ITEMS.filter((i) => featureOn(i.feature));
   // "More" reads as current on the More screen and when the page lives only there.
   const moreActive = pathname === '/more' || !dockItems.some((i) => isNavActive(pathname, i.href));
   const pageTitle = pathname === '/more' ? 'More' : findNavItem(pathname)?.label ?? APP_BRAND.name;
@@ -264,6 +265,15 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <div id={ACTION_SLOT_ID} className="flex items-center gap-2" />
+          {view.state === 'signed-in' && (
+            <Link
+              href={`/p/${IDENTITY_CONFIG.HANDLE}`}
+              aria-label="View your public profile"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-pill text-text-secondary transition-colors hover:bg-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <Eye size={20} aria-hidden="true" />
+            </Link>
+          )}
           {view.state === 'signed-in' && (
             <div ref={accountRef} className="relative">
               <button
