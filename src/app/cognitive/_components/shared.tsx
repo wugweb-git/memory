@@ -5,16 +5,24 @@ import { AlertCircle, CheckCircle, Loader2, RefreshCw } from 'lucide-react';
 import { resolveUserId } from '@/config/identity';
 
 /* ─── api helper ─────────────────────────────────────────── */
+export const REQUEST_TIMEOUT_MS = 60_000;
+
 export async function postJson<T = any>(url: string, body: Record<string, unknown>): Promise<T> {
   let res: Response;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
   try {
     res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      signal: ctrl.signal,
     });
-  } catch {
+  } catch (e) {
+    if ((e as Error)?.name === 'AbortError') throw new Error('This is taking too long. Try again in a moment.');
     throw new Error('Connection failure. Check your network and try again.');
+  } finally {
+    clearTimeout(timer);
   }
   let data: any = null;
   try { data = await res.json(); } catch { /* non-json */ }

@@ -38,7 +38,7 @@ const emptyForm = { title: "", summary: "", excerpt: "", client: "", outcome: ""
 const inputCls =
   "w-full min-h-[44px] rounded-xl border bg-bg-elevated px-3 py-2 text-base sm:text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent";
 const linkBtnCls =
-  "inline-flex items-center min-h-[44px] px-2 text-sm font-medium rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-accent";
+  "inline-flex items-center min-h-[44px] px-2 text-sm font-medium rounded-lg hover:bg-bg-secondary active:bg-bg-tertiary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent";
 
 function Field({ id, label, optional, error, children }: { id: string; label: string; optional?: boolean; error?: string; children: React.ReactNode }) {
   return (
@@ -66,6 +66,10 @@ export default function PortfolioPage() {
   const [urlErr, setUrlErr] = useState("");
 
   const id = (k: string) => `${uid}-${k}`;
+  // Focus the first field when the add form opens.
+  useEffect(() => {
+    if (showForm) document.getElementById(`${uid}-title`)?.focus();
+  }, [showForm, uid]);
 
   async function load() {
     setLoading(true);
@@ -85,8 +89,8 @@ export default function PortfolioPage() {
   async function create() {
     setTitleErr("");
     setUrlErr("");
-    if (!form.title.trim()) { setTitleErr("Enter a title."); return; }
-    if (form.url.trim() && !/^https?:\/\//i.test(form.url.trim())) { setUrlErr("Start the URL with http:// or https://."); return; }
+    if (!form.title.trim()) { setTitleErr("Enter a title."); document.getElementById(id("title"))?.focus(); return; }
+    if (form.url.trim() && !/^https?:\/\//i.test(form.url.trim())) { setUrlErr("Start the URL with http:// or https://."); document.getElementById(id("url"))?.focus(); return; }
     setSaving(true);
     try {
       await apiRequest(UI_API.cmsContent, { method: "POST", body: { type: tab, ...form, title: form.title.trim() } });

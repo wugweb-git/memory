@@ -115,6 +115,7 @@ function LoginForm() {
     // always looks available and a miss says exactly what to fix.
     const nextErrors: { email?: string; password?: string } = {};
     if (!email.trim()) nextErrors.email = 'Enter your email address.';
+    else if (!/^\S+@\S+$/.test(email.trim())) nextErrors.email = 'Enter a valid email address, like name@example.com.';
     if (!password) nextErrors.password = 'Enter your password.';
     setFieldErrors(nextErrors);
     if (nextErrors.email || nextErrors.password) {
@@ -132,6 +133,7 @@ function LoginForm() {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, remember }),
+        signal: AbortSignal.timeout(25_000),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || `Sign-in failed (${res.status}). Check your email and password, then try again.`);
@@ -142,7 +144,13 @@ function LoginForm() {
       window.location.assign(safeNext);
     } catch (err: unknown) {
       setStatus('');
-      setError(err instanceof Error ? err.message : 'Sign-in failed. Check your connection and try again.');
+      setError(
+        err instanceof Error && err.name === 'TimeoutError'
+          ? 'Sign-in is taking too long. Check your connection and try again.'
+          : err instanceof Error
+            ? err.message
+            : 'Sign-in failed. Check your connection and try again.',
+      );
       setBusy(false);
       passwordRef.current?.focus();
     }

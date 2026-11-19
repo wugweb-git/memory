@@ -183,6 +183,7 @@ export default function AskPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
   const nearBottomRef = useRef(true);
   const stamps = useRef(createTimestampStore());
   const [userStopped, setUserStopped] = useState(false);
@@ -194,6 +195,16 @@ export default function AskPage() {
   const showTyping =
     status === 'submitted' ||
     (status === 'streaming' && lastMessage?.role === 'assistant' && messageText(lastMessage as UIMessage) === '');
+
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    if (!showTyping) {
+      setSlow(false);
+      return;
+    }
+    const t = setTimeout(() => setSlow(true), 20000);
+    return () => clearTimeout(t);
+  }, [showTyping]);
 
   const lastText = lastMessage ? messageText(lastMessage as UIMessage) : '';
 
@@ -236,8 +247,12 @@ export default function AskPage() {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMenuOpen(false);
+      if (e.key === 'Escape') {
+        setMenuOpen(false);
+        menuBtnRef.current?.focus();
+      }
     };
+    menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]:not(:disabled)')?.focus();
     document.addEventListener('mousedown', onDown);
     document.addEventListener('touchstart', onDown);
     document.addEventListener('keydown', onKey);
@@ -349,6 +364,7 @@ export default function AskPage() {
         </div>
         <div className="relative" ref={menuRef}>
           <button
+            ref={menuBtnRef}
             type="button"
             aria-label="More options"
             aria-haspopup="menu"
@@ -461,8 +477,13 @@ export default function AskPage() {
                   );
                 })}
                 {showTyping && (
-                  <li>
+                  <li className="space-y-1">
                     <TypingDots />
+                    {slow ? (
+                      <p role="status" className="pl-10 text-sm text-text-tertiary">
+                        This is taking longer than usual. You can stop and try again.
+                      </p>
+                    ) : null}
                   </li>
                 )}
                 {notice !== 'none' && (
@@ -567,6 +588,7 @@ export default function AskPage() {
       <dialog
         ref={dialogRef}
         aria-labelledby="clear-title"
+        onClose={() => menuBtnRef.current?.focus()}
         className="m-auto w-[min(90vw,22rem)] rounded-2xl border border-border-primary bg-bg-elevated p-5 text-text-primary backdrop:bg-text-primary/40"
       >
         <h2 id="clear-title" className="text-lg font-semibold">

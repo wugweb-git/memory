@@ -18,7 +18,7 @@ Method note: before = first probe on the unmodified branch; after = re-probe aft
 
 | Element | Measured before | Threshold | Fix | After |
 |---|---|---|---|---|
-| Root container `h-screen` | 100vh, composer hidden under mobile browser UI | stable viewport | `h-dvh` | composer visible |
+| Root container class `h-screen` | overridden at runtime by the inline visualViewport height, so no visible bug | consistent class | `h-dvh` (cleanup only) | no change in behaviour |
 | Header subtitle | wraps to 3 lines | single-line app bar subtitle | "From published notes", truncate | 1 line |
 | Sources chips, timestamps | 11px | 12px floor | `text-xs` | 12px |
 | Textarea / send / back / menu | 44px, 16px text | 44px, 16px | already compliant | unchanged |
@@ -101,3 +101,102 @@ tsc clean, eslint clean on all slice directories, npm test 375/375.
 3. `src/app/component/JobPipeline.tsx` and `JobSearchAgent.tsx`: h2 at 28px with an eyebrow, oversized against the page; use a 18px h2 inside a card.
 4. `src/components/ui/button.tsx` default and `outline` variants are `text-sm` 13px; M3 buttons are 14px label with 40-48px height.
 5. Hover tokens: `hover:bg-accent` with white text appears elsewhere in the app and fails 4.5:1.
+
+## Functional audit
+
+Method: real clicks and typing in the browser at 375px, with `window.fetch` mocked where the dummy-env API hangs or errors (persona, cognitive). Status: works, fixed, needs shared change, needs owner/data.
+
+### ask
+| Control or section | Expected | Observed | Status |
+|---|---|---|---|
+| Starter cards (4) | send the question, show user bubble and typing dots | works | works |
+| Stop | aborts stream, shows "Stopped" notice with Retry, focus to composer | works | works |
+| Retry | re-asks last question | works (dummy backend never answers) | works |
+| Backend hangs | user is told something is wrong | dots forever, no hint | fixed: after 20s a status line says "taking longer than usual, stop and try again" |
+| Overflow menu (Clear chat) | opens, Escape closes, focus managed | focus did not move into menu; Escape and dialog close dropped focus to body | fixed: focus first item on open, return focus to the menu button on Escape and on dialog close |
+| Clear dialog | modal, labelled, Cancel default, Escape | works (native dialog) | works |
+| Back link, composer, Send | correct label, disabled when empty | works (`aria-disabled`, no send when empty) | works |
+
+### cognitive
+| Control or section | Expected | Observed | Status |
+|---|---|---|---|
+| Tabs (5), arrow/Home/End | switch panel, roving tabindex | works | works |
+| Decide run | result card, confidence, feedback bar | works with mocked response | works |
+| Evaluate | disabled under 10 chars with hint; error with Try again | works (mock 500 shows message and retry) | works |
+| Rank, Gaps, History | load, empty, error | work; Gaps and History showed loading forever when API hangs | fixed: 60s timeout on posts, History fetch aborts with a clear retryable error |
+
+### persona
+| Control or section | Expected | Observed | Status |
+|---|---|---|---|
+| Regenerate | busy state, error when blocked | works ("Rebuild blocked..." shown) | works |
+| Adaptive chips (`aria-pressed`) | PATCH then reload | works | works |
+| Roll back | confirm dialog then POST | dialog opens with description | works |
+| Feedback radios, send | PATCH/POST | works | works |
+| Notices and errors | visible near the tapped control | rendered only in the header, off-screen for controls at the bottom | fixed: toasts (top-center) for success and error, inline error kept |
+| API hangs | error with retry | skeleton forever | fixed: 30s timeout and message |
+
+### career
+| Control or section | Expected | Observed | Status |
+|---|---|---|---|
+| Add role / Close form | toggles form, `aria-expanded` | works; focus stayed on body | fixed: focus moves to the title field |
+| Empty submit | inline error, focus on the field | error shown, focus not moved | fixed: focus first invalid field |
+| Edit / Remove | prefill form; confirm then delete | works | works |
+| View live | opens profile in new tab, announced | works | works |
+| Applications / Opportunities blocks | consistent heading size | 28px headings from shared components | needs shared change |
+
+### portfolio
+| Control or section | Expected | Observed | Status |
+|---|---|---|---|
+| Type switcher (3) | `aria-pressed`, card title and list change | works | works |
+| Add form, empty submit | inline error and focus | error shown, focus not moved, form open did not focus | fixed: focus on open and on first invalid field |
+| Remove, View live | work, announced | works | works |
+
+### login
+| Control or section | Expected | Observed | Status |
+|---|---|---|---|
+| Empty submit | per-field errors, focus first | works | works |
+| Malformed email | specific error | accepted client side (only server rejects) | fixed: "Enter a valid email address" |
+| Show password, remember me, passkey | labelled toggles | work; `autocomplete` correct | works |
+| Server hangs | error text | spinner forever | fixed: 25s timeout with message, focus returns to password |
+
+### offline, more
+| Control or section | Expected | Observed | Status |
+|---|---|---|---|
+| Retry connection | reloads | works | works |
+| More rows (17 links) | every href is a real route | all 200 for the owner (`/console`, `/ask`, `/memory`, `/buffer`, `/history`, `/cognitive`, `/persona`, `/career`, `/content`, `/portfolio`, `/p/system_user`, integrations x3, `/system`, `/admin`) | works |
+
+### public profile
+| Control or section | Expected | Observed | Status |
+|---|---|---|---|
+| Header actions, social links | real hrefs, new tab announced | work; mailto is `system@identity-prism.local` | needs owner/data |
+| Writing titles | plain text | literal `**Generating Output**` markdown in the stored post title and body | fixed in rendering: new `plain()` strips markdown in titles and teasers; source is the stored content (Neon profile data), owner may also clean it |
+| Selected work / Elsewhere links | live URLs | two sample links point to `example.com` | needs owner/data |
+| Ask my digital twin | opens /ask | works | works |
+
+## Components, blocks, patterns, states
+
+States: D default, H hover, P pressed, F focus-visible, X disabled, L loading, S selected, E error, OK success, Z empty. "Missing" lists what the audit found absent; fix status is in the last column.
+
+| Page | Item | Present | Missing | Fix status |
+|---|---|---|---|---|
+| ask | Header bar, avatar | D, F | none | ok |
+| ask | Starter card | D, H, P, F | none | ok |
+| ask | Chat bubbles, sources | D, streaming, E notice, stopped | slow-response | fixed (20s hint) |
+| ask | Composer, send/stop | D, F, X, L (Stop) | none | ok |
+| ask | Overflow menu, dialog | D, F, H | focus management | fixed |
+| cognitive | Tab bar | D, S, F | H | fixed (hover tint) |
+| cognitive | Forms, primary button | D, F, X, L | none | ok |
+| cognitive | Result cards, meters, feedback | OK, E, Z, L (skeleton) | timeout on hung API | fixed |
+| persona | Section cards, meters | D, Z, L, E | none | ok |
+| persona | Option chips | D, S, F, X, H | none | ok |
+| persona | Regenerate, feedback buttons | D, F, X, L | visible success/error near the control | fixed (toasts) |
+| career | Role card (timeline row) | D, F | H, P on Edit/Remove | fixed |
+| career | Role form | D, F, E, L, OK | focus on open/invalid | fixed |
+| career | Empty, loading, error | all three | none | ok |
+| portfolio | Type switcher | D, S, F | none | ok |
+| portfolio | Item cards, form | D, E, L, Z | H/P on link buttons, focus on open | fixed |
+| login | Form, buttons, toggle | D, F, X/L, E | email format error, timeout | fixed |
+| offline | Empty-state page, retry | D, F | L (reload is instant) | ok |
+| more | List row | D, H, F | P | fixed (`active:`) |
+| public profile | Header, cards, link rows | D, H, F | none | ok |
+| public profile | Loading, error ("not live yet") | L, E | retry action on the error state | needs owner decision (public page, no retry control added) |

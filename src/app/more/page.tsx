@@ -23,7 +23,7 @@ export default function MorePage() {
                   <li key={href}>
                     <Link
                       href={href}
-                      className="flex min-h-16 items-center gap-4 px-4 py-2 text-text-primary transition-colors hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+                      className="flex min-h-16 items-center gap-4 px-4 py-2 text-text-primary transition-colors hover:bg-bg-secondary active:bg-bg-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
                     >
                       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-bg-secondary">
                         <Icon size={20} aria-hidden="true" className="text-text-secondary" />

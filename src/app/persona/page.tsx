@@ -2,7 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { IDENTITY_CONFIG, resolveUserId } from '@/config/identity';
+import { toast } from 'react-toastify';
 import { AppShell } from '@/app/component/AppShell';
+import { AppToastContainer } from '@/app/component/AppToastContainer';
 import { EmptyState, Skeleton } from '@/components/ui/primitives';
 import { ConfirmDialog, buildRollbackDescription, useConfirm } from '@/components/ui/confirm-dialog';
 
@@ -125,7 +127,7 @@ export default function PersonaIntelligencePage() {
     try {
       setLoadError(null);
       const getJson = (path: string) =>
-        fetch(path).then((r) => {
+        fetch(path, { signal: AbortSignal.timeout(30_000) }).then((r) => {
           if (!r.ok) throw new Error(`${path} failed (${r.status})`);
           return r.json();
         });
@@ -140,11 +142,19 @@ export default function PersonaIntelligencePage() {
       setAdaptive(a);
       setTimeline(Array.isArray(d?.timeline) ? d.timeline : []);
     } catch (e) {
-      setLoadError(e instanceof Error ? `Failed to load persona data: ${e.message}` : 'Failed to load persona data');
+      setLoadError(e instanceof Error && e.name === 'TimeoutError' ? 'Persona data took too long to load.' : e instanceof Error ? `Failed to load persona data: ${e.message}` : 'Failed to load persona data');
     } finally {
       setLoading(false);
     }
   }, []);
+
+  // Feedback from controls low on the page would otherwise appear off-screen in the header.
+  useEffect(() => {
+    if (notice) toast.success(notice);
+  }, [notice]);
+  useEffect(() => {
+    if (error) toast.error(error);
+  }, [error]);
 
   useEffect(() => {
     if (userId) fetchData(userId);
@@ -280,6 +290,7 @@ export default function PersonaIntelligencePage() {
   return (
     <AppShell>
     <div className="w-full max-w-3xl mx-auto space-y-6">
+      <AppToastContainer position="top-center" />
       <header className="space-y-3">
         <div className="space-y-1">
           <h1 className="text-xl font-semibold text-text-primary">Persona</h1>
@@ -294,9 +305,6 @@ export default function PersonaIntelligencePage() {
         >
           {rebuilding ? 'Regenerating…' : 'Regenerate from my profile'}
         </button>
-        <div aria-live="polite" className="space-y-1">
-          {notice && <p role="status" className="text-sm text-success">{notice}</p>}
-        </div>
         {error && <p role="alert" className="text-sm text-danger">{error}</p>}
         {loadError && <p role="alert" className="text-sm text-danger">{loadError}</p>}
       </header>

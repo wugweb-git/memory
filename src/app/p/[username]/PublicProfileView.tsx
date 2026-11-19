@@ -16,6 +16,18 @@ function sectionContent(s: ProfileSection) {
   return (s.content ?? {}) as Record<string, unknown>;
 }
 
+/** Strip inline/leading markdown markers (bold, italics, code, headings, links) from short plain-text slots like titles and teasers. */
+function plain(v: unknown): string {
+  return (typeof v === 'string' ? v : '')
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/(\*\*|__)(.*?)\1/g, '$2')
+    .replace(/(\*|_)(.*?)\1/g, '$2')
+    .replace(/`([^`]*)`/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function str(v: unknown): string {
   return typeof v === 'string' ? v : '';
 }
@@ -225,7 +237,7 @@ export function PublicProfileView({ username }: { username: string }) {
                   <>
                     <div className="flex items-baseline justify-between gap-4">
                       <h3 className="text-base font-bold text-text-primary group-hover:underline underline-offset-4 decoration-accent">
-                        {post.title}
+                        {plain(post.title)}
                       </h3>
                       {str(c.date) && (
                         <span className="text-xs text-text-tertiary shrink-0">{str(c.date)}</span>
@@ -233,7 +245,7 @@ export function PublicProfileView({ username }: { username: string }) {
                     </div>
                     {summary && (
                       <p className="text-sm text-text-tertiary mt-1 line-clamp-2 max-w-prose">
-                        {summary.slice(0, 200)}
+                        {plain(summary).slice(0, 200)}
                       </p>
                     )}
                   </>

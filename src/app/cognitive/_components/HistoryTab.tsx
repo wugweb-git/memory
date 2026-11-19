@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { History, ChevronDown, RefreshCw } from 'lucide-react';
-import { currentUserId, Intent, ErrorBox, EmptyState, SkeletonCard, FeedbackBar } from './shared';
+import { currentUserId, REQUEST_TIMEOUT_MS, Intent, ErrorBox, EmptyState, SkeletonCard, FeedbackBar } from './shared';
 
 const FEEDBACK_DOT: Record<string, string> = {
   accepted: 'bg-success',
@@ -28,12 +28,12 @@ export const HistoryTab: React.FC = () => {
     setItems(null);
     setError(null);
     try {
-      const res = await fetch('/api/cognitive/history');
+      const res = await fetch('/api/cognitive/history', { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
       if (!res.ok) throw new Error(`Could not load history (error ${res.status}). Try again in a moment.`);
       const d = await res.json();
       setItems(Array.isArray(d) ? d : []);
     } catch (e: any) {
-      setError(e?.message || 'Could not load history');
+      setError(e?.name === 'TimeoutError' ? 'This is taking too long. Try again in a moment.' : e?.message || 'Could not load history');
     }
   }
 

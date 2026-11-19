@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
 export type RoleFormValues = {
   title: string;
@@ -129,6 +129,12 @@ export function RoleForm({
     ind: `${uid}-ind`, logic: `${uid}-logic`, persp: `${uid}-persp`,
   };
 
+  // Move focus into the form when it opens (keyboard and screen-reader users land on the first field).
+  useEffect(() => {
+    document.getElementById(ids.title)?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <form
       aria-label={isEditing ? "Edit role" : "Add role"}
@@ -136,7 +142,14 @@ export function RoleForm({
       onSubmit={(e) => {
         e.preventDefault();
         setTouched(true);
-        if (Object.keys(validateRole(values)).length === 0) onSubmit();
+        const errs = validateRole(values);
+        const firstBad = (['title', 'originalLogic', 'perspective2026'] as const).find((k) => errs[k]);
+        if (!firstBad) {
+          onSubmit();
+          return;
+        }
+        const target = { title: ids.title, originalLogic: ids.logic, perspective2026: ids.persp }[firstBad];
+        document.getElementById(target)?.focus();
       }}
       className="rounded-2xl border border-border-secondary bg-bg-secondary mb-4"
     >
