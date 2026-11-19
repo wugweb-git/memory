@@ -81,7 +81,7 @@ function statusColor(status: string) {
 function stateColor(state: string) {
   switch (state) {
     case 'reviewed':
-    case 'promotable': return 'bg-accent/10 text-accent';
+    case 'promotable': return 'bg-accent/10 text-accent-ink';
     case 'promoted': return 'bg-success/10 text-success';
     case 'rejected': return 'bg-danger/10 text-danger';
     case 'expired': return 'bg-bg-secondary text-text-tertiary';

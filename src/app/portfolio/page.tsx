@@ -141,8 +141,8 @@ export default function PortfolioPage() {
           title={docs.length ? `${tabLabel} (${docs.length})` : tabLabel}
           action={
             <div className="flex items-center gap-1">
-              <Link href={`/p/${IDENTITY_CONFIG.HANDLE}`} target="_blank" rel="noopener noreferrer" className={`${linkBtnCls} text-text-primary underline underline-offset-4 decoration-accent`}>View live<span className="sr-only"> (opens in a new tab)</span></Link>
-              <button type="button" aria-expanded={showForm} onClick={() => setShowForm((s) => !s)} className={`${linkBtnCls} text-text-primary underline underline-offset-4 decoration-accent`}>
+              <Link href={`/p/${IDENTITY_CONFIG.HANDLE}`} target="_blank" rel="noopener noreferrer" className={`${linkBtnCls} text-accent-ink underline underline-offset-4`}>View live<span className="sr-only"> (opens in a new tab)</span></Link>
+              <button type="button" aria-expanded={showForm} onClick={() => setShowForm((s) => !s)} className={`${linkBtnCls} text-accent-ink underline underline-offset-4`}>
                 {showForm ? "Close form" : `Add to ${tabLabel.toLowerCase()}`}
               </button>
             </div>
@@ -255,7 +255,7 @@ export default function PortfolioPage() {
 
         <p className="text-xs text-text-tertiary">
           Everything here publishes to your Sanity showcase and renders on{" "}
-          <Link href={`/p/${IDENTITY_CONFIG.HANDLE}`} target="_blank" rel="noopener noreferrer" className="text-text-primary underline underline-offset-4 decoration-accent">/p/{IDENTITY_CONFIG.HANDLE}<span className="sr-only"> (opens in a new tab)</span></Link>.
+          <Link href={`/p/${IDENTITY_CONFIG.HANDLE}`} target="_blank" rel="noopener noreferrer" className="text-accent-ink underline underline-offset-4">/p/{IDENTITY_CONFIG.HANDLE}<span className="sr-only"> (opens in a new tab)</span></Link>.
         </p>
       </M3Page>
     </AppShell>

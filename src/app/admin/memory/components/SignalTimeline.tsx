@@ -53,7 +53,7 @@ export function SignalTimeline({ signals, loading }: SignalTimelineProps) {
             <li key={signal.id} className="p-3 hover:bg-bg-tertiary transition-colors flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 <div className={`p-1.5 rounded-full bg-bg-tertiary ${
-                  signal.type === 'work_activity' || signal.type === 'learning' ? 'text-accent' : 'text-text-tertiary'
+                  signal.type === 'work_activity' || signal.type === 'learning' ? 'text-accent-ink' : 'text-text-tertiary'
                 }`}>
                   <Activity aria-hidden="true" className="w-4 h-4" />
                 </div>

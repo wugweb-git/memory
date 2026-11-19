@@ -262,7 +262,7 @@ export const VoiceIngestion = () => {
                   />
                 ))}
               </div>
-              <p className="text-2xs font-semibold text-accent motion-safe:animate-pulse">
+              <p className="text-2xs font-semibold text-accent-ink motion-safe:animate-pulse">
                 Recording. Tap the mic to stop.
               </p>
             </motion.div>
@@ -323,7 +323,7 @@ export const VoiceIngestion = () => {
               <AlertCircle aria-hidden="true" size={32} className="text-danger" />
               <p role="alert" className="text-2xs text-danger font-bold">{error}</p>
               <button onClick={reset}
-                className="text-2xs font-semibold text-accent hover:underline">
+                className="text-2xs font-semibold text-accent-ink underline">
                 Try again →
               </button>
             </motion.div>

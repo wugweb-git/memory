@@ -8,6 +8,7 @@ import { UI_API } from '@/lib/api/endpoints';
 import { haptic } from '@/lib/pwa/browser';
 import { APP_BRAND } from '@/config/ui-content';
 import { hasDevicePasskey, platformPasskeySupported, signInWithPasskey } from '@/lib/passkey-client';
+import { timeoutSignal } from '@/lib/ui/fetch-timeout';
 
 type SessionUser = { id: string; email: string; role: string };
 
@@ -129,15 +130,17 @@ function LoginForm() {
     setBusy(true);
     setError(null);
     setStatus('Signing in');
+    const t = timeoutSignal(25_000);
     try {
       const res = await fetch(UI_API.authLogin, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, remember }),
-        signal: AbortSignal.timeout(25_000),
+        signal: t.signal,
       });
       const data = await res.json().catch(() => ({}));
+      t.clear();
       if (!res.ok) throw new Error(data?.error || `Sign-in failed (${res.status}). Check your email and password, then try again.`);
       haptic('success');
       setStatus('Signed in');
@@ -145,10 +148,11 @@ function LoginForm() {
       // (and PWA shell) loads with it.
       window.location.assign(safeNext);
     } catch (err: unknown) {
+      t.clear();
       setStatus('');
       setError(
-        err instanceof Error && err.name === 'TimeoutError'
-          ? 'Sign-in is taking too long. Check your connection and try again.'
+        t.timedOut()
+          ? 'Sign-in is taking too long, and it may have worked. Check by reopening the app, or try again.'
           : err instanceof Error
             ? err.message
             : 'Sign-in failed. Check your connection and try again.',

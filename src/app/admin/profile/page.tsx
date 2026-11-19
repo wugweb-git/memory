@@ -124,7 +124,7 @@ export default function AdminProfilePage() {
     <div className="text-text-primary">
       <AppToastContainer position="bottom-right" theme="light" />
       <div className="max-w-5xl mx-auto mb-4 space-y-2">
-        <Link href="/admin" className="inline-flex min-h-11 items-center gap-1 rounded-xl pr-3 text-sm font-medium text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+        <Link href="/admin" className="hidden min-h-11 items-center gap-1 rounded-xl pr-3 text-sm font-medium text-accent-ink underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent md:inline-flex">
           <ArrowLeft size={18} aria-hidden="true" /> Admin console
         </Link>
         <PageHeader
@@ -182,7 +182,7 @@ export default function AdminProfilePage() {
         {loadError && !loading ? (
           <div role="alert" className="rounded-2xl border border-danger p-4 text-sm text-danger flex items-center justify-between gap-3">
             <span>{typeof loadError === 'string' && loadError ? `Could not load the profile: ${loadError}` : 'Could not load the profile. Check your connection and try again.'}</span>
-            <button type="button" onClick={() => refresh()} className="min-h-11 shrink-0 px-3 text-sm font-semibold text-accent">Try again</button>
+            <button type="button" onClick={() => refresh()} className="min-h-11 shrink-0 px-3 text-sm font-semibold text-accent-ink">Try again</button>
           </div>
         ) : loading ? (
           <div role="status" aria-label="Loading profile" className="grid grid-cols-1 gap-8 lg:grid-cols-2">
@@ -327,13 +327,13 @@ function PostRow({ section, onDelete }: { section: ProfileSection; onDelete: () 
   return (
     <Card className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
       <div className="min-w-0">
-        <span className="text-sm font-medium capitalize text-accent">{section.type}</span>
+        <span className="text-sm font-medium capitalize text-accent-ink">{section.type}</span>
         <h3 className="text-base font-semibold text-text-primary break-words">{section.title}</h3>
         <p className="text-sm text-text-tertiary line-clamp-2 mt-1">
           {String(c.summary ?? c.body ?? '').slice(0, 120)}
         </p>
         {url && (
-          <a href={url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex min-h-11 items-center gap-1 text-sm text-accent">
+          <a href={url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex min-h-11 items-center gap-1 text-sm text-accent-ink underline underline-offset-2">
             <ExternalLink size={12} aria-hidden="true" /> Open link<span className="sr-only"> (opens in a new tab)</span>
           </a>
         )}

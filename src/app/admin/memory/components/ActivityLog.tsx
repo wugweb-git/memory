@@ -78,7 +78,7 @@ export default function ActivityLog({ testRunId = 'PROD' }: ActivityLogProps) {
             </div>
             <div className="flex-1 min-w-0 pb-3 border-b border-border-secondary">
               <div className="flex items-center justify-between mb-1">
-                <span className={`text-xs font-mono ${log.level === 'error' ? 'text-danger' : log.level === 'warn' ? 'text-warning' : 'text-accent'}`}>
+                <span className={`text-xs font-mono ${log.level === 'error' ? 'text-danger' : log.level === 'warn' ? 'text-warning' : 'text-accent-ink'}`}>
                   [{log.time}]
                 </span>
                 <span className="text-xs text-text-tertiary font-semibold truncate ml-2">{log.target}</span>

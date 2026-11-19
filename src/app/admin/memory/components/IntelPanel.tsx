@@ -25,7 +25,7 @@ function Meter({ id, label, percent, tone }: { id: string; label: string; percen
     <div className="space-y-2">
       <div className="flex items-center justify-between text-xs font-semibold text-text-tertiary">
         <span id={id}>{label}</span>
-        <span className={`font-mono ${tone === 'accent' ? 'text-accent' : 'text-success'}`}>{percent}%</span>
+        <span className={`font-mono ${tone === 'accent' ? 'text-accent-ink' : 'text-success'}`}>{percent}%</span>
       </div>
       <div
         role="progressbar"
@@ -73,7 +73,7 @@ export function IntelPanel({ metrics, loading }: IntelPanelProps) {
             <BrainCircuit aria-hidden="true" className="w-4 h-4 text-accent" />
             Intelligence layer 2
           </h4>
-          <span className="px-2 py-0.5 rounded border border-border-primary text-xs font-bold text-accent bg-bg-secondary">
+          <span className="px-2 py-0.5 rounded border border-border-primary text-xs font-bold text-accent-ink bg-bg-secondary">
             Rule engine 1.0
           </span>
         </div>

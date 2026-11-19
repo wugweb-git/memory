@@ -293,7 +293,7 @@ export default function ConsolePage() {
               {signedOut ? (
                 <p className="mt-3 px-1 text-sm text-text-secondary">
                   Your session has ended, so some layers could not be checked.{' '}
-                  <Link href="/login?next=/console" className="font-medium text-accent underline underline-offset-2">Sign in again</Link>
+                  <Link href="/login?next=/console" className="font-medium text-accent-ink underline underline-offset-2">Sign in again</Link>
                 </p>
               ) : Object.values(layerHealth).some((v) => v === 'Offline') ? (
                 <p className="mt-3 px-1 text-sm text-text-secondary">

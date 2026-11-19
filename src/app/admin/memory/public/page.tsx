@@ -16,7 +16,7 @@ import {
   toggleSelectAll,
   type PublicNote,
 } from '@/lib/memory/public-curation';
-import { Card, Section } from '@/components/ui/primitives';
+import { ActionBar, Card, Section } from '@/components/ui/primitives';
 
 const ENDPOINT = API_ENDPOINTS.memory.public.path;
 const PAGE_LIMIT = 100;
@@ -102,7 +102,7 @@ export default function PublicNotesPage() {
   const count = notes?.length ?? 0;
 
   const bulkBar = (
-    <div className="sticky bottom-20 z-20 space-y-2 rounded-2xl border border-border-primary bg-bg-elevated p-3 md:bottom-4">
+    <ActionBar className="flex-col items-stretch justify-start">
       <div className="flex flex-wrap items-center gap-2">
         <span className="mr-auto text-sm font-medium text-text-primary" aria-live="polite">
           {selected.size === 0 ? 'Select notes to change who can see them' : `${selected.size} selected`}
@@ -117,7 +117,7 @@ export default function PublicNotesPage() {
         </button>
         <button
           type="button"
-          className={`${buttonBase} bg-accent text-bg-elevated`}
+          className={`${buttonBase} bg-text-primary text-bg-primary`}
           disabled={busy || selected.size === 0}
           aria-expanded={confirmingPublic}
           onClick={() => setConfirmingPublic(true)}
@@ -133,17 +133,17 @@ export default function PublicNotesPage() {
           <button type="button" className={`${buttonBase} border border-border-primary text-text-primary bg-bg-primary`} onClick={() => setConfirmingPublic(false)}>
             Keep private
           </button>
-          <button type="button" autoFocus className={`${buttonBase} bg-accent text-bg-elevated`} disabled={busy} onClick={() => { setConfirmingPublic(false); mark(true); }}>
+          <button type="button" autoFocus className={`${buttonBase} bg-text-primary text-bg-primary`} disabled={busy} onClick={() => { setConfirmingPublic(false); mark(true); }}>
             Make public
           </button>
         </div>
       )}
-    </div>
+    </ActionBar>
   );
 
   return (
     <M3Page title="Public notes" subtitle="Choose which memory notes the public Ask chat may quote. Owner only.">
-      <Link href="/admin" className="inline-flex min-h-11 items-center text-sm font-medium text-accent underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">Back to admin</Link>
+      <Link href="/admin" className="hidden min-h-11 items-center text-sm font-medium text-accent-ink underline md:inline-flex underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">Back to admin</Link>
 
       <Section title={notes ? summarise(notes) : 'Notes'}>
 <Card className="overflow-hidden p-0">

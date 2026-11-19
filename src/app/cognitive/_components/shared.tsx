@@ -27,13 +27,12 @@ export async function postJson<T = any>(url: string, body: Record<string, unknow
       signal: ctrl.signal,
     });
   } catch (e) {
+    clearTimeout(timer);
     if ((e as Error)?.name === 'AbortError') throw new Error('This is taking too long. Try again in a moment.');
     throw new Error('Connection failure. Check your network and try again.');
-  } finally {
-    clearTimeout(timer);
   }
   let data: any = null;
-  try { data = await res.json(); } catch { /* non-json */ }
+  try { data = await res.json(); } catch { /* non-json */ } finally { clearTimeout(timer); }
   if (!res.ok || data?.error) {
     throw new Error(friendlyStatus(res.status) ?? data?.message ?? (typeof data?.error === 'string' ? data.error : null) ?? `The request failed (error ${res.status}). Try again.`);
   }

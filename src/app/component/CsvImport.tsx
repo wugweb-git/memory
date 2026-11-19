@@ -132,7 +132,7 @@ export function CsvImport({ onComplete }: { onComplete?: () => void }) {
             {result.failed ? ` · ${result.failed} failed` : ''}
           </p>
           <p className="text-2xs text-text-tertiary">
-            Landed in memory (<Link href="/memory" className="text-accent font-bold">view</Link>). They become searchable
+            Landed in memory (<Link href="/memory" className="text-accent-ink font-bold underline underline-offset-2">view</Link>). They become searchable
             once an embeddings key (<span className="font-mono">OPENROUTER_API_KEY</span>) is set — until then they're
             stored but not yet retrievable.
           </p>

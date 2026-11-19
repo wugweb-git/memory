@@ -278,7 +278,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 const EMBED_STYLES: Record<string, string> = {
-  embedded: 'text-accent',
+  embedded: 'text-accent-ink',
   pending: 'text-warning',
   processing: 'text-text-secondary',
   failed: 'text-danger',

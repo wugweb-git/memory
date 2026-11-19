@@ -107,7 +107,7 @@ export function SemanticPanel({ data, loading }: SemanticPanelProps) {
             ) : (
               <ul className="flex flex-wrap gap-2">
                 {intents.map((intent, i) => (
-                  <li key={`intent-${i}`} className="px-2 py-0.5 rounded border border-border-primary text-accent bg-bg-secondary text-xs font-bold">
+                  <li key={`intent-${i}`} className="px-2 py-0.5 rounded border border-border-primary text-accent-ink bg-bg-secondary text-xs font-bold">
                     <span className="sr-only">Intent: </span>@{intent.intent}
                   </li>
                 ))}
@@ -132,7 +132,7 @@ export function SemanticPanel({ data, loading }: SemanticPanelProps) {
                     <li key={i} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-text-tertiary">
                       <span className="text-text-primary font-bold break-words">{rel.from}</span>
                       <span aria-hidden="true">→</span>
-                      <span className="text-accent font-semibold">{rel.type}</span>
+                      <span className="text-accent-ink font-semibold">{rel.type}</span>
                       <span aria-hidden="true">→</span>
                       <span className="text-text-primary font-bold break-words">{rel.to}</span>
                       <span className="sr-only">({rel.from} {rel.type} {rel.to})</span>

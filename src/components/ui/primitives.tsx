@@ -185,16 +185,21 @@ export function FormField({
   children: React.ReactElement;
 }) {
   const describedBy = [hint ? `${id}-hint` : null, error ? `${id}-error` : null].filter(Boolean).join(" ") || undefined;
-  const control = React.cloneElement(children, {
-    id,
-    "aria-describedby": describedBy,
-    "aria-invalid": error ? true : undefined,
-    "aria-required": required || undefined,
-    invalid: error ? true : undefined,
-  } as Record<string, unknown>);
+  // Inject only what the child has not set itself; `invalid` only reaches our own controls.
+  const own = children.props as Record<string, unknown>;
+  const injected: Record<string, unknown> = {};
+  if (own.id === undefined) injected.id = id;
+  if (own["aria-describedby"] === undefined && describedBy) injected["aria-describedby"] = describedBy;
+  if (own["aria-invalid"] === undefined && error) injected["aria-invalid"] = true;
+  if (own["aria-required"] === undefined && required) injected["aria-required"] = true;
+  if (error && own.invalid === undefined && (children.type === Input || children.type === Select || children.type === Textarea)) {
+    injected.invalid = true;
+  }
+  const control = React.cloneElement(children, injected);
+  const controlId = (own.id as string | undefined) ?? id;
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      <label htmlFor={id} className="text-sm font-medium text-text-primary">
+      <label htmlFor={controlId} className="text-sm font-medium text-text-primary">
         {label}
         {required ? <span aria-hidden="true" className="text-danger"> *</span> : null}
       </label>

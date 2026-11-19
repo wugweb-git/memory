@@ -23,7 +23,7 @@ const SEED: Lead[] = [
 ];
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  Applied: { label: 'Applied', color: 'bg-accent/10 border-accent/20 text-accent', icon: Zap },
+  Applied: { label: 'Applied', color: 'bg-accent/10 border-accent/20 text-accent-ink', icon: Zap },
   Interviewing: { label: 'Live', color: 'bg-success/10 border-success/20 text-success', icon: UserCheck },
   Outreach: { label: 'Pending', color: 'bg-warning/10 border-warning/20 text-warning', icon: Send },
 };
@@ -78,7 +78,7 @@ export const JobSearchAgent = () => {
     <section className="space-y-10 w-full" aria-label="Job search agent proactive outreach">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-2">
         <div>
-          <h2 className="text-2xl font-semibold text-text-primary tracking-tight flex items-center gap-3">
+          <h2 className="text-lg font-semibold text-text-primary tracking-tight flex items-center gap-3">
             <Target aria-hidden="true" size={22} className="text-accent" /> Opportunities
           </h2>
           <p className="text-2xs font-bold uppercase tracking-widest text-text-tertiary mt-1">
@@ -125,7 +125,7 @@ export const JobSearchAgent = () => {
                   <div className="flex items-center justify-between flex-wrap md:flex-nowrap gap-4 md:gap-8 relative z-10">
                     <div className="flex min-w-0 items-center gap-4 md:gap-8">
                       <div className="relative w-16 h-16 flex items-center justify-center shrink-0">
-                        <span className="text-2xs font-semibold text-accent">{lead.score}%</span>
+                        <span className="text-2xs font-semibold text-accent-ink">{lead.score}%</span>
                       </div>
                       <div className="space-y-1">
                         <h3 className="text-xl font-semibold text-text-primary tracking-tight ">
@@ -145,7 +145,7 @@ export const JobSearchAgent = () => {
                           href={lead.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex min-h-11 items-center text-2xs font-semibold text-accent hover:underline"
+                          className="inline-flex min-h-11 items-center text-2xs font-semibold text-accent-ink underline"
                         >
                           View_Nexus<span className="sr-only"> (opens in a new tab)</span>
                         </a>
@@ -154,7 +154,7 @@ export const JobSearchAgent = () => {
                           href={IDENTITY_CONFIG.LINKEDIN_JOBS_URL}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex min-h-11 items-center text-2xs font-semibold text-accent hover:underline"
+                          className="inline-flex min-h-11 items-center text-2xs font-semibold text-accent-ink underline"
                         >
                           Find_Roles<span className="sr-only"> (opens in a new tab)</span>
                         </a>

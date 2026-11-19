@@ -134,7 +134,7 @@ export default function HistoryPage() {
                         href={link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex min-h-11 max-w-full items-center gap-1.5 break-all text-sm text-accent underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                        className="inline-flex min-h-11 max-w-full items-center gap-1.5 break-all text-sm text-accent-ink underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                       >
                         <span className="min-w-0">{shortUrl(link)}</span>
                         <ExternalLink size={14} className="shrink-0" aria-hidden="true" />

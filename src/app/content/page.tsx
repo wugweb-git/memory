@@ -44,7 +44,7 @@ const HANDLE = IDENTITY_CONFIG.HANDLE;
 const FIELD_CLS =
   "w-full min-h-12 rounded-xl border border-border-primary bg-bg-elevated px-3 py-2 text-base text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50";
 const LINK_BTN =
-  "inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-accent transition-colors hover:bg-bg-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
+  "inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-accent-ink transition-colors hover:bg-bg-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
 const LEAVE_MESSAGE = "You have unsaved changes to this draft. Discard them?";
 
 function platformLabel(value: string) {
@@ -82,7 +82,7 @@ function PlatformPreview({ platform, content }: { platform: string; content: str
         </div>
         <p className="text-sm text-text-primary whitespace-pre-wrap leading-relaxed">
           {segs.map((seg, i) =>
-            seg.trim().startsWith("#") ? <span key={i} className="text-accent">{seg}</span> : <span key={i}>{seg}</span>,
+            seg.trim().startsWith("#") ? <span key={i} className="text-accent-ink">{seg}</span> : <span key={i}>{seg}</span>,
           )}
         </p>
       </div>
@@ -388,7 +388,7 @@ export default function OutputStudioPage() {
   const words = useMemo(() => wordCount(content), [content]);
 
   const tabs: [Tab, string][] = [
-    ["compose", dirty ? "Compose *" : "Compose"],
+    ["compose", "Compose"],
     ["live", `Live${sections.length ? ` (${sections.length})` : ""}`],
     ["drafts", `Drafts${drafts.length ? ` (${drafts.length})` : ""}`],
   ];
@@ -417,6 +417,12 @@ export default function OutputStudioPage() {
                 }`}
               >
                 {label}
+                {id === "compose" && dirty ? (
+                  <>
+                    <span aria-hidden="true" className="ml-1.5 inline-block h-2 w-2 rounded-full bg-warning align-middle" />
+                    <span className="sr-only"> (unsaved changes)</span>
+                  </>
+                ) : null}
               </button>
             ))}
           </div>
@@ -617,7 +623,7 @@ export default function OutputStudioPage() {
               >
                 <p className="text-sm text-text-secondary">
                   This is what visitors see at{" "}
-                  <Link href={`/p/${HANDLE}`} target="_blank" rel="noopener noreferrer" className="text-accent underline">/p/{HANDLE}<span className="sr-only"> (opens in a new tab)</span></Link>. Edit or remove sections here.
+                  <Link href={`/p/${HANDLE}`} target="_blank" rel="noopener noreferrer" className="text-accent-ink underline underline-offset-2">/p/{HANDLE}<span className="sr-only"> (opens in a new tab)</span></Link>. Edit or remove sections here.
                 </p>
                 {liveLoading && sections.length === 0 && !liveError ? (
                   <div className="space-y-2" aria-hidden="true">
@@ -715,7 +721,7 @@ export default function OutputStudioPage() {
                         className="w-full min-h-16 text-left rounded-2xl border border-border-secondary bg-bg-primary p-3 transition-colors hover:border-border-primary hover:bg-bg-secondary active:bg-bg-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                       >
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-sm font-medium text-accent">{platformLabel(d.platform)}</span>
+                          <span className="text-sm font-medium text-accent-ink">{platformLabel(d.platform)}</span>
                           <span className="text-sm text-text-secondary">{relTime(d.createdAt)}</span>
                         </div>
                         <p className="text-base text-text-secondary mt-1 line-clamp-2">{String(d.content ?? "").slice(0, 160)}</p>

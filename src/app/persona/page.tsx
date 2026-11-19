@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { IDENTITY_CONFIG, resolveUserId } from '@/config/identity';
 import { toast } from 'react-toastify';
 import { AppShell } from '@/app/component/AppShell';
+import { timeoutSignal } from '@/lib/ui/fetch-timeout';
 import { AppToastContainer } from '@/app/component/AppToastContainer';
 import { EmptyState, Skeleton } from '@/components/ui/primitives';
 import { ConfirmDialog, buildRollbackDescription, useConfirm } from '@/components/ui/confirm-dialog';
@@ -56,7 +57,7 @@ function StyleValue({ value, depth = 0, label = 'Score' }: { value: unknown; dep
           <div className="flex-1">
             <Meter label={label} value={value} className="h-1" />
           </div>
-          <span className="text-xs font-semibold text-text-secondary w-9 text-right tabular-nums">{Math.round(value * 100)}%</span>
+          <span className="text-xs font-semibold text-text-secondary w-10 shrink-0 text-right tabular-nums">{Math.round(value * 100)}%</span>
         </div>
       );
     }
@@ -129,12 +130,16 @@ export default function PersonaIntelligencePage() {
     try {
       setLoadError(null);
       let unauthorized = false;
-      const getJson = (path: string) =>
-        fetch(path, { signal: AbortSignal.timeout(30_000) }).then((r) => {
-          if (r.status === 401) unauthorized = true;
-          if (!r.ok) throw new Error(String(r.status));
-          return r.json();
-        });
+      const getJson = (path: string) => {
+        const t = timeoutSignal(30_000);
+        return fetch(path, { signal: t.signal })
+          .then((r) => {
+            if (r.status === 401) unauthorized = true;
+            if (!r.ok) throw new Error(String(r.status));
+            return r.json();
+          })
+          .finally(t.clear);
+      };
       // Each part loads on its own so one failing endpoint does not blank the page.
       const [p, t, a, d] = await Promise.allSettled([
         getJson('/api/persona/profile'),
@@ -280,7 +285,7 @@ export default function PersonaIntelligencePage() {
     return (
       <div aria-live="polite" className="space-y-1">
         {origin === at && notice ? <p role="status" className="text-sm text-success">{notice}</p> : null}
-        {origin === at && error ? <p role="alert" className="break-words text-sm text-danger">{error}</p> : null}
+        {origin === at && error ? <p className="break-words text-sm text-danger">{error}</p> : null}
       </div>
     );
   }
@@ -416,7 +421,7 @@ export default function PersonaIntelligencePage() {
                       onClick={() => rollbackConfirm.ask({ logId: log.id, field: log.changedField!, createdAt: log.createdAt })}
                       disabled={saving}
                       aria-label={`Roll back ${(STYLE_LABEL[log.changedField!] ?? humanize(log.changedField!)).toLowerCase()} change`}
-                      className="inline-flex min-h-11 items-center -ml-2 px-2 rounded-lg text-sm font-semibold text-text-primary underline underline-offset-4 decoration-accent hover:bg-bg-tertiary disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                      className="inline-flex min-h-11 items-center -ml-2 px-2 rounded-lg text-sm font-semibold text-accent-ink underline underline-offset-4 hover:bg-bg-tertiary disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                     >
                       Roll back
                     </button>

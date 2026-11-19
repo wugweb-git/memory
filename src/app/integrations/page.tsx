@@ -238,6 +238,8 @@ export default function IntegrationsPage() {
       toast.success(value.trim() ? `${c.label} saved. Syncing now.` : `${c.label} removed.`);
       setAnnounce(value.trim() ? `${c.label} saved` : `${c.label} removed`);
       await load();
+      // The form unmounted; hand focus back to the Set up / Change button that opened it.
+      setTimeout(() => document.getElementById(`setup-btn-${c.id}`)?.focus(), 0);
       if (value.trim()) await syncNow({ ...c, configured: true });
     } catch (e: unknown) {
       setFieldError(e instanceof Error ? e.message : 'Could not save. Try again.');

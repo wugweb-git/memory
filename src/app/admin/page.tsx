@@ -198,7 +198,7 @@ export default function AdminConsole() {
           </Card>
 </Section>
 
-          <Section title="Health" action={<button type="button" onClick={loadHealth} aria-label="Refresh health checks" className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-semibold text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">Refresh</button>}>
+          <Section title="Health" action={<button type="button" onClick={loadHealth} aria-label="Refresh health checks" className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-semibold text-accent-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">Refresh</button>}>
 <Card className="overflow-hidden p-0">
             {health === null ? (
               <div className="p-4"><M3State state="loading" message="Checking subsystems…" /></div>

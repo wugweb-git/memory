@@ -182,7 +182,7 @@ export const UniversalSync = () => {
         <div className="space-y-4">
           <div className="flex items-center justify-between px-2">
             <span className="text-2xs font-semibold text-text-tertiary tracking-widest uppercase">Active bridges</span>
-            <span className="text-2xs font-semibold text-accent">{syncedItems.length} Nodes</span>
+            <span className="text-2xs font-semibold text-accent-ink">{syncedItems.length} Nodes</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[180px] overflow-y-auto custom-scrollbar pr-3">
