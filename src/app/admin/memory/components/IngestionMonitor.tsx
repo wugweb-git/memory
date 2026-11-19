@@ -51,7 +51,7 @@ export default function IngestionMonitor({ testRunId = 'PROD' }: IngestionMonito
     <section aria-labelledby="ingestion-monitor-title" className="bg-bg-elevated rounded-xl border border-border-secondary p-6">
       <div className="flex items-start justify-between gap-3 mb-6">
         <div>
-          <h2 id="ingestion-monitor-title" className="text-lg font-semibold text-text-primary flex items-center gap-2">
+          <h2 id="ingestion-monitor-title" className="text-base font-semibold text-text-primary flex items-center gap-2">
             <Activity aria-hidden="true" className="w-5 h-5 text-success" />
             Ingestion gate monitor
           </h2>
@@ -59,7 +59,7 @@ export default function IngestionMonitor({ testRunId = 'PROD' }: IngestionMonito
         </div>
         <span
           role="status"
-          className={`inline-flex items-center gap-1.5 text-2xs text-text-tertiary shrink-0 pt-1`}
+          className={`inline-flex items-center gap-1.5 text-xs text-text-tertiary shrink-0 pt-1`}
         >
           <span aria-hidden="true" className={`w-2 h-2 rounded-full ${error ? 'bg-danger' : 'bg-success'} ${isRefreshing ? 'animate-pulse motion-reduce:animate-none' : ''}`} />
           {error ? 'Offline' : isRefreshing ? 'Updating' : 'Live'}
@@ -90,8 +90,8 @@ export default function IngestionMonitor({ testRunId = 'PROD' }: IngestionMonito
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-text-primary">{log.decision}</span>
-                  <span aria-hidden="true" className="text-2xs text-text-tertiary">·</span>
-                  <time dateTime={log.timestamp} className="text-2xs text-text-tertiary font-mono">
+                  <span aria-hidden="true" className="text-xs text-text-tertiary">·</span>
+                  <time dateTime={log.timestamp} className="text-xs text-text-tertiary font-mono">
                     {formatTime(log.timestamp)}
                   </time>
                 </div>
@@ -100,7 +100,7 @@ export default function IngestionMonitor({ testRunId = 'PROD' }: IngestionMonito
                 </div>
               </div>
 
-              <div className="px-2 py-0.5 rounded bg-bg-primary text-2xs font-mono text-text-tertiary shrink-0 max-w-[40%] truncate">
+              <div className="px-2 py-0.5 rounded bg-bg-primary text-xs font-mono text-text-tertiary shrink-0 max-w-[40%] truncate">
                 {log.source || 'system'}
               </div>
             </motion.li>

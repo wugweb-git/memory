@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import { ChevronDown } from "lucide-react";
 import { AppToastContainer } from "@/app/component/AppToastContainer";
 import "react-toastify/dist/ReactToastify.css";
-import { M3Card, M3Page, M3State } from "@/components/ui/m3";
+import { M3Page, M3State } from "@/components/ui/m3";
+import { ListSection, RowList } from "@/app/integrations/list-parts";
 import { Skeleton } from "@/components/ui/primitives";
 import { UI_API } from "@/lib/ui/contracts";
 import { apiRequest } from "@/lib/ui/api-client";
@@ -91,26 +93,26 @@ export default function SystemPage() {
     <AppShell>
       <AppToastContainer position="bottom-right" theme="light" />
       <M3Page title="System" subtitle="Module switches, operational checks and runtime status">
-          <M3Card title="Modules">
+          <ListSection id="modules-title" title="Modules" hint="Switches are saved and apply across the whole app. Only the owner can change them." bare>
             {features === null ? (
               featuresError ? (
-                <M3State state="error" message={`Module switches could not load (${featuresError}). Reload the page, or sign in as the owner.`} />
+                <div className="p-4"><M3State state="error" message={`Module switches could not load (${featuresError}). Reload the page, or sign in as the owner.`} /></div>
               ) : (
-                <div className="space-y-2" role="status" aria-label="Loading module switches">
+                <div className="space-y-2 p-4" role="status" aria-label="Loading module switches">
                   <Skeleton className="h-12 w-full motion-reduce:animate-none" />
                   <Skeleton className="h-12 w-full motion-reduce:animate-none" />
                   <Skeleton className="h-12 w-full motion-reduce:animate-none" />
                 </div>
               )
             ) : (
-              <ul className="divide-y divide-border-secondary">
+              <RowList label="Modules">
                 {Object.entries(MODULE_LABELS).map(([key, label]) => {
                   const on = features[key] !== false;
                   return (
-                    <li key={key} className="flex min-h-14 items-center justify-between gap-3 py-2">
-                      <div id={`mod-${key}-desc`}>
-                        <p className="text-sm font-medium text-text-primary">{label}</p>
-                        <p className="text-xs text-text-tertiary">{on ? "On: shown in the menu" : "Off: hidden from the menu"}</p>
+                    <li key={key} className="flex min-h-14 items-center justify-between gap-3 px-4 py-2">
+                      <div id={`mod-${key}-desc`} className="min-w-0">
+                        <p className="text-base font-medium text-text-primary">{label}</p>
+                        <p className="text-sm text-text-tertiary">{on ? "On: shown in the menu" : "Off: hidden from the menu"}</p>
                       </div>
                       <button
                         type="button"
@@ -124,19 +126,16 @@ export default function SystemPage() {
                       >
                         <span className={`relative block h-6 w-11 rounded-full border border-border-primary transition-colors motion-reduce:transition-none ${on ? "bg-accent" : "bg-bg-tertiary"}`}>
                           <span
-                            className={`absolute top-0.5 h-5 w-5 rounded-full bg-bg-elevated shadow transition-transform motion-reduce:transition-none ${on ? "translate-x-5" : "translate-x-0.5"}`}
+                            className={`absolute left-0 top-0.5 h-5 w-5 rounded-full bg-bg-elevated shadow transition-transform motion-reduce:transition-none ${on ? "translate-x-5" : "translate-x-0.5"}`}
                           />
                         </span>
                       </button>
                     </li>
                   );
                 })}
-              </ul>
+              </RowList>
             )}
-            <p className="text-2xs text-text-tertiary mt-2">
-              Switches are saved and apply across the whole app. Only the owner can change them.
-            </p>
-          </M3Card>
+          </ListSection>
 
           <PasskeyCard />
 
@@ -144,11 +143,30 @@ export default function SystemPage() {
 
           {loading ? <div className="space-y-2" role="status" aria-label="Loading health checks"><Skeleton className="h-24 w-full motion-reduce:animate-none" /></div> : null}
           {error ? <M3State state="error" message={error} /> : null}
-          {Object.entries(health).map(([k, v]) => (
-            <M3Card key={k} title={HEALTH_LABELS[k] ?? k}>
-              <pre tabIndex={0} aria-label={`${HEALTH_LABELS[k] ?? k} details`} className="text-xs text-text-secondary overflow-auto rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">{JSON.stringify(v, null, 2)}</pre>
-            </M3Card>
-          ))}
+          {Object.keys(health).length > 0 ? (
+            <ListSection id="health-title" title="Health checks" hint="Open a check to see its raw details." bare>
+              <RowList>
+                {Object.entries(health).map(([k, v]) => {
+                  const label = HEALTH_LABELS[k] ?? k;
+                  const status = typeof v?.status === "string" ? v.status : null;
+                  return (
+                    <li key={k}>
+                      <details className="group">
+                        <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-4 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
+                          <span className="text-base font-medium text-text-primary">{label}</span>
+                          <span className="flex items-center gap-2 text-sm text-text-tertiary">
+                            {status}
+                            <ChevronDown size={18} aria-hidden="true" className="transition-transform group-open:rotate-180 motion-reduce:transition-none" />
+                          </span>
+                        </summary>
+                        <pre tabIndex={0} aria-label={`${label} details`} className="mx-4 mb-3 max-h-64 overflow-auto rounded-lg bg-bg-secondary p-3 text-xs text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">{JSON.stringify(v, null, 2)}</pre>
+                      </details>
+                    </li>
+                  );
+                })}
+              </RowList>
+            </ListSection>
+          ) : null}
       </M3Page>
     </AppShell>
   );

@@ -5,7 +5,9 @@ import Link from 'next/link';
 import { toast } from 'react-toastify';
 import { AppToastContainer } from "@/app/component/AppToastContainer";
 import 'react-toastify/dist/ReactToastify.css';
-import { M3Button, M3Card, M3Page, M3State } from '@/components/ui/m3';
+import { ChevronRight } from 'lucide-react';
+import { M3Button, M3Page, M3State } from '@/components/ui/m3';
+import { ListRow, ListSection, RowList } from '@/app/integrations/list-parts';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
 import type { AdminChecklistItem } from '@/lib/admin/checklist';
 
@@ -149,108 +151,128 @@ export default function AdminConsole() {
       <AppToastContainer position="bottom-right" theme="light" />
       <M3Page title="Admin console" subtitle="Operations, health and setup. Owner only.">
 
-          <M3Card title="Operations">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="flex flex-col gap-1.5">
-                <M3Button onClick={runDiagnostics} disabled={busy !== null}>
-                  {busy === 'diagnose' ? 'Running…' : 'Run diagnostics'}
-                </M3Button>
-                <p className="text-xs text-text-tertiary">Checks every subsystem. Read-only.</p>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <M3Button tone="secondary" onClick={runAudit} disabled={busy !== null}>
-                  {busy === 'audit' ? 'Running…' : 'Audit memory'}
-                </M3Button>
-                <p className="text-xs text-text-tertiary">Reports on each memory sector. Read-only.</p>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <M3Button tone="secondary" onClick={runJobs} disabled={busy !== null}>
-                  {busy === 'jobs' ? 'Running…' : 'Run jobs now'}
-                </M3Button>
-                <p className="text-xs text-text-tertiary">Publishes queued output and cleans old rows. This changes data.</p>
-              </div>
-            </div>
-            <div role="status" aria-live="polite" className={opResult || busy ? 'mt-3' : ''}>
-              {busy !== null && <p className="text-xs text-text-tertiary">Running, this can take a few seconds…</p>}
+          <ListSection id="ops-title" title="Operations" bare>
+            <RowList>
+              <ListRow
+                title="Run diagnostics"
+                supporting="Checks every subsystem. Read-only."
+                trailing={
+                  <M3Button onClick={runDiagnostics} disabled={busy !== null} aria-label="Run diagnostics">
+                    {busy === 'diagnose' ? 'Running…' : 'Run'}
+                  </M3Button>
+                }
+              />
+              <ListRow
+                title="Audit memory"
+                supporting="Reports on each memory sector. Read-only."
+                trailing={
+                  <M3Button tone="secondary" onClick={runAudit} disabled={busy !== null} aria-label="Run memory audit">
+                    {busy === 'audit' ? 'Running…' : 'Run'}
+                  </M3Button>
+                }
+              />
+              <ListRow
+                title="Run jobs now"
+                supporting="Publishes queued output and cleans old rows. This changes data."
+                trailing={
+                  <M3Button tone="secondary" onClick={runJobs} disabled={busy !== null} aria-label="Run jobs now">
+                    {busy === 'jobs' ? 'Running…' : 'Run'}
+                  </M3Button>
+                }
+              />
+            </RowList>
+            <div role="status" aria-live="polite" className={opResult || busy ? 'border-t border-border-secondary p-4' : ''}>
+              {busy !== null && <p className="text-sm text-text-tertiary">Running, this can take a few seconds…</p>}
               {opResult && (
                 <div className="rounded-2xl bg-bg-secondary border border-border-secondary p-4">
-                  <p className="text-sm font-semibold text-text-primary mb-2">{opResult.title} result</p>
-                  <pre className="text-xs text-text-secondary whitespace-pre-wrap break-words">{opResult.body}</pre>
+                  <p className="text-base font-semibold text-text-primary mb-2">{opResult.title} result</p>
+                  <pre tabIndex={0} aria-label={`${opResult.title} output`} className="max-h-72 overflow-auto text-sm text-text-secondary whitespace-pre-wrap break-words focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">{opResult.body}</pre>
                 </div>
               )}
             </div>
-          </M3Card>
+          </ListSection>
 
-          <M3Card
+          <ListSection
+            id="health-title"
             title="Health"
-            action={<button type="button" onClick={loadHealth} aria-label="Refresh health checks" className="min-h-11 px-3 text-xs font-bold text-accent">Refresh</button>}
+            action={<button type="button" onClick={loadHealth} aria-label="Refresh health checks" className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-semibold text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">Refresh</button>}
+            bare
           >
             {health === null ? (
-              <M3State state="loading" message="Checking subsystems…" />
+              <div className="p-4"><M3State state="loading" message="Checking subsystems…" /></div>
             ) : (
               <>
-                <p role="status" className={`mb-2 text-sm font-medium ${health.every((r) => r.ok) ? 'text-success' : 'text-danger'}`}>
+                <p role="status" className={`px-4 py-3 text-base font-medium ${health.every((r) => r.ok) ? 'text-success' : 'text-danger'}`}>
                   {health.every((r) => r.ok)
                     ? 'All subsystems are healthy.'
                     : `${health.filter((r) => !r.ok).length} of ${health.length} subsystems need attention.`}
                 </p>
-                <ul aria-label="Subsystem health" className="divide-y divide-border-secondary">
+                <RowList label="Subsystem health" className="border-t border-border-secondary">
                   {health.map((row) => (
-                    <li key={row.name} className="flex items-center justify-between gap-3 py-3">
-                      <span className="text-sm text-text-primary">{row.name}</span>
-                      <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${row.ok ? 'text-success' : 'text-danger'}`}>
-                        <span aria-hidden="true" className={`w-1.5 h-1.5 rounded-full ${row.ok ? 'bg-success' : 'bg-danger'}`} />
+                    <li key={row.name} className="flex min-h-12 items-center justify-between gap-3 px-4 py-2">
+                      <span className="text-base text-text-primary">{row.name}</span>
+                      <span className={`inline-flex items-center gap-1.5 text-sm font-semibold ${row.ok ? 'text-success' : 'text-danger'}`}>
+                        <span aria-hidden="true" className={`h-2 w-2 rounded-full ${row.ok ? 'bg-success' : 'bg-danger'}`} />
                         <span className="sr-only">{row.ok ? 'Healthy: ' : 'Problem: '}</span>{row.status}
                       </span>
                     </li>
                   ))}
-                </ul>
+                </RowList>
               </>
             )}
-          </M3Card>
+          </ListSection>
 
-          <M3Card title={`Setup checklist${checklist ? ` (${done}/${checklist.length})` : ''}`}>
+          <ListSection id="checklist-title" title={`Setup checklist${checklist ? ` (${done}/${checklist.length})` : ''}`} bare>
             {checklist === null ? (
-              checklistError ? (
-                <M3State state="error" message="Could not load the checklist. Sign in as the admin, then refresh." />
-              ) : (
-                <M3State state="loading" message="Loading checklist…" />
-              )
+              <div className="p-4">
+                {checklistError ? (
+                  <div className="space-y-2">
+                    <M3State state="error" message="Could not load the checklist. Try again, or sign in as the admin." />
+                    <M3Button tone="secondary" onClick={loadChecklist}>Try again</M3Button>
+                  </div>
+                ) : (
+                  <M3State state="loading" message="Loading checklist…" />
+                )}
+              </div>
             ) : (
-              <ul aria-label="Setup checklist" className="divide-y divide-border-secondary">
+              <RowList label="Setup checklist">
                 {checklist.map((item) => (
                   <li key={item.id}>
                     <button
                       type="button"
                       aria-pressed={item.completed}
                       onClick={() => toggleChecklist(item)}
-                      className="w-full min-h-11 flex items-center gap-3 py-2 text-left group"
+                      className="group flex min-h-14 w-full items-center gap-3 px-4 py-2 text-left hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
                     >
-                      <span aria-hidden="true" className={`w-5 h-5 rounded border shrink-0 flex items-center justify-center text-2xs ${item.completed ? 'bg-text-primary border-text-primary text-bg-primary' : 'border-border-primary text-transparent group-hover:border-text-tertiary'}`}>
+                      <span aria-hidden="true" className={`flex h-6 w-6 shrink-0 items-center justify-center rounded border text-xs ${item.completed ? 'bg-text-primary border-text-primary text-bg-primary' : 'border-border-primary text-transparent group-hover:border-text-tertiary'}`}>
                         ✓
                       </span>
-                      <span className={`text-sm ${item.completed ? 'text-text-disabled line-through' : 'text-text-primary'}`}>{item.text}</span>
+                      <span className={`text-base ${item.completed ? 'text-text-tertiary line-through' : 'text-text-primary'}`}>{item.text}</span>
                     </button>
                   </li>
                 ))}
-              </ul>
+              </RowList>
             )}
-          </M3Card>
+          </ListSection>
 
-          <M3Card title="Shortcuts">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <ListSection id="shortcuts-title" title="Shortcuts" bare>
+            <RowList>
               {SHORTCUTS.map((s) => (
-                <Link
-                  key={s.href}
-                  href={s.href}
-                  className="rounded-2xl border border-border-secondary p-4 min-h-11 hover:border-border-primary transition-colors block"
-                >
-                  <p className="text-sm font-bold text-text-primary">{s.label}</p>
-                  <p className="text-2xs text-text-tertiary mt-0.5">{s.desc}</p>
-                </Link>
+                <li key={s.href}>
+                  <Link
+                    href={s.href}
+                    className="flex min-h-14 items-center gap-3 px-4 py-2 hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-base font-medium text-text-primary">{s.label}</span>
+                      <span className="block text-sm text-text-tertiary">{s.desc}</span>
+                    </span>
+                    <ChevronRight size={20} aria-hidden="true" className="shrink-0 text-text-tertiary" />
+                  </Link>
+                </li>
               ))}
-            </div>
-          </M3Card>
+            </RowList>
+          </ListSection>
       </M3Page>
     </>
   );

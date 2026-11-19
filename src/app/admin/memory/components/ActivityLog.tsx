@@ -55,7 +55,7 @@ export default function ActivityLog({ testRunId = 'PROD' }: ActivityLogProps) {
   return (
     <section aria-labelledby="activity-log-title" className="bg-bg-primary border border-border-secondary rounded-xl overflow-hidden h-[450px] flex flex-col">
       <div className="py-4 px-6 border-b border-border-secondary flex flex-row items-center justify-between shrink-0 bg-bg-secondary">
-        <h2 id="activity-log-title" className="text-lg font-semibold flex items-center gap-2 text-text-primary">
+        <h2 id="activity-log-title" className="text-base font-semibold flex items-center gap-2 text-text-primary">
           <Terminal aria-hidden="true" className="w-5 h-5 text-text-tertiary" />
           Recent gate activity
         </h2>
@@ -78,10 +78,10 @@ export default function ActivityLog({ testRunId = 'PROD' }: ActivityLogProps) {
             </div>
             <div className="flex-1 min-w-0 pb-3 border-b border-border-secondary">
               <div className="flex items-center justify-between mb-1">
-                <span className={`text-2xs font-mono ${log.level === 'error' ? 'text-danger' : log.level === 'warn' ? 'text-warning' : 'text-accent'}`}>
+                <span className={`text-xs font-mono ${log.level === 'error' ? 'text-danger' : log.level === 'warn' ? 'text-warning' : 'text-accent'}`}>
                   [{log.time}]
                 </span>
-                <span className="text-2xs text-text-tertiary font-semibold truncate ml-2">{log.target}</span>
+                <span className="text-xs text-text-tertiary font-semibold truncate ml-2">{log.target}</span>
               </div>
               <p className="text-xs text-text-secondary leading-relaxed break-words">
                 <span className="sr-only">{log.level === 'error' ? 'Rejected. ' : log.level === 'warn' ? 'Held or redirected. ' : 'Accepted. '}</span>{log.event}
