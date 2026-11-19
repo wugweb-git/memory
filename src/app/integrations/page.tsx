@@ -15,6 +15,7 @@ import { EmptyState, Skeleton } from '@/components/ui/primitives';
 import { AppShell } from '@/app/component/AppShell';
 import { apiRequest } from '@/lib/ui/api-client';
 import { BrandIcon, brandIconFor } from '@/components/ui/brand-icon';
+import { AutoPromoteCard } from './AutoPromoteCard';
 
 type ConnectorStatus = {
   id: string;
@@ -428,6 +429,8 @@ export default function IntegrationsPage() {
                   </M3Card>
                 );
               })}
+
+              <AutoPromoteCard />
 
               <M3Card title="Add a feed">
                 <p className="-mt-1 text-xs text-text-tertiary">

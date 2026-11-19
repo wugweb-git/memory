@@ -150,6 +150,9 @@ export const API_ENDPOINTS = {
     process: { path: '/api/jobs/process', methods: ['GET', 'POST'] as const },
     publishing: { path: '/api/jobs/publishing', methods: ['GET', 'POST'] as const },
   },
+  settings: {
+    autoPromote: { path: '/api/settings/auto-promote', methods: ['GET', 'PUT'] as const },
+  },
   sources: {
     list: { path: '/api/sources', methods: ['GET'] as const },
     sync: { path: '/api/sources/[id]/sync', methods: ['POST'] as const },

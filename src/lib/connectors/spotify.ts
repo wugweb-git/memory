@@ -50,7 +50,7 @@ export function makeSpotifyConnector(deps: Deps = {}): Connector {
     cadenceMins: 360,
     setupHint: 'Create a Spotify app, get a refresh token for user-read-recently-played, and set SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET and SPOTIFY_REFRESH_TOKEN.',
     configured: () => Boolean(creds(env())),
-    async sync(): Promise<SyncResult> {
+    async sync(opts): Promise<SyncResult> {
       const c = creds(env());
       if (!c) return { ingested: 0, skipped: 0, error: 'NOT_CONFIGURED: set the Spotify env vars' };
       const f = deps.fetchFn ?? fetch;
@@ -70,7 +70,7 @@ export function makeSpotifyConnector(deps: Deps = {}): Connector {
         const json = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(`spotify recently-played HTTP_${res.status}`);
         const items = (json.items ?? []).map(mapPlay).filter(Boolean) as PendingItem[];
-        return await ingestItems({ connectorId: 'spotify', source: 'spotify', items, max: 50 });
+        return await ingestItems({ connectorId: 'spotify', source: 'spotify', items, max: 50, autoPromote: opts?.autoPromote });
       } catch (err: any) {
         return recordError('spotify', err?.message ?? String(err));
       }

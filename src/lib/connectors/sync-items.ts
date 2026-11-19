@@ -4,7 +4,7 @@
  * (Neon scheduler_state) and hold items review-first in the blob buffer.
  */
 
-import { Push_To_Blob } from '@/lib/blobLayer';
+import { Push_To_Blob, Promote_To_Memory } from '@/lib/blobLayer';
 import { getConnectorState, saveConnectorState } from '@/lib/ingestion/connectors/state';
 import type { SyncResult } from '@/lib/ingestion/connectors/types';
 
@@ -21,9 +21,22 @@ export async function ingestItems(opts: {
   /** 'synced' for API pulls, 'upload' for user-supplied files. */
   inputMode?: 'synced' | 'upload';
   max?: number;
+  /** Promote each new item into memory after buffering (owner's auto-promote setting). */
+  autoPromote?: boolean;
+  /** Test seams. */
+  deps?: {
+    push?: typeof Push_To_Blob;
+    promote?: (id: string) => Promise<unknown>;
+    getState?: typeof getConnectorState;
+    saveState?: typeof saveConnectorState;
+  };
 }): Promise<SyncResult> {
   const { connectorId, source } = opts;
-  const state = await getConnectorState(connectorId);
+  const push = opts.deps?.push ?? Push_To_Blob;
+  const promote = opts.deps?.promote ?? Promote_To_Memory;
+  const getState = opts.deps?.getState ?? getConnectorState;
+  const saveState = opts.deps?.saveState ?? saveConnectorState;
+  const state = await getState(connectorId);
   const items = opts.items.slice(0, opts.max ?? 25);
   const seen = new Set(state.seen);
   const newlySeen: string[] = [];
@@ -35,7 +48,7 @@ export async function ingestItems(opts: {
       skipped++;
       continue;
     }
-    await Push_To_Blob({
+    const blob = await push({
       type: it.type,
       source,
       source_id: it.sourceId,
@@ -48,12 +61,20 @@ export async function ingestItems(opts: {
         received_at: new Date().toISOString(),
       },
     });
+    if (opts.autoPromote && blob?.id) {
+      // Best-effort: a promotion failure must never lose the buffered item.
+      try {
+        await promote(blob.id);
+      } catch {
+        /* stays review-first in the buffer */
+      }
+    }
     seen.add(it.sourceId);
     newlySeen.push(it.sourceId);
     ingested++;
   }
 
-  await saveConnectorState(connectorId, {
+  await saveState(connectorId, {
     lastSyncAt: new Date().toISOString(),
     lastError: null,
     lastResult: { ingested, skipped, scanned: items.length },

@@ -78,7 +78,7 @@ export function makeCalendarEventsConnector(deps: Deps = {}): Connector {
     authStartPath: AUTH_PATH,
     configured: deps.configured ?? googleClientConfigured,
     connected: deps.connected ?? googleConnected,
-    async sync(): Promise<SyncResult> {
+    async sync(opts): Promise<SyncResult> {
       const blocked = await gate(deps);
       if (blocked) return { ingested: 0, skipped: 0, error: blocked };
       const api = deps.api ?? googleApiGet;
@@ -99,7 +99,7 @@ export function makeCalendarEventsConnector(deps: Deps = {}): Connector {
             if (m) items.push(m);
           }
         }
-        return await ingestItems({ connectorId: 'google-calendar-events', source: 'google_calendar_events', items, max: 100 });
+        return await ingestItems({ connectorId: 'google-calendar-events', source: 'google_calendar_events', items, max: 100, autoPromote: opts?.autoPromote });
       } catch (err: any) {
         return recordError('google-calendar-events', err?.message ?? String(err));
       }
@@ -119,7 +119,7 @@ export function makeTasksConnector(deps: Deps = {}): Connector {
     authStartPath: AUTH_PATH,
     configured: deps.configured ?? googleClientConfigured,
     connected: deps.connected ?? googleConnected,
-    async sync(): Promise<SyncResult> {
+    async sync(opts): Promise<SyncResult> {
       const blocked = await gate(deps);
       if (blocked) return { ingested: 0, skipped: 0, error: blocked };
       const api = deps.api ?? googleApiGet;
@@ -135,7 +135,7 @@ export function makeTasksConnector(deps: Deps = {}): Connector {
             if (m) items.push(m);
           }
         }
-        return await ingestItems({ connectorId: 'google-tasks', source: 'google_tasks', items, max: 100 });
+        return await ingestItems({ connectorId: 'google-tasks', source: 'google_tasks', items, max: 100, autoPromote: opts?.autoPromote });
       } catch (err: any) {
         const msg: string = err?.message ?? String(err);
         // Missing scope / API disabled surfaces as a 403 — report it as a setup gap, not a crash.
@@ -183,7 +183,7 @@ export function makeGmailConnector(deps: Deps = {}): Connector {
     authStartPath: AUTH_PATH,
     configured: deps.configured ?? googleClientConfigured,
     connected: deps.connected ?? googleConnected,
-    async sync(): Promise<SyncResult> {
+    async sync(opts): Promise<SyncResult> {
       const blocked = await gate(deps);
       if (blocked) return { ingested: 0, skipped: 0, error: blocked };
       const api = deps.api ?? googleApiGet;
@@ -196,7 +196,7 @@ export function makeGmailConnector(deps: Deps = {}): Connector {
           const mapped = mapGmailMessage(m);
           if (mapped) items.push(mapped);
         }
-        return await ingestItems({ connectorId: 'gmail', source: 'gmail', items, max: 25 });
+        return await ingestItems({ connectorId: 'gmail', source: 'gmail', items, max: 25, autoPromote: opts?.autoPromote });
       } catch (err: any) {
         const msg: string = err?.message ?? String(err);
         if (/insufficient|scope|permission|has not been used|disabled|forbidden|403/i.test(msg)) {

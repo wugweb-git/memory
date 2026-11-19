@@ -5,6 +5,7 @@
 import { CONNECTORS, customFeedConnectors, getConnector } from './registry';
 import { CONFIGURABLE, getConfigValue, primeConnectorConfig } from './config';
 import { getConnectorState, isDue } from './state';
+import { autoPromoteFor } from './auto-promote';
 import type { Connector, ConnectorStatus, SyncResult } from './types';
 
 export { CONNECTORS, getConnector };
@@ -51,14 +52,15 @@ export async function listConnectorStatuses(): Promise<ConnectorStatus[]> {
   );
 }
 
-/** Run one connector by id. Returns null if unknown. */
-export async function syncConnector(
-  id: string,
-  opts?: { autoPromote?: boolean },
-): Promise<SyncResult | null> {
+/**
+ * Run one connector by id. Returns null if unknown. Auto-promotion follows the
+ * owner's `auto-promote-sync` setting for this connector; callers cannot
+ * override it (so a request body cannot bypass the Gmail privacy rule).
+ */
+export async function syncConnector(id: string): Promise<SyncResult | null> {
   const connector = await resolveConnector(id);
   if (!connector) return null;
-  return connector.sync(opts);
+  return connector.sync({ autoPromote: await autoPromoteFor(id) });
 }
 
 /** Connectors the scheduler may auto-run: rss/api, or a connected OAuth source. */

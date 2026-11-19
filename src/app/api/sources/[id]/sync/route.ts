@@ -10,7 +10,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 
 /**
  * POST /api/sources/[id]/sync — run one connector on demand ("Sync now").
- * Body: { autoPromote? }. Owner-only + rate-limited.
+ * Owner-only + rate-limited. Auto-promote follows the `auto-promote-sync` setting.
  */
 export async function POST(req: NextRequest, { params }: RouteContext) {
   const actor = requireOwner(req);
@@ -38,8 +38,8 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
   if (!limit.allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
 
   try {
-    const body = await req.json().catch(() => ({}));
-    const result = await syncConnector(id, { autoPromote: Boolean(body?.autoPromote) });
+    // Auto-promotion follows the owner's saved setting, not the request body.
+    const result = await syncConnector(id);
     if (result?.error) {
       return NextResponse.json({ id, ...result }, { status: 502 });
     }

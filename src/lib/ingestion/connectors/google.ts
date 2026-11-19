@@ -8,7 +8,7 @@
  *   - connected():  owner completed consent + we hold a token (async)
  */
 
-import { Push_To_Blob } from '@/lib/blobLayer';
+import { Push_To_Blob, Promote_To_Memory } from '@/lib/blobLayer';
 import { googleApiGet, googleClientConfigured, googleConnected } from '@/lib/oauth/google';
 import { getConnectorState, saveConnectorState } from './state';
 import type { Connector, SyncResult } from './types';
@@ -20,6 +20,7 @@ async function syncItems(
   connectorId: string,
   source: string,
   fetchItems: () => Promise<Array<{ sourceId: string; type: string; payload: Record<string, unknown> }>>,
+  autoPromote = false,
 ): Promise<SyncResult> {
   const state = await getConnectorState(connectorId);
 
@@ -42,7 +43,7 @@ async function syncItems(
       skipped++;
       continue;
     }
-    await Push_To_Blob({
+    const blob = await Push_To_Blob({
       type: it.type,
       source,
       source_id: it.sourceId,
@@ -55,6 +56,14 @@ async function syncItems(
         received_at: new Date().toISOString(),
       },
     });
+    if (autoPromote && blob?.id) {
+      // Best-effort: a promotion failure must never lose the buffered item.
+      try {
+        await Promote_To_Memory(blob.id);
+      } catch {
+        /* stays review-first in the buffer */
+      }
+    }
     seen.add(it.sourceId);
     newlySeen.push(it.sourceId);
     ingested++;
@@ -80,7 +89,7 @@ export const googleDriveConnector: Connector = {
   authStartPath: AUTH_PATH,
   configured: googleClientConfigured,
   connected: googleConnected,
-  async sync() {
+  async sync(opts) {
     return syncItems('google-drive', 'google_drive', async () => {
       const fields = 'files(id,name,mimeType,modifiedTime,webViewLink,owners(displayName))';
       const url =
@@ -98,7 +107,7 @@ export const googleDriveConnector: Connector = {
           owner: f.owners?.[0]?.displayName ?? null,
         },
       }));
-    });
+    }, opts?.autoPromote);
   },
 };
 
@@ -113,7 +122,7 @@ export const googleCalendarConnector: Connector = {
   authStartPath: AUTH_PATH,
   configured: googleClientConfigured,
   connected: googleConnected,
-  async sync() {
+  async sync(opts) {
     return syncItems('google-calendar', 'google_calendar', async () => {
       const url =
         'https://www.googleapis.com/calendar/v3/calendars/primary/events' +
@@ -131,6 +140,6 @@ export const googleCalendarConnector: Connector = {
           htmlLink: e.htmlLink ?? null,
         },
       }));
-    });
+    }, opts?.autoPromote);
   },
 };

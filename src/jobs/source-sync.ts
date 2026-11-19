@@ -8,6 +8,7 @@
  */
 
 import { dueConnectors } from '@/lib/ingestion/connectors';
+import { autoPromoteFor } from '@/lib/ingestion/connectors/auto-promote';
 
 export interface SourceSyncSummary {
   ran: number;
@@ -22,7 +23,7 @@ export async function runSourceSync(): Promise<SourceSyncSummary> {
 
   for (const connector of due) {
     try {
-      const res = await connector.sync();
+      const res = await connector.sync({ autoPromote: await autoPromoteFor(connector.id) });
       summary.ran++;
       summary.ingested += res.ingested;
       summary.skipped += res.skipped;
