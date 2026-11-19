@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireOwner } from '@/lib/security/auth';
-import { buildGoogleAuthUrl, googleClientConfigured } from '@/lib/oauth/google';
+import { buildGoogleAuthUrl, googleClientConfigured, safeReturnTo } from '@/lib/oauth/google';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   }
 
   const origin = new URL(req.url).origin;
-  const returnTo = new URL(req.url).searchParams.get('returnTo') || '/integrations';
+  const returnTo = safeReturnTo(new URL(req.url).searchParams.get('returnTo'));
   const url = await buildGoogleAuthUrl(origin, returnTo);
   return NextResponse.redirect(url);
 }

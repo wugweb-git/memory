@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { postgres } from "@/lib/db/postgres";
 import { getRequestUserId } from "@/lib/identity/request";
+import { clampLimit } from '@/lib/validation/http';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,12 +13,12 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const userId = getRequestUserId(req);
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const limit = clampLimit(searchParams.get('limit'), 20, 50);
 
     const history = await postgres.decisionLog.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
-      take: Math.min(limit, 50)
+      take: limit
     });
 
     if (history.length === 0) {
@@ -49,7 +50,7 @@ export async function GET(req: NextRequest) {
   } catch (err: any) {
     console.error("[API/Cognitive/History] Error:", err);
     return NextResponse.json(
-      { error: "Failed to fetch cognitive history", details: err.message },
+      { error: "Failed to fetch cognitive history" },
       { status: 500 }
     );
   }

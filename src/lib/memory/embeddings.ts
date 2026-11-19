@@ -16,7 +16,9 @@ import { OpenAIEmbeddings } from '@langchain/openai';
  */
 
 const OPENROUTER_BASE = 'https://openrouter.ai/api/v1';
-const DEFAULT_MODEL = 'text-embedding-3-small';
+/** Legacy fallback model, used only when OPENROUTER_API_KEY is absent (the nemotron slug does not exist on
+ *  api.openai.com). text-embedding-3-small supports server-side `dimensions`, so it is also asked for 1536. */
+const LEGACY_FALLBACK_MODEL = 'text-embedding-3-small';
 
 export function embeddingsProvider(): { name: string; configured: boolean } {
   if (process.env.OPENROUTER_API_KEY) return { name: 'openrouter', configured: true };
@@ -27,12 +29,21 @@ export function embeddingsProvider(): { name: string; configured: boolean } {
 }
 
 const OPENROUTER_FREE_EMBED_MODEL = 'nvidia/nemotron-3.5-embed-8b:free';
-const PGVECTOR_DIMENSIONS = 1536;
+export const PGVECTOR_DIMENSIONS = 1536;
+
+/** Throws a permanent-classified error if any vector is not the pgvector column width. */
+export function assertEmbeddingDimensions(vectors: Array<number[] | null>, expected = PGVECTOR_DIMENSIONS): void {
+  for (const v of vectors) {
+    if (v && v.length !== expected) {
+      throw new Error(`DIMENSION_MISMATCH: embedding has ${v.length} dimensions, expected ${expected} dimensions`);
+    }
+  }
+}
 
 /** Model name actually used for embeddings, for metadata tagging. */
 export function embeddingModelName(): string {
   if (process.env.OPENROUTER_API_KEY) return process.env.EMBEDDINGS_MODEL || OPENROUTER_FREE_EMBED_MODEL;
-  return process.env.EMBEDDINGS_MODEL || DEFAULT_MODEL;
+  return process.env.EMBEDDINGS_MODEL || LEGACY_FALLBACK_MODEL;
 }
 
 /** EMBEDDINGS_DIMENSIONS is honoured only when it matches the vector(1536) column. */
@@ -63,13 +74,15 @@ export function getEmbeddings(): OpenAIEmbeddings {
   } else if (process.env.EMBEDDINGS_API_KEY && process.env.EMBEDDINGS_BASE_URL) {
     _instance = new OpenAIEmbeddings({
       apiKey: process.env.EMBEDDINGS_API_KEY,
-      modelName: process.env.EMBEDDINGS_MODEL || DEFAULT_MODEL,
+      modelName: process.env.EMBEDDINGS_MODEL || LEGACY_FALLBACK_MODEL,
+      dimensions: embeddingDimensions(),
       batchSize: 20,
       configuration: { baseURL: process.env.EMBEDDINGS_BASE_URL },
     });
   } else {
     _instance = new OpenAIEmbeddings({
-      modelName: process.env.EMBEDDINGS_MODEL || DEFAULT_MODEL,
+      modelName: process.env.EMBEDDINGS_MODEL || LEGACY_FALLBACK_MODEL,
+      dimensions: embeddingDimensions(),
       batchSize: 20,
     });
   }
@@ -91,7 +104,7 @@ export function isPermanentEmbedFailure(msg: string): boolean {
   const m = msg || '';
   return (
     /^(GATED|LOW_SIGNAL|CONTENT_MODERATED)/.test(m) ||
-    /expected \d+ dimensions|different vector dimensions|dimensions,? not \d+|vector dimension|has \d+ dimensions/i.test(m)
+    /DIMENSION_MISMATCH|expected \d+ dimensions|different vector dimensions|dimensions,? not \d+|vector dimension|has \d+ dimensions/i.test(m)
   );
 }
 

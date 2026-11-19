@@ -10,8 +10,12 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password, remember } = await req.json();
-    if (!email || !password) {
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    }
+    const { email, password, remember } = body as { email?: unknown; password?: unknown; remember?: unknown };
+    if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
       return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
     }
 

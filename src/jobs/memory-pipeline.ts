@@ -251,7 +251,11 @@ export async function runL2Intelligence(deadline = Infinity) {
     if (deadline - Date.now() >= INTEL_MIN_REMAINING_MS) {
       await withDeadline(IntelligenceEngine.detectPatterns('PROD'), deadline, 'l2-intel-patterns');
     }
-    return { ran: true };
+    let insights = 0;
+    if (deadline - Date.now() >= INTEL_MIN_REMAINING_MS) {
+      insights = (await withDeadline(IntelligenceEngine.generatePatternInsights('PROD'), deadline, 'l2-intel-insights')).length;
+    }
+    return { ran: true, insights };
   } catch (err: any) {
     return { ran: true, error: err?.message as string | undefined };
   }

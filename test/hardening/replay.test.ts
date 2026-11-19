@@ -18,3 +18,15 @@ describe('replay / blob contracts', () => {
     assert.deepEqual(parseBlobItems({}), []);
   });
 });
+
+describe('replay idempotence', () => {
+  it('parsing the same payload twice yields identical results', () => {
+    const payload = { items: [{ id: 'a' }, { id: 'b' }] };
+    assert.deepEqual(parseBlobItems(payload), parseBlobItems(payload));
+  });
+
+  it('does not mutate its input', () => {
+    const payload = Object.freeze({ items: Object.freeze([{ id: 'a' }]) });
+    assert.doesNotThrow(() => parseBlobItems(payload));
+  });
+});

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireOwner } from '@/lib/security/auth';
 import { checkRateLimit } from '@/lib/security/rate-limit';
 import { processDecision } from "@/lib/cognitive";
+import { readJsonObject, badRequest } from '@/lib/validation/http';
+import { resolveUserId, parseMode, parseExternalInput } from '@/lib/cognitive/validation';
+
 
 export const dynamic = 'force-dynamic';
 
@@ -15,18 +18,19 @@ export async function POST(req: NextRequest) {
   const limit = await checkRateLimit(`cognitive:decide:${actor.userId}`, 30, 60_000);
   if (!limit.allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
   try {
-    const body = await req.json();
-
-    if (!body.user_id) {
-      return NextResponse.json({ error: "user_id required" }, { status: 400 });
-    }
-
-    const { user_id, mode = "architect", external_input } = body;
+    const body = await readJsonObject(req);
+    if (!body) return badRequest('JSON object body required');
+    const uid = resolveUserId(body, actor.userId);
+    if (!uid.ok) return NextResponse.json({ error: uid.error }, { status: uid.status });
+    const mode = parseMode(body.mode);
+    if (!mode.ok) return badRequest(mode.error);
+    const ext = parseExternalInput(body.external_input);
+    if (!ext.ok) return badRequest(ext.error);
 
     const result = await processDecision({
-      userId: user_id,
-      mode: (mode as any), // mode: architect | founder | operator
-      external_input: external_input ?? null
+      userId: uid.value,
+      mode: mode.value,
+      external_input: ext.value,
     });
 
     // Check for logical failure states (Insufficient Data)
@@ -38,13 +42,6 @@ export async function POST(req: NextRequest) {
 
   } catch (err: any) {
     console.error("[API/Cognitive/Decide] Error:", err);
-    return NextResponse.json(
-      { 
-        error: "Decision Engine failure", 
-        details: err.message,
-        status: "error"
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Decision Engine failure", status: "error" }, { status: /LLM_FAILURE/.test(String(err?.message)) ? 502 : 500 });
   }
 }

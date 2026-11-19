@@ -18,11 +18,16 @@ export async function PATCH(req: NextRequest) {
   if (!hasPermission(actor.role, "admin:read")) {
     return NextResponse.json({ error: "Admin access required" }, { status: 401 });
   }
-  const body = await req.json();
+  const body = await req.json().catch(() => null);
   const patch = body?.features ?? body;
-  if (!patch || typeof patch !== "object") {
+  if (!patch || typeof patch !== "object" || Array.isArray(patch)) {
     return NextResponse.json({ error: "features object required" }, { status: 400 });
   }
-  const features = await setRuntimeFeatures(patch);
-  return NextResponse.json({ features });
+  try {
+    const features = await setRuntimeFeatures(patch);
+    return NextResponse.json({ features });
+  } catch (err) {
+    console.error("[system/features] PATCH failed:", err);
+    return NextResponse.json({ error: "Could not save module flags" }, { status: 500 });
+  }
 }

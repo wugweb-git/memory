@@ -16,8 +16,8 @@ export async function GET(req: NextRequest) {
   const type = searchParams.get('type') || undefined;
   const source = searchParams.get('source') || undefined;
   const state = searchParams.get('state') || undefined;
-  const limit = Math.min(Number(searchParams.get('limit') || 20), 100);
-  const offset = Number(searchParams.get('offset') || 0);
+  const limit = Math.min(Math.max(1, Number(searchParams.get('limit') || 20) || 20), 100);
+  const offset = Math.max(0, Number(searchParams.get('offset') || 0) || 0);
 
   try {
     const items = await prisma.blobItem.findMany({

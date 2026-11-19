@@ -3,6 +3,8 @@ import { requireOwner } from '@/lib/security/auth';
 import { checkRateLimit } from '@/lib/security/rate-limit';
 import { buildContext } from '@/lib/cognitive/contextBuilder';
 import { runLLM } from '@/lib/cognitive/llm';
+import { readJsonObject, badRequest } from '@/lib/validation/http';
+import { resolveUserId, parseMode, parseInputText } from '@/lib/cognitive/validation';
 import { logDecisionNeon } from '@/lib/cognitive/logging/neon';
 
 export const dynamic = 'force-dynamic';
@@ -23,15 +25,17 @@ export async function POST(req: NextRequest) {
   const limit = await checkRateLimit(`cognitive:evaluate:${actor.userId}`, 30, 60_000);
   if (!limit.allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
   try {
-    const body = await req.json();
-    const { user_id, input_text, mode = 'architect' } = body;
-
-    if (!user_id) {
-      return NextResponse.json({ error: 'user_id required' }, { status: 400 });
-    }
-    if (!input_text || typeof input_text !== 'string' || input_text.trim().length < 10) {
-      return NextResponse.json({ error: 'input_text required (minimum 10 chars)' }, { status: 400 });
-    }
+    const body = await readJsonObject(req);
+    if (!body) return badRequest('JSON object body required');
+    const uid = resolveUserId(body, actor.userId);
+    if (!uid.ok) return NextResponse.json({ error: uid.error }, { status: uid.status });
+    const modeP = parseMode(body.mode);
+    if (!modeP.ok) return badRequest(modeP.error);
+    const inputP = parseInputText(body.input_text);
+    if (!inputP.ok) return badRequest(inputP.error);
+    const user_id = uid.value;
+    const mode = modeP.value;
+    const input_text = inputP.value;
 
     // 1. Build bounded context from L1-L2.5 (read-only)
     const context = await buildContext(user_id);
@@ -84,8 +88,8 @@ OUTPUT JSON ONLY (no markdown fences):
       output = JSON.parse(clean);
     } catch {
       return NextResponse.json(
-        { error: 'Reasoning engine returned malformed output', preview: clean.slice(0, 200) },
-        { status: 500 }
+        { error: 'Reasoning engine returned malformed output' },
+        { status: 502 }
       );
     }
 
@@ -95,9 +99,14 @@ OUTPUT JSON ONLY (no markdown fences):
     }
 
     // 5. Sanitize arrays
-    output.why_yes      = (output.why_yes || []).slice(0, 5);
-    output.why_no       = (output.why_no || []).slice(0, 5);
-    output.action_items = (output.action_items || []).slice(0, 3);
+    if (!output || typeof output !== 'object') {
+      return NextResponse.json({ error: 'Reasoning engine returned malformed output' }, { status: 502 });
+    }
+    const arr = (v: unknown, n: number) => (Array.isArray(v) ? v.slice(0, n) : []);
+    output.why_yes      = arr(output.why_yes, 5);
+    output.why_no       = arr(output.why_no, 5);
+    output.action_items = arr(output.action_items, 3);
+    output.confidence   = typeof output.confidence === 'number' ? Math.min(1, Math.max(0, output.confidence)) : 0.5;
 
     // 6. Store in decision_logs (read logging only — never writes to L1/L2)
     await logDecisionNeon({
@@ -112,8 +121,8 @@ OUTPUT JSON ONLY (no markdown fences):
   } catch (err: any) {
     console.error('[API/Cognitive/Evaluate]', err);
     return NextResponse.json(
-      { error: 'Evaluation engine failure', details: err.message },
-      { status: 500 }
+      { error: 'Evaluation engine failure' },
+      { status: /LLM_FAILURE/.test(String(err?.message)) ? 502 : 500 }
     );
   }
 }

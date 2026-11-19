@@ -62,18 +62,40 @@ test('internal profile/CMS platforms report internal, never a fabricated externa
   }
 });
 
-test('a configured external platform fails honestly (error) rather than fabricating success', async () => {
+test('a configured platform whose API call fails reports an honest error, never a fake id', async () => {
   process.env.LINKEDIN_ACCESS_TOKEN = 'test-token';
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = (async () =>
+    new Response(JSON.stringify({ message: 'denied' }), { status: 401 })) as typeof fetch;
   try {
     const built = routeDistribution({ platform: 'linkedin', content: 'x' });
     const res = await publishToPlatform('linkedin', built);
-    // Token present but no real client wired up → honest error, never a fake id.
     assert.equal(res.status, 'error');
     assert.equal(res.externalId, null);
     assert.equal(res.delivered, false);
-    assert.match(String(res.error), /NO_CLIENT/);
+    assert.match(String(res.error), /HTTP_401/);
   } finally {
+    globalThis.fetch = realFetch;
     delete process.env.LINKEDIN_ACCESS_TOKEN;
+  }
+});
+
+test('a configured platform that accepts the post reports the real external id', async () => {
+  process.env.LINKEDIN_ACCESS_TOKEN = 'test-token';
+  process.env.LINKEDIN_AUTHOR_URN = 'urn:li:person:abc';
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = (async () =>
+    new Response('{}', { status: 201, headers: { 'x-restli-id': 'urn:li:share:123' } })) as typeof fetch;
+  try {
+    const built = routeDistribution({ platform: 'linkedin', content: 'hello world' });
+    const res = await publishToPlatform('linkedin', built);
+    assert.equal(res.status, 'published');
+    assert.equal(res.externalId, 'urn:li:share:123');
+    assert.equal(res.delivered, true);
+  } finally {
+    globalThis.fetch = realFetch;
+    delete process.env.LINKEDIN_ACCESS_TOKEN;
+    delete process.env.LINKEDIN_AUTHOR_URN;
   }
 });
 

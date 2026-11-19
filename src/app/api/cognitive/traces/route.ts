@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRequestUserId } from "@/lib/identity/request";
 import { postgres } from "@/lib/db/postgres";
+import { clampLimit } from "@/lib/validation/http";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +9,7 @@ export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
     const userId = getRequestUserId(req);
-    const limit = Math.min(Number(url.searchParams.get("limit") || 20), 50);
+    const limit = clampLimit(url.searchParams.get("limit"), 20, 50);
 
     const traces = await postgres.decisionLog.findMany({
       where: { userId },
@@ -28,10 +29,13 @@ export async function GET(req: NextRequest) {
       status: "ok",
       traces: traces.map((t) => {
         const out = t.outputJson as Record<string, unknown> | null;
+        // Decision output contract (prompt/builder.ts): recommendations[], priorities[],
+        // gaps[], reasoning, confidence. Prefer the first recommendation, then reasoning.
+        const recs = Array.isArray(out?.recommendations) ? out.recommendations : [];
+        const firstRec = recs.find((r): r is string => typeof r === "string" && r.length > 0);
         const summary =
-          (typeof out?.summary === "string" && out.summary) ||
-          (typeof out?.verdict === "string" && out.verdict) ||
-          (typeof out?.recommendation === "string" && out.recommendation) ||
+          firstRec ||
+          (typeof out?.reasoning === "string" && out.reasoning) ||
           null;
         return {
           id: t.id,
@@ -39,6 +43,7 @@ export async function GET(req: NextRequest) {
           confidence: t.confidence,
           at: t.createdAt.toISOString(),
           summary: summary ? summary.slice(0, 240) : null,
+          recommendation_count: recs.length,
         };
       }),
     });

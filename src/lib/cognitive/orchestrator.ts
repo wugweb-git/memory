@@ -18,11 +18,29 @@ import { runReasoner } from "./agents/reasoner";
 import { runDecisionAgent } from "./agents/decision";
 import langfuse from "../observability/langfuse";
 
+/** Injectable seams (tests mock the LLM / DB here; production uses the defaults). */
+export interface OrchestratorDeps {
+  buildContext: typeof buildContext;
+  runLLMWithMeta: typeof runLLMWithMeta;
+  runReasoner: typeof runReasoner;
+  runDecisionAgent: typeof runDecisionAgent;
+  logDecision: typeof logDecisionNeon;
+}
+
+const defaultDeps: OrchestratorDeps = {
+  buildContext,
+  runLLMWithMeta,
+  runReasoner,
+  runDecisionAgent,
+  logDecision: logDecisionNeon,
+};
+
 export async function processDecision(params: {
   userId: string;
   mode: any;
   external_input?: string | null;
-}) {
+}, depsOverride: Partial<OrchestratorDeps> = {}) {
+  const deps = { ...defaultDeps, ...depsOverride };
   const { userId, external_input } = params;
   let mode = params.mode;
 
@@ -34,7 +52,7 @@ export async function processDecision(params: {
 
   try {
     // 1. Build context from L1-L2.5
-    const context = await buildContext(userId);
+    const context = await deps.buildContext(userId);
 
     trace.event({
       name: "context_assembled",
@@ -72,8 +90,9 @@ export async function processDecision(params: {
     // 3. Reasoning — single-pass (default) or multi-agent split (Phase 4, opt-in
     //    via COGNITIVE_MULTI_AGENT=1). Both produce the same JSON contract, so
     //    sanitize/dedup/critic/log below are unchanged.
-    let rawOutput: string;
+    let rawOutput: string | undefined;
     if (process.env.COGNITIVE_MULTI_AGENT === "1") {
+      // COGNITIVE_MODEL_FLOOR=mini pins the decision agent to the cheap tier (selectModel).
       const tier = selectModel({
         contextSize:
           (context.entities?.length || 0) +
@@ -82,16 +101,24 @@ export async function processDecision(params: {
         complex: Boolean(external_input),
       });
 
-      const reasonGen = trace.generation({ name: "reasoner", model: "gpt-4o-mini", input: prompt });
-      const analysis = await runReasoner(context, mode, "gpt-4o-mini");
-      reasonGen.end({ output: analysis });
+      try {
+        const reasonGen = trace.generation({ name: "reasoner", model: "gpt-4o-mini", input: prompt });
+        const analysis = await deps.runReasoner(context, mode, "gpt-4o-mini");
+        reasonGen.end({ output: analysis });
 
-      const decideGen = trace.generation({ name: "decision", model: tier, input: analysis });
-      rawOutput = await runDecisionAgent({ analysis, context, mode, externalInput: external_input, modelName: tier });
-      decideGen.end({ output: rawOutput });
-    } else {
+        const decideGen = trace.generation({ name: "decision", model: tier, input: analysis });
+        rawOutput = await deps.runDecisionAgent({ analysis, context, mode, externalInput: external_input, modelName: tier });
+        decideGen.end({ output: rawOutput });
+      } catch (agentErr: any) {
+        // Phase 4 must never make the brain less reliable than the verified path.
+        console.error("[Orchestrator] multi-agent path failed, falling back to single-pass:", agentErr?.message);
+        trace.event({ name: "multi_agent_fallback", input: agentErr?.message });
+        rawOutput = undefined;
+      }
+    }
+    if (rawOutput === undefined) {
       const generation = trace.generation({ name: "reasoning_pass", model: isOpenRouterEnabled() ? "openrouter:decision-chain" : "gpt-4o-mini", input: prompt });
-      const llmResult = await runLLMWithMeta(prompt);
+      const llmResult = await deps.runLLMWithMeta(prompt);
       rawOutput = llmResult.text;
       generation.end({ output: rawOutput, model: llmResult.model });
     }
@@ -117,7 +144,7 @@ export async function processDecision(params: {
     }
 
     // 7. Log to Postgres (Neon)
-    const logId = await logDecisionNeon({ userId, mode, context, output: deduped });
+    const logId = await deps.logDecision({ userId, mode, context, output: deduped });
     trace.update({ output: deduped });
 
     return { decision_id: logId, ...deduped };

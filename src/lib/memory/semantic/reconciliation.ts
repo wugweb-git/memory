@@ -1,5 +1,6 @@
 import { postgres } from "@/lib/db/postgres";
 import crypto from 'crypto';
+import { normalizeEntityName, nameKeys } from "@/lib/semantic/dedup";
 
 export interface ReconciliationResult {
   entityId: string;
@@ -28,7 +29,7 @@ export class ReconciliationEngine {
     packetId: string;
   }): Promise<ReconciliationResult> {
     const { name, type, confidence, testRunId, packetId } = params;
-    const normalized = name.toLowerCase().trim();
+    const normalized = normalizeEntityName(name) || name.toLowerCase().trim();
     const dedupHash = this.generateHash(`${normalized}_${type}`);
 
     // 1. EXACT MATCH (Normalized Name + Type + TestRunId)
@@ -74,24 +75,37 @@ export class ReconciliationEngine {
       return { entityId: updated.id, isNew: false, verified: updated.verified };
     }
 
-    // 2. ALIAS MATCH
+    // 2. ALIAS / NORMALIZED-VARIANT MATCH (TSK-005 semantic dedup)
+    // Match any alias equal to a lookup key, or an existing same-type entity whose
+    // normalized_name equals one of the name's keys (e.g. raw lowercase vs punctuation-stripped).
+    const keys = nameKeys(name);
     const aliasMatch = await postgres.entityAlias.findFirst({
-      where: {
-        alias: normalized,
-        test_run_id: testRunId
-      },
+      where: { alias: { in: keys }, test_run_id: testRunId, entity: { type } },
       include: { entity: true }
     });
+    const variantMatch = aliasMatch
+      ? null
+      : await postgres.entity.findFirst({
+          where: { normalized_name: { in: keys }, type, test_run_id: testRunId }
+        });
+    const matchedId = aliasMatch?.entity_id ?? variantMatch?.id;
 
-    if (aliasMatch && aliasMatch.entity.type === type) {
+    if (matchedId) {
       const updated = await postgres.entity.update({
-        where: { id: aliasMatch.entity_id },
+        where: { id: matchedId },
         data: {
           occurrences: { increment: 1 },
           last_seen: new Date(),
           source_chunk_ids: { push: packetId }
         }
       });
+      // Remember the surface form as an alias so future lookups short-circuit.
+      const surface = name.toLowerCase().trim();
+      if (surface && surface !== updated.normalized_name && !aliasMatch) {
+        await postgres.entityAlias.create({
+          data: { entity_id: updated.id, alias: surface, confidence, test_run_id: testRunId }
+        }).catch(() => undefined);
+      }
       return { entityId: updated.id, isNew: false, verified: updated.verified };
     }
 
@@ -167,14 +181,14 @@ export class ReconciliationEngine {
   }
 
   private static async findVerifiedEntity(name: string, testRunId: string) {
-    const normalized = name.toLowerCase().trim();
+    const keys = nameKeys(name);
     return postgres.entity.findFirst({
       where: {
         test_run_id: testRunId,
         verified: true,
         OR: [
-          { normalized_name: normalized },
-          { aliases: { some: { alias: normalized } } }
+          { normalized_name: { in: keys } },
+          { aliases: { some: { alias: { in: keys } } } }
         ]
       }
     });

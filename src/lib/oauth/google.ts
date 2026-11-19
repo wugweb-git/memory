@@ -20,6 +20,7 @@ const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 export const GOOGLE_SCOPES = [
   'https://www.googleapis.com/auth/drive.metadata.readonly',
   'https://www.googleapis.com/auth/calendar.readonly',
+  'https://www.googleapis.com/auth/tasks.readonly',
   'openid',
   'email',
 ];
@@ -75,8 +76,33 @@ export async function disconnectGoogle(): Promise<void> {
 
 // ── auth flow ────────────────────────────────────────────────────────────────
 
+/**
+ * Only same-site relative paths are allowed as post-auth destinations. Rejects
+ * absolute URLs, protocol-relative (`//evil`), backslash tricks and `@`-host
+ * confusion so the callback can never become an open redirect.
+ */
+export function safeReturnTo(raw: string | null | undefined, fallback = '/integrations'): string {
+  if (!raw || typeof raw !== 'string') return fallback;
+  if (!raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\') || /[\u0000-\u001f]/.test(raw)) {
+    return fallback;
+  }
+  // Drop any existing query/hash so the callback can append its own status flag.
+  return raw.split(/[?#]/)[0] || fallback;
+}
+
+const HTTP_TIMEOUT_MS = 15_000;
+
+function timedFetch(url: string, init: RequestInit = {}): Promise<Response> {
+  return fetch(url, { ...init, signal: AbortSignal.timeout(HTTP_TIMEOUT_MS) });
+}
+
+async function readJson(res: Response): Promise<any> {
+  return res.json().catch(() => ({}));
+}
+
 /** Build the consent URL and persist a one-time CSRF state. */
 export async function buildGoogleAuthUrl(origin: string, returnTo = '/integrations'): Promise<string> {
+  returnTo = safeReturnTo(returnTo);
   const state = randomUUID();
   await postgres.schedulerState.upsert({
     where: { key: STATE_KEY },
@@ -108,7 +134,7 @@ export async function consumeGoogleState(state: string | null): Promise<{ ok: bo
     if (!stored?.state || stored.state !== state) return { ok: false, returnTo: fallback };
     // 10-minute validity window.
     if (!stored.at || Date.now() - stored.at > 600_000) return { ok: false, returnTo: fallback };
-    return { ok: true, returnTo: stored.returnTo || fallback };
+    return { ok: true, returnTo: safeReturnTo(stored.returnTo, fallback) };
   } catch {
     return { ok: false, returnTo: fallback };
   }
@@ -116,7 +142,7 @@ export async function consumeGoogleState(state: string | null): Promise<{ ok: bo
 
 /** Exchange an auth code for tokens and store them. */
 export async function exchangeGoogleCode(code: string, origin: string): Promise<void> {
-  const res = await fetch(TOKEN_URL, {
+  const res = await timedFetch(TOKEN_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
@@ -127,8 +153,9 @@ export async function exchangeGoogleCode(code: string, origin: string): Promise<
       grant_type: 'authorization_code',
     }),
   });
-  const json = await res.json();
+  const json = await readJson(res);
   if (!res.ok) throw new Error(json.error_description || json.error || 'token exchange failed');
+  if (!json.access_token) throw new Error('token exchange returned no access_token');
 
   await writeTokens({
     access_token: json.access_token,
@@ -142,7 +169,7 @@ export async function exchangeGoogleCode(code: string, origin: string): Promise<
 /** Refresh the access token using the stored refresh_token. */
 async function refreshAccessToken(tokens: GoogleTokens): Promise<GoogleTokens> {
   if (!tokens.refresh_token) throw new Error('GOOGLE_NOT_CONNECTED: no refresh token');
-  const res = await fetch(TOKEN_URL, {
+  const res = await timedFetch(TOKEN_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
@@ -152,8 +179,16 @@ async function refreshAccessToken(tokens: GoogleTokens): Promise<GoogleTokens> {
       grant_type: 'refresh_token',
     }),
   });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.error_description || json.error || 'token refresh failed');
+  const json = await readJson(res);
+  if (!res.ok) {
+    // invalid_grant = refresh token revoked/expired → drop it so the UI shows "not connected".
+    if (json.error === 'invalid_grant') await disconnectGoogle();
+    throw new Error(
+      json.error === 'invalid_grant'
+        ? 'GOOGLE_NOT_CONNECTED: access was revoked; reconnect Google'
+        : json.error_description || json.error || 'token refresh failed',
+    );
+  }
 
   const refreshed: GoogleTokens = {
     access_token: json.access_token,
@@ -181,15 +216,15 @@ async function getAccessToken(): Promise<string> {
 /** Authenticated GET against a Google API, with one retry after a 401 refresh. */
 export async function googleApiGet<T = any>(url: string): Promise<T> {
   const token = await getAccessToken();
-  let res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  let res = await timedFetch(url, { headers: { Authorization: `Bearer ${token}` } });
   if (res.status === 401) {
     const tokens = await readTokens();
     if (tokens) {
       const refreshed = await refreshAccessToken(tokens);
-      res = await fetch(url, { headers: { Authorization: `Bearer ${refreshed.access_token}` } });
+      res = await timedFetch(url, { headers: { Authorization: `Bearer ${refreshed.access_token}` } });
     }
   }
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.error?.message || json.error || `Google API ${res.status}`);
+  const json = await readJson(res);
+  if (!res.ok) throw new Error(json.error?.message || (typeof json.error === 'string' ? json.error : '') || `Google API ${res.status}`);
   return json as T;
 }

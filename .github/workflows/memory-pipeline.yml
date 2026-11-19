@@ -12,6 +12,10 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: memory-pipeline
+  cancel-in-progress: false
+
 jobs:
   process:
     runs-on: ubuntu-latest

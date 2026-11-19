@@ -7,8 +7,8 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   const adminGate = requireAdmin(req);
   if (adminGate instanceof NextResponse) return adminGate;
-  const body = await req.json();
-  const ids = Array.isArray(body?.ids) ? body.ids : [];
+  const body = await req.json().catch(() => null);
+  const ids = Array.isArray(body?.ids) ? body.ids.filter((i: unknown) => typeof i === 'string').slice(0, 200) : [];
   const action = String(body?.action || '');
   if (!ids.length || !action) {
     return NextResponse.json({ error: 'ids and action are required' }, { status: 400 });

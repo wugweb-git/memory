@@ -45,7 +45,7 @@ export async function ingestEmail(
   let promotedPacketId: string | null = null;
   if (opts.autoPromote) {
     const promoted = await Promote_To_Memory(item.id);
-    promotedPacketId = (promoted as any)?.id ?? null;
+    promotedPacketId = (promoted as { memory_packet_id?: string | null })?.memory_packet_id ?? null;
   }
 
   return {

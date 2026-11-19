@@ -3,7 +3,8 @@ import { postgres as prisma } from '@/lib/db/postgres';
 import { Prisma } from '../../generated/postgres';
 import { addProcessingError } from './gate';
 import { EmbeddingStatus, ProcessingError } from './types';
-import { getEmbeddings, embeddingModelName, embedChunksTolerant, isPermanentEmbedFailure } from './embeddings';
+import { getEmbeddings, embeddingModelName, embedChunksTolerant, isPermanentEmbedFailure, assertEmbeddingDimensions } from './embeddings';
+import { rerank, rerankConfigFromEnv } from './rerank';
 
 /** pgvector text literal: '[0.1,0.2,…]' — bound as a parameter, cast with ::vector. */
 function toVectorLiteral(vec: number[]): string {
@@ -92,6 +93,9 @@ export async function processEmbedding(packetId: string) {
     // so one flagged chunk does not fail the whole packet. Throws LLM_UNAVAILABLE
     // for transient errors and CONTENT_MODERATED when every chunk is rejected.
     const vectorResults = await embedChunksTolerant(embeddings, chunks);
+    // A wrong-width vector would make the pgvector insert throw an unclassified error; fail it
+    // as a permanent DIMENSION_MISMATCH instead so it is not requeued forever.
+    assertEmbeddingDimensions(vectorResults);
 
     // 5. VECTOR STORE SYNC (Delete stale first if any)
     // CRITICAL: Verify packet still exists before writing to prevent orphans
@@ -173,8 +177,10 @@ export async function processEmbedding(packetId: string) {
 /**
  * Retrieval: pgvector cosine search (HNSW index `embeddings_embedding_hnsw`) with
  * pre-filtering (type / source / sensitivity, plus public-only visibility), then the
- * top-50 rows are grouped by packet and sorted by max cosine score -> top 10.
- * NOTE: no MMR diversity re-ranking or recency boosting is applied (score only).
+ * top-50 rows are grouped by packet (best chunk score), given a mild recency boost, then
+ * re-ranked with MMR for diversity -> top 10. Configurable via RETRIEVAL_MMR (default on),
+ * RETRIEVAL_MMR_LAMBDA (0.7), RETRIEVAL_RECENCY_WEIGHT (0.1), RETRIEVAL_RECENCY_HALFLIFE_DAYS (90).
+ * `score` stays the raw cosine; `rank_score` is the boosted value used for ordering.
  */
 export async function retrieve(query: string, filters: any = {}) {
   // 1. QUERY VALIDATION
@@ -208,10 +214,11 @@ export async function retrieve(query: string, filters: any = {}) {
     : Prisma.empty;
 
   const results = await prisma.$queryRaw<
-    Array<{ id: string; packet_id: string; text_chunk: string; metadata: any; score: number }>
+    Array<{ id: string; packet_id: string; text_chunk: string; metadata: any; score: number; emb: string }>
   >(Prisma.sql`
     SELECT id, packet_id, text_chunk, metadata,
-           1 - (embedding <=> ${queryVec}::vector) AS score
+           1 - (embedding <=> ${queryVec}::vector) AS score,
+           embedding::text AS emb
     FROM embeddings
     WHERE embedding IS NOT NULL
       AND test_run_id = ${test_run_id}
@@ -223,24 +230,37 @@ export async function retrieve(query: string, filters: any = {}) {
     LIMIT 50
   `);
 
-  // 5. CONTEXT ASSEMBLY (Group by packet_id)
-  const grouped = results.reduce((acc: any, curr: any) => {
-    if (!acc[curr.packet_id]) {
-      acc[curr.packet_id] = {
+  // 5. CONTEXT ASSEMBLY (group by packet_id; keep the best chunk's score + vector)
+  const grouped = new Map<string, any>();
+  for (const curr of results) {
+    const g = grouped.get(curr.packet_id);
+    if (!g) {
+      grouped.set(curr.packet_id, {
         packet_id: curr.packet_id,
         context: [curr.text_chunk],
         score: curr.score,
         source: curr.metadata?.source,
-        timestamp: curr.metadata?.timestamp
-      };
+        timestamp: curr.metadata?.timestamp,
+        vector: parseVector(curr.emb),
+      });
     } else {
-      acc[curr.packet_id].context.push(curr.text_chunk);
-      acc[curr.packet_id].score = Math.max(acc[curr.packet_id].score, curr.score);
+      g.context.push(curr.text_chunk);
+      if (curr.score > g.score) {
+        g.score = curr.score;
+        g.vector = parseVector(curr.emb);
+      }
     }
-    return acc;
-  }, {});
+  }
 
-  const assembled = Object.values(grouped).sort((a: any, b: any) => b.score - a.score);
+  // 6. RECENCY BOOST + MMR RE-RANK
+  return rerank([...grouped.values()], rerankConfigFromEnv(), 10).map(({ vector, ...hit }) => hit);
+}
 
-  return assembled.slice(0, 10);
+function parseVector(text: string | null | undefined): number[] | null {
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
 }

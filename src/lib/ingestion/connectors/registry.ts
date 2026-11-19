@@ -13,6 +13,9 @@ import { IDENTITY_CONFIG } from '@/config/identity';
 import { syncFeed } from './feed';
 import { notionConnector } from './notion';
 import { googleDriveConnector, googleCalendarConnector } from './google';
+import { googleCalendarEventsConnector, googleTasksConnector } from '@/lib/connectors/google-extra';
+import { linkedinConnector, twitterConnector } from '@/lib/connectors/exports';
+import { voiceConnector } from '@/lib/connectors/voice';
 import type { Connector, SyncResult } from './types';
 
 /** github.com/<user> → <user>; env override wins. */
@@ -108,7 +111,7 @@ export const CONNECTORS: Connector[] = [
     setupHint: 'Uses your public GitHub activity feed. Override the account with GITHUB_USER.',
     resolveUrl: () => {
       const user = githubUser();
-      return user ? `https://github.com/${user}.atom` : null;
+      return user && /^[A-Za-z0-9-]+$/.test(user) ? `https://github.com/${user}.atom` : null;
     },
   }),
   feedConnector({
@@ -120,7 +123,7 @@ export const CONNECTORS: Connector[] = [
     setupHint: 'Set YOUTUBE_CHANNEL_ID (from your channel URL) to sync uploads.',
     resolveUrl: () =>
       process.env.YOUTUBE_CHANNEL_ID
-        ? `https://www.youtube.com/feeds/videos.xml?channel_id=${process.env.YOUTUBE_CHANNEL_ID}`
+        ? `https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(process.env.YOUTUBE_CHANNEL_ID)}`
         : null,
   }),
   feedConnector({
@@ -136,15 +139,17 @@ export const CONNECTORS: Connector[] = [
 
   // ── Tier 2: manual capture surfaces (already working) ───────────────────
   manualConnector({ id: 'upload', label: 'File upload', category: 'files', setupHint: 'Upload PDF / text / HTML / Markdown from Buffer → Files.' }),
-  manualConnector({ id: 'voice', label: 'Voice', category: 'device', setupHint: 'Record from Buffer → Voice (mic permission).' }),
+  voiceConnector,
   manualConnector({ id: 'link', label: 'Article URL', category: 'writing', setupHint: 'Paste a link in Buffer → Link to fetch + extract an article.' }),
   manualConnector({ id: 'rss-url', label: 'RSS (ad-hoc)', category: 'writing', setupHint: 'Paste a feed URL in Buffer → Link for a one-off pull.' }),
 
   // ── Tier 3: OAuth-gated — real flow (Google) or honest placeholder ──────
   googleDriveConnector,
   googleCalendarConnector,
-  oauthPlaceholder({ id: 'linkedin', label: 'LinkedIn', category: 'social', setupHint: 'No free API/feed — needs LinkedIn OAuth (paid/approved app).' }),
-  oauthPlaceholder({ id: 'twitter', label: 'X / Twitter', category: 'social', setupHint: 'No free API/feed — needs X API access.' }),
+  googleCalendarEventsConnector,
+  googleTasksConnector,
+  linkedinConnector,
+  twitterConnector,
   oauthPlaceholder({ id: 'behance', label: 'Behance', category: 'design', setupHint: 'No public API/RSS — needs an app registration.' }),
   oauthPlaceholder({ id: 'dribbble', label: 'Dribbble', category: 'design', setupHint: 'Needs Dribbble OAuth (client id/secret).' }),
 ];

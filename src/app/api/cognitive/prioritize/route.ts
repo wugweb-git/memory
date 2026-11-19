@@ -3,6 +3,8 @@ import { requireOwner } from '@/lib/security/auth';
 import { checkRateLimit } from '@/lib/security/rate-limit';
 import { buildContext } from '@/lib/cognitive/contextBuilder';
 import { runLLM } from '@/lib/cognitive/llm';
+import { readJsonObject, badRequest } from '@/lib/validation/http';
+import { resolveUserId, parseMode, parseItems } from '@/lib/cognitive/validation';
 import { logDecisionNeon } from '@/lib/cognitive/logging/neon';
 
 export const dynamic = 'force-dynamic';
@@ -23,18 +25,17 @@ export async function POST(req: NextRequest) {
   const limit = await checkRateLimit(`cognitive:prioritize:${actor.userId}`, 30, 60_000);
   if (!limit.allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
   try {
-    const body = await req.json();
-    const { user_id, items, mode = 'architect' } = body;
-
-    if (!user_id) {
-      return NextResponse.json({ error: 'user_id required' }, { status: 400 });
-    }
-    if (!Array.isArray(items) || items.length === 0) {
-      return NextResponse.json({ error: 'items[] required — non-empty array of strings' }, { status: 400 });
-    }
-    if (items.length > 10) {
-      return NextResponse.json({ error: 'Maximum 10 items per prioritization run' }, { status: 400 });
-    }
+    const body = await readJsonObject(req);
+    if (!body) return badRequest('JSON object body required');
+    const uid = resolveUserId(body, actor.userId);
+    if (!uid.ok) return NextResponse.json({ error: uid.error }, { status: uid.status });
+    const modeP = parseMode(body.mode);
+    if (!modeP.ok) return badRequest(modeP.error);
+    const itemsP = parseItems(body.items);
+    if (!itemsP.ok) return badRequest(itemsP.error);
+    const user_id = uid.value;
+    const mode = modeP.value;
+    const items = itemsP.value;
 
     // 1. Build bounded context (read-only)
     const context = await buildContext(user_id);
@@ -91,18 +92,22 @@ OUTPUT JSON ONLY (no markdown fences):
       output = JSON.parse(clean);
     } catch {
       return NextResponse.json(
-        { error: 'Ranking engine returned malformed output', preview: clean.slice(0, 200) },
-        { status: 500 }
+        { error: 'Ranking engine returned malformed output' },
+        { status: 502 }
       );
     }
 
-    // 4. Validate ranked array covers all input items
+    // 4. Validate ranked array
+    if (!output || typeof output !== 'object') {
+      return NextResponse.json({ error: 'Ranking engine returned malformed output' }, { status: 502 });
+    }
     if (!Array.isArray(output.ranked)) {
       output.ranked = [];
     }
 
     // 5. Sanitize confidence
-    if (typeof output.confidence !== 'number') {
+    output.ranked = output.ranked.slice(0, items.length);
+    if (typeof output.confidence !== 'number' || Number.isNaN(output.confidence)) {
       output.confidence = 0.5;
     }
     output.confidence = Math.min(1, Math.max(0, output.confidence));
@@ -114,6 +119,6 @@ OUTPUT JSON ONLY (no markdown fences):
 
   } catch (err: any) {
     console.error('[API/Cognitive/Prioritize]', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: 'Prioritization failure' }, { status: /LLM_FAILURE/.test(String(err?.message)) ? 502 : 500 });
   }
 }

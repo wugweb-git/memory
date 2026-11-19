@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireOwner } from '@/lib/security/auth';
 import { checkRateLimit } from '@/lib/security/rate-limit';
+import { readJsonObject, badRequest } from '@/lib/validation/http';
+import { resolveUserId } from '@/lib/cognitive/validation';
 import { buildContext } from '@/lib/cognitive/contextBuilder';
 
 export const dynamic = 'force-dynamic';
@@ -25,12 +27,11 @@ export async function POST(req: NextRequest) {
   const limit = await checkRateLimit(`cognitive:gaps:${actor.userId}`, 30, 60_000);
   if (!limit.allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
   try {
-    const body = await req.json();
-    const { user_id } = body;
-
-    if (!user_id) {
-      return NextResponse.json({ error: 'user_id required' }, { status: 400 });
-    }
+    // Body is optional for this deterministic endpoint.
+    const body = (await readJsonObject(req)) ?? {};
+    const uid = resolveUserId(body, actor.userId);
+    if (!uid.ok) return NextResponse.json({ error: uid.error }, { status: uid.status });
+    const user_id = uid.value;
 
     // 1. Build bounded context (read-only)
     const context = await buildContext(user_id);
@@ -87,6 +88,6 @@ export async function POST(req: NextRequest) {
 
   } catch (err: any) {
     console.error('[API/Cognitive/Gaps]', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: 'Gap analysis failure' }, { status: 500 });
   }
 }

@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
     await exchangeGoogleCode(code, origin);
     return back('connected');
   } catch (err: any) {
-    console.error('[OAuth/Google/Callback]', err);
+    console.error('[OAuth/Google/Callback]', err?.message ?? err);
     return back('error');
   }
 }

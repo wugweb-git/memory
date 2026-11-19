@@ -12,7 +12,7 @@ import { postgres } from "../db/postgres";
  *   - Scoped to PROD test_run_id to prevent test data leaking into decisions
  *   - Max 20 entities, 30 relationships, 20 signals
  *   - Last 3 decisions for deduplication
- *   - Falls back to mock data if DB is unavailable (local dev / CI)
+ *   - Throws ContextBuildError if the DB is unavailable (no mock fallback)
  */
 export async function buildContext(userId: string) {
   try {
@@ -78,7 +78,11 @@ export async function buildContext(userId: string) {
       // 5. L4 Persona Intelligence — traits, preferences, style weights
       import("../intelligence/resolver")
         .then(m => m.PersonaResolver.resolve(userId))
-        .catch(() => ({ traits: [], preferences: [], persona: {} })) // graceful fallback if L4 not ready
+        .catch((e) => {
+          // L4 is an enrichment, not a fact source: degrade but say so.
+          console.warn("[Cognitive/ContextBuilder] L4 intelligence unavailable:", e);
+          return { traits: [], preferences: [], persona: {}, degraded: true };
+        })
     ]);
 
     return {
@@ -90,20 +94,19 @@ export async function buildContext(userId: string) {
     };
 
   } catch (err) {
-    console.warn("[Cognitive/ContextBuilder] Database unavailable, using diagnostic fallback.");
+    // L3 reasons only over real lower-layer data. Returning fabricated "mock"
+    // entities/signals here used to make decisions look healthy while the DB was
+    // down; surface the failure so the orchestrator/route reports it instead.
+    console.error("[Cognitive/ContextBuilder] Failed to assemble context:", err);
+    throw new ContextBuildError(err);
+  }
+}
 
-    // Fallback mock data for local development and CI — never used in production
-    return {
-      entities: [
-        { name: "Identity Prism", type: "system",       confidence: 1.0,  occurrences: 12 },
-        { name: "Neural OS",      type: "architecture", confidence: 0.95, occurrences: 8  }
-      ],
-      relationships: [],
-      signals: [
-        { type: "system_heartbeat", category: "technical", intensity_absolute: 1.0, metadata: { status: "fallback" } }
-      ],
-      recent_decisions: [],
-      intelligence: { traits: [], preferences: [], persona: {} }
-    };
+export class ContextBuildError extends Error {
+  readonly code = "CONTEXT_UNAVAILABLE";
+  constructor(cause: unknown) {
+    super(`Cognitive context unavailable: ${cause instanceof Error ? cause.message : String(cause)}`);
+    this.name = "ContextBuildError";
+    this.cause = cause;
   }
 }

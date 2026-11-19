@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/security/auth';
 import { postgres as prisma } from '@/lib/db/postgres';
+import { clampLimit } from '@/lib/validation/http';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,7 +68,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const test_run_id = searchParams.get('test_run_id') || 'PROD';
-    const take = Math.min(Number(searchParams.get('limit') || 50), 100);
+    const take = clampLimit(searchParams.get('limit'), 50, 100);
 
     const activities = await prisma.activityStream.findMany({
       where: { test_run_id },

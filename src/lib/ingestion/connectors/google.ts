@@ -84,7 +84,7 @@ export const googleDriveConnector: Connector = {
     return syncItems('google-drive', 'google_drive', async () => {
       const fields = 'files(id,name,mimeType,modifiedTime,webViewLink,owners(displayName))';
       const url =
-        'https://www.googleapis.com/drive/v3/files?orderBy=modifiedTime desc&pageSize=25' +
+        'https://www.googleapis.com/drive/v3/files?orderBy=modifiedTime%20desc&pageSize=25' +
         `&fields=${encodeURIComponent(fields)}`;
       const data = await googleApiGet<{ files?: any[] }>(url);
       return (data.files ?? []).map((f) => ({

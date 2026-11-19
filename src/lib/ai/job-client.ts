@@ -28,6 +28,8 @@ export function createJobClient(
     async call(messages) {
       const r = await runJob(job, toChatMessages(messages), opts);
       client.lastModel = r.model;
+      // Best-effort usage tracking against the free-tier cap; never blocks the call.
+      void import('@/lib/cost/tracking').then((m) => m.recordJobUsage(job, r.attempts)).catch(() => {});
       return { content: r.text };
     },
   };

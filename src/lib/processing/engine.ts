@@ -2,6 +2,8 @@ import { postgres as prisma } from '@/lib/db/postgres';
 import { extractSignals } from './signals';
 import { applySignalImportance } from './signal-importance';
 import { MemoryPacket } from '../memory/types';
+import { IDENTITY_CONFIG } from '@/config/identity';
+import { maybeTriggerCognitiveRun } from '@/lib/cognitive/signal-trigger';
 
 
 export class ProcessingEngine {
@@ -46,26 +48,9 @@ export class ProcessingEngine {
           })) as any
         });
 
-        // Signal-spike trigger (L3 Phase 4, opt-in via COGNITIVE_SIGNAL_TRIGGER=1):
-        // a high-intensity signal queues a cognitive run so the brain reacts to
-        // momentum shifts. Best-effort — never fails packet processing.
-        if (
-          process.env.COGNITIVE_SIGNAL_TRIGGER === '1' &&
-          testRunId === 'PROD' &&
-          signals.some((s) => (s.intensity_absolute ?? 0) > 0.9)
-        ) {
-          try {
-            const { processDecision } = await import('@/lib/cognitive/orchestrator');
-            const { IDENTITY_CONFIG } = await import('@/config/identity');
-            await processDecision({
-              userId: IDENTITY_CONFIG.DEFAULT_USER_ID,
-              mode: 'operator',
-              external_input: null,
-            });
-          } catch (err) {
-            console.error('[ProcessingEngine] signal-spike cognitive trigger failed:', err);
-          }
-        }
+        // Signal-spike trigger (opt-in via COGNITIVE_SIGNAL_TRIGGER=1): deduped/capped/timeboxed
+        // inside maybeTriggerCognitiveRun, which never throws.
+        await maybeTriggerCognitiveRun({ userId: IDENTITY_CONFIG.DEFAULT_USER_ID, signals, testRunId });
 
         // Create Activity entries for each signal
         for (const signal of signals) {

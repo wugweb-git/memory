@@ -2,6 +2,7 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { ChatOpenAI } from "@langchain/openai";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { SystemMessage, HumanMessage } from "@langchain/core/messages";
+import { isMiniTier, openRouterEnvForTier } from "./routing";
 import { config } from "@/config";
 import { isOpenRouterEnabled, runJob } from "@/lib/ai/openrouter";
 
@@ -82,7 +83,7 @@ export async function runAgentLLM(
       const r = await runJob("decision", [
         { role: "system", content: system },
         { role: "user", content: prompt },
-      ], { temperature, json: routeOpts.json });
+      ], { temperature, json: routeOpts.json, env: openRouterEnvForTier(isMiniTier(modelName) ? "mini" : "full") });
       return r.text;
     } catch (err: any) {
       console.error("[LLM/Agent/OpenRouter] Execution Failure:", err.message);

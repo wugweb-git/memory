@@ -100,3 +100,15 @@ describe('fetchUrl guards (no network needed)', () => {
     }
   });
 });
+
+describe('SSRF address classification', () => {
+  it('flags private, mapped and unique-local addresses', async () => {
+    const { isPrivateAddress } = await import('../../src/lib/ingestion/fetchers.ts');
+    for (const ip of ['127.0.0.1', '10.1.1.1', '100.64.0.1', '169.254.169.254', '::1', '::ffff:127.0.0.1', 'fd00::1', 'fe80::1', '0.0.0.0']) {
+      assert.equal(isPrivateAddress(ip), true, ip);
+    }
+    for (const ip of ['8.8.8.8', '1.1.1.1', '2606:4700:4700::1111']) {
+      assert.equal(isPrivateAddress(ip), false, ip);
+    }
+  });
+});

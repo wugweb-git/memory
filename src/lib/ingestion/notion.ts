@@ -15,7 +15,9 @@ import { Push_To_Blob, Promote_To_Memory } from '@/lib/blobLayer';
  */
 
 const NOTION_API = 'https://api.notion.com/v1';
-const NOTION_VERSION = '2022-06-28';
+// Notion-Version 2025-09-03 (multi-source databases). /search, /blocks/*/children and
+// page objects are unchanged for this use; override with NOTION_VERSION if needed.
+const NOTION_VERSION = process.env.NOTION_VERSION || '2025-09-03';
 const MAX_PAGES = 15;
 const MAX_BLOCKS_PER_PAGE = 200;
 
@@ -52,7 +54,13 @@ function blockToText(block: any): string {
 }
 
 async function notionFetch(token: string, path: string, init?: RequestInit) {
-  const res = await fetch(`${NOTION_API}${path}`, { ...init, headers: headers(token) });
+  let res = await fetch(`${NOTION_API}${path}`, { ...init, headers: headers(token), signal: AbortSignal.timeout(20_000) });
+  // Respect Notion's rate limit once (Retry-After seconds, capped).
+  if (res.status === 429) {
+    const wait = Math.min(Number(res.headers.get('retry-after')) || 1, 5);
+    await new Promise((r) => setTimeout(r, wait * 1000));
+    res = await fetch(`${NOTION_API}${path}`, { ...init, headers: headers(token), signal: AbortSignal.timeout(20_000) });
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(`Notion API ${res.status}: ${body?.message ?? res.statusText}`);
@@ -65,8 +73,8 @@ async function pageText(token: string, pageId: string): Promise<string> {
   let cursor: string | undefined;
   let fetched = 0;
   do {
-    const qs = cursor ? `?start_cursor=${cursor}&page_size=100` : '?page_size=100';
-    const data = await notionFetch(token, `/blocks/${pageId}/children${qs}`);
+    const qs = cursor ? `?start_cursor=${encodeURIComponent(cursor)}&page_size=100` : '?page_size=100';
+    const data = await notionFetch(token, `/blocks/${encodeURIComponent(pageId)}/children${qs}`);
     for (const block of data.results ?? []) {
       const text = blockToText(block);
       if (text) parts.push(text);

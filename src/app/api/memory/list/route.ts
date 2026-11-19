@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/security/auth';
 import { postgres as prisma } from '@/lib/db/postgres';
 import { DB_SETUP_HINT, isPrismaConfigError } from '@/lib/db/degraded';
+import { clampLimit } from '@/lib/validation/http';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest) {
     const type = searchParams.get('type');
     const source = searchParams.get('source');
     const status = searchParams.get('status');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const limit = clampLimit(searchParams.get('limit'), 10, 200);
     const test_run_id = searchParams.get('test_run_id') || 'PROD';
 
     const where: any = { test_run_id };

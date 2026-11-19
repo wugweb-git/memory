@@ -115,6 +115,16 @@ export async function publishOutput(
     }
   }
 
+  // Automation rules: best-effort, never blocks or fails a publish.
+  if (mode === 'published') {
+    try {
+      const { evaluateRules } = await import('@/lib/automation/rules');
+      await evaluateRules(output.userId, { type: 'output_published', platform: output.platform, content, outputId });
+    } catch (err) {
+      console.error('[Publish] Automation rules failed:', err);
+    }
+  }
+
   return {
     mode,
     outputId,

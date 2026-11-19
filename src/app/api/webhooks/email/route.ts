@@ -28,6 +28,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Cap payload size before buffering (inbound mail is attacker-influenced).
+  if (Number(req.headers.get('content-length') || 0) > 2_000_000) {
+    return NextResponse.json({ error: 'Payload too large' }, { status: 413 });
+  }
+
   // Read the raw body once — HMAC must run over the exact bytes received.
   const raw = await req.text();
 

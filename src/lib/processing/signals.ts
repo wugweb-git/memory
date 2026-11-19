@@ -24,6 +24,41 @@ function generateSignalHash(packetId: string, type: string, ruleVersion: number,
     .digest('hex');
 }
 
+interface KeywordRule {
+  type: SignalType;
+  category: string;
+  pattern: RegExp;
+  /** Sources that imply the signal even without a keyword hit. */
+  sources?: string[];
+}
+
+const KEYWORD_RULES: KeywordRule[] = [
+  {
+    type: 'creation',
+    category: 'authoring',
+    pattern: /\b(published|wrote|drafted|drafting|designed|built|shipped|launched|released|composed|recorded|created|prototype)\b/gi,
+    sources: ['notion'],
+  },
+  {
+    type: 'health',
+    category: 'wellbeing',
+    pattern: /\b(workout|exercise|gym|run(?:ning)?|jog(?:ging)?|steps|sleep|meditat\w*|diet|calories|doctor|therapy|hydrat\w*|yoga|heart rate|blood pressure)\b/gi,
+    sources: ['health', 'fitbit', 'apple_health', 'strava'],
+  },
+  {
+    type: 'finance',
+    category: 'money',
+    pattern: /\b(invoice|payment|paid|salary|budget|expense|revenue|invest\w*|subscription|refund|receipt|tax(?:es)?|bank|mortgage|rent)\b|[$\u20ac\u00a3\u20b9]\s?\d/gi,
+    sources: ['bank', 'stripe', 'plaid'],
+  },
+  {
+    type: 'consumption',
+    category: 'media',
+    pattern: /\b(watched|watching|listened|listening|podcast|episode|playlist|album|movie|netflix|spotify|youtube|read(?:ing)? (?:a |the )?(?:book|article)|bookmark(?:ed)?)\b/gi,
+    sources: ['rss', 'spotify', 'youtube', 'pocket', 'readwise'],
+  },
+];
+
 /**
  * Extracts descriptive signals from a MemoryPacket.
  * Standard L2: Purely descriptive, non-prescriptive extraction.
@@ -100,6 +135,33 @@ export function extractSignals(packet: MemoryPacket): Signal[] {
     });
   }
 
+  // Rules: Creation / Health / Finance / Consumption (cheap keyword + source-aware, descriptive only)
+  const subject = String((packet.metadata as any)?.subject || '');
+  const haystack = `${subject}\n${contentStr}`;
+  for (const rule of KEYWORD_RULES) {
+    const hits = haystack.match(rule.pattern);
+    const sourceMatch = rule.sources?.includes(source) ?? false;
+    if (!hits && !sourceMatch) continue;
+    const distinct = hits ? new Set(hits.map((h) => h.toLowerCase())).size : 0;
+    // Source-only matches are weaker than text matches; more distinct keywords -> higher confidence.
+    const confidence = Math.min(0.9, (hits ? 0.62 : 0.6) + Math.min(distinct, 3) * 0.08);
+    detected.push({
+      packet_id: packetId,
+      type: rule.type,
+      category: rule.category,
+      source: source,
+      intensity_absolute: Math.min(0.9, 0.4 + distinct * 0.1),
+      confidence,
+      source_trust: packet.confidence,
+      timestamp: packet.event_time,
+      metadata: {
+        extraction_rule: hits ? `${rule.type}_keyword_match` : `${rule.type}_source_match`,
+        rule_version: RULE_VERSION,
+        matched: hits ? [...new Set(hits.map((h) => h.toLowerCase()))].slice(0, 5) : []
+      }
+    });
+  }
+
   // Deduplication & Selection
   const typeMap: Record<string, Partial<Signal>> = {};
   detected.forEach(s => {
@@ -120,7 +182,7 @@ export function extractSignals(packet: MemoryPacket): Signal[] {
 
   // Final mapping and validation
   return uniqueSignals
-    .slice(0, 3) // Max 3 diverse signals per packet
+    .slice(0, 4) // Max 4 diverse signals per packet (8 types now extractable)
     .filter(s => (s.confidence || 0) >= 0.6) // Discard low confidence
     .map((sig, idx) => {
       const type = sig.type as SignalType;

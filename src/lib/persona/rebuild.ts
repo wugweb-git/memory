@@ -144,6 +144,8 @@ export async function rebuildPersona(params: {
       : null,
     executionFocus: behavioralMarkers.executionFocus,
     analyticalDepth: behavioralMarkers.analyticalDepth,
+    // Key the L3 resolver reads (src/lib/intelligence/resolver.ts).
+    positioningKeywords: [behavioralMarkers.executionFocus >= behavioralMarkers.analyticalDepth ? 'operator' : 'architect'],
   };
 
   // 4. LLM voice synthesis (Groq) — optional enrichment
@@ -160,7 +162,11 @@ export async function rebuildPersona(params: {
   await evolvePersonaField({
     userId,
     field: 'writingStyle',
-    nextValue: writingStructure as unknown as Record<string, unknown>,
+    nextValue: {
+      ...(writingStructure as unknown as Record<string, unknown>),
+      // Key the L3 resolver reads; only set when synthesis produced a summary.
+      ...(typeof synthesis?.summary === 'string' && synthesis.summary ? { bioSummary: synthesis.summary } : {}),
+    },
     reason: 'persona_rebuild',
     confidenceWeight: evidenceStrength,
   });

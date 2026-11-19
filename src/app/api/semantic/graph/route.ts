@@ -1,29 +1,29 @@
 import { NextResponse } from "next/server";
 import { postgres as prisma } from "@/lib/db/postgres";
 import { traverseGraph } from "@/lib/semantic/traversal";
+import { buildGraphEdges } from "@/lib/semantic/graph";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   const entities = await prisma.entity.findMany({
     where: { processing_state: "complete" },
+    orderBy: { occurrences: "desc" },
     take: 200,
     select: { id: true, name: true, type: true, packet_ids: true },
   });
 
-  const edges: Array<{ from: string; to: string }> = [];
-  const byPacket = new Map<string, string[]>();
-  for (const e of entities) {
-    const packetKey = Array.isArray(e.packet_ids) && e.packet_ids[0] ? String(e.packet_ids[0]) : e.id;
-    const list = byPacket.get(packetKey) ?? [];
-    list.push(e.id);
-    byPacket.set(packetKey, list);
-  }
-  for (const ids of byPacket.values()) {
-    for (let i = 1; i < ids.length; i++) {
-      edges.push({ from: ids[0], to: ids[i] });
-    }
-  }
+  const ids = entities.map((e) => e.id);
+  const rels = ids.length
+    ? await prisma.relationship.findMany({
+        where: { processing_state: "complete", from_entity_id: { in: ids }, to_entity_id: { in: ids } },
+        take: 1000,
+        select: { from_entity_id: true, to_entity_id: true, type: true, confidence: true },
+      })
+    : [];
+
+  const edges = buildGraphEdges(rels, entities);
+  const inferred = edges.length > 0 && edges.every((e) => e.inferred);
 
   const start = entities[0]?.id ?? "root";
   const nodes = traverseGraph(start, edges, 2);
@@ -32,5 +32,7 @@ export async function GET() {
     nodes,
     edges,
     entity_count: entities.length,
+    relationship_count: rels.length,
+    inferred,
   });
 }

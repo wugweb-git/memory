@@ -43,7 +43,9 @@ export const API_ENDPOINTS = {
     showcase: { path: '/api/showcase', methods: ['GET'] as const },
   },
   automation: {
-    rules: { path: '/api/automation/rules', methods: ['GET'] as const },
+    rules: { path: '/api/automation/rules', methods: ['GET', 'POST'] as const },
+    rule: { path: '/api/automation/rules/[id]', methods: ['PATCH', 'DELETE'] as const },
+    evaluate: { path: '/api/automation/rules/evaluate', methods: ['POST'] as const },
   },
   blob: {
     list: { path: '/api/blob', methods: ['GET', 'POST', 'DELETE'] as const },
@@ -58,6 +60,7 @@ export const API_ENDPOINTS = {
   },
   chat: { stream: { path: '/api/chat', methods: ['POST'] as const } },
   upload: { file: { path: '/api/upload', methods: ['POST'] as const } },
+  connectors: { import: { path: '/api/connectors/import', methods: ['POST'] as const } },
   cognitive: {
     decide: { path: '/api/cognitive/decide', methods: ['POST'] as const },
     evaluate: { path: '/api/cognitive/evaluate', methods: ['POST'] as const },
@@ -128,6 +131,7 @@ export const API_ENDPOINTS = {
   },
   system: {
     features: { path: '/api/system/features', methods: ['GET', 'PATCH'] as const },
+    cost: { path: '/api/system/cost', methods: ['GET'] as const },
   },
   recommendations: {
     list: { path: '/api/recommendations', methods: ['GET'] as const },
@@ -138,6 +142,7 @@ export const API_ENDPOINTS = {
   jobs: {
     run: { path: '/api/jobs/run', methods: ['GET', 'POST'] as const },
     process: { path: '/api/jobs/process', methods: ['GET', 'POST'] as const },
+    publishing: { path: '/api/jobs/publishing', methods: ['GET', 'POST'] as const },
   },
   sources: {
     list: { path: '/api/sources', methods: ['GET'] as const },

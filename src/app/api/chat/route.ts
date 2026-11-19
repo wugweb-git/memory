@@ -9,6 +9,7 @@ import { retrieve } from '@/lib/memory/rag';
 import { chatRetrievalFilters, emptyContextText } from '@/lib/memory/visibility';
 import { isAdminRequest } from '@/lib/security/auth';
 import { loadStyleHints } from '@/lib/persona/styleHintsLoader';
+import { checkRateLimit } from '@/lib/security/rate-limit';
 
 const SYSTEM_PROMPT = `IDENTITY: You are the Antigravity AI integrated into the Identity Prism OS.
 MISSION: Ground all responses strictly in the provided context nodes (Memory).
@@ -47,10 +48,29 @@ export async function POST(req: Request) {
       );
     }
 
-    const body = await req.json();
-    const messages: UIMessage[] = body.messages ?? [];
-    const searchMode = (body.searchMode ?? 'mmr').toLowerCase();
-    const temperature = body.temperature ?? 0.75;
+    // /api/chat is public (visitor /ask): throttle per client, bound the payload.
+    const admin0 = isAdminRequest(req);
+    if (!admin0) {
+      const ip = (req.headers.get('x-forwarded-for') || 'anon').split(',')[0].trim() || 'anon';
+      const limit = await checkRateLimit(`chat:${ip}`, 20, 60_000);
+      if (!limit.allowed) {
+        return NextResponse.json({ message: 'Rate limit exceeded' }, { status: 429 });
+      }
+    }
+
+    let body: Record<string, any>;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ message: 'Invalid JSON body' }, { status: 400 });
+    }
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return NextResponse.json({ message: 'Invalid JSON body' }, { status: 400 });
+    }
+    const messages: UIMessage[] = Array.isArray(body.messages) ? body.messages.slice(-40) : [];
+    const searchMode = String(body.searchMode ?? 'mmr').toLowerCase();
+    const rawTemp = Number(body.temperature ?? 0.75);
+    const temperature = Number.isFinite(rawTemp) ? Math.max(0, Math.min(2, rawTemp)) : 0.75;
 
     if (messages.length === 0) {
       return NextResponse.json({ message: 'SIG_EMPTY: Awaiting signal spark.' }, { status: 400 });
@@ -59,7 +79,7 @@ export async function POST(req: Request) {
     // Owner console chat (admin session) keeps full memory; /ask visitors only see public notes.
     const admin = isAdminRequest(req);
 
-    const question = getLastUserText(messages);
+    const question = getLastUserText(messages).slice(0, 4000);
     if (!question) {
       return NextResponse.json({ message: 'SIG_EMPTY: Awaiting signal spark.' }, { status: 400 });
     }

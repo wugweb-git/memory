@@ -59,23 +59,16 @@ export async function publishToPlatform(
   }
 
   // ── Real external send (token-gated) ──────────────────────────────────────
-  // A credential IS configured for this platform, so a live POST to the
-  // platform API belongs here, using `payload` as the request body. This branch
-  // only runs when the token env var is present, so the free-tier default path
-  // (no tokens set) NEVER makes an external network call. Until a real client
-  // is wired up we fail honestly rather than fabricate a success.
-  //
-  // INTEGRATION POINT — wire the platform's real API call in here, e.g.:
-  //   const res = await fetch(PLATFORM_ENDPOINT[platform], {
-  //     method: "POST",
-  //     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-  //     body: JSON.stringify(payload),
-  //   });
-  //   if (!res.ok) throw new Error(`${platform} ${res.status}`);
-  //   const json = await res.json();
-  //   return { platform, status: "published", externalId: String(json.id), delivered: true, payload };
+  // Only reached when the platform's credential env var is set.
   try {
-    throw new Error(`NO_CLIENT: external send for ${platform} is not implemented`);
+    const sent =
+      platform === "medium"
+        ? await sendMedium(token, payload)
+        : platform === "linkedin"
+          ? await sendLinkedIn(token, payload)
+          : null;
+    if (!sent) throw new Error(`NO_CLIENT: external send for ${platform} is not implemented`);
+    return { platform, status: "published", externalId: sent.id, delivered: true, payload };
   } catch (err) {
     return {
       platform,
@@ -86,4 +79,83 @@ export async function publishToPlatform(
       error: err instanceof Error ? err.message : String(err),
     };
   }
+}
+
+const SEND_TIMEOUT_MS = 15_000;
+
+/** The router wraps platform bodies as `{ platform, payload }`; unwrap to the body. */
+function innerPayload(payload: unknown): unknown {
+  return payload && typeof payload === "object" && "payload" in payload
+    ? (payload as { payload: unknown }).payload
+    : payload;
+}
+
+async function httpJson(url: string, init: RequestInit): Promise<{ res: Response; json: any }> {
+  const res = await fetch(url, { ...init, signal: AbortSignal.timeout(SEND_TIMEOUT_MS) });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const detail = json?.errors?.[0]?.message ?? json?.message ?? "";
+    throw new Error(`HTTP_${res.status}${detail ? `: ${String(detail).slice(0, 160)}` : ""}`);
+  }
+  return { res, json };
+}
+
+/** Medium: creates a post as a draft unless MEDIUM_PUBLISH_STATUS=public. */
+async function sendMedium(token: string, payload: unknown): Promise<{ id: string }> {
+  const body = innerPayload(payload) as { title?: string; content?: string; tags?: string[] };
+  if (!body || typeof body.content !== "string" || !body.content.trim()) throw new Error("EMPTY_CONTENT");
+  const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "application/json" };
+  const me = await httpJson("https://api.medium.com/v1/me", { headers });
+  const userId = me.json?.data?.id;
+  if (!userId) throw new Error("MEDIUM_NO_USER");
+  const status = process.env.MEDIUM_PUBLISH_STATUS === "public" ? "public" : "draft";
+  const { json } = await httpJson(`https://api.medium.com/v1/users/${userId}/posts`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      title: body.title || "Untitled",
+      contentFormat: "markdown",
+      content: body.content,
+      tags: (body.tags ?? []).slice(0, 5),
+      publishStatus: status,
+    }),
+  });
+  const id = json?.data?.id;
+  if (!id) throw new Error("MEDIUM_NO_ID");
+  return { id: String(id) };
+}
+
+/** LinkedIn: text share via ugcPosts. Author = LINKEDIN_AUTHOR_URN or the token's own member id. */
+async function sendLinkedIn(token: string, payload: unknown): Promise<{ id: string }> {
+  const text = innerPayload(payload);
+  if (typeof text !== "string" || !text.trim()) throw new Error("EMPTY_CONTENT");
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+    "X-Restli-Protocol-Version": "2.0.0",
+  };
+  let author = process.env.LINKEDIN_AUTHOR_URN;
+  if (!author) {
+    const me = await httpJson("https://api.linkedin.com/v2/userinfo", { headers });
+    if (!me.json?.sub) throw new Error("LINKEDIN_NO_USER");
+    author = `urn:li:person:${me.json.sub}`;
+  }
+  const { res, json } = await httpJson("https://api.linkedin.com/v2/ugcPosts", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      author,
+      lifecycleState: "PUBLISHED",
+      specificContent: {
+        "com.linkedin.ugc.ShareContent": {
+          shareCommentary: { text: text.slice(0, 3000) },
+          shareMediaCategory: "NONE",
+        },
+      },
+      visibility: { "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC" },
+    }),
+  });
+  const id = res.headers.get("x-restli-id") ?? json?.id;
+  if (!id) throw new Error("LINKEDIN_NO_ID");
+  return { id: String(id) };
 }

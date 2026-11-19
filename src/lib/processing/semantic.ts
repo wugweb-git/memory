@@ -4,6 +4,7 @@ import { SettingsController } from '../memory/settings';
 import { postgres } from '@/lib/db/postgres';
 import { isUniqueError } from '@/lib/prisma';
 import crypto from 'crypto';
+import { runFallbackExtraction } from '@/lib/semantic/fallback';
 import { ReconciliationEngine } from '../memory/semantic/reconciliation';
 import { isOpenRouterEnabled } from '@/lib/ai/models';
 import { createJobClient, type JobClient } from '@/lib/ai/job-client';
@@ -137,7 +138,7 @@ export class SemanticEngine {
       } catch (err: any) {
         console.warn('[SemanticEngine] LLM Failure, using fallback:', err.message);
         isFallback = true;
-        data = this.runFallbackExtraction(contentStr);
+        data = runFallbackExtraction(contentStr, { entities: ENTITY_LIMIT, topics: TOPIC_LIMIT, relationships: RELATIONSHIP_LIMIT });
       }
 
       // 5. Reconciliation Path
@@ -161,7 +162,8 @@ export class SemanticEngine {
       }
 
       // 6. Topics & Intents (Stored in SemanticObject)
-      const processedTopics = (data.topics || []).filter((t: any) => t.confidence >= 0.7);
+      // Fallback topics are kept (flagged fallback:true, low confidence) so downstream isn't empty.
+      const processedTopics = (data.topics || []).filter((t: any) => isFallback || t.confidence >= 0.7);
 
       // 7. Relationship Path (Strict Verified Rule)
       if (!isFallback && data.relationships) {
@@ -208,6 +210,35 @@ export class SemanticEngine {
         }
       }
 
+      // 7b. Fallback co-mention relationships: written directly but clearly low confidence
+      // and unverified (never reach the 0.7 verify bar); the graph API surfaces confidence.
+      if (isFallback && data.relationships) {
+        for (const rel of data.relationships.slice(0, RELATIONSHIP_LIMIT)) {
+          const fromEnt = processedEntities.find(e => e.name === rel.from);
+          const toEnt = processedEntities.find(e => e.name === rel.to);
+          if (!fromEnt || !toEnt || fromEnt.entity_id === toEnt.entity_id) continue;
+          const relType = 'co_mentioned';
+          const relDedupHash = this.generateHash(`${fromEnt.entity_id}_${toEnt.entity_id}_${relType}`);
+          try {
+            await postgres.relationship.upsert({
+              where: { dedup_hash_test_run_id: { dedup_hash: relDedupHash, test_run_id: testRunId } },
+              update: { source_chunk_ids: { push: packetId } },
+              create: {
+                from_entity_id: fromEnt.entity_id,
+                to_entity_id: toEnt.entity_id,
+                type: relType,
+                confidence: rel.weight,
+                verified: false,
+                source_chunk_ids: [packetId],
+                dedup_hash: relDedupHash,
+                test_run_id: testRunId,
+                processing_state: "complete"
+              }
+            });
+          } catch (err) { /* unique collision handled */ }
+        }
+      }
+
       // 8. Capture Results in SemanticObject
       await postgres.semanticObject.create({
         data: {
@@ -239,24 +270,5 @@ export class SemanticEngine {
     } finally {
       await this.releaseLock(packetId);
     }
-  }
-
-  /**
-   * Rule-Based Fallback Extraction
-   */
-  private static runFallbackExtraction(content: string) {
-    const entities: any[] = [];
-    const capsRegex = /\b([A-Z][a-z]+(?:\s[A-Z][a-z]+)*)\b/g;
-    const matches = content.match(capsRegex) || [];
-    const stopwords = ['The', 'And', 'But', 'This', 'That', 'With', 'From'];
-    
-    Array.from(new Set(matches))
-      .filter(m => !stopwords.includes(m) && m.length > 2)
-      .slice(0, ENTITY_LIMIT)
-      .forEach(name => {
-        entities.push({ name, type: 'concept', confidence: 0.3 });
-      });
-
-    return { entities, intents: [], topics: [], relationships: [] };
   }
 }
