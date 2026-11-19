@@ -2,12 +2,14 @@ import {
   siBehance,
   siDribbble,
   siGithub,
+  siGmail,
   siGooglecalendar,
   siGoogledrive,
   siGoogletasks,
   siLinkedin,
   siNotion,
   siRss,
+  siSpotify,
   siX,
   siYoutube,
   type SimpleIcon,
@@ -20,6 +22,8 @@ import {
  */
 const BRAND_ICONS: Record<string, SimpleIcon> = {
   github: siGithub,
+  gmail: siGmail,
+  spotify: siSpotify,
   youtube: siYoutube,
   blog: siRss,
   notion: siNotion,
