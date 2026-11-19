@@ -20,7 +20,7 @@ export async function PATCH(req: NextRequest) {
   const adminGate = requireAdmin(req);
   if (adminGate instanceof NextResponse) return adminGate;
   try {
-    const body = (await req.json()) as { items?: AdminChecklistItem[] };
+    const body = (await req.json().catch(() => ({}))) as { items?: AdminChecklistItem[] };
     if (!Array.isArray(body.items)) {
       return NextResponse.json({ error: 'items array required' }, { status: 400 });
     }

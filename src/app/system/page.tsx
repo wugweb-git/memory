@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { ChevronDown } from "lucide-react";
 import { AppToastContainer } from "@/app/component/AppToastContainer";
 import "react-toastify/dist/ReactToastify.css";
-import { M3Page, M3State } from "@/components/ui/m3";
+import { M3Button, M3Page, M3State } from "@/components/ui/m3";
 import { ListSection, RowList } from "@/app/integrations/list-parts";
 import { Skeleton } from "@/components/ui/primitives";
 import { UI_API } from "@/lib/ui/contracts";
@@ -43,7 +43,9 @@ export default function SystemPage() {
 
   const [featuresError, setFeaturesError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadHealth = useCallback(() => {
+    setLoading(true);
+    setError(null);
     const sources: Record<string, string> = {
       system: UI_API.healthSystem,
       persona: UI_API.healthPersona,
@@ -61,14 +63,22 @@ export default function SystemPage() {
           else failed.push(k);
         });
         setHealth(next);
-        if (failed.length) setError(`Could not load these health checks: ${failed.map((k) => HEALTH_LABELS[k] ?? k).join(", ")}. Reload the page to try again.`);
+        if (failed.length) setError(`Could not load these health checks: ${failed.map((k) => HEALTH_LABELS[k] ?? k).join(", ")}.`);
       })
       .finally(() => setLoading(false));
+  }, []);
 
+  const loadFeatures = useCallback(() => {
+    setFeaturesError(null);
     apiRequest<{ features: Record<string, boolean> }>(UI_API.systemFeatures)
       .then((j) => setFeatures(j.features))
-      .catch((e) => setFeaturesError(e instanceof Error ? e.message : "Check your connection and reload"));
+      .catch((e) => setFeaturesError(e instanceof Error ? e.message : "Check your connection"));
   }, []);
+
+  useEffect(() => {
+    loadHealth();
+    loadFeatures();
+  }, [loadHealth, loadFeatures]);
 
   async function toggle(key: string) {
     if (!features) return;
@@ -96,7 +106,10 @@ export default function SystemPage() {
           <ListSection id="modules-title" title="Modules" hint="Switches are saved and apply across the whole app. Only the owner can change them." bare>
             {features === null ? (
               featuresError ? (
-                <div className="p-4"><M3State state="error" message={`Module switches could not load (${featuresError}). Reload the page, or sign in as the owner.`} /></div>
+                <div className="space-y-3 p-4">
+                  <M3State state="error" message={`Module switches could not load (${featuresError}). Try again, or sign in as the owner.`} />
+                  <M3Button tone="secondary" onClick={loadFeatures}>Try again</M3Button>
+                </div>
               ) : (
                 <div className="space-y-2 p-4" role="status" aria-label="Loading module switches">
                   <Skeleton className="h-12 w-full motion-reduce:animate-none" />
@@ -142,7 +155,12 @@ export default function SystemPage() {
           <CostCard />
 
           {loading ? <div className="space-y-2" role="status" aria-label="Loading health checks"><Skeleton className="h-24 w-full motion-reduce:animate-none" /></div> : null}
-          {error ? <M3State state="error" message={error} /> : null}
+          {error ? (
+            <div className="space-y-3">
+              <M3State state="error" message={error} />
+              <M3Button tone="secondary" onClick={loadHealth}>Try again</M3Button>
+            </div>
+          ) : null}
           {Object.keys(health).length > 0 ? (
             <ListSection id="health-title" title="Health checks" hint="Open a check to see its raw details." bare>
               <RowList>

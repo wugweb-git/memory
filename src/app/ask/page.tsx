@@ -183,7 +183,8 @@ export default function AskPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const menuItemRef = useRef<HTMLButtonElement>(null);
   const nearBottomRef = useRef(true);
   const stamps = useRef(createTimestampStore());
   const [userStopped, setUserStopped] = useState(false);
@@ -249,10 +250,11 @@ export default function AskPage() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setMenuOpen(false);
-        menuBtnRef.current?.focus();
+        menuButtonRef.current?.focus();
       }
     };
-    menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]:not(:disabled)')?.focus();
+    // Move focus to the first action so keyboard and screen reader users land in the menu.
+    menuItemRef.current?.focus();
     document.addEventListener('mousedown', onDown);
     document.addEventListener('touchstart', onDown);
     document.addEventListener('keydown', onKey);
@@ -305,6 +307,8 @@ export default function AskPage() {
 
   const openClearDialog = () => {
     setMenuOpen(false);
+    // The menu item unmounts, so hand focus back to its trigger; the dialog restores it on close.
+    menuButtonRef.current?.focus();
     dialogRef.current?.showModal();
   };
 
@@ -364,7 +368,7 @@ export default function AskPage() {
         </div>
         <div className="relative" ref={menuRef}>
           <button
-            ref={menuBtnRef}
+            ref={menuButtonRef}
             type="button"
             aria-label="More options"
             aria-haspopup="menu"
@@ -380,6 +384,7 @@ export default function AskPage() {
               className="absolute right-0 top-full z-10 mt-1 min-w-40 rounded-xl border border-border-primary bg-bg-elevated py-1 shadow-elev-2"
             >
               <button
+                ref={menuItemRef}
                 type="button"
                 role="menuitem"
                 disabled={messages.length === 0}
@@ -588,7 +593,7 @@ export default function AskPage() {
       <dialog
         ref={dialogRef}
         aria-labelledby="clear-title"
-        onClose={() => menuBtnRef.current?.focus()}
+        onClose={() => menuButtonRef.current?.focus()}
         className="m-auto w-[min(90vw,22rem)] rounded-2xl border border-border-primary bg-bg-elevated p-5 text-text-primary backdrop:bg-text-primary/40"
       >
         <h2 id="clear-title" className="text-lg font-semibold">

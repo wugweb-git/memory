@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { packetId } = await req.json();
+    const { packetId } = await req.json().catch(() => ({}));
     if (!packetId) return NextResponse.json({ error: 'packetId required' }, { status: 400 });
 
     const result = await ProcessingEngine.processPacket(packetId);

@@ -333,7 +333,11 @@ export default function OutputStudioPage() {
     setVersions([]); setLastSaved(null); setTab("compose");
   }
 
-  function startEdit(s: ProfileSection) {
+  function startEdit(s: ProfileSection, skipGuard = false) {
+    if (!skipGuard && editDirty && editingId !== s.id) {
+      setConfirmReq({ title: "Discard section changes?", description: "Your changes to the section you are editing will be lost.", confirmLabel: "Discard changes", cancelLabel: "Keep editing", run: () => startEdit(s, true) });
+      return;
+    }
     const body = sectionBody(s);
     setEditingId(s.id); setEditTitle(s.title); setEditBody(body);
     setEditOriginal({ title: s.title, body });
@@ -364,7 +368,7 @@ export default function OutputStudioPage() {
   function askUnpublish(s: ProfileSection) {
     setConfirmReq({
       title: "Remove from your public profile?",
-      description: `"${s.title}" will no longer show on your public profile. You can publish it again later.`,
+      description: `"${s.title}" will be removed from your public profile. This cannot be undone.`,
       confirmLabel: "Remove section",
       cancelLabel: "Keep section",
       run: () => void unpublish(s),

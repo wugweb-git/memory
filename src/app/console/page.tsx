@@ -73,7 +73,7 @@ const QUICK = [
   { href: '/content',   label: 'Content',                icon: FileText,  desc: 'Generated & published output' },
 ] as const;
 
-type LayerStatus = 'Active' | 'Degraded' | 'Offline' | 'Checking';
+type LayerStatus = 'Active' | 'Degraded' | 'Offline' | 'Checking' | 'Signed out';
 
 const LAYER_DEFS = [
   { id: 'L0', name: 'Intake' },
@@ -89,31 +89,37 @@ const STATUS_STYLE: Record<LayerStatus, { text: string; dot: string }> = {
   Degraded: { text: 'text-warning',         dot: 'bg-warning' },
   Offline:  { text: 'text-danger',          dot: 'bg-danger' },
   Checking: { text: 'text-text-tertiary',   dot: 'bg-text-tertiary motion-safe:animate-pulse' },
+  'Signed out': { text: 'text-warning',     dot: 'bg-warning' },
 };
 
 /** Real per-layer health, probed from the layers' own APIs — no pretend statuses. */
-function useLayerHealth(): Record<string, LayerStatus> {
+function useLayerHealth(): { layers: Record<string, LayerStatus>; recheck: () => void } {
+  const [attempt, setAttempt] = useState(0);
   const [layers, setLayers] = useState<Record<string, LayerStatus>>(
     Object.fromEntries(LAYER_DEFS.map((l) => [l.id, 'Checking'])),
   );
 
   useEffect(() => {
     let cancelled = false;
+    setLayers(Object.fromEntries(LAYER_DEFS.map((l) => [l.id, 'Checking'])));
 
     async function probe() {
       // L0–L2 live in the ingestion store; one health call covers them.
       const ingestionLayers = fetch('/api/health/system')
-        .then((r) => (r.ok ? r.json() : Promise.reject()))
+        .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
         .then((h) => {
           const s: LayerStatus =
             h.status === 'LOCKED' ? 'Active' : h.status === 'DEGRADED' ? 'Degraded' : 'Offline';
           // A degraded response with 0 packets usually means the DB is unreachable.
           return h.warning ? 'Offline' : s;
         })
-        .catch((): LayerStatus => 'Offline');
+        .catch((e): LayerStatus => (e === 401 ? 'Signed out' : 'Offline'));
 
+      // A 401 means the session ended, not that the layer is down.
       const ping = (url: string) =>
-        fetch(url).then((r): LayerStatus => (r.ok ? 'Active' : 'Offline')).catch((): LayerStatus => 'Offline');
+        fetch(url)
+          .then((r): LayerStatus => (r.ok ? 'Active' : r.status === 401 ? 'Signed out' : 'Offline'))
+          .catch((): LayerStatus => 'Offline');
 
       const [ingestion, l3, l4, l5] = await Promise.all([
         ingestionLayers,
@@ -129,9 +135,9 @@ function useLayerHealth(): Record<string, LayerStatus> {
 
     probe();
     return () => { cancelled = true; };
-  }, []);
+  }, [attempt]);
 
-  return layers;
+  return { layers, recheck: () => setAttempt((n) => n + 1) };
 }
 
 type Recommendation = {
@@ -162,7 +168,8 @@ function useRecommendations() {
 
 export default function ConsolePage() {
   const { stats, loading } = useDashboardData();
-  const layerHealth = useLayerHealth();
+  const { layers: layerHealth, recheck } = useLayerHealth();
+  const signedOut = Object.values(layerHealth).some((v) => v === 'Signed out');
   const { recs: recommendations, failed: recsFailed, retry: retryRecs } = useRecommendations();
   const syncKey = String(stats.syncStatus).toLowerCase();
   const syncUnknown = syncKey === 'unknown' || syncKey === '—';
@@ -282,10 +289,26 @@ export default function ConsolePage() {
                 );
               })}
             </ul>
-            {Object.values(layerHealth).some((v) => v === 'Offline') ? (
-              <p role="status" className="mt-3 px-1 text-sm text-text-secondary">
-                A layer shows offline when its health check fails. Reload to check again.
-              </p>
+            <div role="status" aria-live="polite">
+              {signedOut ? (
+                <p className="mt-3 px-1 text-sm text-text-secondary">
+                  Your session has ended, so some layers could not be checked.{' '}
+                  <Link href="/login?next=/console" className="font-medium text-accent underline underline-offset-2">Sign in again</Link>
+                </p>
+              ) : Object.values(layerHealth).some((v) => v === 'Offline') ? (
+                <p className="mt-3 px-1 text-sm text-text-secondary">
+                  A layer shows offline when its health check fails.
+                </p>
+              ) : null}
+            </div>
+            {Object.values(layerHealth).some((v) => v === 'Offline' || v === 'Signed out') ? (
+              <button
+                type="button"
+                onClick={recheck}
+                className="mt-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border-primary px-4 text-sm font-medium text-text-primary hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <RefreshCw size={14} aria-hidden="true" /> Check again
+              </button>
             ) : null}
           </section>
         </div>

@@ -57,7 +57,7 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
 /* ── view ────────────────────────────────────────────────────────── */
 
 export function PublicProfileView({ username }: { username: string }) {
-  const { profile, byType, loading, error } = useProfileData(username);
+  const { profile, byType, loading, error, refetch } = useProfileData(username);
 
   const isOwner = username === IDENTITY_CONFIG.HANDLE;
   const displayName = profile?.displayName ?? (isOwner ? IDENTITY_CONFIG.DISPLAY_NAME : username);
@@ -93,6 +93,13 @@ export function PublicProfileView({ username }: { username: string }) {
         <div role="status" className="flex flex-col gap-3">
           <h1 className="text-lg font-bold text-text-primary">This profile isn&rsquo;t live yet</h1>
           <p className="text-sm text-text-tertiary">Check the link for typos, or try again in a little while.</p>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="mx-auto inline-flex min-h-11 items-center rounded-xl border border-border-primary px-5 text-sm font-semibold text-text-primary hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            Try again
+          </button>
         </div>
       </main>
     );
@@ -106,7 +113,7 @@ export function PublicProfileView({ username }: { username: string }) {
       <header className="space-y-6">
         <div className="flex items-start justify-between gap-6">
           <div className="min-w-0">
-            <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight text-text-primary leading-tight">
+            <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight text-text-primary leading-tight break-words">
               {displayName}
             </h1>
             {role && (

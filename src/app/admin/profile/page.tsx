@@ -243,6 +243,7 @@ export default function AdminProfilePage() {
               <img
                 src={avatarUrl || avatarFallbackUrl(200)}
                 alt={`Avatar preview for ${displayName}`}
+                onError={(e) => { e.currentTarget.src = avatarFallbackUrl(200); }}
                 className="w-32 h-32 rounded-full object-cover border-4 border-border-secondary mb-4"
               />
               <p className="text-xs font-medium text-text-tertiary mb-1">How your profile looks</p>

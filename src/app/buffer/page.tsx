@@ -101,6 +101,13 @@ const ACTION_DONE: Record<string, string> = {
   reject: 'Item rejected and purged.',
 };
 
+const ACTION_VERB: Record<string, string> = {
+  review: 'mark',
+  promotable: 'mark',
+  promote: 'promote',
+  reject: 'purge',
+};
+
 const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent';
 
 function formatDate(value: string) {
@@ -120,17 +127,19 @@ export default function BufferControlSurface() {
   const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [confirmingReject, setConfirmingReject] = useState(false);
   const reqId = useRef(0);
+  const [statsFailed, setStatsFailed] = useState(false);
   const [captureMode, setCaptureMode] = useState<'upload' | 'voice' | 'knowledge' | 'link' | 'pulse' | 'device' | 'csv'>('upload');
 
   // Stats & Ingestion Monitoring
   const fetchStats = useCallback(async () => {
     try {
       const res = await fetch(API_ENDPOINTS.blob.stats.path);
-      if (!res.ok) return;
+      if (!res.ok) { setStatsFailed(true); return; }
       const data = await res.json();
-      if (data && typeof data.usage_percent === 'number') setStats(data);
+      if (data && typeof data.usage_percent === 'number') { setStats(data); setStatsFailed(false); }
     } catch (err) {
       console.error('Failed to fetch blob stats', err);
+      setStatsFailed(true);
     }
   }, []);
 
@@ -189,7 +198,7 @@ export default function BufferControlSurface() {
         fetchItems();
         fetchStats();
       } else {
-        let msg = `Could not ${action} this item (HTTP ${res.status}). Try again.`;
+        let msg = `Could not ${ACTION_VERB[action] ?? 'update'} this item (HTTP ${res.status}). Try again.`;
         try {
           const body = await res.json();
           if (body?.error || body?.message) msg = String(body.error || body.message);
@@ -198,7 +207,7 @@ export default function BufferControlSurface() {
       }
     } catch (err) {
       console.error(`Failed to ${action} blob item`, err);
-      setActionError(`Network error: the ${action} request did not reach the server, so nothing changed. Check your connection and try again.`);
+      setActionError(`Network error: the ${ACTION_VERB[action] ?? 'update'} request did not reach the server, so nothing changed. Check your connection and try again.`);
     } finally {
       setBusyAction(null);
     }
@@ -355,7 +364,7 @@ export default function BufferControlSurface() {
 
   return (
     <AppShell>
-      <div className={`mx-auto w-full max-w-7xl ${showAlertStrip ? 'pb-16' : ''}`}>
+      <div className={`mx-auto w-full max-w-7xl ${showAlertStrip ? 'pb-24' : ''}`}>
         {/* Header and capacity */}
         <PageHeader className="mb-6"
           title="Buffer"
@@ -383,7 +392,7 @@ export default function BufferControlSurface() {
           <HardDrive size={18} aria-hidden="true" className="shrink-0 text-text-secondary" />
           <div className="min-w-0 flex-1">
             <div className="flex items-baseline justify-between gap-2 text-sm text-text-secondary">
-              <span className="truncate">{stats ? STATUS_LABEL[stats.status] : 'Checking capacity…'}</span>
+              <span className="truncate">{stats ? STATUS_LABEL[stats.status] : statsFailed ? 'Capacity unavailable' : 'Checking capacity…'}</span>
               <span className="tabular-nums">{stats ? `${stats.usage_percent}%` : ''}</span>
             </div>
             <div
@@ -437,7 +446,7 @@ export default function BufferControlSurface() {
               </div>
               <p role="status" aria-live="polite" className="text-sm text-text-secondary">
                 {loading ? 'Loading items…' : (
-                  <>Showing <span className="font-medium text-text-primary">{visibleItems.length}</span> {visibleItems.length === 1 ? 'item' : 'items'}</>
+                  <>Showing <span className="font-medium text-text-primary">{visibleItems.length}</span> {visibleItems.length === 1 ? 'item' : 'items'}{items.length >= 50 ? ' (the 50 most recent; refine with the filters above)' : ''}</>
                 )}
               </p>
             </div>
@@ -595,7 +604,7 @@ export default function BufferControlSurface() {
       {stats && stats.status !== 'healthy' && (
         <div
           role={stats.status === 'blocked' ? 'alert' : 'status'}
-          className={`fixed bottom-16 left-0 right-0 z-30 flex items-center justify-center gap-3 px-4 sm:px-6 py-3 md:bottom-0 ${
+          className={`fixed bottom-[calc(var(--dock-h)+env(safe-area-inset-bottom))] left-0 right-0 z-30 flex items-center justify-center gap-3 px-4 sm:px-6 py-3 md:bottom-0 ${
             stats.status === 'blocked' ? 'bg-danger text-bg-primary' : 'bg-warning text-bg-primary'
           }`}
         >

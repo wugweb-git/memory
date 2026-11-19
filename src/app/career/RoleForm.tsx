@@ -129,7 +129,7 @@ export function RoleForm({
     ind: `${uid}-ind`, logic: `${uid}-logic`, persp: `${uid}-persp`,
   };
 
-  // Move focus into the form when it opens (keyboard and screen-reader users land on the first field).
+  // Move focus into the form when it opens so keyboard and screen reader users land on it.
   useEffect(() => {
     document.getElementById(ids.title)?.focus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -228,7 +228,7 @@ export function RoleForm({
         >
           Cancel
         </button>
-        <p role="status" aria-live="polite" className={`text-xs ${saveState === "failed" ? "text-danger" : "text-text-tertiary"}`}>
+        <p role="status" aria-live="polite" className={`min-w-0 break-words text-xs ${saveState === "failed" ? "text-danger" : "text-text-tertiary"}`}>
           {saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved" : saveState === "failed" ? (errorMessage || "Could not save. Try again.") : ""}
         </p>
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { M3Button } from '@/components/ui/m3';
 import { ListSection } from './list-parts';
 import { apiRequest } from '@/lib/ui/api-client';
 
@@ -19,13 +20,16 @@ export function AutoPromoteCard() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState('');
 
-  useEffect(() => {
-    let live = true;
-    apiRequest<{ mode: Mode }>('/api/settings/auto-promote')
-      .then((r) => { if (live) setMode(r.mode); })
-      .catch(() => { if (live) setError('Could not load this setting.'); });
-    return () => { live = false; };
+  const load = useCallback(() => {
+    setError(null);
+    return apiRequest<{ mode: Mode }>('/api/settings/auto-promote')
+      .then((r) => setMode(r.mode))
+      .catch(() => setError('Could not load this setting. Check your connection and try again.'));
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   async function choose(next: Mode) {
     const prev = mode;
@@ -76,6 +80,7 @@ export function AutoPromoteCard() {
         ))}
       </fieldset>
       {error ? <p id="auto-promote-err" role="alert" className="border-t border-border-secondary px-4 py-3 text-sm text-danger">{error}</p> : null}
+      {error && mode === null ? <div className="px-4 pb-3"><M3Button tone="secondary" onClick={load}>Try again</M3Button></div> : null}
       <p role="status" aria-live="polite" className="px-4 py-2 text-sm text-text-tertiary empty:hidden">{saved}</p>
     </ListSection>
   );

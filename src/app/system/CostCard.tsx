@@ -35,7 +35,7 @@ export function CostCard() {
     setError(null);
     apiRequest<CostResponse>(API_ENDPOINTS.system.cost.path, { retries: 0 })
       .then(setData)
-      .catch((e) => setError(e instanceof Error ? e.message : 'Check your connection and reload'));
+      .catch((e) => setError(e instanceof Error ? e.message : 'Check your connection'));
   }, []);
 
   useEffect(() => { load(); }, [load]);

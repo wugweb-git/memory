@@ -60,8 +60,10 @@ function LoginForm() {
 
   // Same-origin paths only: blocks "//evil.com", "/\\evil.com" and absolute URLs,
   // and never bounces back to /login itself.
+  // Tab, CR and LF are stripped by browsers when parsing URLs, so "/\t/evil.com" would become "//evil.com".
+  const cleanNext = next.replace(/[\u0000-\u001f\u007f]/g, '');
   const safeNext =
-    next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/\\') && !next.startsWith('/login')
+    cleanNext === next && next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/\\') && !next.startsWith('/login')
       ? next
       : '/console';
 
