@@ -6,8 +6,7 @@ import { AppToastContainer } from '@/app/component/AppToastContainer';
 import 'react-toastify/dist/ReactToastify.css';
 import { AppShell } from '@/app/component/AppShell';
 import { M3Button, M3Page, M3State } from '@/components/ui/m3';
-import { ListSection } from '../list-parts';
-import { StatusPill } from '@/components/ui/primitives';
+import { Card, Section, StatusPill } from '@/components/ui/primitives';
 import { apiRequest } from '@/lib/ui/api-client';
 
 type Field = { key: string; label: string; secret: boolean; required: boolean; help: string; source: 'app' | 'env' | null; hint: string | null };
@@ -77,13 +76,8 @@ export default function PublishingAccountsPage() {
           <M3State state="error" message="Tokens can't be saved yet: set MEMORY_ENCRYPTION_KEY (64 hex characters) in Vercel, then reload. IDs can still be saved." />
         ) : null}
         {data?.accounts.map((a) => (
-          <ListSection
-            key={a.platform}
-            id={`acct-${a.platform}`}
-            title={a.label}
-            hint={a.note}
-            action={a.ready ? <StatusPill tone="success">Ready to post</StatusPill> : <StatusPill tone="warning">Needs setup</StatusPill>}
-          >
+          <Section key={a.platform} title={a.label} description={a.note} action={a.ready ? <StatusPill tone="success">Ready to post</StatusPill> : <StatusPill tone="warning">Needs setup</StatusPill>}>
+<Card className="space-y-3">
             <div className="space-y-5">
               {a.fields.map((f) => {
                 const id = `cred-${f.key}`;
@@ -126,7 +120,8 @@ export default function PublishingAccountsPage() {
                 );
               })}
             </div>
-          </ListSection>
+          </Card>
+</Section>
         ))}
       </M3Page>
       <AppToastContainer />

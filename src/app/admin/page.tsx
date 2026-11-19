@@ -7,9 +7,9 @@ import { AppToastContainer } from "@/app/component/AppToastContainer";
 import 'react-toastify/dist/ReactToastify.css';
 import { ChevronRight } from 'lucide-react';
 import { M3Button, M3Page, M3State } from '@/components/ui/m3';
-import { ListRow, ListSection, RowList } from '@/app/integrations/list-parts';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
 import type { AdminChecklistItem } from '@/lib/admin/checklist';
+import { Card, ListGroup, ListRow, Section } from '@/components/ui/primitives';
 
 type HealthRow = { name: string; status: string; ok: boolean };
 
@@ -155,8 +155,9 @@ export default function AdminConsole() {
       <AppToastContainer position="bottom-right" theme="light" />
       <M3Page title="Admin console" subtitle="Operations, health and setup. Owner only.">
 
-          <ListSection id="ops-title" title="Operations" bare>
-            <RowList>
+          <Section title="Operations">
+<Card className="overflow-hidden p-0">
+            <ListGroup className="rounded-none border-0 bg-transparent">
               <ListRow
                 title="Run diagnostics"
                 supporting="Checks every subsystem. Read-only."
@@ -184,7 +185,7 @@ export default function AdminConsole() {
                   </M3Button>
                 }
               />
-            </RowList>
+            </ListGroup>
             <div role="status" aria-live="polite" className={opResult || busy ? 'border-t border-border-secondary p-4' : ''}>
               {busy !== null && <p className="text-sm text-text-tertiary">Running, this can take a few seconds…</p>}
               {opResult && (
@@ -194,14 +195,11 @@ export default function AdminConsole() {
                 </div>
               )}
             </div>
-          </ListSection>
+          </Card>
+</Section>
 
-          <ListSection
-            id="health-title"
-            title="Health"
-            action={<button type="button" onClick={loadHealth} aria-label="Refresh health checks" className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-semibold text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">Refresh</button>}
-            bare
-          >
+          <Section title="Health" action={<button type="button" onClick={loadHealth} aria-label="Refresh health checks" className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-semibold text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">Refresh</button>}>
+<Card className="overflow-hidden p-0">
             {health === null ? (
               <div className="p-4"><M3State state="loading" message="Checking subsystems…" /></div>
             ) : (
@@ -211,7 +209,7 @@ export default function AdminConsole() {
                     ? 'All subsystems are healthy.'
                     : `${health.filter((r) => !r.ok).length} of ${health.length} subsystems need attention.`}
                 </p>
-                <RowList label="Subsystem health" className="border-t border-border-secondary">
+                <ListGroup className="rounded-none border-0 bg-transparent border-t border-border-secondary" aria-label="Subsystem health">
                   {health.map((row) => (
                     <li key={row.name} className="flex min-h-12 items-center justify-between gap-3 px-4 py-2">
                       <span className="text-base text-text-primary">{row.name}</span>
@@ -221,12 +219,14 @@ export default function AdminConsole() {
                       </span>
                     </li>
                   ))}
-                </RowList>
+                </ListGroup>
               </>
             )}
-          </ListSection>
+          </Card>
+</Section>
 
-          <ListSection id="checklist-title" title={`Setup checklist${checklist ? ` (${done}/${checklist.length})` : ''}`} bare>
+          <Section title={`Setup checklist${checklist ? ` (${done}/${checklist.length})` : ''}`}>
+<Card className="overflow-hidden p-0">
             {checklist === null ? (
               <div className="p-4">
                 {checklistError ? (
@@ -239,7 +239,7 @@ export default function AdminConsole() {
                 )}
               </div>
             ) : (
-              <RowList label="Setup checklist">
+              <ListGroup className="rounded-none border-0 bg-transparent" aria-label="Setup checklist">
                 {checklist.map((item) => (
                   <li key={item.id}>
                     <button
@@ -255,12 +255,14 @@ export default function AdminConsole() {
                     </button>
                   </li>
                 ))}
-              </RowList>
+              </ListGroup>
             )}
-          </ListSection>
+          </Card>
+</Section>
 
-          <ListSection id="shortcuts-title" title="Shortcuts" bare>
-            <RowList>
+          <Section title="Shortcuts">
+<Card className="overflow-hidden p-0">
+            <ListGroup className="rounded-none border-0 bg-transparent">
               {SHORTCUTS.map((s) => (
                 <li key={s.href}>
                   <Link
@@ -275,8 +277,9 @@ export default function AdminConsole() {
                   </Link>
                 </li>
               ))}
-            </RowList>
-          </ListSection>
+            </ListGroup>
+          </Card>
+</Section>
       </M3Page>
     </>
   );

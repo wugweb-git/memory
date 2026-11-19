@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { M3Page, M3State } from '@/components/ui/m3';
-import { ListSection } from '@/app/integrations/list-parts';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
 import {
   applyMark,
@@ -17,6 +16,7 @@ import {
   toggleSelectAll,
   type PublicNote,
 } from '@/lib/memory/public-curation';
+import { Card, Section } from '@/components/ui/primitives';
 
 const ENDPOINT = API_ENDPOINTS.memory.public.path;
 const PAGE_LIMIT = 100;
@@ -145,7 +145,8 @@ export default function PublicNotesPage() {
     <M3Page title="Public notes" subtitle="Choose which memory notes the public Ask chat may quote. Owner only.">
       <Link href="/admin" className="inline-flex min-h-11 items-center text-sm font-medium text-accent underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">Back to admin</Link>
 
-      <ListSection id="notes-title" title={notes ? summarise(notes) : 'Notes'} bare>
+      <Section title={notes ? summarise(notes) : 'Notes'}>
+<Card className="overflow-hidden p-0">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4">
           <label className="flex min-h-11 items-center gap-2 text-base text-text-primary">
             <input
@@ -232,7 +233,8 @@ export default function PublicNotesPage() {
             })}
           </ul>
         )}
-      </ListSection>
+      </Card>
+</Section>
       {bulkBar}
     </M3Page>
   );

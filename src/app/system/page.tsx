@@ -6,8 +6,7 @@ import { ChevronDown } from "lucide-react";
 import { AppToastContainer } from "@/app/component/AppToastContainer";
 import "react-toastify/dist/ReactToastify.css";
 import { M3Button, M3Page, M3State } from "@/components/ui/m3";
-import { ListSection, RowList } from "@/app/integrations/list-parts";
-import { Skeleton } from "@/components/ui/primitives";
+import { Card, ListGroup, Section, Skeleton } from '@/components/ui/primitives';
 import { UI_API } from "@/lib/ui/contracts";
 import { apiRequest } from "@/lib/ui/api-client";
 import { AppShell } from "@/app/component/AppShell";
@@ -103,7 +102,8 @@ export default function SystemPage() {
     <AppShell>
       <AppToastContainer position="bottom-right" theme="light" />
       <M3Page title="System" subtitle="Module switches, operational checks and runtime status">
-          <ListSection id="modules-title" title="Modules" hint="Switches are saved and apply across the whole app. Only the owner can change them." bare>
+          <Section title="Modules" description="Switches are saved and apply across the whole app. Only the owner can change them.">
+<Card className="overflow-hidden p-0">
             {features === null ? (
               featuresError ? (
                 <div className="space-y-3 p-4">
@@ -118,7 +118,7 @@ export default function SystemPage() {
                 </div>
               )
             ) : (
-              <RowList label="Modules">
+              <ListGroup className="rounded-none border-0 bg-transparent" aria-label="Modules">
                 {Object.entries(MODULE_LABELS).map(([key, label]) => {
                   const on = features[key] !== false;
                   return (
@@ -146,9 +146,10 @@ export default function SystemPage() {
                     </li>
                   );
                 })}
-              </RowList>
+              </ListGroup>
             )}
-          </ListSection>
+          </Card>
+</Section>
 
           <PasskeyCard />
 
@@ -162,8 +163,9 @@ export default function SystemPage() {
             </div>
           ) : null}
           {Object.keys(health).length > 0 ? (
-            <ListSection id="health-title" title="Health checks" hint="Open a check to see its raw details." bare>
-              <RowList>
+            <Section title="Health checks" description="Open a check to see its raw details.">
+<Card className="overflow-hidden p-0">
+              <ListGroup className="rounded-none border-0 bg-transparent">
                 {Object.entries(health).map(([k, v]) => {
                   const label = HEALTH_LABELS[k] ?? k;
                   const status = typeof v?.status === "string" ? v.status : null;
@@ -182,8 +184,9 @@ export default function SystemPage() {
                     </li>
                   );
                 })}
-              </RowList>
-            </ListSection>
+              </ListGroup>
+            </Card>
+</Section>
           ) : null}
       </M3Page>
     </AppShell>

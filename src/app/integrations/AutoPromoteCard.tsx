@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { M3Button } from '@/components/ui/m3';
-import { ListSection } from './list-parts';
 import { apiRequest } from '@/lib/ui/api-client';
+import { Card, Section } from '@/components/ui/primitives';
 
 type Mode = 'off' | 'trusted' | 'all';
 
@@ -49,12 +49,8 @@ export function AutoPromoteCard() {
   }
 
   return (
-    <ListSection
-      id="auto-promote-title"
-      title="Send synced items to memory"
-      hint="Choose whether items pulled in by syncs go straight into memory or wait for your review. Applies to scheduled syncs and Sync now."
-      bare
-    >
+    <Section title="Send synced items to memory" description="Choose whether items pulled in by syncs go straight into memory or wait for your review. Applies to scheduled syncs and Sync now.">
+<Card className="overflow-hidden p-0">
       <fieldset className="divide-y divide-border-secondary" disabled={saving || mode === null} aria-describedby={error ? 'auto-promote-err' : undefined}>
         <legend className="sr-only">Send synced items to memory</legend>
         {OPTIONS.map((o) => (
@@ -82,6 +78,7 @@ export function AutoPromoteCard() {
       {error ? <p id="auto-promote-err" role="alert" className="border-t border-border-secondary px-4 py-3 text-sm text-danger">{error}</p> : null}
       {error && mode === null ? <div className="px-4 pb-3"><M3Button tone="secondary" onClick={load}>Try again</M3Button></div> : null}
       <p role="status" aria-live="polite" className="px-4 py-2 text-sm text-text-tertiary empty:hidden">{saved}</p>
-    </ListSection>
+    </Card>
+</Section>
   );
 }

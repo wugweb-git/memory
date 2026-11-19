@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { M3State } from '@/components/ui/m3';
-import { ListRow, ListSection, RowList } from '@/app/integrations/list-parts';
-import { Skeleton } from '@/components/ui/primitives';
+import { Card, ListGroup, ListRow, Section, Skeleton } from '@/components/ui/primitives';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
 import { apiRequest } from '@/lib/ui/api-client';
 
@@ -41,12 +40,8 @@ export function CostCard() {
   useEffect(() => { load(); }, [load]);
 
   return (
-    <ListSection
-      id="cost-title"
-      title="Model request budget"
-      hint={data ? `${data.used} of ${data.cap} free requests used today (UTC ${data.date}). Background jobs cannot use the share kept for Ask and Decision.` : undefined}
-      bare
-    >
+    <Section title="Model request budget" description={data ? `${data.used} of ${data.cap} free requests used today (UTC ${data.date}). Background jobs cannot use the share kept for Ask and Decision.` : undefined}>
+<Card className="overflow-hidden p-0">
       {data === null ? (
         error ? (
           <div className="space-y-2 p-4">
@@ -67,7 +62,7 @@ export function CostCard() {
         )
       ) : (
         <>
-          <RowList label="Requests used per job">
+          <ListGroup className="rounded-none border-0 bg-transparent" aria-label="Requests used per job">
             {data.budgets.map((b) => (
               <ListRow
                 key={b.job}
@@ -80,10 +75,11 @@ export function CostCard() {
                 }
               />
             ))}
-          </RowList>
+          </ListGroup>
           <p className="border-t border-border-secondary px-4 py-3 text-xs text-text-tertiary">Limits reset at 00:00 UTC. Change them with the DAILY_BUDGET_ASK, _DECISION, _SIGNALS, _SUMMARY and _INGEST environment variables.</p>
         </>
       )}
-    </ListSection>
+    </Card>
+</Section>
   );
 }

@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { M3State } from '@/components/ui/m3';
-import { ListSection } from '@/app/integrations/list-parts';
-import { EmptyState, Skeleton } from '@/components/ui/primitives';
+import { Card, EmptyState, Section, Skeleton } from '@/components/ui/primitives';
 import { ConfirmDialog, useConfirm } from '@/components/ui/confirm-dialog';
 import { UI_API } from '@/lib/api/endpoints';
 import { platformPasskeySupported, registerThisDevice } from '@/lib/passkey-client';
@@ -87,7 +86,8 @@ export function PasskeyCard() {
   }
 
   return (
-    <ListSection id="passkeys-title" title="Passkeys" hint="Add this device to sign in with Face ID, a fingerprint or Windows Hello instead of a password.">
+    <Section title="Passkeys" description="Add this device to sign in with Face ID, a fingerprint or Windows Hello instead of a password.">
+<Card className="space-y-3">
 
       {devices === null ? (
         loadError ? (
@@ -175,6 +175,7 @@ export function PasskeyCard() {
         }}
         onCancel={removeConfirm.close}
       />
-    </ListSection>
+    </Card>
+</Section>
   );
 }

@@ -11,8 +11,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { M3Button, M3Page, M3State } from '@/components/ui/m3';
-import { ListSection, RowList } from './list-parts';
-import { EmptyState, Skeleton } from '@/components/ui/primitives';
+import { Card, EmptyState, ListGroup, Section, Skeleton } from '@/components/ui/primitives';
 import { ConfirmDialog, useConfirm } from '@/components/ui/confirm-dialog';
 import { AppShell } from '@/app/component/AppShell';
 import { apiRequest } from '@/lib/ui/api-client';
@@ -392,8 +391,9 @@ export default function IntegrationsPage() {
                   .sort((a, b) => HEALTH_ORDER[healthOf(a)] - HEALTH_ORDER[healthOf(b)]);
                 if (items.length === 0) return null;
                 return (
-                  <ListSection key={group.key} id={`group-${group.key}`} title={group.title} hint={group.subtitle} bare>
-                    <RowList>
+                  <Section key={group.key} title={group.title} description={group.subtitle}>
+<Card className="overflow-hidden p-0">
+                    <ListGroup className="rounded-none border-0 bg-transparent">
                       {items.map((c) => {
                         const Icon = iconFor(c);
                         const brand = brandIconFor(c.id, c.custom);
@@ -459,15 +459,17 @@ export default function IntegrationsPage() {
                           </li>
                         );
                       })}
-                    </RowList>
-                  </ListSection>
+                    </ListGroup>
+                  </Card>
+</Section>
                 );
               })}
 
               <AutoPromoteCard />
               <PushCard />
 
-              <ListSection id="add-feed" title="Add a feed" hint="Follow any blog, newsletter or channel that has an RSS or Atom feed. New posts are pulled in on a schedule.">
+              <Section title="Add a feed" description="Follow any blog, newsletter or channel that has an RSS or Atom feed. New posts are pulled in on a schedule.">
+<Card className="space-y-3">
                 <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); addFeed(); }}>
                   <div className="space-y-1">
                     <label htmlFor="feed-name" className="block text-sm font-medium text-text-primary">Name <span className="font-normal text-text-tertiary">(optional)</span></label>
@@ -501,7 +503,8 @@ export default function IntegrationsPage() {
                   </div>
                   <button type="submit" disabled={addingFeed || !feedUrl.trim()} className={`${ACTION_PRIMARY} w-full`}>{addingFeed ? 'Adding…' : 'Add and sync'}</button>
                 </form>
-              </ListSection>
+              </Card>
+</Section>
             </>
           )}
       </M3Page>

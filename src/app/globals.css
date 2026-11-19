@@ -364,10 +364,15 @@ body {
    Dark 2px outline (>=15:1 on every surface) plus a cyan halo. !important because
    components that set Tailwind outline-none would otherwise leave only the 2px cyan
    ring (measured 2.4:1 on porcelain, below the 3:1 non-text minimum). */
-:focus-visible {
+:focus-visible:not([tabindex='-1']) {
   outline: 2px solid var(--text-primary) !important;
   outline-offset: 2px !important;
   box-shadow: 0 0 0 4px rgb(var(--accent) / 0.55);
+}
+/* Programmatically focused containers (main, dialog panels, headings; tabindex -1) are not
+   keyboard stops, so they keep their intentional outline-none. */
+[tabindex='-1']:focus-visible {
+  outline: none;
 }
 /* Inset rings (list rows inside overflow-hidden groups) draw inside the box instead. */
 [class*='ring-inset']:focus-visible,
