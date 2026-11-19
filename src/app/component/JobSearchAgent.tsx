@@ -90,7 +90,7 @@ export const JobSearchAgent = () => {
             type="button"
             onClick={load}
             disabled={loading}
-            className="flex h-11 w-11 items-center justify-center rounded-xl border border-border-secondary text-text-disabled hover:text-accent transition-colors"
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-border-secondary text-text-tertiary hover:text-accent transition-colors"
             aria-label="Refresh leads"
           >
             <RefreshCcw size={15} className={loading ? 'animate-spin' : ''} />

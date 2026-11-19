@@ -74,7 +74,7 @@ export const IdentityShowcase = () => {
                       <Globe size={18} className="text-text-tertiary group-hover:text-accent" />
                       <span className="text-2xs font-black uppercase text-success">{f.status}</span>
                     </div>
-                    <p className="text-2xs font-black text-text-disabled uppercase tracking-widest">{f.platform}</p>
+                    <p className="text-2xs font-black text-text-tertiary uppercase tracking-widest">{f.platform}</p>
                     <p className="text-sm font-bold text-text-primary mt-1">{f.label}</p>
                     <div className="mt-4 h-1 bg-secondary rounded-full overflow-hidden">
                       <div className="h-full bg-accent rounded-full" style={{ width: `${f.score}%` }} />

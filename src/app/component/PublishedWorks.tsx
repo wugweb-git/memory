@@ -99,7 +99,7 @@ export const PublishedWorks = () => {
                   <span className="px-4 py-1.5 rounded-full text-2xs font-black tracking-[0.2em] uppercase border border-border-secondary bg-bg-secondary text-text-secondary shadow-sm">
                     {work.source}
                   </span>
-                  <time dateTime={work.date} className="text-2xs text-text-disabled font-mono font-bold uppercase tracking-widest ">
+                  <time dateTime={work.date} className="text-2xs text-text-tertiary font-mono font-bold uppercase tracking-widest ">
                     {work.date}
                   </time>
                 </div>
@@ -146,7 +146,7 @@ export const PublishedWorks = () => {
               <Globe size={20} className="text-text-tertiary" />
               <div>
                 <h3 className="text-xs font-black text-text-primary tracking-[0.3em] uppercase">Creative_Node</h3>
-                <p className="text-2xs font-bold text-text-disabled uppercase mt-1">Behance / Portfolio sync</p>
+                <p className="text-2xs font-bold text-text-tertiary uppercase mt-1">Behance / Portfolio sync</p>
               </div>
             </header>
             <a

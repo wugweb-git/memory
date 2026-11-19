@@ -130,7 +130,7 @@ export default function BufferControlSurface() {
       case 'promotable': return 'bg-indigo-100 text-indigo-700';
       case 'promoted': return 'bg-emerald-100 text-emerald-700';
       case 'rejected': return 'bg-rose-100 text-rose-700';
-      case 'expired': return 'bg-slate-100 text-text-disabled';
+      case 'expired': return 'bg-slate-100 text-text-tertiary';
       default: return 'bg-slate-100 text-slate-700';
     }
   };
@@ -174,11 +174,13 @@ export default function BufferControlSurface() {
           {/* 🔹 LEFT PANEL: FILTERS & TOOLS */}
           <div className="lg:col-span-3 space-y-6">
             <div className="p-5 rounded-2xl bg-secondary border border-border-secondary space-y-4">
-              <h2 className="text-xs font-semibold uppercase text-text-disabled tracking-widest">Filter Items</h2>
+              <h2 className="text-xs font-semibold uppercase text-text-tertiary tracking-widest">Filter Items</h2>
               <div className="space-y-1">
                 {(['all', 'raw', 'reviewed', 'promoted'] as const).map(tab => (
                   <button
                     key={tab}
+                    type="button"
+                    aria-pressed={activeTab === tab}
                     onClick={() => setActiveTab(tab)}
                     className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all ${
                       activeTab === tab ? 'bg-secondary text-text-primary' : 'hover:bg-secondary text-text-tertiary'
@@ -192,7 +194,7 @@ export default function BufferControlSurface() {
             </div>
 
             <div className="p-5 rounded-2xl bg-secondary border border-border-secondary space-y-4">
-              <div className="grid grid-cols-4 gap-1 sm:grid-cols-7">
+              <div role="group" aria-label="Capture method" className="grid grid-cols-4 gap-1 sm:grid-cols-7">
                 {([
                   ['upload', 'Upload'],
                   ['voice', 'Voice'],
@@ -204,6 +206,8 @@ export default function BufferControlSurface() {
                 ] as const).map(([mode, label]) => (
                   <button
                     key={mode}
+                    type="button"
+                    aria-pressed={captureMode === mode}
                     onClick={() => setCaptureMode(mode)}
                     className={`px-2 py-1.5 rounded-lg text-2xs font-bold transition-colors ${
                       captureMode === mode ? 'bg-text-primary text-bg-primary' : 'text-text-tertiary hover:bg-bg-secondary'
@@ -236,7 +240,7 @@ export default function BufferControlSurface() {
                   />
                 </div>
               </div>
-              <div className="text-xs text-text-disabled">
+              <div className="text-xs text-text-tertiary">
                 Displaying <span className="text-text-secondary font-medium">{items.length}</span> nodes
               </div>
             </div>
@@ -263,7 +267,7 @@ export default function BufferControlSurface() {
                     ))
                   ) : items.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className={`px-6 py-20 text-center ${loadError ? 'text-danger' : 'text-text-disabled'}`}>
+                      <td colSpan={7} className={`px-6 py-20 text-center ${loadError ? 'text-danger' : 'text-text-tertiary'}`}>
                          <div className="flex flex-col items-center gap-3">
                            <Database size={32} />
                            <p className={loadError ? 'font-bold' : ''}>{loadError ?? 'Nothing waiting for review.'}</p>
@@ -295,11 +299,11 @@ export default function BufferControlSurface() {
                             {item.state}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-2xs text-text-disabled">
+                        <td className="px-6 py-4 text-2xs text-text-tertiary">
                           {new Date(item.created_at).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <button className="p-1 hover:bg-secondary rounded text-text-disabled hover:text-text-primary transition-all">
+                          <button className="p-1 hover:bg-secondary rounded text-text-tertiary hover:text-text-primary transition-all">
                              <MoreVertical size={16} />
                           </button>
                         </td>
@@ -316,7 +320,7 @@ export default function BufferControlSurface() {
                 <div className="flex items-start justify-between mb-6">
                   <div>
                     <h3 className="text-text-primary font-medium">Node Analysis</h3>
-                    <p className="text-xs text-text-disabled">{selectedId}</p>
+                    <p className="text-xs text-text-tertiary">{selectedId}</p>
                   </div>
                   <button onClick={() => setSelectedId(null)} className="p-1 hover:bg-secondary rounded-full transition-colors text-text-tertiary">
                     <X size={18} />

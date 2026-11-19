@@ -6,7 +6,7 @@ import {
   Database, ShieldCheck, Archive, Zap, Brain, Cpu,
   ChevronRight, LayoutDashboard, FileText, Sparkles,
 } from 'lucide-react';
-import { ToastContainer } from 'react-toastify';
+import { AppToastContainer } from "@/app/component/AppToastContainer";
 import 'react-toastify/dist/ReactToastify.css';
 import { AppShell } from '@/app/component/AppShell';
 import { useDashboardData } from '@/app/hooks/useDashboardData';
@@ -42,7 +42,7 @@ const StatCard: React.FC<{ label: string; value: string; sub?: string; color?: s
     <div className="min-w-0">
       <p className="text-2xs font-black text-text-tertiary uppercase tracking-widest mb-1">{label}</p>
       <p className={`text-2xl font-black tracking-tight break-words ${color}`}>{value}</p>
-      {sub && <p className="text-2xs text-text-disabled mt-1 font-bold">{sub}</p>}
+      {sub && <p className="text-2xs text-text-tertiary mt-1 font-bold">{sub}</p>}
     </div>
     <div className="w-10 h-10 rounded-2xl bg-secondary border border-border-primary flex items-center justify-center shrink-0">
       {icon}
@@ -82,7 +82,7 @@ const STATUS_BADGE: Record<LayerStatus, string> = {
   Active:   'bg-success/10 text-success border-success/20',
   Degraded: 'bg-warning/10 text-warning border-warning/20',
   Offline:  'bg-danger/10 text-danger border-danger/20',
-  Checking: 'bg-secondary text-text-disabled border-border-secondary',
+  Checking: 'bg-secondary text-text-tertiary border-border-secondary',
 };
 
 /** Real per-layer health, probed from the layers' own APIs — no pretend statuses. */
@@ -155,7 +155,7 @@ export default function ConsolePage() {
 
   return (
     <AppShell>
-      <ToastContainer
+      <AppToastContainer
         position="bottom-right"
         toastClassName="!bg-bg-elevated !border !border-border-secondary !rounded-2xl !shadow-3xl !text-text-primary !text-sm"
       />
@@ -247,7 +247,7 @@ export default function ConsolePage() {
                 const status = layerHealth[l.id] ?? 'Checking';
                 return (
                   <div key={l.id} className="glass-panel rounded-radius-xl p-4 text-center border border-border-secondary">
-                    <p className="text-2xs font-black text-text-disabled font-mono">{l.id}</p>
+                    <p className="text-2xs font-black text-text-tertiary font-mono">{l.id}</p>
                     <p className="text-sm font-bold text-text-primary mt-0.5">{l.name}</p>
                     <span className={`inline-block mt-2 text-2xs font-black px-2 py-0.5 rounded-full border uppercase tracking-widest ${STATUS_BADGE[status]}`}>
                       {status}

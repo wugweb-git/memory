@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
+import { AppToastContainer } from "@/app/component/AppToastContainer";
 import "react-toastify/dist/ReactToastify.css";
 import { M3Card, M3Page, M3State } from "@/components/ui/m3";
 import { AppShell } from "@/app/component/AppShell";
@@ -120,7 +121,7 @@ export default function CareerPage() {
 
   return (
     <AppShell>
-      <ToastContainer position="top-center" theme="light" />
+      <AppToastContainer position="top-center" theme="light" />
       <div className="max-w-3xl mx-auto px-4 pb-24">
         <M3Page title="Career" subtitle="Your career tree, applications and opportunities — the tree feeds your public profile">
           <M3Card

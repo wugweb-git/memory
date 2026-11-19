@@ -118,7 +118,7 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
     <nav aria-label={label} className="flex-1 overflow-y-auto py-4 px-3 custom-scrollbar">
       {navGroups.map((group) => (
         <div key={group.group} className="mb-5">
-          <p className="text-2xs font-black text-text-disabled uppercase tracking-[0.3em] px-3 mb-1.5">
+          <p className="text-2xs font-black text-text-tertiary uppercase tracking-[0.3em] px-3 mb-1.5">
             {group.group}
           </p>
           {group.items.map(({ href, label, icon: Icon }) => {
@@ -166,7 +166,7 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
         {SIDEBAR_STATS.map((s) => (
           <div key={s.label} className="flex items-center gap-2.5">
             <span className={`w-1.5 h-1.5 rounded-full ${s.colorClass === 'text-accent' ? 'bg-accent' : 'bg-success'}`} />
-            <span className="text-2xs text-text-disabled flex-1 font-mono">{s.label}</span>
+            <span className="text-2xs text-text-tertiary flex-1 font-mono">{s.label}</span>
             <span className="text-2xs font-bold text-text-secondary font-mono">{s.value}</span>
           </div>
         ))}

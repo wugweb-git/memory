@@ -100,7 +100,7 @@ export function PulseWidget() {
       </button>
 
       {loading ? (
-        <p className="text-2xs text-text-disabled">Loading recent check-ins…</p>
+        <p className="text-2xs text-text-tertiary">Loading recent check-ins…</p>
       ) : latest ? (
         <p className="text-2xs text-text-tertiary">
           Last: {new Date(latest.createdAt).toLocaleString()} · burnout risk{" "}
@@ -109,7 +109,7 @@ export function PulseWidget() {
           </span>
         </p>
       ) : (
-        <p className="text-2xs text-text-disabled">No check-ins yet.</p>
+        <p className="text-2xs text-text-tertiary">No check-ins yet.</p>
       )}
     </div>
   );

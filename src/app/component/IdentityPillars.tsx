@@ -45,7 +45,7 @@ export const IdentityPillars = () => {
             <footer className="mt-8 pt-6 border-t border-border-secondary flex items-center justify-between">
               <div className="flex items-center gap-2">
                  <Sparkles size={12} className="text-text-disabled opacity-40 group-hover:opacity-100 group-hover:text-accent transition-all" />
-                 <span className="text-2xs font-black text-text-disabled uppercase tracking-widest group-hover:text-text-tertiary transition-colors">Signature_Logic</span>
+                 <span className="text-2xs font-black text-text-tertiary uppercase tracking-widest group-hover:text-text-tertiary transition-colors">Signature_Logic</span>
               </div>
               <div className="flex gap-1">
                  <div className="w-1 h-1 rounded-full bg-border-primary" />

@@ -35,7 +35,7 @@ export function validateRole(v: RoleFormValues): Partial<Record<keyof RoleFormVa
 }
 
 const inputCls =
-  "w-full min-h-[44px] rounded-xl border bg-bg-elevated px-3 py-2 text-base text-text-primary placeholder:text-text-disabled focus:outline-none focus-visible:ring-2 focus-visible:ring-accent";
+  "w-full min-h-[44px] rounded-xl border bg-bg-elevated px-3 py-2 text-base text-text-primary placeholder:text-text-tertiary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent";
 
 function Field({
   id, label, hint, error, optional, children,
@@ -87,7 +87,7 @@ function ChipInput({
         id={id}
         aria-describedby={describedBy}
         enterKeyHint="done"
-        className="flex-1 min-w-[10ch] min-h-[40px] px-2 text-base outline-none bg-transparent text-text-primary placeholder:text-text-disabled"
+        className="flex-1 min-w-[10ch] min-h-[40px] px-2 text-base outline-none bg-transparent text-text-primary placeholder:text-text-tertiary"
         value={draft}
         placeholder={values.length === 0 ? placeholder : "Add another"}
         onChange={(e) => {

@@ -93,7 +93,7 @@ export const GapsTab: React.FC = () => {
               <ul className="space-y-2.5">
                 {weakEntities.map((e, i) => (
                   <li key={i} className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-text-secondary truncate">{e.name} <span className="text-text-disabled">· {e.type}</span></span>
+                    <span className="text-text-secondary truncate">{e.name} <span className="text-text-tertiary">· {e.type}</span></span>
                     <span className="text-xs text-warning font-semibold shrink-0">{e.occurrences}x</span>
                   </li>
                 ))}
@@ -107,7 +107,7 @@ export const GapsTab: React.FC = () => {
                 {weakSignals.map((s, i) => (
                   <li key={i} className="space-y-1">
                     <p className="text-sm text-text-secondary">
-                      {s.type}{s.category ? <span className="text-text-disabled"> · {s.category}</span> : null}
+                      {s.type}{s.category ? <span className="text-text-tertiary"> · {s.category}</span> : null}
                     </p>
                     <Meter label="Intensity" value={Number(s.intensity) || 0} />
                   </li>

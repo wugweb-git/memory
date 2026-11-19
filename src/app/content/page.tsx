@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from "react";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
+import { AppToastContainer } from "@/app/component/AppToastContainer";
 import "react-toastify/dist/ReactToastify.css";
 import { M3Button, M3Card, M3Page, M3State } from "@/components/ui/m3";
 import { UI_API, resolveUserId } from "@/lib/ui/contracts";
@@ -241,10 +242,10 @@ export default function OutputStudioPage() {
 
   return (
     <AppShell>
-      <ToastContainer position="bottom-right" theme="light" />
+      <AppToastContainer position="bottom-right" theme="light" />
       <div className="max-w-3xl mx-auto px-4">
         <M3Page title="Output studio" subtitle="Shape what the world sees on your public profile">
-          <div className="flex gap-2">
+          <div className="flex gap-2" role="group" aria-label="Output studio sections">
             {([
               ["compose", "Compose"],
               ["live", `Live${sections.length ? ` (${sections.length})` : ""}`],
@@ -253,6 +254,7 @@ export default function OutputStudioPage() {
               <button
                 key={id}
                 onClick={() => setTab(id)}
+                aria-pressed={tab === id}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
                   tab === id ? "bg-text-primary text-bg-primary" : "border border-border-primary bg-white text-text-secondary"
                 }`}
@@ -269,12 +271,17 @@ export default function OutputStudioPage() {
                 <div className="space-y-2">
                   <input
                     className="w-full rounded-2xl border border-border-primary p-3 text-sm"
-                    aria-label="Decision ID (required)" placeholder="Decision ID (required)"
+                    aria-label="Decision ID" placeholder="Decision ID (required)"
+                    aria-required="true" required
+                    aria-invalid={error && !decisionId ? true : undefined}
+                    aria-describedby={error && !decisionId ? "compose-error" : undefined}
+                    autoComplete="off"
                     value={decisionId}
                     onChange={(e) => setDecisionId(e.target.value)}
                   />
                   {decisions.length > 0 && (
                     <select
+                      aria-label="Pick a recent decision"
                       className="w-full rounded-2xl border border-border-primary p-3 text-sm text-text-secondary"
                       value=""
                       onChange={(e) => e.target.value && setDecisionId(e.target.value)}
@@ -288,6 +295,7 @@ export default function OutputStudioPage() {
                     </select>
                   )}
                   <select
+                    aria-label="Platform"
                     className="w-full rounded-2xl border border-border-primary p-3 text-sm"
                     value={platform}
                     onChange={(e) => setPlatform(e.target.value)}
@@ -299,7 +307,7 @@ export default function OutputStudioPage() {
                   <M3Button onClick={generate} disabled={loading || !decisionId}>
                     {loading ? "Generating…" : outputId ? "Regenerate" : "Generate"}
                   </M3Button>
-                  {error ? <M3State state="error" message={error} /> : null}
+                  {error ? <div id="compose-error" role="alert"><M3State state="error" message={error} /></div> : null}
                 </div>
               </M3Card>
 
@@ -314,6 +322,7 @@ export default function OutputStudioPage() {
                     }
                   >
                     <textarea
+                      aria-label="Draft content"
                       className="w-full rounded-2xl border border-border-primary p-3 text-sm min-h-44"
                       value={content}
                       onChange={(e) => setContent(e.target.value)}
@@ -387,8 +396,8 @@ export default function OutputStudioPage() {
                       <li key={s.id} className="rounded-2xl border border-border-secondary bg-white p-3">
                         {editingId === s.id ? (
                           <div className="space-y-2">
-                            <input className="w-full rounded-xl border border-border-primary p-2 text-sm" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
-                            <textarea className="w-full rounded-xl border border-border-primary p-2 text-sm min-h-28" value={editBody} onChange={(e) => setEditBody(e.target.value)} />
+                            <input aria-label="Edit title" className="w-full rounded-xl border border-border-primary p-2 text-sm" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+                            <textarea aria-label="Edit body" className="w-full rounded-xl border border-border-primary p-2 text-sm min-h-28" value={editBody} onChange={(e) => setEditBody(e.target.value)} />
                             <div className="flex gap-2">
                               <M3Button onClick={saveEdit} disabled={busy}>Save</M3Button>
                               <M3Button tone="secondary" onClick={() => setEditingId(null)}>Cancel</M3Button>

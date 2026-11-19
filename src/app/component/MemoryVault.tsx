@@ -161,7 +161,7 @@ export const MemoryVault = ({ onRequestUpload }: MemoryVaultProps) => {
             <button
               type="button"
               onClick={() => setViewMode('grid')}
-              className={`p-3 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-text-primary text-bg-primary shadow-lg' : 'text-text-disabled hover:text-text-primary'}`}
+              className={`p-3 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-text-primary text-bg-primary shadow-lg' : 'text-text-tertiary hover:text-text-primary'}`}
               aria-label="Grid view"
             >
               <LayoutGrid size={18} />
@@ -169,7 +169,7 @@ export const MemoryVault = ({ onRequestUpload }: MemoryVaultProps) => {
             <button
               type="button"
               onClick={() => setViewMode('list')}
-              className={`p-3 rounded-xl transition-all ${viewMode === 'list' ? 'bg-text-primary text-bg-primary shadow-lg' : 'text-text-disabled hover:text-text-primary'}`}
+              className={`p-3 rounded-xl transition-all ${viewMode === 'list' ? 'bg-text-primary text-bg-primary shadow-lg' : 'text-text-tertiary hover:text-text-primary'}`}
               aria-label="List view"
             >
               <List size={18} />
@@ -219,7 +219,7 @@ export const MemoryVault = ({ onRequestUpload }: MemoryVaultProps) => {
                   <button
                     type="button"
                     onClick={() => removeFile(file.id)}
-                    className="p-2 rounded-xl text-text-disabled hover:text-danger hover:bg-danger/10 transition-colors"
+                    className="p-2 rounded-xl text-text-tertiary hover:text-danger hover:bg-danger/10 transition-colors"
                     aria-label={`Remove ${file.name}`}
                   >
                     <Trash2 size={16} />
@@ -254,7 +254,7 @@ export const MemoryVault = ({ onRequestUpload }: MemoryVaultProps) => {
               <button
                 type="button"
                 onClick={() => removeFile(file.id)}
-                className="p-2 text-text-disabled hover:text-danger transition-colors"
+                className="p-2 text-text-tertiary hover:text-danger transition-colors"
                 aria-label={`Remove ${file.name}`}
               >
                 <Trash2 size={16} />

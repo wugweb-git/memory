@@ -133,7 +133,7 @@ export function BlobBuffer() {
 
                {stats && (
                  <div className="space-y-4">
-                    <div className="flex items-center justify-between text-2xs font-black text-text-disabled ">
+                    <div className="flex items-center justify-between text-2xs font-black text-text-tertiary ">
                       <span>Density_Mapped</span>
                       <span className="text-text-primary">{stats.used} / {stats.limit}</span>
                     </div>
@@ -141,7 +141,7 @@ export function BlobBuffer() {
                       <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(100, stats.usage_percent)}%` }} className="h-full bg-accent rounded-full shadow-[0_0_10px_rgba(0,170,255,0.3)]" />
                     </div>
                     <div className="flex justify-between items-center bg-bg-secondary/50 p-4 rounded-2xl border border-border-primary">
-                       <span className="text-2xs font-black text-text-disabled uppercase">Active_Fragments</span>
+                       <span className="text-2xs font-black text-text-tertiary uppercase">Active_Fragments</span>
                        <span className="text-xl font-black text-text-primary  tracking-tighter">{stats.total_items}</span>
                     </div>
                  </div>
@@ -172,18 +172,18 @@ export function BlobBuffer() {
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-2xs font-black text-text-disabled uppercase ml-2">Type_Tag</label>
-                <input value={type} onChange={(e) => setType(e.target.value)} className="w-full bg-bg-secondary border border-border-primary rounded-2xl px-5 py-3 text-xs font-bold text-text-primary focus:border-accent outline-none transition-colors " placeholder="e.g. metadata_node" />
+                <label htmlFor="bb-type" className="text-2xs font-black text-text-tertiary uppercase ml-2">Type_Tag</label>
+                <input id="bb-type" autoComplete="off" value={type} onChange={(e) => setType(e.target.value)} className="w-full bg-bg-secondary border border-border-primary rounded-2xl px-5 py-3 text-xs font-bold text-text-primary focus:border-accent outline-none transition-colors " placeholder="e.g. metadata_node" />
               </div>
               <div className="space-y-1.5">
-                <label className="text-2xs font-black text-text-disabled uppercase ml-2">Source_Origin</label>
-                <input value={source} onChange={(e) => setSource(e.target.value)} className="w-full bg-bg-secondary border border-border-primary rounded-2xl px-5 py-3 text-xs font-bold text-text-primary focus:border-accent outline-none transition-colors " placeholder="e.g. user_manual" />
+                <label htmlFor="bb-source" className="text-2xs font-black text-text-tertiary uppercase ml-2">Source_Origin</label>
+                <input id="bb-source" autoComplete="off" value={source} onChange={(e) => setSource(e.target.value)} className="w-full bg-bg-secondary border border-border-primary rounded-2xl px-5 py-3 text-xs font-bold text-text-primary focus:border-accent outline-none transition-colors " placeholder="e.g. user_manual" />
               </div>
             </div>
 
             <div className="space-y-2">
-               <label className="text-2xs font-black text-text-disabled uppercase ml-2">Raw_Payload</label>
-               <textarea value={content} onChange={(e) => setContent(e.target.value)} className="w-full min-h-[160px] bg-bg-secondary border border-border-primary rounded-[1.5rem] px-5 py-4 text-xs font-medium text-text-primary focus:border-accent outline-none transition-colors  resize-none shadow-inner" placeholder="Paste unstructured cognitive fragments..." />
+               <label htmlFor="bb-payload" className="text-2xs font-black text-text-tertiary uppercase ml-2">Raw_Payload</label>
+               <textarea id="bb-payload" value={content} onChange={(e) => setContent(e.target.value)} className="w-full min-h-[160px] bg-bg-secondary border border-border-primary rounded-[1.5rem] px-5 py-4 text-xs font-medium text-text-primary focus:border-accent outline-none transition-colors  resize-none shadow-inner" placeholder="Paste unstructured cognitive fragments..." />
             </div>
 
             <button 
@@ -210,7 +210,7 @@ export function BlobBuffer() {
 
         {/* Right: List of fragments */}
         <div className="lg:col-span-7 space-y-6">
-          <div className="flex items-center justify-between px-2 text-2xs font-black text-text-disabled uppercase tracking-[0.3em]  opacity-60 mb-2">
+          <div className="flex items-center justify-between px-2 text-2xs font-black text-text-tertiary uppercase tracking-[0.3em]  mb-2">
              <span>Buffer_Queue</span>
              <span>Sorted_Recency</span>
           </div>
@@ -231,11 +231,11 @@ export function BlobBuffer() {
                     </div>
                     <div className="flex flex-col items-end gap-1">
                        <span className={`text-2xs font-black uppercase tracking-widest ${item.state === 'REJECTED' ? 'text-danger' : 'text-accent'}`}>{item.state}</span>
-                       <span className="text-2xs font-black font-mono text-text-disabled uppercase tracking-tighter  opacity-60">{Math.round((item.size_bytes || 0) / 1024)} KB</span>
+                       <span className="text-2xs font-black font-mono text-text-tertiary uppercase tracking-tighter ">{Math.round((item.size_bytes || 0) / 1024)} KB</span>
                     </div>
                   </div>
                   
-                  <div className="text-2xs text-text-disabled font-black font-mono uppercase tracking-widest  opacity-40 mb-8 border-b border-border-secondary/30 pb-4">
+                  <div className="text-2xs text-text-tertiary font-black font-mono uppercase tracking-widest  mb-8 border-b border-border-secondary/30 pb-4">
                     Captured: {new Date(item.created_at).toLocaleString()}
                     {item.duplicate_of && <span className="text-warning ml-2 border-l-2 border-warning/20 pl-2">Conflict: Duplicate_0x{item.duplicate_of.slice(0,6)}</span>}
                   </div>
@@ -258,7 +258,7 @@ export function BlobBuffer() {
                   </div>
                   <div className="space-y-4">
                      <p className="text-sm font-black text-text-tertiary uppercase tracking-[0.4em]  mb-2">Buffer_Null_State</p>
-                     <p className="text-2xs text-text-disabled max-w-[220px] mx-auto leading-relaxed font-bold uppercase tracking-widest opacity-40">Matrix silence. External signals will manifest here for ingestion.</p>
+                     <p className="text-2xs text-text-tertiary max-w-[220px] mx-auto leading-relaxed font-bold uppercase tracking-widest">Matrix silence. External signals will manifest here for ingestion.</p>
                   </div>
                 </motion.li>
               )}

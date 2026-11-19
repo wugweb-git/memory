@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
+import { AppToastContainer } from "@/app/component/AppToastContainer";
 import "react-toastify/dist/ReactToastify.css";
 import { M3Card, M3Page, M3State } from "@/components/ui/m3";
 import { UI_API } from "@/lib/ui/contracts";
@@ -79,7 +80,7 @@ export default function SystemPage() {
 
   return (
     <AppShell>
-      <ToastContainer position="bottom-right" theme="light" />
+      <AppToastContainer position="bottom-right" theme="light" />
       <div className="max-w-3xl mx-auto px-4">
         <M3Page title="System" subtitle="Module switches, operational checks and runtime status">
           <M3Card title="Modules">
@@ -100,9 +101,12 @@ export default function SystemPage() {
                         <p className="text-2xs text-text-tertiary">{on ? "Visible in the app" : "Hidden from navigation"}</p>
                       </div>
                       <button
+                        type="button"
+                        role="switch"
+                        aria-checked={on}
                         onClick={() => toggle(key)}
                         disabled={savingKey === key}
-                        aria-label={`Toggle ${label}`}
+                        aria-label={label}
                         className={`relative w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${on ? "bg-accent" : "bg-border-primary"}`}
                       >
                         <span

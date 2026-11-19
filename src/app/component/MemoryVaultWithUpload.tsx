@@ -316,7 +316,7 @@ export const MemoryVaultWithUpload: React.FC = () => {
           <div className="flex items-center bg-secondary/40 border border-border-primary p-1 rounded-xl">
             {(['list', 'grid'] as const).map(v => (
               <button key={v} onClick={() => setView(v)}
-                className={`p-2 rounded-lg transition-all ${view === v ? 'bg-bg-elevated text-accent shadow-inner' : 'text-text-disabled hover:text-text-tertiary'}`}>
+                className={`p-2 rounded-lg transition-all ${view === v ? 'bg-bg-elevated text-accent shadow-inner' : 'text-text-tertiary hover:text-text-primary'}`}>
                 {v === 'list' ? <List size={16} /> : <LayoutGrid size={16} />}
               </button>
             ))}
@@ -350,7 +350,7 @@ export const MemoryVaultWithUpload: React.FC = () => {
 
       {/* loading skeleton */}
       {loading && (
-        <div className="glass-panel rounded-[2rem] border border-border-secondary p-12 flex items-center justify-center gap-3 text-text-disabled shadow-2xl">
+        <div className="glass-panel rounded-[2rem] border border-border-secondary p-12 flex items-center justify-center gap-3 text-text-tertiary shadow-2xl">
           <Loader2 size={20} className="animate-spin text-accent" />
           <span className="text-sm font-medium">Loading memory packets…</span>
         </div>
@@ -375,7 +375,7 @@ export const MemoryVaultWithUpload: React.FC = () => {
                     {filtered.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="px-6 py-16 text-center">
-                          <div className="flex flex-col items-center gap-3 text-text-disabled">
+                          <div className="flex flex-col items-center gap-3 text-text-tertiary">
                             <Database size={32} strokeWidth={1} />
                             <p className="text-sm font-medium">No packets found</p>
                             <button onClick={() => setShowUpload(true)} className="text-accent text-xs font-semibold hover:underline">
@@ -403,7 +403,7 @@ export const MemoryVaultWithUpload: React.FC = () => {
                           <td className="px-6 py-4"><StatusBadge status={f.status} /></td>
                           <td className="px-6 py-4">
                             <button onClick={() => removeItem(f.id)}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-danger/10 text-text-disabled hover:text-danger">
+                              className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-danger/10 text-text-tertiary hover:text-danger">
                               <Trash2 size={14} />
                             </button>
                           </td>
@@ -418,7 +418,7 @@ export const MemoryVaultWithUpload: React.FC = () => {
             <motion.div key="grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
               {filtered.length === 0 ? (
-                <div className="col-span-full glass-panel rounded-[2rem] border border-border-secondary p-12 flex flex-col items-center gap-4 text-text-disabled shadow-2xl">
+                <div className="col-span-full glass-panel rounded-[2rem] border border-border-secondary p-12 flex flex-col items-center gap-4 text-text-tertiary shadow-2xl">
                   <Database size={32} strokeWidth={1} />
                   <p className="text-sm font-medium">No packets found</p>
                   <button onClick={() => setShowUpload(true)} className="text-accent text-xs font-semibold hover:underline">Upload your first document →</button>
@@ -433,7 +433,7 @@ export const MemoryVaultWithUpload: React.FC = () => {
                         <FileIcon type={f.type} />
                       </div>
                       <button onClick={() => removeItem(f.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-danger/10 text-text-disabled hover:text-danger">
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-danger/10 text-text-tertiary hover:text-danger">
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -443,7 +443,7 @@ export const MemoryVaultWithUpload: React.FC = () => {
                     </div>
                     <div className="flex items-center justify-between pt-3 border-t border-border-secondary/50">
                       <StatusBadge status={f.status} />
-                      <span className="text-2xs font-mono text-text-disabled">{f.date}</span>
+                      <span className="text-2xs font-mono text-text-tertiary">{f.date}</span>
                     </div>
                   </motion.div>
                 ))

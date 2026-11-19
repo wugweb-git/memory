@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { Brain, Zap, Target, BarChart2, History, ListOrdered } from 'lucide-react';
 import { AppShell } from '@/app/component/AppShell';
@@ -25,6 +25,22 @@ export default function CognitivePage() {
   // Single-mode engine: the owner opted out of the mode selector; the API still accepts `mode`.
   const mode: Mode = 'operator';
   const [subTab, setSubTab] = useState<SubTab>('decide');
+  const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  // WAI-ARIA tabs: arrows/Home/End move focus and activate (roving tabindex).
+  function onTabKeyDown(e: React.KeyboardEvent, index: number) {
+    const last = SUB_TABS.length - 1;
+    let next = -1;
+    if (e.key === 'ArrowRight') next = index === last ? 0 : index + 1;
+    else if (e.key === 'ArrowLeft') next = index === 0 ? last : index - 1;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = last;
+    if (next < 0) return;
+    e.preventDefault();
+    const id = SUB_TABS[next].id;
+    setSubTab(id);
+    tabRefs.current[id]?.focus();
+  }
 
   return (
     <AppShell>
@@ -40,28 +56,33 @@ export default function CognitivePage() {
         </header>
 
         <div role="tablist" aria-label="Cognitive tools" className="grid grid-cols-5 gap-1 rounded-2xl bg-secondary p-1">
-          {SUB_TABS.map(t => {
+          {SUB_TABS.map((t, i) => {
             const Icon = t.icon;
             const active = subTab === t.id;
             return (
               <button
                 key={t.id}
+                ref={(el) => { tabRefs.current[t.id] = el; }}
+                id={`cog-tab-${t.id}`}
                 type="button"
                 role="tab"
                 aria-selected={active}
+                aria-controls={`cog-panel-${t.id}`}
+                tabIndex={active ? 0 : -1}
+                onKeyDown={(e) => onTabKeyDown(e, i)}
                 onClick={() => setSubTab(t.id)}
                 className={`min-h-12 rounded-xl flex flex-col items-center justify-center gap-0.5 text-2xs font-medium transition-colors ${
                   active ? 'bg-bg-elevated text-text-primary shadow-sm' : 'text-text-tertiary'
                 }`}
               >
-                <Icon size={16} />
+                <Icon size={16} aria-hidden="true" />
                 {t.label}
               </button>
             );
           })}
         </div>
 
-        <div role="tabpanel" key={subTab}>
+        <div role="tabpanel" key={subTab} id={`cog-panel-${subTab}`} aria-labelledby={`cog-tab-${subTab}`} tabIndex={0} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-xl">
           {subTab === 'decide' && <DecideTab mode={mode} />}
           {subTab === 'evaluate' && <EvaluateTab mode={mode} />}
           {subTab === 'rank' && <PrioritizeTab mode={mode} />}

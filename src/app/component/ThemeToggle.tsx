@@ -20,7 +20,7 @@ export const ThemeToggle = () => {
       </div>
       <div className="flex flex-col">
          <span className="text-2xs font-black tracking-widest uppercase">SOLAR_SYST_ACTIVE</span>
-         <span className="text-2xs font-bold text-text-disabled uppercase opacity-60">Dark_Mode_Restricted</span>
+         <span className="text-2xs font-bold text-text-tertiary uppercase">Dark_Mode_Restricted</span>
       </div>
     </div>
   );

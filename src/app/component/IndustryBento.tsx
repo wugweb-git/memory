@@ -80,7 +80,7 @@ export const IndustryBento = ({
                 `}>
                   <industry.icon size={22} aria-hidden="true" />
                 </div>
-                <span className={`text-2xs font-black font-mono transition-opacity duration-700 ${isSelected ? 'text-bg-primary/40' : 'text-text-disabled opacity-40'}`}>
+                <span className={`text-2xs font-black font-mono transition-opacity duration-700 ${isSelected ? 'text-bg-primary/40' : 'text-text-tertiary'}`}>
                   {industry.id.padStart(2, '0')}
                 </span>
               </div>
@@ -101,7 +101,7 @@ export const IndustryBento = ({
                     />
                   </div>
                   <div className="flex justify-between items-center text-2xs font-black font-mono tracking-widest ">
-                     <span className={`uppercase ${isSelected ? 'text-bg-primary/60' : 'text-text-disabled'}`}>Density</span>
+                     <span className={`uppercase ${isSelected ? 'text-bg-primary/60' : 'text-text-tertiary'}`}>Density</span>
                      <span className={isSelected ? 'text-bg-primary' : 'text-accent'}>{industry.count}</span>
                   </div>
                 </div>
@@ -115,7 +115,7 @@ export const IndustryBento = ({
           className="p-6 rounded-[2rem] border-2 border-dashed border-border-secondary bg-secondary/20 flex flex-col items-center justify-center text-center group hover:border-accent hover:bg-bg-primary hover:shadow-2xl transition-all duration-700 cursor-pointer min-h-[160px]"
           aria-label="Add new industry vector"
         >
-          <div className="w-12 h-12 rounded-2xl bg-bg-secondary border border-border-secondary flex items-center justify-center text-text-disabled group-hover:text-accent group-hover:rotate-90 transition-all duration-700 mb-4 shadow-sm group-hover:shadow-accent/10">
+          <div className="w-12 h-12 rounded-2xl bg-bg-secondary border border-border-secondary flex items-center justify-center text-text-tertiary group-hover:text-accent group-hover:rotate-90 transition-all duration-700 mb-4 shadow-sm group-hover:shadow-accent/10">
             <Plus size={22} strokeWidth={3} />
           </div>
           <span className="text-2xs font-black text-text-tertiary uppercase tracking-[0.3em] group-hover:text-accent transition-colors ">Attach_Sector</span>

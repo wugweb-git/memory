@@ -40,7 +40,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ current, onChange }) => {
                 className={`flex flex-col items-center gap-1 py-2 px-1 rounded-2xl transition-all duration-200 ${
                   active
                     ? 'text-text-primary'
-                    : 'text-text-disabled hover:text-text-tertiary'
+                    : 'text-text-tertiary hover:text-text-primary'
                 }`}
               >
                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 ${
@@ -48,12 +48,12 @@ export const MobileNav: React.FC<MobileNavProps> = ({ current, onChange }) => {
                 }`}>
                   <Icon
                     size={17}
-                    className={active ? 'text-bg-primary' : 'text-text-disabled'}
+                    className={active ? 'text-bg-primary' : 'text-text-tertiary'}
                     strokeWidth={active ? 2.5 : 2}
                   />
                 </div>
                 <span className={`text-2xs font-bold leading-none tracking-wide ${
-                  active ? 'text-text-primary' : 'text-text-disabled'
+                  active ? 'text-text-primary' : 'text-text-tertiary'
                 }`}>
                   {label}
                 </span>

@@ -58,14 +58,14 @@ export const DecideTab: React.FC<{ mode: Mode }> = ({ mode }) => {
 
       <div className="space-y-2">
         <label htmlFor="decide-context" className="text-xs font-medium text-text-secondary">
-          Anything to factor in? <span className="text-text-disabled">(optional)</span>
+          Anything to factor in? <span className="text-text-tertiary">(optional)</span>
         </label>
         <input
           id="decide-context"
           value={context}
           onChange={e => setContext(e.target.value)}
           placeholder="e.g. I have 2 hours free and a client call at 4"
-          className="w-full min-h-12 rounded-xl border border-border-secondary bg-bg-elevated px-4 text-sm text-text-primary placeholder:text-text-disabled focus:outline-none focus:border-accent"
+          className="w-full min-h-12 rounded-xl border border-border-secondary bg-bg-elevated px-4 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent"
         />
       </div>
 

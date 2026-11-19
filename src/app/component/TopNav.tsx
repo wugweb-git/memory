@@ -119,11 +119,11 @@ export const TopNav: React.FC<TopNavProps> = ({ current, onChange, onMenuToggle 
         {/* Centre: search — desktop */}
         <button
           onClick={() => setPaletteOpen(true)}
-          className="hidden md:flex items-center gap-3 px-4 py-2 bg-secondary/60 border border-border-secondary rounded-2xl text-xs text-text-disabled hover:border-border-primary hover:bg-secondary transition-all w-56 lg:w-72"
+          className="hidden md:flex items-center gap-3 px-4 py-2 bg-secondary/60 border border-border-secondary rounded-2xl text-xs text-text-tertiary hover:border-border-primary hover:bg-secondary transition-all w-56 lg:w-72"
         >
           <Search size={14} className="shrink-0" />
           <span className="flex-1 text-left">Search or jump to…</span>
-          <kbd className="text-2xs bg-tertiary px-1.5 py-0.5 rounded font-mono text-text-disabled">⌘K</kbd>
+          <kbd className="text-2xs bg-tertiary px-1.5 py-0.5 rounded font-mono text-text-tertiary">⌘K</kbd>
         </button>
 
         {/* Right: actions */}
@@ -192,10 +192,10 @@ export const TopNav: React.FC<TopNavProps> = ({ current, onChange, onMenuToggle 
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                   placeholder="Search sections, actions, memory…"
-                  className="flex-1 text-sm text-text-primary placeholder:text-text-disabled bg-transparent focus:outline-none"
+                  className="flex-1 text-sm text-text-primary placeholder:text-text-tertiary bg-transparent focus:outline-none"
                 />
                 {query && (
-                  <button onClick={() => setQuery('')} className="text-text-disabled hover:text-text-tertiary">
+                  <button onClick={() => setQuery('')} className="text-text-tertiary hover:text-text-primary">
                     <X size={15} />
                   </button>
                 )}
@@ -204,7 +204,7 @@ export const TopNav: React.FC<TopNavProps> = ({ current, onChange, onMenuToggle 
               {/* Results */}
               <div className="py-2 max-h-[55vh] overflow-y-auto custom-scrollbar">
                 {!query && (
-                  <p className="text-2xs font-black text-text-disabled uppercase tracking-[0.3em] px-5 py-2">
+                  <p className="text-2xs font-black text-text-tertiary uppercase tracking-[0.3em] px-5 py-2">
                     Navigate & Actions
                   </p>
                 )}
@@ -229,7 +229,7 @@ export const TopNav: React.FC<TopNavProps> = ({ current, onChange, onMenuToggle 
                           )}
                         </div>
                         {'hint' in item && (
-                          <kbd className="text-2xs bg-secondary px-1.5 py-0.5 rounded font-mono text-text-disabled shrink-0">
+                          <kbd className="text-2xs bg-secondary px-1.5 py-0.5 rounded font-mono text-text-tertiary shrink-0">
                             {item.hint}
                           </kbd>
                         )}
@@ -240,7 +240,7 @@ export const TopNav: React.FC<TopNavProps> = ({ current, onChange, onMenuToggle 
                 )}
               </div>
 
-              <div className="px-5 py-2.5 border-t border-border-secondary flex items-center gap-4 text-2xs text-text-disabled font-mono">
+              <div className="px-5 py-2.5 border-t border-border-secondary flex items-center gap-4 text-2xs text-text-tertiary font-mono">
                 <span>↑↓ navigate</span>
                 <span>⏎ select</span>
                 <span>esc close</span>

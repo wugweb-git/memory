@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
+import { AppToastContainer } from "@/app/component/AppToastContainer";
 import "react-toastify/dist/ReactToastify.css";
 import { M3Card, M3Page, M3Button, M3State } from "@/components/ui/m3";
 import { AppShell } from "@/app/component/AppShell";
@@ -40,6 +41,7 @@ export default function PortfolioPage() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ ...emptyForm });
   const [showForm, setShowForm] = useState(false);
+  const [titleErr, setTitleErr] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -55,7 +57,8 @@ export default function PortfolioPage() {
   useEffect(() => { load(); }, []);
 
   async function create() {
-    if (!form.title.trim()) { toast.error("Title required"); return; }
+    if (!form.title.trim()) { setTitleErr(true); toast.error("Title required"); return; }
+    setTitleErr(false);
     setSaving(true);
     try {
       await apiRequest(UI_API.cmsContent, { method: "POST", body: { type: tab, ...form } });
@@ -83,13 +86,14 @@ export default function PortfolioPage() {
 
   return (
     <AppShell>
-      <ToastContainer position="bottom-right" theme="light" />
+      <AppToastContainer position="bottom-right" theme="light" />
       <div className="max-w-3xl mx-auto px-4">
         <M3Page title="Portfolio & content" subtitle="Manage the projects, case studies and posts the world sees — synced to your showcase">
           <div className="flex gap-2">
             {TABS.map((t) => (
               <button
                 key={t.type}
+                aria-pressed={tab === t.type}
                 onClick={() => { setTab(t.type); setShowForm(false); }}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
                   tab === t.type ? "bg-black text-white" : "border border-border-primary bg-white text-text-secondary"
@@ -120,7 +124,8 @@ export default function PortfolioPage() {
               <>
                 {showForm && (
                   <div className="space-y-2 rounded-2xl border border-border-secondary bg-bg-secondary p-3 mb-3">
-                    <input className="w-full rounded-xl border border-border-primary p-2 text-sm" aria-label="Title" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+                    <input className="w-full rounded-xl border border-border-primary p-2 text-sm" aria-label="Title" placeholder="Title" required aria-required="true" aria-invalid={titleErr ? true : undefined} aria-describedby={titleErr ? "pf-title-err" : undefined} autoComplete="off" value={form.title} onChange={(e) => { setTitleErr(false); setForm({ ...form, title: e.target.value }); }} />
+                    {titleErr && <p id="pf-title-err" role="alert" className="text-xs text-danger">Title is required.</p>}
                     {tab === "blogPost" ? (
                       <textarea className="w-full rounded-xl border border-border-primary p-2 text-sm" aria-label="Excerpt" placeholder="Excerpt" value={form.excerpt} onChange={(e) => setForm({ ...form, excerpt: e.target.value })} />
                     ) : (
@@ -133,7 +138,7 @@ export default function PortfolioPage() {
                       </>
                     )}
                     {tab === "project" && (
-                      <input className="w-full rounded-xl border border-border-primary p-2 text-sm" aria-label="URL (optional)" placeholder="URL (optional)" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} />
+                      <input className="w-full rounded-xl border border-border-primary p-2 text-sm" aria-label="URL (optional)" placeholder="URL (optional)" type="url" inputMode="url" autoComplete="url" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} />
                     )}
                     <input className="w-full rounded-xl border border-border-primary p-2 text-sm" aria-label="Tags (comma-separated)" placeholder="Tags (comma-separated)" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} />
                     <M3Button onClick={create} disabled={saving}>{saving ? "Publishing…" : "Publish to showcase"}</M3Button>

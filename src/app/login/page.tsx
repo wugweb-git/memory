@@ -144,6 +144,9 @@ function LoginForm() {
                 spellCheck={false}
                 className="w-full min-h-11 rounded-2xl border border-border-primary p-3 text-base"
                 aria-label="Email" placeholder="Email"
+                aria-required="true"
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? 'login-error' : undefined}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -156,6 +159,9 @@ function LoginForm() {
                 enterKeyHint="go"
                 className="w-full min-h-11 rounded-2xl border border-border-primary p-3 text-base"
                 aria-label="Password" placeholder="Password"
+                aria-required="true"
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? 'login-error' : undefined}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -170,7 +176,7 @@ function LoginForm() {
                 Keep me signed in on this device
               </label>
               <p role="status" aria-live="polite" className="sr-only">{status}</p>
-              {error && <p role="alert" className="text-sm text-danger">{error}</p>}
+              {error && <p id="login-error" role="alert" className="text-sm text-danger">{error}</p>}
               <button
                 type="submit"
                 disabled={busy || bioBusy || !email || !password}
@@ -194,7 +200,7 @@ function LoginForm() {
           )}
         </div>
 
-        <p className="text-2xs text-text-disabled text-center mt-6">
+        <p className="text-2xs text-text-tertiary text-center mt-6">
           <Link href="/console" className="inline-flex min-h-11 items-center hover:text-text-tertiary">Back to console</Link>
         </p>
       </div>

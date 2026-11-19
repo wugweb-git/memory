@@ -79,7 +79,7 @@ export const ExperienceMatrix = ({ selectedIndustry }: { selectedIndustry?: stri
               <div className="flex flex-wrap items-center gap-3 mb-4">
                 <Award size={16} className="text-accent" />
                 <h3 className="text-lg font-black text-text-primary">{study.title}</h3>
-                <span className="text-2xs text-text-disabled font-mono">{study.company} · {study.date}</span>
+                <span className="text-2xs text-text-tertiary font-mono">{study.company} · {study.date}</span>
               </div>
               <p className="text-sm text-text-secondary mb-4">{study.originalLogic}</p>
               <div className="flex items-start gap-2 p-4 rounded-xl bg-accent/5 border border-accent/20">
