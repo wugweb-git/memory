@@ -45,9 +45,9 @@
   /* ── Type scale ────────────────────────────────────────────────
      One continuous fluid ramp. UI/body sizes are flat-ish (2xs–md);
      heading sizes (lg–5xl) scale with the viewport. No gaps. */
-  --font-2xs:  0.6875rem;                                  /* 11px — micro labels */
-  --font-xs:   0.75rem;                                    /* 12px — captions */
-  --font-sm:   0.8125rem;                                  /* 13px — secondary UI */
+  --font-2xs:  0.75rem;                                    /* 12px — labels (M3 label-medium floor) */
+  --font-xs:   0.8125rem;                                  /* 13px — captions */
+  --font-sm:   0.875rem;                                   /* 14px — secondary UI (M3 body-medium) */
   --font-base: clamp(1rem, 0.95rem + 0.15vw, 1.0625rem);   /* 16→17px — body; 16px floor avoids iOS input zoom */
   --font-md:   clamp(1rem, 0.95rem + 0.25vw, 1.0625rem);  /* 16→17px — lead */
   --font-lg:   clamp(1.125rem, 1.05rem + 0.35vw, 1.25rem);/* 18→20px — h5/h6 */
@@ -118,7 +118,7 @@
   /* ── Layout chrome ──────────────────────────────────────────────
      The shell reads these so content never slides under fixed bars. */
   --topbar-h: 3.5rem;
-  --dock-h: 4rem;
+  --dock-h: 5rem; /* M3 navigation bar height (80) */
   --sidebar-w: 15rem;
   --content-max: 72rem;
   --gutter: 1rem;

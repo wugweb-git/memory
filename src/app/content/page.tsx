@@ -116,7 +116,7 @@ function Stepper({ step }: { step: 1 | 2 | 3 }) {
           <li
             key={label}
             aria-current={current ? "step" : undefined}
-            className={`flex min-w-0 flex-1 items-center gap-2 text-xs ${current ? "font-semibold text-text-primary" : "text-text-tertiary"}`}
+            className={`flex min-w-0 flex-1 flex-col items-center gap-1 text-center text-xs sm:flex-row sm:gap-2 sm:text-left ${current ? "font-semibold text-text-primary" : "text-text-tertiary"}`}
           >
             <span
               aria-hidden="true"
@@ -130,7 +130,7 @@ function Stepper({ step }: { step: 1 | 2 | 3 }) {
             >
               {done ? <Check size={12} strokeWidth={3} /> : n}
             </span>
-            <span className="truncate">{label}</span>
+            <span className="leading-snug sm:truncate">{label}</span>
             <span className="sr-only">{done ? " (done)" : current ? " (current step)" : ""}</span>
           </li>
         );

@@ -144,7 +144,7 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
                       : 'text-text-secondary font-medium hover:bg-secondary hover:text-text-primary'
                   }`}
                 >
-                  <Icon size={18} aria-hidden="true" className="shrink-0" strokeWidth={active ? 2.5 : 2} />
+                  <Icon size={24} aria-hidden="true" className="shrink-0" strokeWidth={active ? 2.5 : 2} />
                   <span className="flex-1 min-w-0 text-left">
                     <span className="block leading-snug">{itemLabel}</span>
                     {hints && hint ? (
@@ -377,11 +377,11 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
                   }`}
                 >
                   <span
-                    className={`flex h-7 w-12 items-center justify-center rounded-pill transition-colors duration-fast ease-standard ${
+                    className={`flex h-8 w-16 items-center justify-center rounded-pill transition-colors duration-fast ease-standard ${
                       active ? 'bg-accent-high text-bg-primary' : ''
                     }`}
                   >
-                    <Icon size={18} aria-hidden="true" strokeWidth={active ? 2.5 : 2} />
+                    <Icon size={24} aria-hidden="true" strokeWidth={active ? 2.5 : 2} />
                   </span>
                   <span className={`text-2xs leading-none ${active ? 'font-bold' : 'font-medium'}`}>{label}</span>
                 </Link>
@@ -397,11 +397,11 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
               }`}
             >
               <span
-                className={`flex h-7 w-12 items-center justify-center rounded-pill transition-colors duration-fast ease-standard ${
+                className={`flex h-8 w-16 items-center justify-center rounded-pill transition-colors duration-fast ease-standard ${
                   moreActive ? 'bg-accent-high text-bg-primary' : ''
                 }`}
               >
-                <Menu size={18} aria-hidden="true" strokeWidth={moreActive ? 2.5 : 2} />
+                <Menu size={24} aria-hidden="true" strokeWidth={moreActive ? 2.5 : 2} />
               </span>
               <span className={`text-2xs leading-none ${moreActive ? 'font-bold' : 'font-medium'}`}>
                 More
