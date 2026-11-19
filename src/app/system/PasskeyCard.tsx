@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { M3State } from '@/components/ui/m3';
 import { ListSection } from '@/app/integrations/list-parts';
 import { EmptyState, Skeleton } from '@/components/ui/primitives';
+import { ConfirmDialog, useConfirm } from '@/components/ui/confirm-dialog';
 import { UI_API } from '@/lib/api/endpoints';
 import { platformPasskeySupported, registerThisDevice } from '@/lib/passkey-client';
 
@@ -59,8 +60,10 @@ export function PasskeyCard() {
     }
   }
 
+  const removeConfirm = useConfirm<Device>();
+
   async function remove(d: Device) {
-    if (!window.confirm(`Remove ${d.deviceName}? It will no longer be able to sign in with biometrics.`)) return;
+    removeConfirm.close();
     setRemoving(d.id);
     setError(null);
     setStatus(`Removing ${d.deviceName}`);
@@ -115,7 +118,7 @@ export function PasskeyCard() {
               </div>
               <button
                 type="button"
-                onClick={() => remove(d)}
+                onClick={() => removeConfirm.ask(d)}
                 disabled={removing === d.id}
                 aria-label={`Remove ${d.deviceName}`}
                 className="min-h-11 shrink-0 px-4 rounded-xl border border-border-primary text-sm font-semibold text-danger disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
@@ -156,6 +159,22 @@ export function PasskeyCard() {
 
       <p role="status" aria-live="polite" className="text-sm text-success empty:hidden">{status}</p>
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}
+      <ConfirmDialog
+        open={removeConfirm.open}
+        title="Remove this device?"
+        description={
+          removeConfirm.pending
+            ? `${removeConfirm.pending.deviceName} will no longer be able to sign in with biometrics. You can add it again later.`
+            : ''
+        }
+        confirmLabel="Remove device"
+        cancelLabel="Keep device"
+        tone="danger"
+        onConfirm={() => {
+          if (removeConfirm.pending) void remove(removeConfirm.pending);
+        }}
+        onCancel={removeConfirm.close}
+      />
     </ListSection>
   );
 }

@@ -13,6 +13,7 @@ import {
 import { M3Button, M3Page, M3State } from '@/components/ui/m3';
 import { ListSection, RowList } from './list-parts';
 import { EmptyState, Skeleton } from '@/components/ui/primitives';
+import { ConfirmDialog, useConfirm } from '@/components/ui/confirm-dialog';
 import { AppShell } from '@/app/component/AppShell';
 import { apiRequest } from '@/lib/ui/api-client';
 import { BrandIcon, brandIconFor } from '@/components/ui/brand-icon';
@@ -261,7 +262,10 @@ export default function IntegrationsPage() {
     }
   }
 
+  const removeFeedConfirm = useConfirm<ConnectorStatus>();
+
   async function removeFeed(c: ConnectorStatus) {
+    removeFeedConfirm.close();
     try {
       await apiRequest(`/api/sources/feeds/${c.id}`, { method: 'DELETE' });
       toast.success(`${c.label} removed.`);
@@ -318,7 +322,7 @@ export default function IntegrationsPage() {
             <button type="button" onClick={() => startSetup(c)} id={`setup-btn-${c.id}`} aria-label={`Change ${c.label}`} className={ACTION_QUIET}>Change</button>
           ) : null}
           {c.custom ? (
-            <button type="button" onClick={() => removeFeed(c)} aria-label={`Remove ${c.label}`} className={ACTION_QUIET}>Remove</button>
+            <button type="button" onClick={() => removeFeedConfirm.ask(c)} aria-label={`Remove ${c.label}`} className={ACTION_QUIET}>Remove</button>
           ) : null}
         </>
       ) : null,
@@ -490,6 +494,22 @@ export default function IntegrationsPage() {
             </>
           )}
       </M3Page>
+      <ConfirmDialog
+        open={removeFeedConfirm.open}
+        title="Remove this feed?"
+        description={
+          removeFeedConfirm.pending
+            ? `${removeFeedConfirm.pending.label} will stop syncing. Items it already brought in stay in your memory.`
+            : ''
+        }
+        confirmLabel="Remove feed"
+        cancelLabel="Keep feed"
+        tone="danger"
+        onConfirm={() => {
+          if (removeFeedConfirm.pending) void removeFeed(removeFeedConfirm.pending);
+        }}
+        onCancel={removeFeedConfirm.close}
+      />
     </AppShell>
   );
 }

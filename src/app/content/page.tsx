@@ -6,6 +6,7 @@ import { AppToastContainer } from "@/app/component/AppToastContainer";
 import "react-toastify/dist/ReactToastify.css";
 import { M3Button, M3Card, M3Page, M3State } from "@/components/ui/m3";
 import { EmptyState, Input, Skeleton } from "@/components/ui/primitives";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { UI_API, resolveUserId } from "@/lib/ui/contracts";
 import { apiRequest } from "@/lib/ui/api-client";
 import { AppShell } from "@/app/component/AppShell";
@@ -175,9 +176,19 @@ export default function OutputStudioPage() {
     return () => window.removeEventListener("beforeunload", handler);
   }, [dirty, editDirty]);
 
-  /** True when it is safe to replace the draft in the editor. */
-  function canReplaceDraft() {
-    return !dirty || window.confirm(LEAVE_MESSAGE);
+  /** One styled confirmation for destructive actions (replaces window.confirm). */
+  const [confirmReq, setConfirmReq] = useState<{
+    title: string;
+    description: string;
+    confirmLabel: string;
+    cancelLabel: string;
+    run: () => void;
+  } | null>(null);
+
+  /** Runs `run` now when the draft is clean, otherwise after the user confirms discarding it. */
+  function guardDraft(run: () => void) {
+    if (!dirty) { run(); return; }
+    setConfirmReq({ title: "Discard unsaved changes?", description: LEAVE_MESSAGE, confirmLabel: "Discard changes", cancelLabel: "Keep editing", run });
   }
 
   const loadDrafts = useCallback(async () => {
@@ -232,9 +243,9 @@ export default function OutputStudioPage() {
     setLastSaved(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
   }
 
-  async function generate() {
+  async function generate(skipGuard = false) {
     if (!decisionId) { toast.error("Choose a decision first. Pick a recent one or paste its ID."); return; }
-    if (!canReplaceDraft()) return;
+    if (!skipGuard && dirty) { guardDraft(() => void generate(true)); return; }
     try {
       setLoading(true); setError(null);
       const json = await apiRequest<{ output_id?: string; content?: string }>(UI_API.outputGenerate, {
@@ -315,8 +326,8 @@ export default function OutputStudioPage() {
     } finally { setBusy(false); }
   }
 
-  function openDraft(d: Draft) {
-    if (!canReplaceDraft()) return;
+  function openDraft(d: Draft, skipGuard = false) {
+    if (!skipGuard && dirty) { guardDraft(() => openDraft(d, true)); return; }
     setOutputId(d.id); setContent(d.content); setSavedContent(d.content); setPlatform(d.platform);
     if (d.decisionId) setDecisionId(d.decisionId);
     setVersions([]); setLastSaved(null); setTab("compose");
@@ -328,7 +339,10 @@ export default function OutputStudioPage() {
     setEditOriginal({ title: s.title, body });
   }
   function cancelEdit() {
-    if (editDirty && !window.confirm("Discard your changes to this section?")) return;
+    if (editDirty) {
+      setConfirmReq({ title: "Discard section changes?", description: "Your edits to this section will be lost.", confirmLabel: "Discard changes", cancelLabel: "Keep editing", run: () => setEditingId(null) });
+      return;
+    }
     setEditingId(null);
   }
   async function saveEdit() {
@@ -347,8 +361,16 @@ export default function OutputStudioPage() {
       toast.error(e instanceof Error ? e.message : "Could not update the section. Try again.");
     } finally { setBusy(false); }
   }
+  function askUnpublish(s: ProfileSection) {
+    setConfirmReq({
+      title: "Remove from your public profile?",
+      description: `"${s.title}" will no longer show on your public profile. You can publish it again later.`,
+      confirmLabel: "Remove section",
+      cancelLabel: "Keep section",
+      run: () => void unpublish(s),
+    });
+  }
   async function unpublish(s: ProfileSection) {
-    if (!confirm(`Remove "${s.title}" from your public profile?`)) return;
     try {
       setBusy(true);
       await apiRequest(`${profilePath(HANDLE, "sections")}?sectionId=${encodeURIComponent(s.id)}`, { method: "DELETE" });
@@ -451,11 +473,11 @@ export default function OutputStudioPage() {
                     </select>
                   </div>
                   {content ? (
-                    <M3Button tone="secondary" onClick={generate} disabled={loading || !decisionId}>
+                    <M3Button tone="secondary" onClick={() => generate()} disabled={loading || !decisionId}>
                       {loading ? "Generating…" : "Regenerate draft"}
                     </M3Button>
                   ) : (
-                    <M3Button onClick={generate} disabled={loading || !decisionId}>
+                    <M3Button onClick={() => generate()} disabled={loading || !decisionId}>
                       {loading ? "Generating…" : "Generate draft"}
                     </M3Button>
                   )}
@@ -635,7 +657,7 @@ export default function OutputStudioPage() {
                             <p className="text-base text-text-secondary line-clamp-2">{sectionBody(s).slice(0, 180)}</p>
                             <div className="flex gap-1 mt-1 -ml-3">
                               <button type="button" onClick={() => startEdit(s)} aria-label={`Edit ${s.title}`} className={LINK_BTN}>Edit</button>
-                              <button type="button" onClick={() => unpublish(s)} disabled={busy} aria-label={`Remove ${s.title}`} className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-danger transition-colors hover:bg-bg-tertiary disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">Remove</button>
+                              <button type="button" onClick={() => askUnpublish(s)} disabled={busy} aria-label={`Remove ${s.title}`} className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-danger transition-colors hover:bg-bg-tertiary disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">Remove</button>
                             </div>
                           </>
                         )}
@@ -701,6 +723,20 @@ export default function OutputStudioPage() {
             </M3Card>
           )}
         </M3Page>
+      <ConfirmDialog
+        open={confirmReq !== null}
+        title={confirmReq?.title ?? ""}
+        description={confirmReq?.description ?? ""}
+        confirmLabel={confirmReq?.confirmLabel ?? "Confirm"}
+        cancelLabel={confirmReq?.cancelLabel}
+        tone="danger"
+        onConfirm={() => {
+          const req = confirmReq;
+          setConfirmReq(null);
+          req?.run();
+        }}
+        onCancel={() => setConfirmReq(null)}
+      />
     </AppShell>
   );
 }
