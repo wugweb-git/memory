@@ -54,3 +54,6 @@ Re-run when adding a route or shared component. Status = verified in code on thi
 - [x] **1.4.1 Use of colour**: integrations status dot has a text status for assistive tech plus the visible status line; job status badges carry label and icon.
 - [x] **2.3.3 / reduced motion** and **forced colors**: `prefers-reduced-motion`, `prefers-reduced-transparency` and `forced-colors` (focus ring uses `Highlight`) handled in `globals.css`.
 - Known gaps: `window.open(...)` buttons in `EnhancementHub` (unused component) do not announce a new tab; some pages still use `truncate` on single-line labels (title text, not essential data).
+
+## Deployment status (2026-11-19)
+Shipped to production in main bda0120/cdbe97d. Open: full 375px route sweep on the deployed build, /ask interaction checks (streaming, Stop, Retry, Copy). Blue accent kept at `0 170 255` by owner decision; blue text on the light background is below 4.5:1 (the design pass had darkened it to `0 111 175`).
