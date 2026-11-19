@@ -17,7 +17,6 @@ Every LLM call site is mapped to a job below. Without the key each site keeps it
 | `runAgentLLM`: reasoner agent (`agents/reasoner.ts`) | decision | forced plain text (`json:false`) |
 | `runAgentLLM`: decision agent (`agents/decision.ts`) | decision | JSON |
 | `runTextLLM` (`src/lib/output/generator.ts`, L5 content) | ask | prose |
-| `ArtifactGenerator` (`src/lib/intelligence/generator.ts`) | ask | prose |
 | `SemanticEngine` entity/intent/topic extraction (`src/lib/processing/semantic.ts`, cron `memory-pipeline`) | ingest | JSON, via `createJobClient('ingest')`; an injected `llmClient` (diagnostics) still wins |
 | Signal extraction (`src/lib/processing/signals.ts`) | signals | rule-based by design, no LLM call; job stays reserved (see "Why signals and summary stay reserved") |
 | Summarising / compressing | summary | no clear low-risk call site exists; reserved (see below) |
@@ -107,8 +106,8 @@ parse, every helper returns a fallback and never throws, `DECIDER_SIGNALS` keeps
 never overrides an explicit mode. The cost is quota, not correctness: each request counts against the shared ~50/day `:free`
 cap, `DECIDER_SIGNALS` makes one request per ingested packet (a bulk import would exhaust the day and starve `/ask` and the
 brain), and it makes signal output non-deterministic (a signal's survival depends on a model score). So: `DECIDER_MODE=1`
-is low risk (one request per auto-mode decision); keep `DECIDER_SIGNALS` off until there is a per-day budget guard or a
-non-free key. Not enabled by this change.
+is low risk (one request per auto-mode decision). `DECIDER_SIGNALS` is now bounded by the `signals` daily budget (below), so it
+cannot starve `/ask` or the brain; the Decider requests are counted under `signals`. (`DECIDER_MODE` requests are not yet counted.)
 
 ## Why signals and summary stay reserved
 
@@ -151,3 +150,36 @@ Embeddings stay in `src/lib/memory/embeddings.ts` (1536 dims for the pgvector co
 Passed: nemotron-3.5-lightning, particle-1 (ask); nemotron-3-ultra, ling-3.2-flash (decision, valid JSON); lfm-3-1.7b, flint, nemotron-3-nano-omni (signals, valid JSON); ling-3.2-flash (summary); north-mini-code, dots-3-note (ingest, valid JSON).
 `google/gemma-4-26b` and `gemma-4-31b` returned 429 on every call (upstream rate limit); chains fall through to the next model. Live check: `/api/chat` answered via nemotron-3.5-lightning.
 Chain budget: 18s per attempt, 52s total (inside the 60s function limit).
+
+## Cost governance (daily request budget)
+
+Every request counts per UTC day, per job, in Neon `scheduler_state` (key `cost:usage:YYYY-MM-DD`, written by
+`src/lib/cost/tracking.ts`; the day rolls over by key). The guard is `src/lib/cost/guard.ts`, enforced in
+`src/lib/ai/job-client.ts` (`runJobGuarded` / `runJobOrThrow` / `createJobClient`), the `/api/chat` ask stream and
+`applySignalImportance`. Counting is read-modify-write without a lock, so concurrent runs can under-count slightly.
+
+| Job | Class | Env | Default/day |
+|---|---|---|---|
+| ask | interactive | `DAILY_BUDGET_ASK` | 25 |
+| decision | interactive | `DAILY_BUDGET_DECISION` | 12 |
+| signals | background | `DAILY_BUDGET_SIGNALS` | 3 |
+| summary | background | `DAILY_BUDGET_SUMMARY` | 3 |
+| ingest | background | `DAILY_BUDGET_INGEST` | 7 |
+
+- Defaults sum to the 50/day free cap (`OPENROUTER_FREE_DAILY_CAP`). `0` disables a job; invalid values fall back to defaults.
+- Interactive jobs are limited only by their own budget. A background request is allowed only while
+  `total used + unused interactive budget + 1 <= cap`, so background work can never eat the interactive headroom.
+- Over budget, a background job makes no request: `runJobGuarded` returns `{ ok:false, skipped:true, decision }`;
+  `createJobClient` throws `BudgetExceededError` (ingest already catches it and uses its rule-based extraction);
+  `applySignalImportance` keeps all signals. An interactive job over its own limit throws `BudgetExceededError`
+  with a clear message (`/api/chat` answers 429 with it when no other provider is configured).
+- If the usage store is unreachable, interactive jobs fail open and background jobs are skipped.
+- Owner view: `GET /api/system/cost` (admin) returns per-job `budgets`; shown on System as "Model request budget".
+- Legacy providers (no `OPENROUTER_API_KEY`) are not budgeted.
+
+### Cognitive model routing
+
+`selectModel` (src/lib/cognitive/routing.ts) now returns the real model that is tried first: with `OPENROUTER_API_KEY`
+the head of the `decision` chain after tier ordering (full = configured order, mini = last/cheapest entry first); without
+it the legacy `gpt-4o` / `gpt-4o-mini` names. `COGNITIVE_MODEL_FLOOR=mini` works on the OpenRouter path for both the
+single pass and the multi-agent decision step, and the reasoner always uses the cheapest entry.
