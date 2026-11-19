@@ -100,7 +100,7 @@ export const DecideTab: React.FC<{ mode: Mode }> = ({ mode }) => {
               <ol className="space-y-3">
                 {rest.map((r, i) => (
                   <li key={i} className="flex gap-3 text-sm text-text-secondary">
-                    <span className="w-6 h-6 shrink-0 rounded-full bg-secondary text-2xs font-semibold text-text-tertiary flex items-center justify-center">{i + 2}</span>
+                    <span className="w-6 h-6 shrink-0 rounded-full bg-secondary text-xs font-semibold text-text-tertiary flex items-center justify-center">{i + 2}</span>
                     <span className="flex-1">{r}</span>
                   </li>
                 ))}
@@ -115,7 +115,7 @@ export const DecideTab: React.FC<{ mode: Mode }> = ({ mode }) => {
                   const { level, text } = parsePriority(p);
                   return (
                     <li key={i} className="flex items-start gap-3">
-                      <span className={`text-2xs font-semibold px-2 py-0.5 rounded-full border shrink-0 mt-0.5 ${PRIORITY_STYLE[level]}`}>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border shrink-0 mt-0.5 ${PRIORITY_STYLE[level]}`}>
                         {level === 'medium' ? 'Medium' : level === 'high' ? 'High' : 'Low'}
                       </span>
                       <span className="text-sm text-text-secondary">{text}</span>

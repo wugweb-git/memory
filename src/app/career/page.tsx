@@ -128,8 +128,8 @@ export default function CareerPage() {
             title="Career tree"
             action={
               <div className="flex items-center gap-3">
-                <Link href={`/p/${HANDLE}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] px-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-lg text-accent">View live<span className="sr-only"> (opens in a new tab)</span></Link>
-                <button type="button" aria-expanded={showForm} onClick={showForm ? () => setShowForm(false) : startNew} className="min-h-[44px] px-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-lg text-accent">
+                <Link href={`/p/${HANDLE}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] px-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-lg text-text-primary underline underline-offset-4 decoration-accent">View live<span className="sr-only"> (opens in a new tab)</span></Link>
+                <button type="button" aria-expanded={showForm} onClick={showForm ? () => setShowForm(false) : startNew} className="min-h-[44px] px-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-lg text-text-primary underline underline-offset-4 decoration-accent">
                   {showForm ? "Close form" : "Add role"}
                 </button>
               </div>
@@ -177,7 +177,7 @@ export default function CareerPage() {
                       {c.company ? <p className="text-sm text-text-tertiary">{String(c.company)}</p> : null}
                       {c.originalLogic ? <p className="text-sm text-text-secondary mt-1 line-clamp-2">{String(c.originalLogic)}</p> : null}
                       <div className="flex gap-1 mt-1 -ml-2">
-                        <button type="button" onClick={() => startEdit(s)} aria-label={`Edit ${s.title}`} className="min-h-[44px] min-w-[44px] px-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-lg text-accent">Edit</button>
+                        <button type="button" onClick={() => startEdit(s)} aria-label={`Edit ${s.title}`} className="min-h-[44px] min-w-[44px] px-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-lg text-text-primary underline underline-offset-4 decoration-accent">Edit</button>
                         <button type="button" onClick={() => remove(s)} aria-label={`Remove ${s.title}`} className="min-h-[44px] px-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-lg text-danger">Remove</button>
                       </div>
                     </li>
@@ -190,7 +190,7 @@ export default function CareerPage() {
           {/* Job pipeline + opportunities — visually separated from the career
               tree above since these are two different tools sharing a page. */}
           <div className="pt-2 mt-2 border-t border-border-secondary">
-            <p className="text-2xs font-semibold text-text-tertiary uppercase tracking-wider mb-3 px-1">Job search</p>
+            <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3 px-1">Job search</p>
             <div className="space-y-4">
               <JobPipeline />
               <JobSearchAgent />

@@ -37,7 +37,7 @@ export const Intent: React.FC<{ title: string; children: React.ReactNode }> = ({
 );
 
 export const Eyebrow: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <p className="text-2xs font-semibold text-text-tertiary uppercase tracking-widest">{children}</p>
+  <p className="text-xs font-semibold text-text-tertiary uppercase tracking-widest">{children}</p>
 );
 
 export const Card: React.FC<{
@@ -151,7 +151,7 @@ export const ScoreRing: React.FC<{ value: number; label: string; size?: number }
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-2xl font-semibold text-text-primary leading-none">{Math.round(v * 100)}</span>
-        <span className="text-2xs text-text-tertiary mt-1">{label}</span>
+        <span className="text-xs text-text-tertiary mt-1">{label}</span>
       </div>
     </div>
   );

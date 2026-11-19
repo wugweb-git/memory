@@ -196,7 +196,7 @@ function LoginForm() {
               <div className="flex flex-col gap-2">
                 <Link
                   href={safeNext}
-                  className={`inline-flex min-h-12 items-center justify-center rounded-xl bg-text-primary text-sm font-semibold text-bg-primary transition-colors hover:bg-accent ${FOCUS_RING}`}
+                  className={`inline-flex min-h-12 items-center justify-center rounded-xl bg-text-primary text-sm font-semibold text-bg-primary transition-colors hover:bg-text-secondary ${FOCUS_RING}`}
                 >
                   Continue
                 </Link>
@@ -303,7 +303,7 @@ function LoginForm() {
                 <button
                   type="submit"
                   aria-disabled={busy || bioBusy}
-                  className={`inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-text-primary text-sm font-semibold text-bg-primary transition-colors hover:bg-accent aria-disabled:cursor-progress aria-disabled:hover:bg-text-primary ${FOCUS_RING}`}
+                  className={`inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-text-primary text-sm font-semibold text-bg-primary transition-colors hover:bg-text-secondary aria-disabled:cursor-progress aria-disabled:hover:bg-text-primary ${FOCUS_RING}`}
                 >
                   {busy ? (
                     <>

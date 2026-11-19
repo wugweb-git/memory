@@ -44,7 +44,7 @@ function Field({
     <div>
       <label htmlFor={id} className="block text-sm font-medium text-text-primary mb-1">
         {label}
-        {optional ? <span className="ml-1 text-2xs font-normal text-text-tertiary">Optional</span> : null}
+        {optional ? <span className="ml-1 text-xs font-normal text-text-tertiary">Optional</span> : null}
       </label>
       {children}
       {error ? (
@@ -186,7 +186,7 @@ export function RoleForm({
               className={`${inputCls} ${border("originalLogic")}`}
               value={values.originalLogic} onChange={(e) => set("originalLogic", e.target.value)}
             />
-            <p className="mt-1 text-2xs text-text-tertiary text-right" aria-hidden="true">{values.originalLogic.length}/{MAX_TEXT}</p>
+            <p className="mt-1 text-xs text-text-tertiary text-right" aria-hidden="true">{values.originalLogic.length}/{MAX_TEXT}</p>
           </Field>
           <Field id={ids.persp} label="What it means now" optional error={errors.perspective2026}
             hint="How you see that role today, with hindsight.">
@@ -196,7 +196,7 @@ export function RoleForm({
               className={`${inputCls} ${border("perspective2026")}`}
               value={values.perspective2026} onChange={(e) => set("perspective2026", e.target.value)}
             />
-            <p className="mt-1 text-2xs text-text-tertiary text-right" aria-hidden="true">{values.perspective2026.length}/{MAX_TEXT}</p>
+            <p className="mt-1 text-xs text-text-tertiary text-right" aria-hidden="true">{values.perspective2026.length}/{MAX_TEXT}</p>
           </Field>
         </fieldset>
       </div>

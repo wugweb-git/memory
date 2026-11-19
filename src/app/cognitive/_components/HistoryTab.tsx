@@ -65,7 +65,7 @@ export const HistoryTab: React.FC = () => {
             return (
               <li key={h.id} className="pl-5 relative">
                 <span aria-hidden="true" className={`absolute -left-[6px] top-4 w-2.5 h-2.5 rounded-full ring-2 ring-bg-primary ${FEEDBACK_DOT[h.lastFeedback] ?? 'bg-accent'}`} />
-                {showDay ? <p className="text-2xs font-semibold text-text-tertiary uppercase tracking-widest mb-2">{dayLabel(h.createdAt)}</p> : null}
+                {showDay ? <p className="text-xs font-semibold text-text-tertiary uppercase tracking-widest mb-2">{dayLabel(h.createdAt)}</p> : null}
                 <div className="rounded-2xl border border-border-secondary bg-bg-elevated overflow-hidden">
                   <button
                     type="button"

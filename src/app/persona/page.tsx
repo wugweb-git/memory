@@ -54,7 +54,7 @@ function StyleValue({ value, depth = 0, label = 'Score' }: { value: unknown; dep
           <div className="flex-1">
             <Meter label={label} value={value} className="h-1" />
           </div>
-          <span className="text-2xs font-semibold text-text-secondary w-9 text-right tabular-nums">{Math.round(value * 100)}%</span>
+          <span className="text-xs font-semibold text-text-secondary w-9 text-right tabular-nums">{Math.round(value * 100)}%</span>
         </div>
       );
     }
@@ -70,7 +70,7 @@ function StyleValue({ value, depth = 0, label = 'Score' }: { value: unknown; dep
     return (
       <div className="flex flex-wrap gap-1.5">
         {value.map((v, i) => (
-          <span key={i} className="text-2xs font-medium px-2 py-0.5 rounded-full bg-bg-primary border border-border-secondary text-text-secondary">
+          <span key={i} className="text-xs font-medium px-2 py-0.5 rounded-full bg-bg-primary border border-border-secondary text-text-secondary">
             {typeof v === 'string' ? v : JSON.stringify(v)}
           </span>
         ))}
@@ -85,7 +85,7 @@ function StyleValue({ value, depth = 0, label = 'Score' }: { value: unknown; dep
       <div className={depth > 0 ? 'space-y-2 pl-3 border-l border-border-secondary' : 'space-y-2'}>
         {entries.map(([k, v]) => (
           <div key={k}>
-            <p className="text-2xs text-text-secondary mb-0.5">{humanize(k)}</p>
+            <p className="text-xs text-text-secondary mb-0.5">{humanize(k)}</p>
             <StyleValue value={v} depth={depth + 1} label={humanize(k)} />
           </div>
         ))}
@@ -279,10 +279,10 @@ export default function PersonaIntelligencePage() {
 
   return (
     <AppShell>
-    <div className="w-full max-w-3xl mx-auto space-y-8">
+    <div className="w-full max-w-3xl mx-auto space-y-6">
       <header className="space-y-3">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold text-text-primary">Persona</h1>
+          <h1 className="text-xl font-semibold text-text-primary">Persona</h1>
           <p className="text-sm text-text-secondary">How your digital twin writes, decides and changes over time. Review it, then regenerate when your writing has moved on.</p>
         </div>
         <button
@@ -290,7 +290,7 @@ export default function PersonaIntelligencePage() {
           onClick={rebuildPersona}
           disabled={rebuilding || saving}
           aria-busy={rebuilding}
-          className="min-h-11 px-5 rounded-xl bg-text-primary text-bg-primary text-sm font-semibold transition-colors hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="min-h-12 w-full sm:w-auto px-5 rounded-xl bg-text-primary text-bg-primary text-sm font-semibold transition-colors hover:bg-text-secondary disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           {rebuilding ? 'Regenerating…' : 'Regenerate from my profile'}
         </button>
@@ -369,7 +369,7 @@ export default function PersonaIntelligencePage() {
                       onClick={() => rollbackConfirm.ask({ logId: log.id, field: log.changedField!, createdAt: log.createdAt })}
                       disabled={saving}
                       aria-label={`Roll back ${(STYLE_LABEL[log.changedField!] ?? humanize(log.changedField!)).toLowerCase()} change`}
-                      className="inline-flex min-h-11 items-center -ml-2 px-2 rounded-lg text-sm font-semibold text-accent hover:bg-bg-tertiary disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                      className="inline-flex min-h-11 items-center -ml-2 px-2 rounded-lg text-sm font-semibold text-text-primary underline underline-offset-4 decoration-accent hover:bg-bg-tertiary disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                     >
                       Roll back
                     </button>
@@ -409,7 +409,7 @@ export default function PersonaIntelligencePage() {
                     disabled={saving}
                     
                     onClick={() => updateAdaptive(ctrl.field, opt)}
-                    className={`min-h-11 px-3 rounded-lg border text-xs font-medium capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${adaptive?.[ctrl.field] === opt ? 'bg-text-primary text-bg-primary border-text-primary' : 'border-border-secondary text-text-primary hover:bg-bg-secondary'} disabled:opacity-50`}
+                    className={`min-h-11 px-4 rounded-lg border text-sm font-medium capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${adaptive?.[ctrl.field] === opt ? 'bg-text-primary text-bg-primary border-text-primary' : 'border-border-secondary text-text-primary hover:bg-bg-secondary'} disabled:opacity-50`}
                   >
                     {opt.replace(/-/g, ' ')}
                   </button>
@@ -441,7 +441,7 @@ export default function PersonaIntelligencePage() {
           type="button"
           onClick={sendFeedback}
           disabled={saving}
-          className="w-full min-h-11 px-4 rounded-xl bg-text-primary text-bg-primary text-sm font-semibold hover:bg-accent disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="w-full min-h-11 px-4 rounded-xl bg-text-primary text-bg-primary text-sm font-semibold hover:bg-text-secondary disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           {saving ? 'Saving…' : 'Send feedback'}
         </button>

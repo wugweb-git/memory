@@ -75,12 +75,12 @@ export const PrioritizeTab: React.FC<{ mode: Mode }> = ({ mode }) => {
             <ol className="space-y-3">
               {ranked.map((r, i) => (
                 <li key={i} className={`rounded-2xl border p-4 flex gap-4 ${i === 0 ? 'border-accent/30 bg-accent/5' : 'border-border-secondary bg-bg-elevated'}`}>
-                  <span className={`text-3xl font-semibold leading-none w-8 shrink-0 ${i === 0 ? 'text-accent' : 'text-text-tertiary'}`}>{r.rank ?? i + 1}</span>
+                  <span className={`text-3xl font-semibold leading-none w-8 shrink-0 ${i === 0 ? 'text-text-primary' : 'text-text-tertiary'}`}>{r.rank ?? i + 1}</span>
                   <div className="space-y-2 min-w-0">
                     <p className="text-sm font-semibold text-text-primary">{r.item}</p>
                     <p className="text-sm text-text-tertiary">{r.reason}</p>
                     {r.signal_match ? (
-                      <span className="inline-block text-2xs font-medium px-2 py-0.5 rounded-full bg-bg-secondary text-text-secondary border border-border-secondary">
+                      <span className="inline-block text-xs font-medium px-2 py-0.5 rounded-full bg-bg-secondary text-text-secondary border border-border-secondary">
                         Matches: {r.signal_match}
                       </span>
                     ) : null}
