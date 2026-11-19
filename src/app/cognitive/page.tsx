@@ -71,8 +71,8 @@ export default function CognitivePage() {
                 tabIndex={active ? 0 : -1}
                 onKeyDown={(e) => onTabKeyDown(e, i)}
                 onClick={() => setSubTab(t.id)}
-                className={`min-h-12 rounded-xl flex flex-col items-center justify-center gap-0.5 text-2xs font-medium transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
-                  active ? 'bg-bg-elevated text-text-primary shadow-sm' : 'text-text-tertiary hover:text-text-primary'
+                className={`min-h-12 rounded-xl flex flex-col items-center justify-center gap-0.5 text-xs font-medium transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                  active ? 'bg-bg-elevated text-text-primary shadow-sm' : 'text-text-tertiary hover:bg-bg-elevated/60 hover:text-text-primary'
                 }`}
               >
                 <Icon size={16} aria-hidden="true" />

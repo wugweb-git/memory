@@ -5,16 +5,24 @@ import { AlertCircle, CheckCircle, Loader2, RefreshCw } from 'lucide-react';
 import { resolveUserId } from '@/config/identity';
 
 /* ─── api helper ─────────────────────────────────────────── */
+export const REQUEST_TIMEOUT_MS = 60_000;
+
 export async function postJson<T = any>(url: string, body: Record<string, unknown>): Promise<T> {
   let res: Response;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
   try {
     res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      signal: ctrl.signal,
     });
-  } catch {
+  } catch (e) {
+    if ((e as Error)?.name === 'AbortError') throw new Error('This is taking too long. Try again in a moment.');
     throw new Error('Connection failure. Check your network and try again.');
+  } finally {
+    clearTimeout(timer);
   }
   let data: any = null;
   try { data = await res.json(); } catch { /* non-json */ }
@@ -37,7 +45,7 @@ export const Intent: React.FC<{ title: string; children: React.ReactNode }> = ({
 );
 
 export const Eyebrow: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <p className="text-2xs font-semibold text-text-tertiary uppercase tracking-widest">{children}</p>
+  <p className="text-xs font-semibold text-text-tertiary uppercase tracking-widest">{children}</p>
 );
 
 export const Card: React.FC<{
@@ -151,7 +159,7 @@ export const ScoreRing: React.FC<{ value: number; label: string; size?: number }
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-2xl font-semibold text-text-primary leading-none">{Math.round(v * 100)}</span>
-        <span className="text-2xs text-text-tertiary mt-1">{label}</span>
+        <span className="text-xs text-text-tertiary mt-1">{label}</span>
       </div>
     </div>
   );

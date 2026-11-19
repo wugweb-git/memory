@@ -16,6 +16,18 @@ function sectionContent(s: ProfileSection) {
   return (s.content ?? {}) as Record<string, unknown>;
 }
 
+/** Strip inline/leading markdown markers (bold, italics, code, headings, links) from short plain-text slots like titles and teasers. */
+function plain(v: unknown): string {
+  return (typeof v === 'string' ? v : '')
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/(\*\*|__)(.*?)\1/g, '$2')
+    .replace(/(\*|_)(.*?)\1/g, '$2')
+    .replace(/`([^`]*)`/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function str(v: unknown): string {
   return typeof v === 'string' ? v : '';
 }
@@ -36,7 +48,7 @@ const SOCIAL_ICONS: Record<string, typeof Linkedin> = {
 /** Small uppercase eyebrow — the one intentional uppercase in the design system. */
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-2xs font-bold uppercase tracking-widest text-text-tertiary">
+    <h2 className="text-xs font-bold uppercase tracking-widest text-text-tertiary">
       {children}
     </h2>
   );
@@ -89,12 +101,12 @@ export function PublicProfileView({ username }: { username: string }) {
   const socials = (profile?.socialLinks ?? []).filter((l) => safeUrl(l.url));
 
   return (
-    <main className="max-w-2xl mx-auto px-5 sm:px-8 py-14 sm:py-20">
+    <main className="max-w-2xl mx-auto px-4 sm:px-8 py-8 sm:py-20">
       {/* ── Identity header ── */}
       <header className="space-y-6">
         <div className="flex items-start justify-between gap-6">
           <div className="min-w-0">
-            <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-text-primary leading-tight">
+            <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight text-text-primary leading-tight">
               {displayName}
             </h1>
             {role && (
@@ -145,7 +157,7 @@ export function PublicProfileView({ username }: { username: string }) {
         )}
       </header>
 
-      <div className="mt-16 space-y-16">
+      <div className="mt-10 space-y-10 sm:mt-16 sm:space-y-16">
         {/* ── Ventures / focus areas (real profile sections) ── */}
         {ventures.length > 0 && (
           <section className="space-y-4">
@@ -157,7 +169,7 @@ export function PublicProfileView({ username }: { username: string }) {
                   <div key={v.id} className="rounded-2xl border border-border-secondary bg-bg-secondary/50 p-5">
                     <div className="flex items-baseline justify-between gap-3">
                       <h3 className="text-base font-bold text-text-primary">{v.title}</h3>
-                      {str(c.phase) && <span className="text-2xs text-text-tertiary shrink-0">{str(c.phase)}</span>}
+                      {str(c.phase) && <span className="text-xs text-text-tertiary shrink-0">{str(c.phase)}</span>}
                     </div>
                     {(str(c.summary) || str(c.industry)) && (
                       <p className="text-sm text-text-secondary mt-1.5">{str(c.summary) || str(c.industry)}</p>
@@ -187,19 +199,19 @@ export function PublicProfileView({ username }: { username: string }) {
                     <span aria-hidden="true" className="absolute -left-[6.5px] mt-1.5 h-3 w-3 rounded-full bg-accent border-2 border-bg-primary" />
                     <div className="flex flex-wrap items-baseline justify-between gap-x-3">
                       <h3 className="text-base font-bold text-text-primary">{exp.title}</h3>
-                      {str(c.date) && <span className="text-2xs text-text-tertiary shrink-0">{str(c.date)}</span>}
+                      {str(c.date) && <span className="text-xs text-text-tertiary shrink-0">{str(c.date)}</span>}
                     </div>
                     {company && <p className="text-sm text-text-tertiary mt-0.5">{company}</p>}
                     {logic && <p className="text-sm text-text-secondary mt-2 max-w-prose">{logic}</p>}
                     {perspective && (
                       <p className="text-sm text-text-secondary mt-2 pl-3 border-l-2 border-accent/40 max-w-prose">
-                        <span className="text-accent font-medium">Now: </span>{perspective}
+                        <span className="text-text-primary font-semibold">Now: </span>{perspective}
                       </p>
                     )}
                     {industries.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 mt-3">
                         {industries.map((ind) => (
-                          <span key={ind} className="text-2xs font-medium px-2 py-0.5 rounded-full bg-bg-secondary border border-border-secondary text-text-tertiary">
+                          <span key={ind} className="text-xs font-medium px-2 py-0.5 rounded-full bg-bg-secondary border border-border-secondary text-text-tertiary">
                             {ind}
                           </span>
                         ))}
@@ -224,16 +236,16 @@ export function PublicProfileView({ username }: { username: string }) {
                 const inner = (
                   <>
                     <div className="flex items-baseline justify-between gap-4">
-                      <h3 className="text-base font-bold text-text-primary group-hover:text-accent transition-colors">
-                        {post.title}
+                      <h3 className="text-base font-bold text-text-primary group-hover:underline underline-offset-4 decoration-accent">
+                        {plain(post.title)}
                       </h3>
                       {str(c.date) && (
-                        <span className="text-2xs text-text-tertiary shrink-0">{str(c.date)}</span>
+                        <span className="text-xs text-text-tertiary shrink-0">{str(c.date)}</span>
                       )}
                     </div>
                     {summary && (
                       <p className="text-sm text-text-tertiary mt-1 line-clamp-2 max-w-prose">
-                        {summary.slice(0, 200)}
+                        {plain(summary).slice(0, 200)}
                       </p>
                     )}
                   </>
@@ -292,7 +304,7 @@ export function PublicProfileView({ username }: { username: string }) {
                       &ldquo;{str(c.content) || t.title}&rdquo;
                     </blockquote>
                     {str(c.author) && (
-                      <figcaption className="text-2xs text-text-tertiary mt-3">— {str(c.author)}</figcaption>
+                      <figcaption className="text-xs text-text-tertiary mt-3">— {str(c.author)}</figcaption>
                     )}
                   </figure>
                 );
@@ -319,14 +331,14 @@ export function PublicProfileView({ username }: { username: string }) {
                     className="flex items-center justify-between gap-4 py-3.5 group"
                   >
                     <div className="min-w-0">
-                      <h3 className="text-sm font-bold text-text-primary group-hover:text-accent transition-colors truncate">
+                      <h3 className="text-sm font-bold text-text-primary group-hover:underline underline-offset-4 decoration-accent truncate">
                         {ref.title}
                       </h3>
                       {str(c.summary) && (
                         <p className="text-xs text-text-tertiary mt-0.5 line-clamp-1">{str(c.summary)}</p>
                       )}
                     </div>
-                    <ArrowUpRight size={16} aria-hidden="true" className="text-text-tertiary group-hover:text-accent shrink-0 transition-colors" />
+                    <ArrowUpRight size={16} aria-hidden="true" className="text-text-tertiary group-hover:text-text-primary shrink-0 transition-colors" />
                     <span className="sr-only"> (opens in a new tab)</span>
                   </a>
                 );
@@ -338,13 +350,13 @@ export function PublicProfileView({ username }: { username: string }) {
 
       {/* ── Footer ── */}
       <footer className="mt-20 pt-8 border-t border-border-secondary flex items-center justify-between gap-4">
-        <p className="text-2xs text-text-tertiary">
+        <p className="text-xs text-text-tertiary">
           {displayName} · powered by Identity Prism
         </p>
         {isOwner && (
           <Link
             href="/ask"
-            className="inline-flex min-h-11 items-center gap-1.5 text-2xs font-bold text-text-tertiary hover:text-accent transition-colors"
+            className="inline-flex min-h-11 items-center gap-1.5 text-xs font-bold text-text-tertiary hover:text-text-primary transition-colors"
           >
             <MessageSquare size={13} aria-hidden="true" /> Ask my digital twin
           </Link>
@@ -398,10 +410,10 @@ function SanityShowcase() {
                 />
               )}
               <div className="flex items-center justify-between gap-3">
-                <span className="text-2xs font-bold text-accent">{it.kind}</span>
-                {safeUrl(it.url) && <ArrowUpRight size={14} aria-hidden="true" className="text-text-tertiary group-hover:text-accent transition-colors" />}
+                <span className="text-xs font-semibold text-text-secondary">{it.kind}</span>
+                {safeUrl(it.url) && <ArrowUpRight size={14} aria-hidden="true" className="text-text-tertiary group-hover:underline underline-offset-4 decoration-accent" />}
               </div>
-              <h3 className="text-base font-bold text-text-primary mt-2 group-hover:text-accent transition-colors">
+              <h3 className="text-base font-bold text-text-primary mt-2 group-hover:underline underline-offset-4 decoration-accent">
                 {it.title}
               </h3>
               {(it.summary || it.excerpt) && (
@@ -410,10 +422,10 @@ function SanityShowcase() {
                 </p>
               )}
               {it.client && (
-                <p className="text-2xs text-text-tertiary mt-1.5">Client: {it.client}</p>
+                <p className="text-xs text-text-tertiary mt-1.5">Client: {it.client}</p>
               )}
               {Array.isArray(it.tags) && it.tags.length > 0 && (
-                <p className="text-2xs text-text-tertiary mt-3">{it.tags.slice(0, 4).join(' · ')}</p>
+                <p className="text-xs text-text-tertiary mt-3">{it.tags.slice(0, 4).join(' · ')}</p>
               )}
             </>
           );

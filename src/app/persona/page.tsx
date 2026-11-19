@@ -2,7 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { IDENTITY_CONFIG, resolveUserId } from '@/config/identity';
+import { toast } from 'react-toastify';
 import { AppShell } from '@/app/component/AppShell';
+import { AppToastContainer } from '@/app/component/AppToastContainer';
 import { EmptyState, Skeleton } from '@/components/ui/primitives';
 import { ConfirmDialog, buildRollbackDescription, useConfirm } from '@/components/ui/confirm-dialog';
 
@@ -54,7 +56,7 @@ function StyleValue({ value, depth = 0, label = 'Score' }: { value: unknown; dep
           <div className="flex-1">
             <Meter label={label} value={value} className="h-1" />
           </div>
-          <span className="text-2xs font-semibold text-text-secondary w-9 text-right tabular-nums">{Math.round(value * 100)}%</span>
+          <span className="text-xs font-semibold text-text-secondary w-9 text-right tabular-nums">{Math.round(value * 100)}%</span>
         </div>
       );
     }
@@ -70,7 +72,7 @@ function StyleValue({ value, depth = 0, label = 'Score' }: { value: unknown; dep
     return (
       <div className="flex flex-wrap gap-1.5">
         {value.map((v, i) => (
-          <span key={i} className="text-2xs font-medium px-2 py-0.5 rounded-full bg-bg-primary border border-border-secondary text-text-secondary">
+          <span key={i} className="text-xs font-medium px-2 py-0.5 rounded-full bg-bg-primary border border-border-secondary text-text-secondary">
             {typeof v === 'string' ? v : JSON.stringify(v)}
           </span>
         ))}
@@ -85,7 +87,7 @@ function StyleValue({ value, depth = 0, label = 'Score' }: { value: unknown; dep
       <div className={depth > 0 ? 'space-y-2 pl-3 border-l border-border-secondary' : 'space-y-2'}>
         {entries.map(([k, v]) => (
           <div key={k}>
-            <p className="text-2xs text-text-secondary mb-0.5">{humanize(k)}</p>
+            <p className="text-xs text-text-secondary mb-0.5">{humanize(k)}</p>
             <StyleValue value={v} depth={depth + 1} label={humanize(k)} />
           </div>
         ))}
@@ -125,7 +127,7 @@ export default function PersonaIntelligencePage() {
     try {
       setLoadError(null);
       const getJson = (path: string) =>
-        fetch(path).then((r) => {
+        fetch(path, { signal: AbortSignal.timeout(30_000) }).then((r) => {
           if (!r.ok) throw new Error(`${path} failed (${r.status})`);
           return r.json();
         });
@@ -140,11 +142,19 @@ export default function PersonaIntelligencePage() {
       setAdaptive(a);
       setTimeline(Array.isArray(d?.timeline) ? d.timeline : []);
     } catch (e) {
-      setLoadError(e instanceof Error ? `Failed to load persona data: ${e.message}` : 'Failed to load persona data');
+      setLoadError(e instanceof Error && e.name === 'TimeoutError' ? 'Persona data took too long to load.' : e instanceof Error ? `Failed to load persona data: ${e.message}` : 'Failed to load persona data');
     } finally {
       setLoading(false);
     }
   }, []);
+
+  // Feedback from controls low on the page would otherwise appear off-screen in the header.
+  useEffect(() => {
+    if (notice) toast.success(notice);
+  }, [notice]);
+  useEffect(() => {
+    if (error) toast.error(error);
+  }, [error]);
 
   useEffect(() => {
     if (userId) fetchData(userId);
@@ -279,7 +289,8 @@ export default function PersonaIntelligencePage() {
 
   return (
     <AppShell>
-    <div className="w-full max-w-3xl mx-auto space-y-8">
+    <div className="w-full max-w-3xl mx-auto space-y-6">
+      <AppToastContainer position="top-center" />
       <header className="space-y-3">
         <div className="space-y-1">
           <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-text-primary">Persona</h1>
@@ -290,13 +301,10 @@ export default function PersonaIntelligencePage() {
           onClick={rebuildPersona}
           disabled={rebuilding || saving}
           aria-busy={rebuilding}
-          className="min-h-11 px-5 rounded-xl bg-text-primary text-bg-primary text-sm font-semibold transition-colors hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="min-h-12 w-full sm:w-auto px-5 rounded-xl bg-text-primary text-bg-primary text-sm font-semibold transition-colors hover:bg-text-secondary disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           {rebuilding ? 'Regenerating…' : 'Regenerate from my profile'}
         </button>
-        <div aria-live="polite" className="space-y-1">
-          {notice && <p role="status" className="text-sm text-success">{notice}</p>}
-        </div>
         {error && <p role="alert" className="text-sm text-danger">{error}</p>}
         {loadError && <p role="alert" className="text-sm text-danger">{loadError}</p>}
       </header>
@@ -369,7 +377,7 @@ export default function PersonaIntelligencePage() {
                       onClick={() => rollbackConfirm.ask({ logId: log.id, field: log.changedField!, createdAt: log.createdAt })}
                       disabled={saving}
                       aria-label={`Roll back ${(STYLE_LABEL[log.changedField!] ?? humanize(log.changedField!)).toLowerCase()} change`}
-                      className="inline-flex min-h-11 items-center -ml-2 px-2 rounded-lg text-sm font-semibold text-accent hover:bg-bg-tertiary disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                      className="inline-flex min-h-11 items-center -ml-2 px-2 rounded-lg text-sm font-semibold text-text-primary underline underline-offset-4 decoration-accent hover:bg-bg-tertiary disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                     >
                       Roll back
                     </button>
@@ -409,7 +417,7 @@ export default function PersonaIntelligencePage() {
                     disabled={saving}
                     
                     onClick={() => updateAdaptive(ctrl.field, opt)}
-                    className={`min-h-11 px-3 rounded-lg border text-xs font-medium capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${adaptive?.[ctrl.field] === opt ? 'bg-text-primary text-bg-primary border-text-primary' : 'border-border-secondary text-text-primary hover:bg-bg-secondary'} disabled:opacity-50`}
+                    className={`min-h-11 px-4 rounded-lg border text-sm font-medium capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${adaptive?.[ctrl.field] === opt ? 'bg-text-primary text-bg-primary border-text-primary' : 'border-border-secondary text-text-primary hover:bg-bg-secondary'} disabled:opacity-50`}
                   >
                     {opt.replace(/-/g, ' ')}
                   </button>
@@ -441,7 +449,7 @@ export default function PersonaIntelligencePage() {
           type="button"
           onClick={sendFeedback}
           disabled={saving}
-          className="w-full min-h-11 px-4 rounded-xl bg-text-primary text-bg-primary text-sm font-semibold hover:bg-accent disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="w-full min-h-11 px-4 rounded-xl bg-text-primary text-bg-primary text-sm font-semibold hover:bg-text-secondary disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           {saving ? 'Saving…' : 'Send feedback'}
         </button>
