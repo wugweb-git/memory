@@ -34,9 +34,9 @@
   --warning-rgb: 154 74 8;       /* #9A4A08: 5.72:1 on porcelain (was #B45309; 4.28:1 on stone) */
   --accent-high-rgb: 0 0 0;
 
-  --accent: 0 111 175;           /* Deep cyan #006FAF: 4.93:1 on porcelain as text (was #00AAFF at 2.34:1) */
+  --accent: 0 170 255;           /* Electric Cyan (owner: keep this blue) */
   --accent-high: #000000;      /* High contrast spark */
-  --accent-muted: rgba(0, 111, 175, 0.08);
+  --accent-muted: rgba(0, 170, 255, 0.08);
 
   --success: #046C4E;
   --danger: #BE123C;
