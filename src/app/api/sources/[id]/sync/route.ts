@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireOwner } from '@/lib/security/auth';
 import { checkRateLimit } from '@/lib/security/rate-limit';
-import { getConnector, syncConnector } from '@/lib/ingestion/connectors';
+import { resolveConnector, syncConnector } from '@/lib/ingestion/connectors';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
   if (actor instanceof NextResponse) return actor;
 
   const { id } = await params;
-  const connector = getConnector(id);
+  const connector = await resolveConnector(id);
   if (!connector) {
     return NextResponse.json({ error: `Unknown source: ${id}` }, { status: 404 });
   }

@@ -326,11 +326,7 @@ body {
 }
 
 /* Pointer target size floor for every device (WCAG 2.5.8: 24x24 CSS px). */
-button,
-summary,
-[role='button'],
-[role='tab'],
-[role='switch'] {
+:where(button, summary, [role='button'], [role='tab'], [role='switch']) {
   min-height: 24px;
 }
 button:has(> svg:only-child) {

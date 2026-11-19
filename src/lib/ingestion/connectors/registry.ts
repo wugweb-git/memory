@@ -16,10 +16,13 @@ import { googleDriveConnector, googleCalendarConnector } from './google';
 import { googleCalendarEventsConnector, googleTasksConnector } from '@/lib/connectors/google-extra';
 import { linkedinConnector, twitterConnector } from '@/lib/connectors/exports';
 import { voiceConnector } from '@/lib/connectors/voice';
+import { getConfigValue, getCustomFeeds } from './config';
 import type { Connector, SyncResult } from './types';
 
 /** github.com/<user> → <user>; env override wins. */
 function githubUser(): string | null {
+  const saved = getConfigValue('github');
+  if (saved) return saved;
   if (process.env.GITHUB_USER) return process.env.GITHUB_USER;
   try {
     const seg = new URL(IDENTITY_CONFIG.GITHUB_URL).pathname.split('/').filter(Boolean)[0];
@@ -108,7 +111,7 @@ export const CONNECTORS: Connector[] = [
     category: 'code',
     cadenceMins: 120,
     requires: 'none',
-    setupHint: 'Uses your public GitHub activity feed. Override the account with GITHUB_USER.',
+    setupHint: 'Enter your GitHub username to read your public activity.',
     resolveUrl: () => {
       const user = githubUser();
       return user && /^[A-Za-z0-9-]+$/.test(user) ? `https://github.com/${user}.atom` : null;
@@ -120,11 +123,11 @@ export const CONNECTORS: Connector[] = [
     category: 'video',
     cadenceMins: 360,
     requires: 'env',
-    setupHint: 'Set YOUTUBE_CHANNEL_ID (from your channel URL) to sync uploads.',
-    resolveUrl: () =>
-      process.env.YOUTUBE_CHANNEL_ID
-        ? `https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(process.env.YOUTUBE_CHANNEL_ID)}`
-        : null,
+    setupHint: 'Add your YouTube channel to sync new uploads.',
+    resolveUrl: () => {
+      const channel = getConfigValue('youtube') || process.env.YOUTUBE_CHANNEL_ID;
+      return channel ? `https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(channel)}` : null;
+    },
   }),
   feedConnector({
     id: 'blog',
@@ -132,8 +135,8 @@ export const CONNECTORS: Connector[] = [
     category: 'writing',
     cadenceMins: 240,
     requires: 'env',
-    setupHint: 'Set BLOG_RSS_URL to any RSS/Atom feed (Medium, Substack, Ghost, WordPress…).',
-    resolveUrl: () => process.env.BLOG_RSS_URL || null,
+    setupHint: 'Add the feed address of your blog, Medium or Substack.',
+    resolveUrl: () => getConfigValue('blog') || process.env.BLOG_RSS_URL || null,
   }),
   notionConnector,
 
@@ -153,6 +156,22 @@ export const CONNECTORS: Connector[] = [
   oauthPlaceholder({ id: 'behance', label: 'Behance', category: 'design', setupHint: 'No public API/RSS — needs an app registration.' }),
   oauthPlaceholder({ id: 'dribbble', label: 'Dribbble', category: 'design', setupHint: 'Needs Dribbble OAuth (client id/secret).' }),
 ];
+
+/** Feeds the owner added in the app, each a connector of its own. */
+export function customFeedConnectors(): Connector[] {
+  return getCustomFeeds().map((f) => ({
+    ...feedConnector({
+      id: f.id,
+      label: f.label,
+      category: 'writing',
+      cadenceMins: 240,
+      requires: 'none',
+      setupHint: f.url,
+      resolveUrl: () => f.url,
+    }),
+    custom: true,
+  }));
+}
 
 export function getConnector(id: string): Connector | undefined {
   return CONNECTORS.find((c) => c.id === id);
