@@ -46,6 +46,8 @@ export interface DecideResult {
   model?: string;
   answers: Record<string, DeciderAnswer>;
   reason?: string;
+  /** One entry per HTTP request made (each counts against the free daily cap). */
+  attempts?: Array<{ model: string; ok: boolean }>;
 }
 
 export function deciderModels(env: NodeJS.ProcessEnv = process.env): string[] {
@@ -103,12 +105,14 @@ export async function decide(
   const doFetch = opts.fetchImpl ?? fetch;
   const timeoutMs = opts.timeoutMs ?? 20000;
   let lastReason = 'no_models';
+  const attempts: Array<{ model: string; ok: boolean }> = [];
 
   for (const model of deciderModels(env)) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);
     opts.signal?.addEventListener('abort', () => ctrl.abort(), { once: true });
     try {
+      attempts.push({ model, ok: false });
       const res = await doFetch(DECIDER_ENDPOINT, {
         method: 'POST',
         signal: ctrl.signal,
@@ -139,14 +143,15 @@ export async function decide(
         lastReason = 'invalid_response';
         continue;
       }
-      return { ok: true, model: typeof data.model === 'string' ? data.model : model, answers };
+      attempts[attempts.length - 1].ok = true;
+      return { ok: true, model: typeof data.model === 'string' ? data.model : model, answers, attempts };
     } catch (err: any) {
       lastReason = err?.name === 'AbortError' ? 'timeout' : 'network';
     } finally {
       clearTimeout(timer);
     }
   }
-  return { ok: false, answers: {}, reason: lastReason };
+  return { ok: false, answers: {}, reason: lastReason, attempts };
 }
 
 export interface YesNoResult { ok: boolean; probability: number; confidence?: number; model?: string; reason?: string }

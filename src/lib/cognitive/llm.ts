@@ -2,9 +2,10 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { ChatOpenAI } from "@langchain/openai";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { SystemMessage, HumanMessage } from "@langchain/core/messages";
-import { isMiniTier, openRouterEnvForTier } from "./routing";
+import { isModelFloorMini, openRouterEnvForModel, openRouterEnvForTier } from "./routing";
 import { config } from "@/config";
-import { isOpenRouterEnabled, runJob } from "@/lib/ai/openrouter";
+import { isOpenRouterEnabled } from "@/lib/ai/openrouter";
+import { runJobOrThrow } from "@/lib/ai/job-client";
 
 /**
  * Cognitive LLM — provider-flexible.
@@ -80,10 +81,10 @@ export async function runAgentLLM(
   // Per-job routing: reasoner/decision agents use the `decision` chain when OPENROUTER_API_KEY is set.
   if (isOpenRouterEnabled()) {
     try {
-      const r = await runJob("decision", [
+      const r = await runJobOrThrow("decision", [
         { role: "system", content: system },
         { role: "user", content: prompt },
-      ], { temperature, json: routeOpts.json, env: openRouterEnvForTier(isMiniTier(modelName) ? "mini" : "full") });
+      ], { temperature, json: routeOpts.json, env: openRouterEnvForModel(modelName) });
       return r.text;
     } catch (err: any) {
       console.error("[LLM/Agent/OpenRouter] Execution Failure:", err.message);
@@ -118,10 +119,11 @@ export async function runLLMWithMeta(prompt: string): Promise<{ text: string; mo
   // `decision` chain (src/lib/ai/models.ts). Otherwise the legacy path below.
   if (isOpenRouterEnabled()) {
     try {
-      const r = await runJob("decision", [
+      // COGNITIVE_MODEL_FLOOR=mini also applies to the single pass (cheapest chain entry first).
+      const r = await runJobOrThrow("decision", [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: prompt },
-      ]);
+      ], { env: isModelFloorMini() ? openRouterEnvForTier("mini") : undefined });
       return { text: r.text, model: r.model };
     } catch (err: any) {
       console.error("[LLM/OpenRouter] Execution Failure:", err.message);
@@ -151,7 +153,7 @@ export async function runTextLLM(prompt: string): Promise<string> {
   // Per-job routing: prose generation uses the `ask` chain when OPENROUTER_API_KEY is set.
   if (isOpenRouterEnabled()) {
     try {
-      const r = await runJob("ask", [{ role: "user", content: prompt }], { temperature: 0.6 });
+      const r = await runJobOrThrow("ask", [{ role: "user", content: prompt }], { temperature: 0.6 });
       return r.text.trim();
     } catch (err: any) {
       console.error("[LLM/Text/OpenRouter] Execution Failure:", err.message);

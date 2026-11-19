@@ -1,4 +1,6 @@
 import { decide, type DeciderOptions } from '@/lib/ai/decider';
+import { checkBudget } from '@/lib/cost/guard';
+import { recordJobUsage, type UsageStore } from '@/lib/cost/tracking';
 
 /**
  * Optional signal-importance thresholding (opt-in: DECIDER_SIGNALS=1).
@@ -27,10 +29,14 @@ interface SignalLike {
 export async function applySignalImportance<T extends SignalLike>(
   content: string,
   signals: T[],
-  opts: DeciderOptions = {},
+  opts: DeciderOptions & { store?: UsageStore } = {},
 ): Promise<T[]> {
   const env = opts.env ?? process.env;
   if (!isDeciderSignalsEnabled(env) || signals.length === 0) return signals;
+  // Background job: over its daily budget (or into the headroom reserved for ask/decision)
+  // it makes no request and keeps every signal, exactly like any other Decider failure.
+  const budget = await checkBudget('signals', { env, store: opts.store });
+  if (!budget.allowed) return signals;
   try {
     const questions: Record<string, any> = {};
     signals.forEach((s, i) => {
@@ -44,6 +50,7 @@ export async function applySignalImportance<T extends SignalLike>(
       };
     });
     const r = await decide({ content: content.slice(0, 2000) }, questions, opts);
+    if (r.attempts?.length) await recordJobUsage('signals', r.attempts, opts.store).catch(() => {});
     if (!r.ok) return signals;
     const min = minImportance(env);
     const out: T[] = [];

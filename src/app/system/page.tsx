@@ -10,6 +10,7 @@ import { UI_API } from "@/lib/ui/contracts";
 import { apiRequest } from "@/lib/ui/api-client";
 import { AppShell } from "@/app/component/AppShell";
 import { PasskeyCard } from "./PasskeyCard";
+import { CostCard } from "./CostCard";
 
 const HEALTH_LABELS: Record<string, string> = {
   system: "System health",
@@ -138,6 +139,8 @@ export default function SystemPage() {
           </M3Card>
 
           <PasskeyCard />
+
+          <CostCard />
 
           {loading ? <div className="space-y-2" role="status" aria-label="Loading health checks"><Skeleton className="h-24 w-full motion-reduce:animate-none" /></div> : null}
           {error ? <M3State state="error" message={error} /> : null}

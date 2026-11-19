@@ -13,7 +13,7 @@ import { runCritic } from "./output/critic";
 import { getModeInstruction } from "./mode/mode";
 import { resolveMode } from "./mode/decider-mode";
 import { isOpenRouterEnabled } from "@/lib/ai/openrouter";
-import { selectModel } from "./routing";
+import { selectModel, selectReasonerModel } from "./routing";
 import { runReasoner } from "./agents/reasoner";
 import { runDecisionAgent } from "./agents/decision";
 import langfuse from "../observability/langfuse";
@@ -102,8 +102,9 @@ export async function processDecision(params: {
       });
 
       try {
-        const reasonGen = trace.generation({ name: "reasoner", model: "gpt-4o-mini", input: prompt });
-        const analysis = await deps.runReasoner(context, mode, "gpt-4o-mini");
+        const reasonerModel = selectReasonerModel();
+        const reasonGen = trace.generation({ name: "reasoner", model: reasonerModel, input: prompt });
+        const analysis = await deps.runReasoner(context, mode, reasonerModel);
         reasonGen.end({ output: analysis });
 
         const decideGen = trace.generation({ name: "decision", model: tier, input: analysis });

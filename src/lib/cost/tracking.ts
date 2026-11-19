@@ -38,12 +38,32 @@ export function summarizeUsage(day: DayUsage, cap: number) {
   return { cap, used, remaining: Math.max(0, cap - used), overCap: used > cap, byJob: day };
 }
 
-export async function recordJobUsage(job: JobName, attempts: AttemptLike[]): Promise<void> {
+/** Persistence seam so the budget guard and recorder can be tested without a database. */
+export interface UsageStore {
+  load(key: string): Promise<DayUsage>;
+  record(key: string, job: JobName, attempts: AttemptLike[]): Promise<void>;
+}
+
+export const neonUsageStore: UsageStore = {
+  async load(key) {
+    const row = await postgres.schedulerState.findUnique({ where: { key } });
+    return (row?.value as DayUsage) ?? {};
+  },
+  async record(key, job, attempts) {
+    const row = await postgres.schedulerState.findUnique({ where: { key } });
+    const next = applyAttempts((row?.value as DayUsage) ?? {}, job, attempts);
+    await postgres.schedulerState.upsert({ where: { key }, create: { key, value: next as any }, update: { value: next as any } });
+  },
+};
+
+export async function recordJobUsage(
+  job: JobName,
+  attempts: AttemptLike[],
+  store: UsageStore = neonUsageStore,
+  now: Date = new Date(),
+): Promise<void> {
   if (!attempts.length) return;
-  const key = usageKey();
-  const row = await postgres.schedulerState.findUnique({ where: { key } });
-  const next = applyAttempts((row?.value as DayUsage) ?? {}, job, attempts);
-  await postgres.schedulerState.upsert({ where: { key }, create: { key, value: next as any }, update: { value: next as any } });
+  await store.record(usageKey(now), job, attempts);
 }
 
 export async function getUsageToday(env: NodeJS.ProcessEnv = process.env) {

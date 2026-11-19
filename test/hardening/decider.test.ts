@@ -20,6 +20,9 @@ function mock(responses: Array<Response | Error>) {
 }
 const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status });
 
+// The budget guard reads/records usage; inject an empty in-memory store so these tests need no database.
+const emptyStore = { load: async () => ({}), record: async () => {} };
+
 describe('decider client', () => {
   it('does nothing and returns fallbacks without a key', async () => {
     const { impl, calls } = mock([]);
@@ -98,12 +101,12 @@ describe('decider wiring (flags)', () => {
   it('signals: drops below threshold, keeps primary, tags importance, keeps all on failure', async () => {
     const env = { ...ENV, DECIDER_SIGNALS: '1' } as NodeJS.ProcessEnv;
     const ok = mock([json({ answers: { s0: { type: 'noul', noul: 0.05 }, s1: { type: 'noul', noul: 0.05 }, s2: { type: 'noul', noul: 0.8 } } })]);
-    const out = await applySignalImportance('c', sigs, { env, fetchImpl: ok.impl });
+    const out = await applySignalImportance('c', sigs, { env, fetchImpl: ok.impl, store: emptyStore });
     assert.deepEqual(out.map((s) => s.type), ['work_activity', 'communication']);
     assert.equal((out[1] as any).metadata.decider_importance, 0.8);
     assert.equal(Object.keys(ok.calls[0].body.questions).length, 3);
     const fail = mock([json({}, 500), json({}, 500)]);
-    assert.equal((await applySignalImportance('c', sigs, { env, fetchImpl: fail.impl })).length, 3);
+    assert.equal((await applySignalImportance('c', sigs, { env, fetchImpl: fail.impl, store: emptyStore })).length, 3);
   });
 
   it('mode: explicit valid mode is never routed; flag off keeps fallback', async () => {
@@ -128,7 +131,7 @@ describe('decider wiring (flags)', () => {
 describe('job client adapter', () => {
   it('maps LangChain-style messages to chat roles and exposes the answering model', async () => {
     const { impl, calls } = mock([json({ choices: [{ message: { content: '{"entities":[]}' } }] })]);
-    const client = createJobClient('ingest', { env: ENV, fetchImpl: impl });
+    const client = createJobClient('ingest', { env: ENV, fetchImpl: impl, store: emptyStore });
     const out = await client.call([
       { content: 'sys', _getType: () => 'system' },
       { content: 'hi', _getType: () => 'human' },

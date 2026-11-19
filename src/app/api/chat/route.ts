@@ -5,6 +5,8 @@ import { convertToModelMessages, createUIMessageStream, createUIMessageStreamRes
 import { isOpenRouterEnabled, streamJob, type ChatMessage } from '@/lib/ai/openrouter';
 import { createOpenAI } from '@ai-sdk/openai';
 import { NextResponse } from 'next/server';
+import { BudgetExceededError, checkBudget } from '@/lib/cost/guard';
+import { recordJobUsage } from '@/lib/cost/tracking';
 import { retrieve } from '@/lib/memory/rag';
 import { chatRetrievalFilters, emptyContextText } from '@/lib/memory/visibility';
 import { isAdminRequest } from '@/lib/security/auth';
@@ -142,7 +144,14 @@ export async function POST(req: Request) {
       // whole-chain failure (before any token) can still fall back to the old provider,
       // and so X-Model is only set when it is known before streaming starts.
       let model: string | undefined;
-      const iterator = streamJob('ask', chat, { temperature, onModel: (m) => (model = m) })[Symbol.asyncIterator]();
+      // Daily budget guard: /ask is interactive, so only its own limit can block it (never background jobs).
+      const budget = await checkBudget('ask');
+      if (!budget.allowed) throw new BudgetExceededError(budget);
+      const iterator = streamJob('ask', chat, {
+        temperature,
+        onModel: (m) => (model = m),
+        onAttempts: (attempts) => { void recordJobUsage('ask', attempts).catch(() => {}); },
+      })[Symbol.asyncIterator]();
       const first = await iterator.next();
       if (first.done) throw new Error('OPENROUTER_EMPTY_STREAM');
       const stream = createUIMessageStream({
@@ -165,6 +174,9 @@ export async function POST(req: Request) {
       routed = createUIMessageStreamResponse({ stream, headers: { ...sourceHeaders, ...(model ? { 'X-Model': model } : {}) } });
       } catch (err) {
         // Whole free chain failed (e.g. daily cap): fall back to the old provider if one is set.
+        if (!otherProvider && err instanceof BudgetExceededError) {
+          return NextResponse.json({ message: err.decision.message ?? 'Daily ask budget used up. It resets at 00:00 UTC.', error: 'BUDGET_EXCEEDED' }, { status: 429 });
+        }
         if (!otherProvider) throw err;
         console.error('[chat] OpenRouter chain failed, falling back:', err instanceof Error ? err.message : err);
       }
