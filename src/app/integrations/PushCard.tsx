@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { M3Button, M3Card } from '@/components/ui/m3';
+import { M3Button } from '@/components/ui/m3';
+import { ListSection } from './list-parts';
 import { apiRequest } from '@/lib/ui/api-client';
 import { currentSubscription, disablePush, enablePush, pushSupport, type PushSupport } from '@/lib/push/client';
 
@@ -57,25 +58,27 @@ export function PushCard() {
   const blocked = support === 'unsupported' || (support === 'denied' && !subscribed);
 
   return (
-    <M3Card title="Notifications on this device">
-      <p className="-mt-1 text-xs text-text-tertiary">Get a notification when something needs your attention.</p>
+    <ListSection id="push-title" title="Notifications on this device" hint="Get a notification when something needs your attention.">
       {notConfigured ? (
         <p className="text-sm text-text-secondary">Notifications are not set up on the server yet, so they cannot be turned on.</p>
       ) : (
-        <>
-          <p className="text-sm text-text-secondary">
-            {subscribed ? 'On for this device.' : 'Off for this device.'} {PERMISSION_TEXT[support]}
+        <div className="flex items-center gap-3">
+          <p className="min-w-0 flex-1 text-sm text-text-secondary">
+            <span className="block text-base font-medium text-text-primary">{subscribed ? 'On for this device' : 'Off for this device'}</span>
+            {PERMISSION_TEXT[support]}
           </p>
-          <M3Button
-            type="button"
-            onClick={toggle}
-            disabled={busy || blocked || config === null}
-          >
-            {subscribed ? 'Turn off' : 'Turn on'}
-          </M3Button>
-        </>
+          <div className="shrink-0">
+            <M3Button
+              type="button"
+              onClick={toggle}
+              disabled={busy || blocked || config === null}
+            >
+              {subscribed ? 'Turn off' : 'Turn on'}
+            </M3Button>
+          </div>
+        </div>
       )}
-      {error ? <p role="alert" className="text-xs text-danger">{error}</p> : null}
-    </M3Card>
+      {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
+    </ListSection>
   );
 }

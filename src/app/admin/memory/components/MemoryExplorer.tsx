@@ -95,7 +95,7 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
     <section aria-labelledby="memory-explorer-title" className="relative overflow-hidden rounded-2xl border border-border-primary bg-bg-elevated">
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border-secondary bg-bg-secondary p-4 sm:p-6">
         <div className="min-w-0">
-          <h2 id="memory-explorer-title" ref={headingRef} tabIndex={-1} className="flex items-center gap-2 text-xl font-semibold text-text-primary focus:outline-none">
+          <h2 id="memory-explorer-title" ref={headingRef} tabIndex={-1} className="flex items-center gap-2 text-base font-semibold text-text-primary focus:outline-none">
             <Database aria-hidden="true" className="h-5 w-5 text-text-tertiary" />
             Memory explorer
           </h2>
@@ -153,7 +153,7 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
                 <span className="font-medium text-text-secondary">{packet.source}</span>
                 <EmbedStatusBadge status={packet.embedding_status} />
               </div>
-              <div className="mt-2 flex items-center justify-between text-2xs text-text-tertiary">
+              <div className="mt-2 flex items-center justify-between text-xs text-text-tertiary">
                 <span className="flex items-center gap-1 font-mono"><Hash aria-hidden="true" className="h-3 w-3" />{packet.id.slice(-8)}</span>
                 <span>{formatDate(packet.ingestion_time)}</span>
               </div>
@@ -271,7 +271,7 @@ const STATUS_STYLES: Record<string, string> = {
 
 function StatusBadge({ status }: { status: string }) {
   return (
-    <span className={`rounded-full bg-bg-secondary px-2.5 py-1 text-2xs font-bold ${STATUS_STYLES[status] || STATUS_STYLES.active}`}>
+    <span className={`rounded-full bg-bg-secondary px-2.5 py-1 text-xs font-bold ${STATUS_STYLES[status] || STATUS_STYLES.active}`}>
       {status}
     </span>
   );
@@ -288,7 +288,7 @@ function EmbedStatusBadge({ status }: { status: string }) {
   return (
     <div className="flex items-center gap-2">
       <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${status === 'embedded' ? 'bg-accent' : status === 'failed' ? 'bg-danger' : 'bg-border-primary'}`} />
-      <span className={`text-2xs font-bold ${EMBED_STYLES[status] || 'text-text-tertiary'}`}>
+      <span className={`text-xs font-bold ${EMBED_STYLES[status] || 'text-text-tertiary'}`}>
         {status}
       </span>
     </div>

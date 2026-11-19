@@ -55,7 +55,7 @@ export default function RagTester({ testRunId = 'PROD' }: RagTesterProps) {
     <section aria-labelledby="rag-tester-title" className="bg-bg-elevated rounded-xl border border-border-secondary p-4 sm:p-6 overflow-hidden">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 id="rag-tester-title" className="text-lg font-semibold text-text-primary flex items-center gap-2">
+          <h2 id="rag-tester-title" className="text-base font-semibold text-text-primary flex items-center gap-2">
             <Zap aria-hidden="true" className="w-5 h-5 text-warning" />
             Retrieval tester
           </h2>
@@ -124,10 +124,10 @@ export default function RagTester({ testRunId = 'PROD' }: RagTesterProps) {
                   <div>
                     <div className="text-xs font-mono text-text-tertiary">Packet: {result.packet_id.slice(-8)}</div>
                     <div className="flex items-center gap-4 mt-1">
-                      <span className="text-2xs text-text-tertiary flex items-center gap-1">
+                      <span className="text-xs text-text-tertiary flex items-center gap-1">
                         <Database aria-hidden="true" className="w-3 h-3" /> {result.source}
                       </span>
-                      <span className="text-2xs text-text-tertiary flex items-center gap-1">
+                      <span className="text-xs text-text-tertiary flex items-center gap-1">
                         <Clock aria-hidden="true" className="w-3 h-3" /> {Number.isNaN(new Date(result.timestamp).getTime()) ? 'Unknown date' : new Date(result.timestamp).toLocaleDateString()}
                       </span>
                     </div>
@@ -137,10 +137,10 @@ export default function RagTester({ testRunId = 'PROD' }: RagTesterProps) {
                   <div className="text-2xl font-bold text-text-primary leading-none">
                     {Math.round(result.score * 100)}%
                   </div>
-                  <div className="text-2xs text-text-secondary mt-1 font-semibold">
+                  <div className="text-xs text-text-secondary mt-1 font-semibold">
                     Weighted score
                   </div>
-                  <div className="text-2xs text-text-tertiary mt-1">
+                  <div className="text-xs text-text-tertiary mt-1">
                     Vector score: {Number(result.raw_score ?? 0).toFixed(4)}
                   </div>
                 </div>

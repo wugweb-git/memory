@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { M3Card, M3State } from '@/components/ui/m3';
+import { M3State } from '@/components/ui/m3';
+import { ListSection } from '@/app/integrations/list-parts';
 import { EmptyState, Skeleton } from '@/components/ui/primitives';
 import { UI_API } from '@/lib/api/endpoints';
 import { platformPasskeySupported, registerThisDevice } from '@/lib/passkey-client';
@@ -83,10 +84,7 @@ export function PasskeyCard() {
   }
 
   return (
-    <M3Card title="Passkeys">
-      <p className="text-sm text-text-secondary">
-        Add this device to sign in with Face ID, a fingerprint or Windows Hello instead of a password.
-      </p>
+    <ListSection id="passkeys-title" title="Passkeys" hint="Add this device to sign in with Face ID, a fingerprint or Windows Hello instead of a password.">
 
       {devices === null ? (
         loadError ? (
@@ -108,10 +106,10 @@ export function PasskeyCard() {
       ) : (
         <ul className="divide-y divide-border-secondary">
           {devices.map((d) => (
-            <li key={d.id} className="flex items-center justify-between gap-3 py-2">
+            <li key={d.id} className="flex min-h-14 items-center justify-between gap-3 py-2">
               <div className="min-w-0">
-                <p className="text-sm font-medium text-text-primary truncate">{d.deviceName}</p>
-                <p className="text-2xs text-text-tertiary">
+                <p className="text-base font-medium text-text-primary truncate">{d.deviceName}</p>
+                <p className="text-sm text-text-tertiary">
                   Added {fmt(d.createdAt)}, last used {fmt(d.lastUsedAt)}
                 </p>
               </div>
@@ -143,7 +141,7 @@ export function PasskeyCard() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="For example, My phone"
-            className="w-full min-h-11 rounded-xl border border-border-primary bg-bg-elevated px-3 py-2 text-md text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="w-full min-h-12 rounded-xl border border-border-primary bg-bg-elevated px-4 py-2 text-md text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           />
           <button
             type="button"
@@ -158,6 +156,6 @@ export function PasskeyCard() {
 
       <p role="status" aria-live="polite" className="text-sm text-success empty:hidden">{status}</p>
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}
-    </M3Card>
+    </ListSection>
   );
 }

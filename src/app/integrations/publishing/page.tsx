@@ -5,7 +5,8 @@ import { toast } from 'react-toastify';
 import { AppToastContainer } from '@/app/component/AppToastContainer';
 import 'react-toastify/dist/ReactToastify.css';
 import { AppShell } from '@/app/component/AppShell';
-import { M3Button, M3Card, M3Page, M3State } from '@/components/ui/m3';
+import { M3Button, M3Page, M3State } from '@/components/ui/m3';
+import { ListSection } from '../list-parts';
 import { StatusPill } from '@/components/ui/primitives';
 import { apiRequest } from '@/lib/ui/api-client';
 
@@ -33,7 +34,7 @@ export default function PublishingAccountsPage() {
 
   async function save(f: Field) {
     const value = (drafts[f.key] ?? '').trim();
-    if (!value) { setFieldError((p) => ({ ...p, [f.key]: 'Enter a value first.' })); return; }
+    if (!value) { setFieldError((p) => ({ ...p, [f.key]: 'Enter a value first.' })); document.getElementById(`cred-${f.key}`)?.focus(); return; }
     setBusy(f.key);
     setFieldError((p) => ({ ...p, [f.key]: '' }));
     try {
@@ -70,13 +71,14 @@ export default function PublishingAccountsPage() {
           <M3State state="error" message="Tokens can't be saved yet: set MEMORY_ENCRYPTION_KEY (64 hex characters) in Vercel, then reload. IDs can still be saved." />
         ) : null}
         {data?.accounts.map((a) => (
-          <M3Card
+          <ListSection
             key={a.platform}
+            id={`acct-${a.platform}`}
             title={a.label}
-            description={a.note}
+            hint={a.note}
             action={a.ready ? <StatusPill tone="success">Ready to post</StatusPill> : <StatusPill tone="warning">Needs setup</StatusPill>}
           >
-            <div className="space-y-4">
+            <div className="space-y-5">
               {a.fields.map((f) => {
                 const id = `cred-${f.key}`;
                 const err = fieldError[f.key];
@@ -104,10 +106,10 @@ export default function PublishingAccountsPage() {
                       placeholder={f.source ? 'Enter a new value to replace it' : 'Paste here'}
                       aria-describedby={`${id}-help${err ? ` ${id}-err` : ''}`}
                       aria-invalid={err ? true : undefined}
-                      className="min-h-11 w-full rounded-xl border border-border-primary bg-bg-elevated px-3 text-base text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                      className="min-h-12 w-full rounded-xl border border-border-primary bg-bg-elevated px-4 text-base text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                     />
-                    <p id={`${id}-help`} className="text-xs text-text-tertiary">{f.help}</p>
-                    {err ? <p id={`${id}-err`} role="alert" className="text-xs text-danger">{err}</p> : null}
+                    <p id={`${id}-help`} className="text-sm text-text-tertiary">{f.help}</p>
+                    {err ? <p id={`${id}-err`} role="alert" className="text-sm text-danger">{err}</p> : null}
                     <div className="flex flex-wrap gap-2">
                       <M3Button type="submit" loading={busy === f.key} disabled={busy !== null}>Save</M3Button>
                       {f.source === 'app' ? (
@@ -118,7 +120,7 @@ export default function PublishingAccountsPage() {
                 );
               })}
             </div>
-          </M3Card>
+          </ListSection>
         ))}
       </M3Page>
       <AppToastContainer />

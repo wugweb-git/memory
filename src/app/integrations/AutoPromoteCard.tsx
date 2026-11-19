@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { M3Card } from '@/components/ui/m3';
+import { ListSection } from './list-parts';
 import { apiRequest } from '@/lib/ui/api-client';
 
 type Mode = 'off' | 'trusted' | 'all';
@@ -45,17 +45,19 @@ export function AutoPromoteCard() {
   }
 
   return (
-    <M3Card title="Send synced items to memory">
-      <p className="-mt-1 text-xs text-text-tertiary">
-        Choose whether items pulled in by syncs go straight into memory or wait for your review. Applies to scheduled syncs and Sync now.
-      </p>
-      <fieldset className="space-y-2" disabled={saving || mode === null} aria-describedby={error ? 'auto-promote-err' : undefined}>
+    <ListSection
+      id="auto-promote-title"
+      title="Send synced items to memory"
+      hint="Choose whether items pulled in by syncs go straight into memory or wait for your review. Applies to scheduled syncs and Sync now."
+      bare
+    >
+      <fieldset className="divide-y divide-border-secondary" disabled={saving || mode === null} aria-describedby={error ? 'auto-promote-err' : undefined}>
         <legend className="sr-only">Send synced items to memory</legend>
         {OPTIONS.map((o) => (
           <label
             key={o.value}
             htmlFor={`auto-promote-${o.value}`}
-            className="flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border border-border-secondary bg-bg-primary p-3 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent"
+            className="flex min-h-14 cursor-pointer items-start gap-3 px-4 py-3 hover:bg-bg-secondary has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-inset has-[:focus-visible]:ring-accent"
           >
             <input
               id={`auto-promote-${o.value}`}
@@ -67,14 +69,14 @@ export function AutoPromoteCard() {
               className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--accent)]"
             />
             <span className="min-w-0">
-              <span className="block text-sm font-medium text-text-primary">{o.label}</span>
-              <span className="block text-xs text-text-tertiary">{o.help}</span>
+              <span className="block text-base font-medium text-text-primary">{o.label}</span>
+              <span className="block text-sm text-text-tertiary">{o.help}</span>
             </span>
           </label>
         ))}
       </fieldset>
-      {error ? <p id="auto-promote-err" role="alert" className="text-xs text-danger">{error}</p> : null}
-      <p role="status" aria-live="polite" className="text-xs text-text-tertiary">{saved}</p>
-    </M3Card>
+      {error ? <p id="auto-promote-err" role="alert" className="border-t border-border-secondary px-4 py-3 text-sm text-danger">{error}</p> : null}
+      <p role="status" aria-live="polite" className="px-4 py-2 text-sm text-text-tertiary empty:hidden">{saved}</p>
+    </ListSection>
   );
 }

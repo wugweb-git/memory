@@ -73,7 +73,7 @@ export function IntelPanel({ metrics, loading }: IntelPanelProps) {
             <BrainCircuit aria-hidden="true" className="w-4 h-4 text-accent" />
             Intelligence layer 2
           </h4>
-          <span className="px-2 py-0.5 rounded border border-border-primary text-2xs font-bold text-accent bg-bg-secondary">
+          <span className="px-2 py-0.5 rounded border border-border-primary text-xs font-bold text-accent bg-bg-secondary">
             Rule engine 1.0
           </span>
         </div>
