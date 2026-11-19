@@ -1,3 +1,4 @@
+import { getCredential } from '@/lib/publishing/credentials';
 import { Push_To_Blob, Promote_To_Memory } from '@/lib/blobLayer';
 
 /**
@@ -100,7 +101,7 @@ function pageTitle(page: any): string {
 export async function ingestNotion(
   opts: { query?: string; autoPromote?: boolean; skipSeen?: string[] } = {},
 ) {
-  const token = process.env.NOTION_TOKEN;
+  const token = await getCredential('NOTION_TOKEN');
   if (!token) {
     throw new Error('NOTION_NOT_CONFIGURED: set NOTION_TOKEN (internal integration) and share pages with it');
   }

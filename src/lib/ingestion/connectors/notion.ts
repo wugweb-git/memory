@@ -4,6 +4,7 @@
  */
 
 import { ingestNotion } from '../notion';
+import { getCredentialSync } from '@/lib/publishing/credentials';
 import { getConnectorState, saveConnectorState } from './state';
 import type { Connector, SyncResult } from './types';
 
@@ -39,6 +40,6 @@ export const notionConnector: Connector = {
   requires: 'env',
   cadenceMins: 180,
   setupHint: 'Create an internal integration at notion.so/my-integrations, share pages with it, set NOTION_TOKEN.',
-  configured: () => Boolean(process.env.NOTION_TOKEN),
+  configured: () => Boolean(getCredentialSync('NOTION_TOKEN')),
   sync,
 };
