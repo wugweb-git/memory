@@ -124,7 +124,7 @@ export default function AdminProfilePage() {
     <div className="text-text-primary">
       <AppToastContainer position="bottom-right" theme="light" />
       <header className="border-b border-border-secondary bg-bg-elevated rounded-radius-xl mb-6">
-        <div className="max-w-5xl mx-auto px-4 min-h-14 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 min-h-14 flex flex-wrap items-center justify-between gap-2 py-1">
           <div className="flex items-center gap-3">
             <Link href="/admin" className="inline-flex h-11 w-11 items-center justify-center rounded-xl hover:bg-bg-secondary" aria-label="Back to admin console">
               <ArrowLeft size={18} aria-hidden="true" />
@@ -242,6 +242,7 @@ export default function AdminProfilePage() {
               <img
                 src={avatarUrl || avatarFallbackUrl(200)}
                 alt={`Avatar preview for ${displayName}`}
+                onError={(e) => { e.currentTarget.src = avatarFallbackUrl(200); }}
                 className="w-32 h-32 rounded-full object-cover border-4 border-border-secondary mb-4"
               />
               <p className="text-xs font-medium text-text-tertiary mb-1">How your profile looks</p>

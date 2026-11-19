@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { M3Card, M3State } from '@/components/ui/m3';
+import { useCallback, useEffect, useState } from 'react';
+import { M3Button, M3Card, M3State } from '@/components/ui/m3';
 import { Skeleton } from '@/components/ui/primitives';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
 import { apiRequest } from '@/lib/ui/api-client';
@@ -30,17 +30,25 @@ export function CostCard() {
   const [data, setData] = useState<CostResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = useCallback(() => {
+    setError(null);
     apiRequest<CostResponse>(API_ENDPOINTS.system.cost.path, { retries: 0 })
       .then(setData)
-      .catch((e) => setError(e instanceof Error ? e.message : 'Check your connection and reload'));
+      .catch((e) => setError(e instanceof Error ? e.message : 'Check your connection'));
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   return (
     <M3Card title="Model request budget">
       {data === null ? (
         error ? (
-          <M3State state="error" message={`Usage could not load (${error}). Reload the page, or sign in as the owner.`} />
+          <div className="space-y-3">
+            <M3State state="error" message={`Usage could not load (${error}). Try again, or sign in as the owner.`} />
+            <M3Button tone="secondary" onClick={load}>Try again</M3Button>
+          </div>
         ) : (
           <div className="space-y-2" role="status" aria-label="Loading request budget">
             <Skeleton className="h-12 w-full motion-reduce:animate-none" />

@@ -183,6 +183,8 @@ export default function AskPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const menuItemRef = useRef<HTMLButtonElement>(null);
   const nearBottomRef = useRef(true);
   const stamps = useRef(createTimestampStore());
   const [userStopped, setUserStopped] = useState(false);
@@ -236,8 +238,13 @@ export default function AskPage() {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMenuOpen(false);
+      if (e.key === 'Escape') {
+        setMenuOpen(false);
+        menuButtonRef.current?.focus();
+      }
     };
+    // Move focus to the first action so keyboard and screen reader users land in the menu.
+    menuItemRef.current?.focus();
     document.addEventListener('mousedown', onDown);
     document.addEventListener('touchstart', onDown);
     document.addEventListener('keydown', onKey);
@@ -290,6 +297,8 @@ export default function AskPage() {
 
   const openClearDialog = () => {
     setMenuOpen(false);
+    // The menu item unmounts, so hand focus back to its trigger; the dialog restores it on close.
+    menuButtonRef.current?.focus();
     dialogRef.current?.showModal();
   };
 
@@ -349,6 +358,7 @@ export default function AskPage() {
         </div>
         <div className="relative" ref={menuRef}>
           <button
+            ref={menuButtonRef}
             type="button"
             aria-label="More options"
             aria-haspopup="menu"
@@ -364,6 +374,7 @@ export default function AskPage() {
               className="absolute right-0 top-full z-10 mt-1 min-w-40 rounded-xl border border-border-primary bg-bg-elevated py-1 shadow-elev-2"
             >
               <button
+                ref={menuItemRef}
                 type="button"
                 role="menuitem"
                 disabled={messages.length === 0}

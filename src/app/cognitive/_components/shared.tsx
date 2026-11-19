@@ -5,6 +5,14 @@ import { AlertCircle, CheckCircle, Loader2, RefreshCw } from 'lucide-react';
 import { resolveUserId } from '@/config/identity';
 
 /* ─── api helper ─────────────────────────────────────────── */
+/** Plain-language message for statuses the user can act on; null to fall through to the server's message. */
+export function friendlyStatus(status: number): string | null {
+  if (status === 401) return 'Your session has ended. Sign in again, then retry.';
+  if (status === 429) return 'Too many requests right now. Wait a moment, then try again.';
+  if (status >= 500) return 'The service had a problem. Try again in a moment.';
+  return null;
+}
+
 export async function postJson<T = any>(url: string, body: Record<string, unknown>): Promise<T> {
   let res: Response;
   try {
@@ -19,7 +27,7 @@ export async function postJson<T = any>(url: string, body: Record<string, unknow
   let data: any = null;
   try { data = await res.json(); } catch { /* non-json */ }
   if (!res.ok || data?.error) {
-    throw new Error(data?.message || data?.error || `Request failed (${res.status})`);
+    throw new Error(friendlyStatus(res.status) ?? data?.message ?? (typeof data?.error === 'string' ? data.error : null) ?? `The request failed (error ${res.status}). Try again.`);
   }
   return data as T;
 }
@@ -37,7 +45,7 @@ export const Intent: React.FC<{ title: string; children: React.ReactNode }> = ({
 );
 
 export const Eyebrow: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <p className="text-2xs font-semibold text-text-tertiary uppercase tracking-widest">{children}</p>
+  <p className="text-xs font-semibold text-text-tertiary uppercase tracking-widest">{children}</p>
 );
 
 export const Card: React.FC<{
@@ -151,7 +159,7 @@ export const ScoreRing: React.FC<{ value: number; label: string; size?: number }
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-2xl font-semibold text-text-primary leading-none">{Math.round(v * 100)}</span>
-        <span className="text-2xs text-text-tertiary mt-1">{label}</span>
+        <span className="text-xs text-text-tertiary mt-1">{label}</span>
       </div>
     </div>
   );

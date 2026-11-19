@@ -86,7 +86,9 @@ export default function AdminConsole() {
       setOpResult({ title, body });
       toast.success(`${title} finished`);
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : `${title} failed`);
+      const msg = e instanceof Error ? e.message : `${title} failed`;
+      setOpResult({ title: `${title} failed`, body: msg });
+      toast.error(msg);
     } finally {
       setBusy(null);
     }
@@ -115,14 +117,16 @@ export default function AdminConsole() {
         .join('\n') || 'No sectors reported.';
     });
 
-  const runJobs = () =>
-    runOp('jobs', 'Jobs run', async () => {
+  const runJobs = () => {
+    if (!window.confirm('Run the jobs now? This publishes queued output and deletes old rows.')) return;
+    return runOp('jobs', 'Jobs run', async () => {
       const res = await fetch(API_ENDPOINTS.jobs.run.path, { credentials: 'include' });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(j.error ?? `jobs failed (${res.status})`);
       const q = j.queue ?? {};
       return `Scheduler promoted ${j.scheduler?.processed ?? 0} (reclaimed ${j.scheduler?.reclaimed ?? 0}). Queue: ${q.published ?? 0} published, ${q.duplicates ?? 0} duplicates, ${q.retried ?? 0} retried, ${q.dead ?? 0} dead. Retention: ${j.retention?.deleted ?? j.retention?.removed ?? 0} rows cleaned.`;
     });
+  };
 
   async function toggleChecklist(item: AdminChecklistItem) {
     if (!checklist) return;
@@ -174,7 +178,7 @@ export default function AdminConsole() {
               {busy !== null && <p className="text-xs text-text-tertiary">Running, this can take a few seconds…</p>}
               {opResult && (
                 <div className="rounded-2xl bg-bg-secondary border border-border-secondary p-4">
-                  <p className="text-sm font-semibold text-text-primary mb-2">{opResult.title} result</p>
+                  <p className="text-sm font-semibold text-text-primary mb-2">{opResult.title.endsWith('failed') ? opResult.title : `${opResult.title} result`}</p>
                   <pre className="text-xs text-text-secondary whitespace-pre-wrap break-words">{opResult.body}</pre>
                 </div>
               )}
@@ -212,7 +216,10 @@ export default function AdminConsole() {
           <M3Card title={`Setup checklist${checklist ? ` (${done}/${checklist.length})` : ''}`}>
             {checklist === null ? (
               checklistError ? (
-                <M3State state="error" message="Could not load the checklist. Sign in as the admin, then refresh." />
+                <div className="space-y-3">
+                  <M3State state="error" message="Could not load the checklist. Sign in as the admin, then try again." />
+                  <M3Button tone="secondary" onClick={() => { setChecklistError(false); loadChecklist(); }}>Try again</M3Button>
+                </div>
               ) : (
                 <M3State state="loading" message="Loading checklist…" />
               )

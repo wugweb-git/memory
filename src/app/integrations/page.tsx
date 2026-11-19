@@ -167,6 +167,11 @@ export default function IntegrationsPage() {
     load();
   }, [load]);
 
+  // Move focus into the setup field when its form opens.
+  useEffect(() => {
+    if (editing) document.getElementById(`setup-${editing}`)?.focus();
+  }, [editing]);
+
   // Surface the result of an OAuth round-trip (?google=connected|denied|error).
   useEffect(() => {
     const status = new URLSearchParams(window.location.search).get('google');
@@ -192,6 +197,7 @@ export default function IntegrationsPage() {
         method: 'POST',
         body: {},
         timeoutMs: 30_000,
+        retries: 0,
       });
       toast.success(`${c.label}: ${res.ingested} new, ${res.skipped} skipped`);
       setAnnounce(`${c.label} synced`);
@@ -229,12 +235,17 @@ export default function IntegrationsPage() {
   }
 
   async function addFeed() {
+    if (!/^https?:\/\/\S+\.\S+/i.test(feedUrl.trim())) {
+      setFeedError('Enter a full feed address that starts with http:// or https://.');
+      return;
+    }
     setAddingFeed(true);
     setFeedError(null);
     try {
       const res = await apiRequest<{ feed: { id: string; label: string } }>('/api/sources/feeds', {
         method: 'POST',
-        body: { label: feedName, url: feedUrl },
+        body: { label: feedName.trim(), url: feedUrl.trim() },
+        retries: 0,
       });
       setFeedName('');
       setFeedUrl('');
@@ -250,6 +261,7 @@ export default function IntegrationsPage() {
   }
 
   async function removeFeed(c: ConnectorStatus) {
+    if (!window.confirm(`Remove ${c.label}? It stops syncing. Items already in memory stay.`)) return;
     try {
       await apiRequest(`/api/sources/feeds/${c.id}`, { method: 'DELETE' });
       toast.success(`${c.label} removed.`);
@@ -286,7 +298,7 @@ export default function IntegrationsPage() {
           type="button"
           onClick={() => syncNow(c)}
           disabled={busy}
-          aria-label={`${h === 'error' ? 'Retry sync' : 'Sync now'}: ${c.label}`}
+          aria-label={busy ? `Syncing ${c.label}` : `${h === 'error' ? 'Retry sync' : 'Sync now'}: ${c.label}`}
           className={h === 'error' || h === 'waiting' ? ACTION_PRIMARY : ACTION_QUIET}
         >
           {busy ? 'Syncing…' : h === 'error' ? 'Retry sync' : 'Sync now'}
@@ -418,7 +430,7 @@ export default function IntegrationsPage() {
                                 <button type="submit" disabled={saving || !draft.trim()} className={ACTION_PRIMARY}>{saving ? 'Saving…' : 'Save and sync'}</button>
                                 <button type="button" onClick={() => setEditing(null)} className={ACTION_QUIET}>Cancel</button>
                                 {c.setupValue ? (
-                                  <button type="button" disabled={saving} onClick={() => saveSetup(c, '')} className={ACTION_QUIET}>Remove</button>
+                                  <button type="button" disabled={saving} onClick={() => { if (window.confirm(`Remove the saved ${c.label} setting? It stops syncing until you set it up again.`)) saveSetup(c, ''); }} className={ACTION_QUIET}>Remove</button>
                                 ) : null}
                               </div>
                             </form>

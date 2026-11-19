@@ -49,6 +49,7 @@ export default function IntegrationCredentialsPage() {
   }
 
   async function remove(f: Field) {
+    if (!window.confirm(`Remove the saved ${f.label}? Anything that uses it stops working until you add it again.`)) return;
     setBusy(f.key);
     try {
       await apiRequest(`/api/integrations/credentials?key=${encodeURIComponent(f.key)}`, { method: 'DELETE', retries: 0 });
@@ -64,7 +65,12 @@ export default function IntegrationCredentialsPage() {
   return (
     <AppShell>
       <M3Page title="Integration credentials" subtitle="Add the keys that let the app read Notion, Google and Spotify. Secrets are stored encrypted and only the last 4 characters are shown. A saved value wins over the Vercel env var.">
-        {error ? <M3State state="error" message={error} /> : null}
+        {error ? (
+          <div className="space-y-3">
+            <M3State state="error" message={error} />
+            <M3Button tone="secondary" onClick={() => { setError(null); load(); }}>Try again</M3Button>
+          </div>
+        ) : null}
         {!data && !error ? <M3State state="loading" message="Loading credentials" /> : null}
         {data && !data.encryptionReady ? (
           <M3State state="error" message="Tokens can't be saved yet: set MEMORY_ENCRYPTION_KEY (64 hex characters) in Vercel, then reload. IDs can still be saved." />
@@ -81,7 +87,7 @@ export default function IntegrationCredentialsPage() {
                 const id = `cred-${f.key}`;
                 const err = fieldError[f.key];
                 return (
-                  <form key={f.key} className="space-y-2" onSubmit={(e) => { e.preventDefault(); save(f); }}>
+                  <form key={f.key} aria-label={f.label} className="space-y-2" onSubmit={(e) => { e.preventDefault(); save(f); }}>
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <label htmlFor={id} className="text-sm font-medium text-text-primary">
                         {f.label}{f.required ? '' : ' (optional)'}
@@ -109,9 +115,9 @@ export default function IntegrationCredentialsPage() {
                     <p id={`${id}-help`} className="text-xs text-text-tertiary">{f.help}</p>
                     {err ? <p id={`${id}-err`} role="alert" className="text-xs text-danger">{err}</p> : null}
                     <div className="flex flex-wrap gap-2">
-                      <M3Button type="submit" loading={busy === f.key} disabled={busy !== null}>Save</M3Button>
+                      <M3Button type="submit" aria-label={`Save ${f.label}`} loading={busy === f.key} disabled={busy !== null}>Save</M3Button>
                       {f.source === 'app' ? (
-                        <M3Button tone="secondary" onClick={() => remove(f)} disabled={busy !== null}>Remove</M3Button>
+                        <M3Button tone="secondary" aria-label={`Remove saved ${f.label}`} onClick={() => remove(f)} disabled={busy !== null}>Remove</M3Button>
                       ) : null}
                     </div>
                   </form>

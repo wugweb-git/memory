@@ -49,6 +49,7 @@ export default function MemoryControlSurface() {
   const [statusFilter, setStatusFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionNote, setActionNote] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const requestSeq = useRef(0);
@@ -102,6 +103,7 @@ export default function MemoryControlSurface() {
   const callPacketApi = async (url: string, body: Record<string, string>, label: string) => {
     setBusyAction(label);
     setActionError(null);
+    setActionNote(null);
     try {
       const res = await fetch(url, {
         method: 'POST',
@@ -113,6 +115,7 @@ export default function MemoryControlSurface() {
         setActionError(j?.error || `${label} failed (${res.status})`);
         return;
       }
+      setActionNote(label === 'Delete' ? 'Packet deleted.' : 'Packet sent through ingestion again.');
       await fetchMonitor();
     } catch {
       setActionError(`${label} failed. Check your connection and try again; nothing was changed.`);
@@ -241,6 +244,15 @@ export default function MemoryControlSurface() {
         </button>
       </header>
 
+      <p role="status" className={actionNote ? 'mb-4 text-sm font-medium text-success' : 'sr-only'}>{actionNote ?? ''}</p>
+
+      {loadError && packets.length > 0 && (
+        <div role="alert" className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-danger/30 bg-danger/10 p-4 text-danger">
+          <p className="text-sm font-medium">{loadError} The list below may be out of date.</p>
+          <button type="button" onClick={fetchMonitor} className="min-h-11 rounded-xl border border-danger/40 px-5 text-xs font-bold text-danger hover:bg-danger/5">Try again</button>
+        </div>
+      )}
+
       {monitor?.storage.ingestion_blocked && (
         <div role="alert" className="mb-6 flex items-start gap-3 rounded-2xl border border-danger/30 bg-danger/10 p-4 text-danger">
           <ShieldAlert size={18} aria-hidden="true" className="mt-0.5 shrink-0" />
@@ -315,11 +327,11 @@ export default function MemoryControlSurface() {
                 <button
                   type="button"
                   aria-pressed={selectedPacket?.id === packet.id}
-                  onClick={() => { setSelectedPacket(packet); setConfirmingDelete(false); setActionError(null); }}
+                  onClick={() => { setSelectedPacket(packet); setConfirmingDelete(false); setActionError(null); setActionNote(null); }}
                   className={`block min-h-11 w-full rounded-xl border p-4 text-left transition-colors ${selectedPacket?.id === packet.id ? 'border-accent/40 bg-accent/10' : 'border-border-secondary bg-bg-primary hover:border-border-primary'}`}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <h3 className="min-w-0 break-words text-sm font-semibold text-text-primary">{packet.type}</h3>
+                    <span className="min-w-0 break-words text-sm font-semibold text-text-primary">{packet.type}</span>
                     <span className={`shrink-0 rounded-full px-2.5 py-1 text-2xs font-bold ${packet.status === 'accepted' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
                       {packet.status}
                     </span>

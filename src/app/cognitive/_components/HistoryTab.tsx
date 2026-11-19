@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { History, ChevronDown, RefreshCw } from 'lucide-react';
-import { currentUserId, Intent, ErrorBox, EmptyState, SkeletonCard, FeedbackBar } from './shared';
+import { currentUserId, friendlyStatus, Intent, ErrorBox, EmptyState, SkeletonCard, FeedbackBar } from './shared';
 
 const FEEDBACK_DOT: Record<string, string> = {
   accepted: 'bg-success',
@@ -29,7 +29,7 @@ export const HistoryTab: React.FC = () => {
     setError(null);
     try {
       const res = await fetch('/api/cognitive/history');
-      if (!res.ok) throw new Error(`Could not load history (error ${res.status}). Try again in a moment.`);
+      if (!res.ok) throw new Error(friendlyStatus(res.status) ?? `Could not load history (error ${res.status}). Try again in a moment.`);
       const d = await res.json();
       setItems(Array.isArray(d) ? d : []);
     } catch (e: any) {
@@ -65,7 +65,7 @@ export const HistoryTab: React.FC = () => {
             return (
               <li key={h.id} className="pl-5 relative">
                 <span aria-hidden="true" className={`absolute -left-[6px] top-4 w-2.5 h-2.5 rounded-full ring-2 ring-bg-primary ${FEEDBACK_DOT[h.lastFeedback] ?? 'bg-accent'}`} />
-                {showDay ? <p className="text-2xs font-semibold text-text-tertiary uppercase tracking-widest mb-2">{dayLabel(h.createdAt)}</p> : null}
+                {showDay ? <p className="text-xs font-semibold text-text-tertiary uppercase tracking-widest mb-2">{dayLabel(h.createdAt)}</p> : null}
                 <div className="rounded-2xl border border-border-secondary bg-bg-elevated overflow-hidden">
                   <button
                     type="button"

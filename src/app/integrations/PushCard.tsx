@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { M3Button, M3Card } from '@/components/ui/m3';
 import { apiRequest } from '@/lib/ui/api-client';
 import { currentSubscription, disablePush, enablePush, pushSupport, type PushSupport } from '@/lib/push/client';
@@ -22,17 +22,22 @@ export function PushCard() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const loadConfig = useCallback(() => {
+    setError(null);
+    return apiRequest<Config>('/api/push/subscribe')
+      .then((c) => setConfig(c))
+      .catch(() => setError('Could not check notification setup. Check your connection and try again.'));
+  }, []);
+
   useEffect(() => {
     let live = true;
     setSupport(pushSupport());
     currentSubscription()
       .then((s) => { if (live) setSubscribed(!!s); })
       .catch(() => {});
-    apiRequest<Config>('/api/push/subscribe')
-      .then((c) => { if (live) setConfig(c); })
-      .catch(() => { if (live) setError('Could not check notification setup.'); });
+    loadConfig();
     return () => { live = false; };
-  }, []);
+  }, [loadConfig]);
 
   async function toggle() {
     setBusy(true);
@@ -76,6 +81,7 @@ export function PushCard() {
         </>
       )}
       {error ? <p role="alert" className="text-xs text-danger">{error}</p> : null}
+      {error && config === null ? <M3Button tone="secondary" onClick={loadConfig}>Try again</M3Button> : null}
     </M3Card>
   );
 }

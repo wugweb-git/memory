@@ -80,7 +80,7 @@ export const PrioritizeTab: React.FC<{ mode: Mode }> = ({ mode }) => {
                     <p className="text-sm font-semibold text-text-primary">{r.item}</p>
                     <p className="text-sm text-text-tertiary">{r.reason}</p>
                     {r.signal_match ? (
-                      <span className="inline-block text-2xs font-medium px-2 py-0.5 rounded-full bg-bg-secondary text-text-secondary border border-border-secondary">
+                      <span className="inline-block text-xs font-medium px-2 py-0.5 rounded-full bg-bg-secondary text-text-secondary border border-border-secondary">
                         Matches: {r.signal_match}
                       </span>
                     ) : null}

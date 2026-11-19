@@ -54,7 +54,7 @@ function StyleValue({ value, depth = 0, label = 'Score' }: { value: unknown; dep
           <div className="flex-1">
             <Meter label={label} value={value} className="h-1" />
           </div>
-          <span className="text-2xs font-semibold text-text-secondary w-9 text-right tabular-nums">{Math.round(value * 100)}%</span>
+          <span className="text-xs font-semibold text-text-secondary w-9 text-right tabular-nums">{Math.round(value * 100)}%</span>
         </div>
       );
     }
@@ -70,7 +70,7 @@ function StyleValue({ value, depth = 0, label = 'Score' }: { value: unknown; dep
     return (
       <div className="flex flex-wrap gap-1.5">
         {value.map((v, i) => (
-          <span key={i} className="text-2xs font-medium px-2 py-0.5 rounded-full bg-bg-primary border border-border-secondary text-text-secondary">
+          <span key={i} className="text-xs font-medium px-2 py-0.5 rounded-full bg-bg-primary border border-border-secondary text-text-secondary">
             {typeof v === 'string' ? v : JSON.stringify(v)}
           </span>
         ))}
@@ -85,7 +85,7 @@ function StyleValue({ value, depth = 0, label = 'Score' }: { value: unknown; dep
       <div className={depth > 0 ? 'space-y-2 pl-3 border-l border-border-secondary' : 'space-y-2'}>
         {entries.map(([k, v]) => (
           <div key={k}>
-            <p className="text-2xs text-text-secondary mb-0.5">{humanize(k)}</p>
+            <p className="text-xs text-text-secondary mb-0.5">{humanize(k)}</p>
             <StyleValue value={v} depth={depth + 1} label={humanize(k)} />
           </div>
         ))}
@@ -106,6 +106,8 @@ export default function PersonaIntelligencePage() {
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Which part of the page last triggered an action, so its status shows next to the control.
+  const [origin, setOrigin] = useState<'top' | 'adaptive' | 'feedback'>('top');
   const [saving, setSaving] = useState(false);
   const [rebuilding, setRebuilding] = useState(false);
   const [userId, setUserId] = useState<string>('');
@@ -124,23 +126,36 @@ export default function PersonaIntelligencePage() {
     if (!uid) return;
     try {
       setLoadError(null);
+      let unauthorized = false;
       const getJson = (path: string) =>
         fetch(path).then((r) => {
-          if (!r.ok) throw new Error(`${path} failed (${r.status})`);
+          if (r.status === 401) unauthorized = true;
+          if (!r.ok) throw new Error(String(r.status));
           return r.json();
         });
-      const [p, t, a, d] = await Promise.all([
+      // Each part loads on its own so one failing endpoint does not blank the page.
+      const [p, t, a, d] = await Promise.allSettled([
         getJson('/api/persona/profile'),
         getJson('/api/persona/traits'),
         getJson('/api/persona/adaptive-ui'),
         getJson('/api/persona/drift'),
       ]);
-      setProfile(p);
-      setTraits(Array.isArray(t) ? t : []);
-      setAdaptive(a);
-      setTimeline(Array.isArray(d?.timeline) ? d.timeline : []);
-    } catch (e) {
-      setLoadError(e instanceof Error ? `Failed to load persona data: ${e.message}` : 'Failed to load persona data');
+      if (p.status === 'fulfilled') setProfile(p.value);
+      if (t.status === 'fulfilled') setTraits(Array.isArray(t.value) ? t.value : []);
+      if (a.status === 'fulfilled') setAdaptive(a.value);
+      if (d.status === 'fulfilled') setTimeline(Array.isArray(d.value?.timeline) ? d.value.timeline : []);
+      const failedCount = [p, t, a, d].filter((x) => x.status === 'rejected').length;
+      if (failedCount > 0) {
+        setLoadError(
+          unauthorized
+            ? 'Your session has ended. Sign in again to load your persona.'
+            : failedCount === 4
+              ? 'Could not load your persona. Check your connection, then try again.'
+              : 'Some persona data could not be loaded. Try again to refresh it.',
+        );
+      }
+    } catch {
+      setLoadError('Could not load your persona. Check your connection, then try again.');
     } finally {
       setLoading(false);
     }
@@ -153,6 +168,7 @@ export default function PersonaIntelligencePage() {
   async function rebuildPersona() {
     if (rebuilding) return;
     setRebuilding(true);
+    setOrigin('top');
     setError(null);
     setNotice(null);
     try {
@@ -183,6 +199,7 @@ export default function PersonaIntelligencePage() {
 
   async function rollbackField(logId: string, field: string) {
     if (!ROLLBACK_FIELDS.includes(field)) return;
+    setOrigin('top');
     setSaving(true);
     setError(null);
     setNotice(null);
@@ -194,7 +211,7 @@ export default function PersonaIntelligencePage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data.error ?? 'Rollback failed');
+        setError(res.status === 401 ? 'Your session has ended. Sign in again, then retry.' : data.error ?? 'Rollback failed. Try again.');
         return;
       }
       setNotice('Rolled back to the earlier value.');
@@ -208,6 +225,7 @@ export default function PersonaIntelligencePage() {
   }
 
   async function sendFeedback() {
+    setOrigin('feedback');
     setSaving(true);
     setError(null);
     setNotice(null);
@@ -221,13 +239,14 @@ export default function PersonaIntelligencePage() {
       setNotice('Thanks, your feedback was saved.');
       await fetchData(userId);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Feedback failed');
+      setError(e instanceof Error ? e.message : 'Feedback was not saved. Try again.');
     } finally {
       setSaving(false);
     }
   }
 
   async function updateAdaptive(field: keyof AdaptiveProfile, value: string) {
+    setOrigin('adaptive');
     setSaving(true);
     setError(null);
     setNotice(null);
@@ -241,10 +260,19 @@ export default function PersonaIntelligencePage() {
       setNotice('Interface preference saved.');
       await fetchData(userId);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Update failed');
+      setError(e instanceof Error ? e.message : 'Update failed. Try again.');
     } finally {
       setSaving(false);
     }
+  }
+
+  function statusBlock(at: 'top' | 'adaptive' | 'feedback') {
+    return (
+      <div aria-live="polite" className="space-y-1">
+        {origin === at && notice ? <p role="status" className="text-sm text-success">{notice}</p> : null}
+        {origin === at && error ? <p role="alert" className="break-words text-sm text-danger">{error}</p> : null}
+      </div>
+    );
   }
 
   if (loading) {
@@ -262,7 +290,7 @@ export default function PersonaIntelligencePage() {
     );
   }
 
-  if (loadError && !profile) {
+  if (loadError && !profile && !adaptive && traits.length === 0 && timeline.length === 0) {
     return (
       <AppShell>
         <div className="w-full min-h-[50vh] flex items-center justify-center px-4">
@@ -294,11 +322,19 @@ export default function PersonaIntelligencePage() {
         >
           {rebuilding ? 'Regenerating…' : 'Regenerate from my profile'}
         </button>
-        <div aria-live="polite" className="space-y-1">
-          {notice && <p role="status" className="text-sm text-success">{notice}</p>}
-        </div>
-        {error && <p role="alert" className="text-sm text-danger">{error}</p>}
-        {loadError && <p role="alert" className="text-sm text-danger">{loadError}</p>}
+        {statusBlock('top')}
+        {loadError && (
+          <div role="alert" className="flex flex-wrap items-center gap-3">
+            <p className="min-w-0 break-words text-sm text-danger">{loadError}</p>
+            <button
+              type="button"
+              onClick={() => { setLoading(true); void fetchData(userId); }}
+              className="min-h-11 px-4 rounded-xl border border-border-primary text-sm font-medium text-text-primary hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              Try again
+            </button>
+          </div>
+        )}
       </header>
 
       {/* Communication profile */}
@@ -418,6 +454,7 @@ export default function PersonaIntelligencePage() {
             </div>
           ))}
         </div>
+        {statusBlock('adaptive')}
       </section>
 
       {/* Feedback */}
@@ -445,6 +482,7 @@ export default function PersonaIntelligencePage() {
         >
           {saving ? 'Saving…' : 'Send feedback'}
         </button>
+        {statusBlock('feedback')}
       </section>
     </div>
       <ConfirmDialog

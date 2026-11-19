@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AlertCircle, ExternalLink, RefreshCw } from "lucide-react";
 import { Card, EmptyState, Skeleton, StatusPill } from "@/components/ui/primitives";
 import { UI_API } from "@/lib/ui/contracts";
-import { apiRequest } from "@/lib/ui/api-client";
+import { apiRequest, ApiClientError } from "@/lib/ui/api-client";
 import { AppShell } from "@/app/component/AppShell";
 import { deliveryTone, describeDelivery } from "@/lib/publishing/delivery";
 
@@ -51,7 +51,7 @@ export default function HistoryPage() {
     setError(null);
     apiRequest<unknown>(UI_API.outputHistory)
       .then((d) => { if (active) setRows(Array.isArray(d) ? (d as OutputRow[]) : []); })
-      .catch((e) => { if (active) setError(e?.message || "The history request failed."); })
+      .catch((e) => { if (active) setError(e instanceof ApiClientError && e.status === 401 ? "Your session has ended. Sign in again, then retry" : e?.message || "The history request failed"); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, []);
@@ -87,7 +87,7 @@ export default function HistoryPage() {
               <AlertCircle size={18} className="mt-0.5 shrink-0 text-danger" aria-hidden="true" />
               <div className="min-w-0 space-y-1">
                 <p className="text-sm font-semibold text-text-primary">Could not load your history</p>
-                <p className="break-words text-sm text-text-tertiary">{error}. Check your connection and try again.</p>
+                <p className="break-words text-sm text-text-tertiary">{error}. Then try again.</p>
               </div>
             </div>
             <button type="button" onClick={() => load()} className={`${BUTTON} w-full sm:w-auto`}>

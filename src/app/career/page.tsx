@@ -12,7 +12,7 @@ import { JobPipeline } from "@/app/component/JobPipeline";
 import { JobSearchAgent } from "@/app/component/JobSearchAgent";
 import { IDENTITY_CONFIG } from "@/config/identity";
 import { profilePath } from "@/lib/api/endpoints";
-import { apiRequest } from "@/lib/ui/api-client";
+import { apiRequest, ApiClientError } from "@/lib/ui/api-client";
 import { RoleForm, emptyRoleForm, type RoleFormValues, type SaveState } from "./RoleForm";
 
 type ExperienceSection = {
@@ -23,6 +23,11 @@ type ExperienceSection = {
 };
 
 const HANDLE = IDENTITY_CONFIG.HANDLE;
+
+function friendlyError(e: unknown, fallback: string): string {
+  if (e instanceof ApiClientError && e.status === 401) return "Your session has ended. Sign in again, then retry.";
+  return e instanceof Error && e.message ? e.message : fallback;
+}
 
 function toForm(s: ExperienceSection): RoleFormValues {
   const c = s.content ?? {};
@@ -105,7 +110,7 @@ export default function CareerPage() {
       await load();
     } catch (e: unknown) {
       setSaveState("failed");
-      setSaveError(e instanceof Error ? e.message : "Could not save. Try again.");
+      setSaveError(friendlyError(e, "Could not save. Try again."));
     }
   }
 
@@ -116,7 +121,7 @@ export default function CareerPage() {
       toast.success("Role removed from your career tree");
       await load();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Could not remove this role. Try again.");
+      toast.error(friendlyError(e, "Could not remove this role. Try again."));
     }
   }
 

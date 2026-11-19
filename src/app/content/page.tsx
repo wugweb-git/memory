@@ -334,6 +334,7 @@ export default function OutputStudioPage() {
   }
 
   function startEdit(s: ProfileSection) {
+    if (editDirty && editingId !== s.id && !window.confirm("Discard your changes to the section you are editing?")) return;
     const body = sectionBody(s);
     setEditingId(s.id); setEditTitle(s.title); setEditBody(body);
     setEditOriginal({ title: s.title, body });
@@ -359,7 +360,7 @@ export default function OutputStudioPage() {
     } finally { setBusy(false); }
   }
   async function unpublish(s: ProfileSection) {
-    if (!confirm(`Remove "${s.title}" from your public profile?`)) return;
+    if (!confirm(`Remove "${s.title}" from your public profile? This cannot be undone.`)) return;
     try {
       setBusy(true);
       await apiRequest(`${profilePath(HANDLE, "sections")}?sectionId=${encodeURIComponent(s.id)}`, { method: "DELETE" });

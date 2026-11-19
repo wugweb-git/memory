@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { M3Card } from '@/components/ui/m3';
+import { useCallback, useEffect, useState } from 'react';
+import { M3Button, M3Card } from '@/components/ui/m3';
 import { apiRequest } from '@/lib/ui/api-client';
 
 type Mode = 'off' | 'trusted' | 'all';
@@ -19,13 +19,16 @@ export function AutoPromoteCard() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState('');
 
-  useEffect(() => {
-    let live = true;
-    apiRequest<{ mode: Mode }>('/api/settings/auto-promote')
-      .then((r) => { if (live) setMode(r.mode); })
-      .catch(() => { if (live) setError('Could not load this setting.'); });
-    return () => { live = false; };
+  const load = useCallback(() => {
+    setError(null);
+    return apiRequest<{ mode: Mode }>('/api/settings/auto-promote')
+      .then((r) => setMode(r.mode))
+      .catch(() => setError('Could not load this setting. Check your connection and try again.'));
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   async function choose(next: Mode) {
     const prev = mode;
@@ -74,6 +77,7 @@ export function AutoPromoteCard() {
         ))}
       </fieldset>
       {error ? <p id="auto-promote-err" role="alert" className="text-xs text-danger">{error}</p> : null}
+      {error && mode === null ? <M3Button tone="secondary" onClick={load}>Try again</M3Button> : null}
       <p role="status" aria-live="polite" className="text-xs text-text-tertiary">{saved}</p>
     </M3Card>
   );

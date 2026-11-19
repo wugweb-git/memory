@@ -85,8 +85,8 @@ export default function PortfolioPage() {
   async function create() {
     setTitleErr("");
     setUrlErr("");
-    if (!form.title.trim()) { setTitleErr("Enter a title."); return; }
-    if (form.url.trim() && !/^https?:\/\//i.test(form.url.trim())) { setUrlErr("Start the URL with http:// or https://."); return; }
+    if (!form.title.trim()) { setTitleErr("Enter a title."); document.getElementById(id("title"))?.focus(); return; }
+    if (form.url.trim() && !/^https?:\/\//i.test(form.url.trim())) { setUrlErr("Start the URL with http:// or https://."); document.getElementById(id("url"))?.focus(); return; }
     setSaving(true);
     try {
       await apiRequest(UI_API.cmsContent, { method: "POST", body: { type: tab, ...form, title: form.title.trim() } });
@@ -100,7 +100,7 @@ export default function PortfolioPage() {
   }
 
   async function remove(docId: string, title: string) {
-    if (!confirm(`Remove "${title}" from your public showcase?`)) return;
+    if (!confirm(`Remove "${title}" from your public showcase? This cannot be undone.`)) return;
     try {
       await apiRequest(`${UI_API.cmsContent}?id=${encodeURIComponent(docId)}`, { method: "DELETE" });
       toast.success("Removed from your showcase");

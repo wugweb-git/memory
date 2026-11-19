@@ -49,6 +49,7 @@ export default function PublishingAccountsPage() {
   }
 
   async function remove(f: Field) {
+    if (!window.confirm(`Remove the saved ${f.label}? Anything that uses it stops working until you add it again.`)) return;
     setBusy(f.key);
     try {
       await apiRequest(`/api/publishing/accounts?key=${encodeURIComponent(f.key)}`, { method: 'DELETE', retries: 0 });
@@ -64,7 +65,12 @@ export default function PublishingAccountsPage() {
   return (
     <AppShell>
       <M3Page title="Publishing accounts" subtitle="Add the tokens that let the app post for you. Values are stored encrypted and are never shown again.">
-        {error ? <M3State state="error" message={error} /> : null}
+        {error ? (
+          <div className="space-y-3">
+            <M3State state="error" message={error} />
+            <M3Button tone="secondary" onClick={() => { setError(null); load(); }}>Try again</M3Button>
+          </div>
+        ) : null}
         {!data && !error ? <M3State state="loading" message="Loading accounts" /> : null}
         {data && !data.encryptionReady ? (
           <M3State state="error" message="Tokens can't be saved yet: set MEMORY_ENCRYPTION_KEY (64 hex characters) in Vercel, then reload. IDs can still be saved." />

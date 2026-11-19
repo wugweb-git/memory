@@ -53,6 +53,7 @@ export default function ManualUpload({ onComplete }: { onComplete: () => void })
       } else if (xhr.status === 202) {
         setStatus('stalled');
         setMessage(body.reason ? `Held by the ingestion gate: ${body.reason}` : 'Held by the ingestion gate for review.');
+        onComplete();
       } else if (xhr.status === 401) {
         setStatus('error');
         setNeedsLogin(true);
@@ -65,6 +66,10 @@ export default function ManualUpload({ onComplete }: { onComplete: () => void })
     xhr.onerror = () => {
       setStatus('error');
       setMessage('Network error: the upload did not reach the server. Check your connection and try again.');
+    };
+    xhr.onabort = () => {
+      setStatus('error');
+      setMessage('The upload was cancelled before it finished. Try again.');
     };
     xhr.send(form);
   };
@@ -147,13 +152,13 @@ export default function ManualUpload({ onComplete }: { onComplete: () => void })
             </div>
           )}
 
-          {status === 'idle' && (
+          {(status === 'idle' || status === 'error') && !needsLogin && (
             <button
               type="button"
               onClick={startUpload}
               className="w-full min-h-[44px] py-2.5 rounded-xl bg-text-primary text-bg-primary text-sm font-semibold hover:bg-text-secondary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
             >
-              Ingest into memory
+              {status === 'error' ? 'Try the upload again' : 'Ingest into memory'}
             </button>
           )}
         </div>

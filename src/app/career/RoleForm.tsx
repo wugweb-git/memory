@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
 export type RoleFormValues = {
   title: string;
@@ -44,7 +44,7 @@ function Field({
     <div>
       <label htmlFor={id} className="block text-sm font-medium text-text-primary mb-1">
         {label}
-        {optional ? <span className="ml-1 text-2xs font-normal text-text-tertiary">Optional</span> : null}
+        {optional ? <span className="ml-1 text-xs font-normal text-text-tertiary">Optional</span> : null}
       </label>
       {children}
       {error ? (
@@ -129,6 +129,12 @@ export function RoleForm({
     ind: `${uid}-ind`, logic: `${uid}-logic`, persp: `${uid}-persp`,
   };
 
+  // Move focus into the form when it opens so keyboard and screen reader users land on it.
+  useEffect(() => {
+    document.getElementById(ids.title)?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <form
       aria-label={isEditing ? "Edit role" : "Add role"}
@@ -186,7 +192,7 @@ export function RoleForm({
               className={`${inputCls} ${border("originalLogic")}`}
               value={values.originalLogic} onChange={(e) => set("originalLogic", e.target.value)}
             />
-            <p className="mt-1 text-2xs text-text-tertiary text-right" aria-hidden="true">{values.originalLogic.length}/{MAX_TEXT}</p>
+            <p className="mt-1 text-xs text-text-tertiary text-right" aria-hidden="true">{values.originalLogic.length}/{MAX_TEXT}</p>
           </Field>
           <Field id={ids.persp} label="What it means now" optional error={errors.perspective2026}
             hint="How you see that role today, with hindsight.">
@@ -196,7 +202,7 @@ export function RoleForm({
               className={`${inputCls} ${border("perspective2026")}`}
               value={values.perspective2026} onChange={(e) => set("perspective2026", e.target.value)}
             />
-            <p className="mt-1 text-2xs text-text-tertiary text-right" aria-hidden="true">{values.perspective2026.length}/{MAX_TEXT}</p>
+            <p className="mt-1 text-xs text-text-tertiary text-right" aria-hidden="true">{values.perspective2026.length}/{MAX_TEXT}</p>
           </Field>
         </fieldset>
       </div>
@@ -215,7 +221,7 @@ export function RoleForm({
         >
           Cancel
         </button>
-        <p role="status" aria-live="polite" className={`text-xs ${saveState === "failed" ? "text-danger" : "text-text-tertiary"}`}>
+        <p role="status" aria-live="polite" className={`min-w-0 break-words text-xs ${saveState === "failed" ? "text-danger" : "text-text-tertiary"}`}>
           {saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved" : saveState === "failed" ? (errorMessage || "Could not save. Try again.") : ""}
         </p>
       </div>
