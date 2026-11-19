@@ -14,6 +14,8 @@ import { OUTPUT_PLATFORMS } from "@/config/ui-content";
 import { IDENTITY_CONFIG } from "@/config/identity";
 import { profilePath } from "@/lib/api/endpoints";
 import Link from "next/link";
+import { ManualPostCard, type ManualPrep } from "./ManualPostCard";
+import { isManualPlatform, manualPostText } from "@/lib/platforms/manual";
 
 type Draft = {
   id: string;
@@ -145,6 +147,7 @@ export default function OutputStudioPage() {
   const [outputId, setOutputId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [manualPrep, setManualPrep] = useState<ManualPrep | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(true);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
@@ -302,9 +305,17 @@ export default function OutputStudioPage() {
     try {
       setBusy(true);
       await persistEdits();
-      const res = await apiRequest<{ sanitySynced?: boolean }>(UI_API.outputPublish, {
+      const res = await apiRequest<{ sanitySynced?: boolean; payload?: unknown }>(UI_API.outputPublish, {
         method: "POST", body: { outputId, userId },
       });
+      if (isManualPlatform(platform)) {
+        // Nothing was sent to the platform. Show the text for the owner to post by hand.
+        setManualPrep({ outputId, platform, text: manualPostText(platform, res?.payload) || content });
+        toast.success("Ready to post. Copy the text and post it yourself");
+        setOutputId(null); setContent(""); setSavedContent(""); setVersions([]); setLastSaved(null);
+        loadDrafts();
+        return;
+      }
       toast.success(res?.sanitySynced ? "Published to your profile and CMS" : "Published to your profile");
       setOutputId(null); setContent(""); setSavedContent(""); setVersions([]); setLastSaved(null);
       loadDrafts();
@@ -475,6 +486,14 @@ export default function OutputStudioPage() {
                 </div>
               ) : null}
 
+              {manualPrep && (
+                <ManualPostCard
+                  key={manualPrep.outputId}
+                  prep={manualPrep}
+                  onDone={(message) => { toast.success(message); setManualPrep(null); void loadLive(); }}
+                />
+              )}
+
               {!content && !loading ? (
                 <EmptyState
                   title="No draft yet"
@@ -518,12 +537,14 @@ export default function OutputStudioPage() {
                     <div className="space-y-2 border-t border-border-secondary pt-3">
                       <p className="text-xs text-text-tertiary">
                         {outputId
-                          ? "3. Publish puts this draft on your public profile. Your edits are saved first."
+                          ? isManualPlatform(platform)
+                            ? "3. Prepare to post gets the text ready to copy. You post it yourself, then mark it as posted. Your edits are saved first."
+                            : "3. Publish puts this draft on your public profile. Your edits are saved first."
                           : "Generate or open a draft to publish it."}
                       </p>
                       <div className="flex flex-wrap gap-2">
                         <M3Button onClick={publish} disabled={busy || !outputId}>
-                          {busy ? "Working…" : "Publish to profile"}
+                          {busy ? "Working…" : isManualPlatform(platform) ? "Prepare to post" : "Publish to profile"}
                         </M3Button>
                         <M3Button tone="secondary" onClick={saveDraft} disabled={busy || !outputId || !dirty}>
                           Save draft

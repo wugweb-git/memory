@@ -1,4 +1,5 @@
 import { getCredential } from "./credentials";
+import { isManualPlatform } from "@/lib/platforms/manual";
 
 /**
  * Per-platform credential env vars. A platform listed here publishes to an
@@ -21,6 +22,7 @@ const INTERNAL_PLATFORMS = new Set(["portfolio", "cms"]);
 export type PlatformPublishStatus =
   | "published" // real external send succeeded (token-gated branch only)
   | "internal" // handled by the internal profile/CMS path, no external send
+  | "manual" // no publishing API: text is prepared for the owner to post by hand, nothing sent
   | "not_configured" // external platform, but no credential set — nothing sent
   | "error"; // external send was attempted but failed
 
@@ -52,6 +54,12 @@ export async function publishToPlatform(
   // publishContentToProfile — there is no external API to hit from here.
   if (INTERNAL_PLATFORMS.has(platform)) {
     return { platform, status: "internal", externalId: null, delivered: false, payload };
+  }
+
+  // No publishing API (Substack, Behance, Dribbble): nothing is sent and
+  // nothing is claimed. The owner posts it by hand and confirms afterwards.
+  if (isManualPlatform(platform)) {
+    return { platform, status: "manual", externalId: null, delivered: false, payload };
   }
 
   const envName = PLATFORM_CREDENTIAL_ENV[platform];

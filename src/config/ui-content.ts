@@ -257,5 +257,8 @@ export const OUTPUT_PLATFORMS = [
   { value: 'blog', label: 'Blog post' },
   { value: 'medium', label: 'Medium' },
   { value: 'portfolio', label: 'Portfolio' },
+  { value: 'substack', label: 'Substack (post it yourself)' },
+  { value: 'behance', label: 'Behance (post it yourself)' },
+  { value: 'dribbble', label: 'Dribbble (post it yourself)' },
   { value: 'memo', label: 'Memo' },
 ] as const;

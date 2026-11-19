@@ -5,7 +5,7 @@ import { enforcePersonaStyle } from "@/lib/persona/style";
 import { persistFingerprint } from "@/lib/persona/fingerprint";
 import { recordProvenance } from "@/lib/provenance/ledger";
 
-export type OutputPlatform = "linkedin" | "blog" | "memo" | "medium" | "portfolio" | "other";
+export type OutputPlatform = "linkedin" | "blog" | "memo" | "medium" | "portfolio" | "substack" | "behance" | "dribbble" | "other";
 
 const PLATFORM_CONSTRAINTS: Record<OutputPlatform, string> = {
   linkedin: "Punchy, use hooks, high signal-to-noise ratio, structured with line breaks, max 250 words.",
@@ -13,6 +13,9 @@ const PLATFORM_CONSTRAINTS: Record<OutputPlatform, string> = {
   memo: "Compressed strategy notes, executive style, bulleted, focus on 'Next Actions'.",
   medium: "In-depth article with clear sections, thoughtful tone, suitable for Medium.",
   portfolio: "Professional case-study style suitable for a portfolio or personal site.",
+  substack: "Newsletter essay in markdown with a clear title, short sections and a personal, conversational voice.",
+  behance: "Project write-up for a design portfolio: a title, a short description of the problem, process and outcome.",
+  dribbble: "Short shot description: a title and one or two plain sentences about what was designed and why.",
   other: "Professional and concise.",
 };
 

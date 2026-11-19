@@ -6,7 +6,13 @@
  * `PublishedOutput.publishedContent` (no schema change).
  */
 
-export type DeliveryStatus = 'published' | 'internal' | 'not_configured' | 'error';
+export type DeliveryStatus =
+  | 'published'
+  | 'internal'
+  | 'not_configured'
+  | 'manual' // prepared for the owner to post by hand; nothing was sent
+  | 'posted_manually' // the owner confirmed they posted it themselves
+  | 'error';
 
 /** Structural subset of PlatformPublishResult (kept local to avoid coupling). */
 export type DeliveryInput = {
@@ -23,11 +29,13 @@ export type DeliveryRecord = {
   delivered: boolean;
   externalId: string | null;
   error: string | null;
+  /** Link the owner gave when confirming a manual post; null otherwise. */
+  postUrl?: string | null;
   /** ISO timestamp of when the outcome was recorded. */
   at: string;
 };
 
-const KNOWN_STATUSES: ReadonlySet<string> = new Set(['published', 'internal', 'not_configured', 'error']);
+const KNOWN_STATUSES: ReadonlySet<string> = new Set(['published', 'internal', 'not_configured', 'manual', 'posted_manually', 'error']);
 const MAX_REASON_LENGTH = 80;
 
 export function platformDisplayName(platform: string): string {
@@ -51,6 +59,7 @@ export function buildDeliveryRecord(result: DeliveryInput, now: Date = new Date(
     delivered: status === 'published' && result.delivered === true,
     externalId: result.externalId ?? null,
     error: error ? String(error) : null,
+    postUrl: null,
     at: now.toISOString(),
   };
 }
@@ -70,6 +79,8 @@ export function describeDelivery(delivery: Pick<DeliveryRecord, 'platform' | 'st
   const name = platformDisplayName(delivery.platform);
   if (delivery.status === 'published' && delivery.delivered) return `Posted to ${name}`;
   if (delivery.status === 'not_configured') return `Not sent: ${name} not configured`;
+  if (delivery.status === 'manual') return 'Waiting for you to post';
+  if (delivery.status === 'posted_manually') return `Posted by you on ${name}`;
   if (delivery.status === 'internal') return null;
   return `Not sent: error, ${shortReason(delivery.error)}`;
 }
@@ -87,6 +98,43 @@ export function extractDelivery(publishedContent: unknown): DeliveryRecord | nul
     delivered: r.delivered === true,
     externalId: typeof r.externalId === 'string' ? r.externalId : null,
     error: typeof r.error === 'string' ? r.error : null,
+    postUrl: typeof r.postUrl === 'string' ? r.postUrl : null,
     at: typeof r.at === 'string' ? r.at : '',
   };
+}
+
+export type DeliveryTone = 'success' | 'warning' | 'danger' | 'neutral';
+
+/** Tone for the history status pill (always shown with an icon and text). */
+export function deliveryTone(status: string): DeliveryTone {
+  if (status === 'published' || status === 'posted_manually') return 'success';
+  if (status === 'not_configured' || status === 'manual') return 'warning';
+  if (status === 'error') return 'danger';
+  return 'neutral';
+}
+
+/**
+ * Applies the owner's "I posted it" confirmation to a stored publishedContent
+ * value. Only a `manual` or already-`posted_manually` record can be confirmed.
+ * Never marks the record delivered (the app did not send anything).
+ */
+export function applyManualConfirmation(
+  publishedContent: unknown,
+  postUrl: string | null,
+  now: Date = new Date(),
+): { ok: true; content: Record<string, unknown>; delivery: DeliveryRecord } | { ok: false; reason: 'no_delivery' | 'not_manual' } {
+  const current = extractDelivery(publishedContent);
+  if (!current) return { ok: false, reason: 'no_delivery' };
+  if (current.status !== 'manual' && current.status !== 'posted_manually') return { ok: false, reason: 'not_manual' };
+  const prev = publishedContent as Record<string, unknown>;
+  const delivery: DeliveryRecord = {
+    platform: current.platform,
+    status: 'posted_manually',
+    delivered: false,
+    externalId: null,
+    error: null,
+    postUrl,
+    at: now.toISOString(),
+  };
+  return { ok: true, content: { ...prev, delivery }, delivery };
 }

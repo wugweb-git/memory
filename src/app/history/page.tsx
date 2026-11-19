@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AlertCircle, ExternalLink, RefreshCw } from "lucide-react";
-import { Card, EmptyState, Skeleton } from "@/components/ui/primitives";
+import { Card, EmptyState, Skeleton, StatusPill } from "@/components/ui/primitives";
 import { UI_API } from "@/lib/ui/contracts";
 import { apiRequest } from "@/lib/ui/api-client";
 import { AppShell } from "@/app/component/AppShell";
-import { describeDelivery } from "@/lib/publishing/delivery";
+import { deliveryTone, describeDelivery } from "@/lib/publishing/delivery";
 
 type OutputRow = {
   id?: string;
@@ -15,7 +15,7 @@ type OutputRow = {
   externalUrl?: string | null;
   externalId?: string | null;
   createdAt?: string | null;
-  delivery?: { platform: string; status: string; delivered: boolean; error?: string | null } | null;
+  delivery?: { platform: string; status: string; delivered: boolean; error?: string | null; postUrl?: string | null } | null;
 };
 
 function isSafeUrl(url: string): boolean {
@@ -111,7 +111,7 @@ export default function HistoryPage() {
         {!loading && !error && rows.length > 0 ? (
           <ul className="space-y-2">
             {rows.map((r, i) => {
-              const link = r.externalUrl || "";
+              const link = r.externalUrl || r.delivery?.postUrl || "";
               const safe = link && isSafeUrl(link);
               const deliveryLabel = r.delivery ? describeDelivery(r.delivery as Parameters<typeof describeDelivery>[0]) : null;
               return (
@@ -125,7 +125,9 @@ export default function HistoryPage() {
                         </time>
                       ) : null}
                     </div>
-                    {deliveryLabel ? <p className="text-sm text-text-secondary">{deliveryLabel}</p> : null}
+                    {deliveryLabel && r.delivery ? (
+                      <div><StatusPill tone={deliveryTone(r.delivery.status)}>{deliveryLabel}</StatusPill></div>
+                    ) : null}
                     {safe ? (
                       <a
                         href={link}

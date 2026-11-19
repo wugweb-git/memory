@@ -2,6 +2,7 @@ import { buildLinkedInPayload } from "@/lib/platforms/linkedin";
 import { buildMediumPayload } from "@/lib/platforms/medium";
 import { buildXPayload } from "@/lib/platforms/x";
 import { buildFacebookPayload, buildInstagramPayload } from "@/lib/platforms/meta";
+import { buildSubstackPayload, buildDesignPortfolioPayload } from "@/lib/platforms/manual";
 import { buildPortfolioPayload } from "@/lib/platforms/portfolio";
 
 export function routeDistribution(params: { platform: string; content: string; title?: string; tags?: string[]; scheduledAt?: string; imageUrl?: string }) {
@@ -21,6 +22,11 @@ export function routeDistribution(params: { platform: string; content: string; t
       return buildInstagramPayload({ content, title, tags, imageUrl });
     case "medium":
       return buildMediumPayload({ content, title, tags });
+    case "substack":
+      return buildSubstackPayload({ content, title });
+    case "behance":
+    case "dribbble":
+      return buildDesignPortfolioPayload(platform, { content, title, tags });
     case "portfolio":
     case "cms":
       return buildPortfolioPayload({ content, title, tags });
