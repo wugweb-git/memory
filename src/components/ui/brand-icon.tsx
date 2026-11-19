@@ -14,8 +14,9 @@ import {
 } from 'simple-icons';
 
 /**
- * Official brand glyphs (Simple Icons paths) drawn in the current text colour,
- * so they follow the design tokens and never introduce a hardcoded hex.
+ * Official brand glyphs (Simple Icons paths) in each brand's own colour. The
+ * colour comes from the icon data, not from this file, so components stay free
+ * of hardcoded hex values.
  */
 const BRAND_ICONS: Record<string, SimpleIcon> = {
   github: siGithub,
@@ -39,7 +40,7 @@ export function brandIconFor(id: string, custom?: boolean): SimpleIcon | null {
 
 export function BrandIcon({ icon, className }: { icon: SimpleIcon; className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false" className={className} fill="currentColor">
+    <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false" className={className} fill={`#${icon.hex}`}>
       <path d={icon.path} />
     </svg>
   );

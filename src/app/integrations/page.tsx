@@ -378,7 +378,7 @@ export default function IntegrationsPage() {
                             <div className="flex min-w-0 flex-1 items-start gap-3">
                               <div className="h-10 w-10 shrink-0 rounded-xl bg-bg-secondary flex items-center justify-center">
                                 {brand ? (
-                                  <BrandIcon icon={brand} className="h-5 w-5 text-text-primary" />
+                                  <BrandIcon icon={brand} className="h-5 w-5" />
                                 ) : (
                                   <Icon className="h-4 w-4 text-text-secondary" aria-hidden="true" />
                                 )}
