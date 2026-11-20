@@ -33,6 +33,10 @@
   --danger-rgb: 190 18 60;       /* #BE123C: 5.75:1 on porcelain (was #E11D48 at 4.29:1) */
   --warning-rgb: 154 74 8;       /* #9A4A08: 5.72:1 on porcelain (was #B45309; 4.28:1 on stone) */
   --accent-high-rgb: 0 0 0;
+  /* Text-safe companion to the cyan accent (the accent itself is unchanged, owner decision):
+     #0060A0 is 6.6:1 on white and 5.0:1 on clay. Use text-accent-ink for any blue TEXT;
+     text-accent measures 2.56:1 on white and fails WCAG 1.4.3. Opt-in, no existing usage changed. */
+  --accent-ink-rgb: 0 96 160;
 
   --accent: 0 170 255;           /* Electric Cyan (owner: keep this blue) */
   --accent-high: #000000;      /* High contrast spark */
@@ -50,7 +54,7 @@
   --font-sm:   0.875rem;                                   /* 14px — secondary UI (M3 body-medium) */
   --font-base: clamp(1rem, 0.95rem + 0.15vw, 1.0625rem);   /* 16→17px — body; 16px floor avoids iOS input zoom */
   --font-md:   clamp(1rem, 0.95rem + 0.25vw, 1.0625rem);  /* 16→17px — lead */
-  --font-lg:   clamp(1.125rem, 1.05rem + 0.35vw, 1.25rem);/* 18→20px — h5/h6 */
+  --font-lg:   clamp(1.125rem, 1.05rem + 0.35vw, 1.25rem);/* 18→20px — title-medium/large, h5/h6 */
   --font-xl:   clamp(1.375rem, 1.25rem + 0.6vw, 1.625rem);/* 22→26px — h4 */
   --font-2xl:  clamp(1.75rem, 1.55rem + 0.9vw, 2.125rem); /* 28→34px — h3 */
   --font-3xl:  clamp(2.125rem, 1.8rem + 1.5vw, 2.75rem);  /* 34→44px — h2 */
@@ -118,10 +122,19 @@
   /* ── Layout chrome ──────────────────────────────────────────────
      The shell reads these so content never slides under fixed bars. */
   --topbar-h: 3.5rem;
-  --dock-h: 5rem; /* M3 navigation bar height (80) */
+  --dock-h: 5rem;                /* 80px: Material 3 navigation bar */
   --sidebar-w: 15rem;
   --content-max: 72rem;
   --gutter: 1rem;
+
+  /* Touch targets: 44px floor everywhere (WCAG 2.5.5), 48px for primary actions. */
+  --control-h: 2.75rem;
+  --control-h-lg: 3rem;
+
+  /* Material 3 state layers: the overlay opacity for hover / focus / pressed. */
+  --state-hover: 0.08;
+  --state-focus: 0.1;
+  --state-pressed: 0.12;
 }
 
 @media (min-width: 768px) {
@@ -169,6 +182,42 @@ html {
     transform: translateY(-2px);
     box-shadow: var(--elev-2), inset 0 1px 1px rgb(var(--bg-elevated-rgb));
   }
+
+
+  /* Material 3 state layer: a currentColor overlay that fades in for hover, focus and
+     pressed. Add to any tappable surface; it never changes the box size. */
+  .state-layer {
+    position: relative;
+    isolation: isolate;
+    touch-action: manipulation;
+  }
+  .state-layer::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    z-index: -1;
+    transition: opacity var(--dur-fast) var(--ease-standard);
+  }
+  @media (hover: hover) {
+    .state-layer:hover::before { opacity: var(--state-hover); }
+  }
+  .state-layer:focus-visible::before { opacity: var(--state-focus); }
+  .state-layer:active::before { opacity: var(--state-pressed); }
+  .state-layer:disabled::before,
+  .state-layer[aria-disabled='true']::before { opacity: 0; }
+
+  /* Material 3 type roles mapped onto the named scale (see docs/ux-audit/foundation.md).
+     headline = page titles, title = section and card titles, body = reading text,
+     label = buttons, chips, tabs. Sentence case, no italics. */
+  .type-headline { font-size: var(--font-xl); line-height: 1.25; font-weight: 600; letter-spacing: -0.01em; }
+  .type-title    { font-size: var(--font-base); line-height: 1.4; font-weight: 600; }
+  .type-body     { font-size: var(--font-sm); line-height: 1.5; font-weight: 400; }
+  .type-label    { font-size: var(--font-sm); line-height: 1.25; font-weight: 500; letter-spacing: 0.005em; }
+  .type-caption  { font-size: var(--font-xs); line-height: 1.4; font-weight: 400; }
 
   .bento-grid {
     display: grid;
@@ -297,7 +346,7 @@ html {
 
 @media (prefers-reduced-motion: no-preference) {
   .page-enter {
-    animation: page-enter var(--dur-base) var(--ease-out) both;
+    animation: page-enter var(--dur-base) var(--ease-out) backwards;
   }
 }
 
@@ -311,12 +360,24 @@ body {
   overscroll-behavior-y: none; /* no rubber-band flash on the porcelain background */
 }
 
-/* Visible keyboard focus everywhere (WCAG 2.4.7 / 2.4.11). Taps stay clean.
-   Dark inner ring + cyan outer ring keeps >=3:1 on light and dark surfaces. */
-:focus-visible {
-  outline: 2px solid var(--text-primary);
-  outline-offset: 2px;
+/* Visible keyboard focus everywhere (WCAG 2.4.7, 1.4.11, 2.4.11). Taps stay clean.
+   Dark 2px outline (>=15:1 on every surface) plus a cyan halo. !important because
+   components that set Tailwind outline-none would otherwise leave only the 2px cyan
+   ring (measured 2.4:1 on porcelain, below the 3:1 non-text minimum). */
+:focus-visible:not([tabindex='-1']) {
+  outline: 2px solid var(--text-primary) !important;
+  outline-offset: 2px !important;
   box-shadow: 0 0 0 4px rgb(var(--accent) / 0.55);
+}
+/* Programmatically focused containers (main, dialog panels, headings; tabindex -1) are not
+   keyboard stops, so they keep their intentional outline-none. */
+[tabindex='-1']:focus-visible {
+  outline: none;
+}
+/* Inset rings (list rows inside overflow-hidden groups) draw inside the box instead. */
+[class*='ring-inset']:focus-visible,
+.state-layer:focus-visible {
+  outline-offset: -2px !important;
 }
 
 /* Fixed bars must not hide the focused element (WCAG 2.4.11). scroll-margin covers
@@ -353,6 +414,28 @@ html {
   .Toastify__toast-container--bottom-left,
   .Toastify__toast-container--bottom-center {
     bottom: calc(var(--dock-h) + 1.5rem + env(safe-area-inset-bottom)) !important;
+    left: 0.75rem !important;
+    right: 0.75rem !important;
+    width: auto !important;
+  }
+}
+
+/* Toast dismiss button: library default is a 14px glyph; give it a 44px target. */
+.Toastify__close-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  align-self: center;
+}
+
+/* Top-positioned toasts on phones sit below the 56px top bar so they never cover its buttons. */
+@media (max-width: 480px) {
+  .Toastify__toast-container--top-right,
+  .Toastify__toast-container--top-left,
+  .Toastify__toast-container--top-center {
+    top: calc(var(--topbar-h) + 0.5rem + env(safe-area-inset-top)) !important;
     left: 0.75rem !important;
     right: 0.75rem !important;
     width: auto !important;

@@ -111,7 +111,7 @@ export const ActivityLog = () => {
                         <div className="flex items-center gap-3">
                           <span className={`text-2xs font-semibold px-2 py-0.5 rounded-full border flex items-center gap-1.5 ${
                             signal.type === 'creation' 
-                              ? 'bg-accent/5 border-accent/20 text-accent' 
+                              ? 'bg-accent/5 border-accent/20 text-accent-ink' 
                               : 'bg-success/5 border-success/20 text-success'
                           }`}>
                             {signal.type === 'creation' 

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AlertCircle, ExternalLink, RefreshCw } from "lucide-react";
-import { Card, EmptyState, Skeleton, StatusPill } from "@/components/ui/primitives";
+import { Card, EmptyState, Skeleton, StatusPill, PageHeader } from "@/components/ui/primitives";
 import { UI_API } from "@/lib/ui/contracts";
 import { apiRequest, ApiClientError } from "@/lib/ui/api-client";
 import { AppShell } from "@/app/component/AppShell";
@@ -43,7 +43,7 @@ function shortUrl(url: string): string {
 }
 
 const BUTTON =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border-primary bg-bg-elevated px-4 text-sm font-medium text-text-primary hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
+  "inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-border-primary bg-bg-elevated px-5 text-sm font-medium text-text-primary hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
 
 export default function HistoryPage() {
   const [rows, setRows] = useState<OutputRow[]>([]);
@@ -68,24 +68,25 @@ export default function HistoryPage() {
 
   return (
     <AppShell>
-      <div className="mx-auto w-full max-w-3xl space-y-5 px-4 py-6">
-        <header className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-text-primary">History</h1>
-            <p className="mt-1 text-sm text-text-tertiary">Everything you have published, newest first</p>
-          </div>
-          {!error && (loading || rows.length > 0) ? (
-            <button type="button" onClick={() => load()} disabled={loading} aria-label="Refresh history" className={`${BUTTON} w-11 shrink-0 px-0 disabled:opacity-40`}>
-              <RefreshCw size={16} aria-hidden="true" className={loading ? "motion-safe:animate-spin" : ""} />
-            </button>
-          ) : null}
-        </header>
+      <div className="mx-auto w-full max-w-3xl">
+        <PageHeader className="mb-6"
+          title="History"
+          description="Everything you have published, newest first"
+          actions={
+            !error && (loading || rows.length > 0) ? (
+              <button type="button" onClick={() => load()} disabled={loading} aria-label="Refresh history" className={`${BUTTON} w-12 shrink-0 px-0 disabled:opacity-40`}>
+                <RefreshCw size={18} aria-hidden="true" className={loading ? "motion-safe:animate-spin" : ""} />
+              </button>
+            ) : null
+          }
+        />
+        <div className="space-y-3">
 
         {loading ? (
           <div role="status" aria-label="Loading history" className="space-y-2">
-            <Skeleton className="h-20" />
-            <Skeleton className="h-20" />
-            <Skeleton className="h-20" />
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
           </div>
         ) : null}
 
@@ -94,8 +95,8 @@ export default function HistoryPage() {
             <div className="flex items-start gap-3">
               <AlertCircle size={18} className="mt-0.5 shrink-0 text-danger" aria-hidden="true" />
               <div className="min-w-0 space-y-1">
-                <p className="text-sm font-semibold text-text-primary">Could not load your history</p>
-                <p className="break-words text-sm text-text-tertiary">{error}. Then try again.</p>
+                <p className="text-base font-semibold text-text-primary">Could not load your history</p>
+                <p className="break-words text-sm text-text-secondary">{error}. Then try again.</p>
               </div>
             </div>
             <button type="button" onClick={() => load()} className={`${BUTTON} w-full sm:w-auto`}>
@@ -137,7 +138,7 @@ export default function HistoryPage() {
         ) : null}
 
         {!loading && !error && rows.length > 0 ? (
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {rows.map((r, i) => {
               const link = r.externalUrl || r.delivery?.postUrl || "";
               const safe = link && isSafeUrl(link);
@@ -149,11 +150,11 @@ export default function HistoryPage() {
               const onProfile = !safe && !!pc && (r.platform === "profile" || typeof pc.profileUsername === "string");
               return (
                 <li key={r.id || i}>
-                  <Card className="space-y-1.5 p-4">
+                  <Card className="space-y-2 p-4">
                     <div className="flex items-baseline justify-between gap-3">
-                      <p className="text-sm font-semibold text-text-primary">{platformLabel(r.platform)}</p>
+                      <p className="text-base font-medium text-text-primary">{platformLabel(r.platform)}</p>
                       {r.createdAt ? (
-                        <time dateTime={r.createdAt} className="shrink-0 text-xs text-text-tertiary">
+                        <time dateTime={r.createdAt} className="shrink-0 text-sm text-text-secondary">
                           {new Date(r.createdAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
                         </time>
                       ) : null}
@@ -168,7 +169,7 @@ export default function HistoryPage() {
                         href={link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex min-h-11 max-w-full items-center gap-1.5 break-all text-sm text-accent underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                        className="inline-flex min-h-11 max-w-full items-center gap-1.5 break-all text-sm text-accent-ink underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                       >
                         <span className="min-w-0">{shortUrl(link)}</span>
                         <ExternalLink size={14} className="shrink-0" aria-hidden="true" />
@@ -182,7 +183,7 @@ export default function HistoryPage() {
                         View on your public profile
                       </Link>
                     ) : (
-                      <p className="break-all text-sm text-text-tertiary">{link || r.externalId || "Saved locally, not published to a platform"}</p>
+                      <p className="break-all text-sm text-text-secondary">{link || r.externalId || "Saved locally, not published to a platform"}</p>
                     )}
                   </Card>
                 </li>
@@ -190,6 +191,7 @@ export default function HistoryPage() {
             })}
           </ul>
         ) : null}
+        </div>
       </div>
     </AppShell>
   );

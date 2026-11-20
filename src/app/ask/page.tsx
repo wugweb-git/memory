@@ -77,7 +77,7 @@ function Avatar({ size = 40 }: { size?: 28 | 40 | 56 }) {
     .map((w) => w[0])
     .join('')
     .slice(0, 2);
-  const box = size === 56 ? 'h-14 w-14 text-md' : size === 40 ? 'h-10 w-10 text-sm' : 'h-7 w-7 text-2xs';
+  const box = size === 56 ? 'h-14 w-14 text-md' : size === 40 ? 'h-10 w-10 text-sm' : 'h-7 w-7 text-xs';
   if (failed) {
     return (
       <span
@@ -105,14 +105,14 @@ function SourceList({ sources }: { sources: AskSource[] }) {
   const headingId = useId();
   return (
     <div className="mt-1.5 max-w-prose">
-      <p id={headingId} className="text-2xs font-medium text-text-secondary">
+      <p id={headingId} className="text-xs font-medium text-text-secondary">
         Sources
       </p>
       <ul aria-labelledby={headingId} className="mt-1 flex flex-wrap gap-1.5">
         {sources.map((src) => (
           <li
             key={src.packet_id}
-            className="max-w-full break-words rounded-lg border border-border-primary bg-bg-secondary px-2.5 py-0.5 text-2xs text-text-secondary"
+            className="max-w-full break-words rounded-lg border border-border-primary bg-bg-secondary px-2.5 py-0.5 text-xs text-text-secondary"
           >
             {src.label}
           </li>
@@ -210,6 +210,16 @@ export default function AskPage() {
   const showTyping =
     status === 'submitted' ||
     (status === 'streaming' && lastMessage?.role === 'assistant' && messageText(lastMessage as UIMessage) === '');
+
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    if (!showTyping) {
+      setSlow(false);
+      return;
+    }
+    const t = setTimeout(() => setSlow(true), 20000);
+    return () => clearTimeout(t);
+  }, [showTyping]);
 
   const lastText = lastMessage ? messageText(lastMessage as UIMessage) : '';
 
@@ -354,7 +364,7 @@ export default function AskPage() {
 
   return (
     <div
-      className="fixed inset-x-0 top-0 flex flex-col bg-bg-primary text-text-primary h-screen"
+      className="fixed inset-x-0 top-0 flex h-dvh flex-col bg-bg-primary text-text-primary"
       style={{ height: viewportHeight ? `${viewportHeight}px` : '100dvh' }}
     >
       <header className="shrink-0 flex items-center gap-1 border-b border-border-primary bg-bg-elevated px-2 pt-[env(safe-area-inset-top)]">
@@ -368,7 +378,7 @@ export default function AskPage() {
         <Avatar size={40} />
         <div className="min-w-0 flex-1 px-2 py-2">
           <h1 className="truncate text-base font-semibold leading-tight">{IDENTITY_CONFIG.DISPLAY_NAME}</h1>
-          <p className="text-xs leading-snug text-text-tertiary">Answers come from published notes</p>
+          <p className="truncate text-xs leading-snug text-text-tertiary">From published notes</p>
         </div>
         <div className="relative" ref={menuRef}>
           <button
@@ -469,7 +479,7 @@ export default function AskPage() {
                         <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-bg-tertiary px-4 py-2.5 text-base leading-normal text-text-primary">
                           {r.text}
                         </div>
-                        <span className="mt-1 px-1 text-2xs text-text-tertiary">
+                        <span className="mt-1 px-1 text-xs text-text-tertiary">
                           <span className="sr-only">You, </span>
                           {r.time}
                         </span>
@@ -485,7 +495,7 @@ export default function AskPage() {
                         </div>
                         {r.id !== streamingId && r.sources.length > 0 && <SourceList sources={r.sources} />}
                         <div className="mt-1 flex items-center gap-1">
-                          <span className="text-2xs text-text-tertiary">
+                          <span className="text-xs text-text-tertiary">
                             <span className="sr-only">{`${FIRST_NAME}, `}</span>
                             {r.time}
                           </span>
@@ -496,8 +506,13 @@ export default function AskPage() {
                   );
                 })}
                 {showTyping && (
-                  <li>
+                  <li className="space-y-1">
                     <TypingDots />
+                    {slow ? (
+                      <p role="status" className="pl-10 text-sm text-text-tertiary">
+                        This is taking longer than usual. You can stop and try again.
+                      </p>
+                    ) : null}
                   </li>
                 )}
                 {notice !== 'none' && (
@@ -602,6 +617,7 @@ export default function AskPage() {
       <dialog
         ref={dialogRef}
         aria-labelledby="clear-title"
+        onClose={() => menuButtonRef.current?.focus()}
         className="m-auto w-[min(90vw,22rem)] rounded-2xl border border-border-primary bg-bg-elevated p-5 text-text-primary backdrop:bg-text-primary/40"
       >
         <h2 id="clear-title" className="text-lg font-semibold">

@@ -10,7 +10,8 @@ import { Upload, X, Check, Loader2, AlertCircle } from 'lucide-react';
  * (gate → normalize → memory packet). Replaces the old @vercel/blob client
  * flow whose handler route was never implemented — uploads always failed.
  */
-export default function ManualUpload({ onComplete }: { onComplete: () => void }) {
+export default function ManualUpload({ onComplete, heading = 'h3' }: { onComplete: () => void; /** Heading level that fits the page outline where this is mounted. */ heading?: 'h2' | 'h3' }) {
+  const Heading = heading;
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState<'idle' | 'uploading' | 'success' | 'stalled' | 'error'>('idle');
@@ -78,13 +79,13 @@ export default function ManualUpload({ onComplete }: { onComplete: () => void })
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-2xs font-semibold uppercase tracking-widest text-text-tertiary">Upload to memory</h3>
+      <div className="flex min-h-6 items-center justify-between">
+        <Heading className={`${heading === 'h2' ? 'text-lg' : 'text-base'} font-semibold text-text-primary`}>Upload to memory</Heading>
         {uploading && <Loader2 size={14} aria-hidden="true" className="motion-safe:animate-spin text-text-tertiary" />}
       </div>
 
       {!file ? (
-        <div className="border-2 border-dashed border-border-primary rounded-xl p-8 flex flex-col items-center justify-center gap-3 hover:border-accent/50 hover:bg-accent/5 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent transition-colors cursor-pointer relative group">
+        <div className="border-2 border-dashed border-border-primary rounded-xl min-h-40 px-4 py-6 flex flex-col items-center justify-center gap-3 hover:border-accent/50 hover:bg-accent/5 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent transition-colors cursor-pointer relative group">
           <input
             type="file"
             aria-label="Choose a file to upload to memory"
@@ -97,8 +98,8 @@ export default function ManualUpload({ onComplete }: { onComplete: () => void })
             <Upload size={20} aria-hidden="true" />
           </div>
           <div className="text-center">
-            <p className="text-sm text-text-primary font-medium">Drop a file or click to select</p>
-            <p className="text-xs text-text-tertiary mt-1">PDF, text, Markdown, HTML, JSON or CSV. Parsed straight into memory.</p>
+            <p className="text-base text-text-primary font-medium">Choose a file</p>
+            <p className="text-sm text-text-secondary mt-1">PDF, text, Markdown, HTML, JSON or CSV. Parsed straight into memory.</p>
           </div>
         </div>
       ) : (
@@ -107,8 +108,8 @@ export default function ManualUpload({ onComplete }: { onComplete: () => void })
             <div className="flex items-center gap-3 min-w-0">
               <Upload size={16} aria-hidden="true" className="text-accent shrink-0" />
               <div className="min-w-0">
-                <p className="text-sm text-text-primary font-medium truncate">{file.name}</p>
-                <p className="text-xs text-text-tertiary">{(file.size / 1024).toFixed(0)} KB</p>
+                <p className="text-base text-text-primary font-medium truncate">{file.name}</p>
+                <p className="text-sm text-text-secondary">{(file.size / 1024).toFixed(0)} KB</p>
               </div>
             </div>
             {!uploading && (
@@ -120,7 +121,7 @@ export default function ManualUpload({ onComplete }: { onComplete: () => void })
 
           {uploading && (
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs font-medium text-text-tertiary">
+              <div className="flex items-center justify-between text-sm font-medium text-text-secondary">
                 <span>Uploading…</span>
                 <span>{progress}%</span>
               </div>
@@ -131,22 +132,22 @@ export default function ManualUpload({ onComplete }: { onComplete: () => void })
           )}
 
           {status === 'success' && (
-            <p role="status" className="flex items-center gap-2 text-xs text-success font-medium">
-              <Check size={14} aria-hidden="true" /> {message}
+            <p role="status" className="flex items-center gap-2 text-sm text-success font-medium">
+              <Check size={16} aria-hidden="true" /> {message}
             </p>
           )}
           {status === 'stalled' && (
-            <p role="status" className="flex items-center gap-2 text-xs text-warning font-medium">
-              <AlertCircle size={14} aria-hidden="true" /> {message}
+            <p role="status" className="flex items-center gap-2 text-sm text-warning font-medium">
+              <AlertCircle size={16} aria-hidden="true" /> {message}
             </p>
           )}
           {status === 'error' && (
-            <div id="upload-msg" role="alert" className="flex items-start gap-2 text-xs text-danger font-medium">
+            <div id="upload-msg" role="alert" className="flex items-start gap-2 text-sm text-danger font-medium">
               <AlertCircle size={14} aria-hidden="true" className="shrink-0 mt-0.5" />
               <span>
                 {message}{' '}
                 {needsLogin && (
-                  <Link href="/login?next=/buffer" className="underline font-semibold inline-flex items-center min-h-[44px]">Sign in</Link>
+                  <Link href="/login?next=/buffer" className="underline font-semibold inline-flex items-center min-h-11">Sign in</Link>
                 )}
               </span>
             </div>
@@ -156,7 +157,7 @@ export default function ManualUpload({ onComplete }: { onComplete: () => void })
             <button
               type="button"
               onClick={startUpload}
-              className="w-full min-h-[44px] py-2.5 rounded-xl bg-text-primary text-bg-primary text-sm font-semibold hover:bg-text-secondary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+              className="w-full min-h-12 py-2.5 rounded-xl bg-text-primary text-bg-primary text-sm font-semibold hover:bg-text-secondary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
             >
               {status === 'error' ? 'Try the upload again' : 'Ingest into memory'}
             </button>

@@ -57,23 +57,23 @@ export function SemanticPanel({ data, loading }: SemanticPanelProps) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
           {data.fallback ? (
-            <span className="px-2 py-0.5 rounded border border-border-primary text-2xs font-bold text-warning bg-bg-secondary flex items-center gap-1.5">
+            <span className="px-2 py-0.5 rounded border border-border-primary text-xs font-bold text-warning bg-bg-secondary flex items-center gap-1.5">
               <ShieldAlert aria-hidden="true" className="w-3 h-3" />
               Fallback mode
             </span>
           ) : (
-            <span className="px-2 py-0.5 rounded border border-border-primary text-2xs font-bold text-success bg-bg-secondary flex items-center gap-1.5">
+            <span className="px-2 py-0.5 rounded border border-border-primary text-xs font-bold text-success bg-bg-secondary flex items-center gap-1.5">
               <ShieldCheck aria-hidden="true" className="w-3 h-3" />
               Model extracted
             </span>
           )}
           {data.verification_status === 'unverified' && (
-            <span className="px-2 py-0.5 rounded border border-warning text-2xs font-bold text-warning bg-bg-secondary">
+            <span className="px-2 py-0.5 rounded border border-warning text-xs font-bold text-warning bg-bg-secondary">
               Unverified
             </span>
           )}
         </div>
-        <span className="text-2xs text-text-tertiary font-mono font-bold">Confidence {(data.confidence * 100).toFixed(0)}%</span>
+        <span className="text-xs text-text-tertiary font-mono font-bold">Confidence {(data.confidence * 100).toFixed(0)}%</span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -89,7 +89,7 @@ export function SemanticPanel({ data, loading }: SemanticPanelProps) {
               {entities.map((ent, i) => (
                 <li key={`${ent.entity_id}-${i}`} className="px-3 py-2 bg-bg-secondary rounded border border-border-secondary flex items-center justify-between gap-2">
                   <span className="text-xs text-text-primary capitalize font-medium break-words min-w-0">{ent.name}</span>
-                  <span className="text-2xs text-text-tertiary font-mono shrink-0">{ent.type}</span>
+                  <span className="text-xs text-text-tertiary font-mono shrink-0">{ent.type}</span>
                 </li>
               ))}
             </ul>
@@ -107,12 +107,12 @@ export function SemanticPanel({ data, loading }: SemanticPanelProps) {
             ) : (
               <ul className="flex flex-wrap gap-2">
                 {intents.map((intent, i) => (
-                  <li key={`intent-${i}`} className="px-2 py-0.5 rounded border border-border-primary text-accent bg-bg-secondary text-2xs font-bold">
+                  <li key={`intent-${i}`} className="px-2 py-0.5 rounded border border-border-primary text-accent-ink bg-bg-secondary text-xs font-bold">
                     <span className="sr-only">Intent: </span>@{intent.intent}
                   </li>
                 ))}
                 {topics.map((topic, i) => (
-                  <li key={`topic-${i}`} className="px-2 py-0.5 rounded border border-border-secondary text-text-secondary bg-bg-secondary text-2xs font-bold">
+                  <li key={`topic-${i}`} className="px-2 py-0.5 rounded border border-border-secondary text-text-secondary bg-bg-secondary text-xs font-bold">
                     <span className="sr-only">Topic: </span># {topic.topic}
                   </li>
                 ))}
@@ -132,7 +132,7 @@ export function SemanticPanel({ data, loading }: SemanticPanelProps) {
                     <li key={i} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-text-tertiary">
                       <span className="text-text-primary font-bold break-words">{rel.from}</span>
                       <span aria-hidden="true">→</span>
-                      <span className="text-accent font-semibold">{rel.type}</span>
+                      <span className="text-accent-ink font-semibold">{rel.type}</span>
                       <span aria-hidden="true">→</span>
                       <span className="text-text-primary font-bold break-words">{rel.to}</span>
                       <span className="sr-only">({rel.from} {rel.type} {rel.to})</span>

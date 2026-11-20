@@ -9,7 +9,7 @@ import { apiRequest } from "@/lib/ui/api-client";
 import { MANUAL_PLATFORMS, validatePostUrl, type ManualPlatform } from "@/lib/platforms/manual";
 
 const LINK_BTN =
-  "inline-flex min-h-11 items-center gap-2 rounded-xl border border-border-primary bg-bg-elevated px-4 text-sm font-medium text-text-primary transition-colors hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
+  "inline-flex min-h-11 items-center gap-2 rounded-xl border border-border-primary bg-bg-elevated px-5 text-sm font-medium text-text-primary transition-colors hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
 
 export type ManualPrep = { outputId: string; platform: ManualPlatform; text: string };
 

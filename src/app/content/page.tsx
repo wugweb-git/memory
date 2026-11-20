@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
-import { Check } from "lucide-react";
 import { AppToastContainer } from "@/app/component/AppToastContainer";
 import "react-toastify/dist/ReactToastify.css";
 import { M3Button, M3Card, M3Page, M3State } from "@/components/ui/m3";
 import { EmptyState, Input, Skeleton } from "@/components/ui/primitives";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { UI_API, resolveUserId } from "@/lib/ui/contracts";
 import { apiRequest } from "@/lib/ui/api-client";
 import { AppShell } from "@/app/component/AppShell";
@@ -42,9 +42,9 @@ type Tab = "compose" | "live" | "drafts";
 const HANDLE = IDENTITY_CONFIG.HANDLE;
 
 const FIELD_CLS =
-  "w-full min-h-11 rounded-xl border border-border-primary bg-bg-elevated px-3 py-2 text-base text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50";
+  "w-full min-h-12 rounded-xl border border-border-primary bg-bg-elevated px-3 py-2 text-base text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50";
 const LINK_BTN =
-  "inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-semibold text-accent transition-colors hover:bg-bg-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
+  "inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-accent-ink transition-colors hover:bg-bg-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
 const LEAVE_MESSAGE = "You have unsaved changes to this draft. Discard them?";
 
 function platformLabel(value: string) {
@@ -77,12 +77,12 @@ function PlatformPreview({ platform, content }: { platform: string; content: str
           <div className="h-8 w-8 rounded-full bg-accent/20" aria-hidden="true" />
           <div>
             <p className="text-sm font-semibold text-text-primary">{HANDLE}</p>
-            <p className="text-2xs text-text-tertiary">LinkedIn, preview</p>
+            <p className="text-xs text-text-secondary">LinkedIn, preview</p>
           </div>
         </div>
         <p className="text-sm text-text-primary whitespace-pre-wrap leading-relaxed">
           {segs.map((seg, i) =>
-            seg.trim().startsWith("#") ? <span key={i} className="text-accent">{seg}</span> : <span key={i}>{seg}</span>,
+            seg.trim().startsWith("#") ? <span key={i} className="text-accent-ink">{seg}</span> : <span key={i}>{seg}</span>,
           )}
         </p>
       </div>
@@ -107,35 +107,25 @@ function PlatformPreview({ platform, content }: { platform: string; content: str
 function Stepper({ step }: { step: 1 | 2 | 3 }) {
   const steps = ["Pick a decision", "Edit the draft", "Publish"];
   return (
-    <ol className="flex items-center gap-2" aria-label="Progress">
-      {steps.map((label, i) => {
-        const n = i + 1;
-        const done = n < step;
-        const current = n === step;
-        return (
-          <li
-            key={label}
-            aria-current={current ? "step" : undefined}
-            className={`flex min-w-0 flex-1 flex-col items-center gap-1 text-center text-xs sm:flex-row sm:gap-2 sm:text-left ${current ? "font-semibold text-text-primary" : "text-text-tertiary"}`}
-          >
-            <span
-              aria-hidden="true"
-              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-2xs font-semibold ${
-                done
-                  ? "border-success bg-success text-bg-primary"
-                  : current
-                    ? "border-text-primary bg-text-primary text-bg-primary"
-                    : "border-border-primary text-text-tertiary"
-              }`}
+    <div aria-label="Progress" role="group" className="space-y-2">
+      <p className="text-sm font-medium text-text-primary">
+        Step {step} of {steps.length}: <span className="text-text-secondary">{steps[step - 1]}</span>
+      </p>
+      <ol className="grid grid-cols-3 gap-1.5">
+        {steps.map((label, i) => {
+          const n = i + 1;
+          return (
+            <li
+              key={label}
+              aria-current={n === step ? "step" : undefined}
+              className={`h-1.5 rounded-full ${n < step ? "bg-success" : n === step ? "bg-text-primary" : "bg-border-primary"}`}
             >
-              {done ? <Check size={12} strokeWidth={3} /> : n}
-            </span>
-            <span className="leading-snug sm:truncate">{label}</span>
-            <span className="sr-only">{done ? " (done)" : current ? " (current step)" : ""}</span>
-          </li>
-        );
-      })}
-    </ol>
+              <span className="sr-only">{`${label}${n < step ? " (done)" : n === step ? " (current step)" : ""}`}</span>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
   );
 }
 
@@ -186,9 +176,19 @@ export default function OutputStudioPage() {
     return () => window.removeEventListener("beforeunload", handler);
   }, [dirty, editDirty]);
 
-  /** True when it is safe to replace the draft in the editor. */
-  function canReplaceDraft() {
-    return !dirty || window.confirm(LEAVE_MESSAGE);
+  /** One styled confirmation for destructive actions (replaces window.confirm). */
+  const [confirmReq, setConfirmReq] = useState<{
+    title: string;
+    description: string;
+    confirmLabel: string;
+    cancelLabel: string;
+    run: () => void;
+  } | null>(null);
+
+  /** Runs `run` now when the draft is clean, otherwise after the user confirms discarding it. */
+  function guardDraft(run: () => void) {
+    if (!dirty) { run(); return; }
+    setConfirmReq({ title: "Discard unsaved changes?", description: LEAVE_MESSAGE, confirmLabel: "Discard changes", cancelLabel: "Keep editing", run });
   }
 
   const loadDrafts = useCallback(async () => {
@@ -243,9 +243,9 @@ export default function OutputStudioPage() {
     setLastSaved(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
   }
 
-  async function generate() {
+  async function generate(skipGuard = false) {
     if (!decisionId) { toast.error("Choose a decision first. Pick a recent one or paste its ID."); return; }
-    if (!canReplaceDraft()) return;
+    if (!skipGuard && dirty) { guardDraft(() => void generate(true)); return; }
     try {
       setLoading(true); setError(null);
       const json = await apiRequest<{ output_id?: string; content?: string }>(UI_API.outputGenerate, {
@@ -337,21 +337,27 @@ export default function OutputStudioPage() {
     } finally { setBusy(false); }
   }
 
-  function openDraft(d: Draft) {
-    if (!canReplaceDraft()) return;
+  function openDraft(d: Draft, skipGuard = false) {
+    if (!skipGuard && dirty) { guardDraft(() => openDraft(d, true)); return; }
     setOutputId(d.id); setContent(d.content); setSavedContent(d.content); setPlatform(d.platform);
     if (d.decisionId) setDecisionId(d.decisionId);
     setVersions([]); setLastSaved(null); setTab("compose");
   }
 
-  function startEdit(s: ProfileSection) {
-    if (editDirty && editingId !== s.id && !window.confirm("Discard your changes to the section you are editing?")) return;
+  function startEdit(s: ProfileSection, skipGuard = false) {
+    if (!skipGuard && editDirty && editingId !== s.id) {
+      setConfirmReq({ title: "Discard section changes?", description: "Your changes to the section you are editing will be lost.", confirmLabel: "Discard changes", cancelLabel: "Keep editing", run: () => startEdit(s, true) });
+      return;
+    }
     const body = sectionBody(s);
     setEditingId(s.id); setEditTitle(s.title); setEditBody(body);
     setEditOriginal({ title: s.title, body });
   }
   function cancelEdit() {
-    if (editDirty && !window.confirm("Discard your changes to this section?")) return;
+    if (editDirty) {
+      setConfirmReq({ title: "Discard section changes?", description: "Your edits to this section will be lost.", confirmLabel: "Discard changes", cancelLabel: "Keep editing", run: () => setEditingId(null) });
+      return;
+    }
     setEditingId(null);
   }
   async function saveEdit() {
@@ -370,8 +376,16 @@ export default function OutputStudioPage() {
       toast.error(e instanceof Error ? e.message : "Could not update the section. Try again.");
     } finally { setBusy(false); }
   }
+  function askUnpublish(s: ProfileSection) {
+    setConfirmReq({
+      title: "Remove from your public profile?",
+      description: `"${s.title}" will be removed from your public profile. This cannot be undone.`,
+      confirmLabel: "Remove section",
+      cancelLabel: "Keep section",
+      run: () => void unpublish(s),
+    });
+  }
   async function unpublish(s: ProfileSection) {
-    if (!confirm(`Remove "${s.title}" from your public profile? This cannot be undone.`)) return;
     try {
       setBusy(true);
       await apiRequest(`${profilePath(HANDLE, "sections")}?sectionId=${encodeURIComponent(s.id)}`, { method: "DELETE" });
@@ -385,7 +399,7 @@ export default function OutputStudioPage() {
   const words = useMemo(() => wordCount(content), [content]);
 
   const tabs: [Tab, string][] = [
-    ["compose", dirty ? "Compose (unsaved)" : "Compose"],
+    ["compose", "Compose"],
     ["live", `Live${sections.length ? ` (${sections.length})` : ""}`],
     ["drafts", `Drafts${drafts.length ? ` (${drafts.length})` : ""}`],
   ];
@@ -402,18 +416,24 @@ export default function OutputStudioPage() {
     <AppShell>
       <AppToastContainer position="bottom-right" theme="light" />
         <M3Page title="Output studio" subtitle="Write a draft from a decision, review it, then publish it to your public profile">
-          <div className="flex flex-wrap gap-2" role="group" aria-label="Output studio sections">
+          <div className="grid grid-cols-3 gap-2" role="group" aria-label="Output studio sections">
             {tabs.map(([id, label]) => (
               <button
                 key={id}
                 aria-pressed={tab === id}
                 type="button"
                 onClick={() => setTab(id)}
-                className={`min-h-11 px-4 rounded-xl text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                className={`min-h-12 px-2 rounded-xl text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                   tab === id ? "bg-text-primary text-bg-primary" : "border border-border-primary bg-bg-primary text-text-secondary hover:bg-bg-secondary"
                 }`}
               >
                 {label}
+                {id === "compose" && dirty ? (
+                  <>
+                    <span aria-hidden="true" className="ml-1.5 inline-block h-2 w-2 rounded-full bg-warning align-middle" />
+                    <span className="sr-only"> (unsaved changes)</span>
+                  </>
+                ) : null}
               </button>
             ))}
           </div>
@@ -438,7 +458,7 @@ export default function OutputStudioPage() {
                       value={decisionId}
                       onChange={(e) => setDecisionId(e.target.value)}
                     />
-                    <p id="compose-decision-hint" className="text-xs text-text-tertiary">
+                    <p id="compose-decision-hint" className="text-sm text-text-secondary">
                       The draft is written from this decision. We filled in your latest one.
                     </p>
                   </div>
@@ -474,15 +494,15 @@ export default function OutputStudioPage() {
                     </select>
                   </div>
                   {content ? (
-                    <M3Button tone="secondary" onClick={generate} disabled={loading || !decisionId}>
+                    <M3Button tone="secondary" onClick={() => generate()} disabled={loading || !decisionId}>
                       {loading ? "Generating…" : "Regenerate draft"}
                     </M3Button>
                   ) : (
-                    <M3Button onClick={generate} disabled={loading || !decisionId}>
+                    <M3Button onClick={() => generate()} disabled={loading || !decisionId}>
                       {loading ? "Generating…" : "Generate draft"}
                     </M3Button>
                   )}
-                  {loading ? <p role="status" className="text-xs text-text-tertiary">This can take up to 30 seconds.</p> : null}
+                  {loading ? <p role="status" className="text-sm text-text-secondary">This can take up to 30 seconds.</p> : null}
                   {error ? (
                     <div id="compose-error" role="alert" className="space-y-1">
                       <M3State state="error" message={`${error}. Check the decision ID and try again.`} />
@@ -536,7 +556,7 @@ export default function OutputStudioPage() {
                       onChange={(e) => setContent(e.target.value)}
                       onBlur={(e) => e.target.value && snapshot(e.target.value)}
                     />
-                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-text-tertiary">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-text-secondary">
                       <span>{words} words, {content.length} characters</span>
                       <span
                         role="status"
@@ -547,7 +567,7 @@ export default function OutputStudioPage() {
                       </span>
                     </div>
                     <div className="space-y-2 border-t border-border-secondary pt-3">
-                      <p className="text-xs text-text-tertiary">
+                      <p className="text-sm text-text-secondary">
                         {outputId
                           ? isManualPlatform(platform)
                             ? "3. Prepare to post gets the text ready to copy. You post it yourself, then mark it as posted. Your edits are saved first."
@@ -579,7 +599,7 @@ export default function OutputStudioPage() {
                       <ul className="space-y-1">
                         {versions.map((v) => (
                           <li key={v.ts} className="flex items-center justify-between gap-3">
-                            <span className="text-xs text-text-tertiary truncate">
+                            <span className="text-sm text-text-secondary truncate">
                               {new Date(v.ts).toLocaleTimeString()}, {wordCount(v.content)} words
                             </span>
                             <button
@@ -612,9 +632,9 @@ export default function OutputStudioPage() {
                   </div>
                 }
               >
-                <p className="text-xs text-text-tertiary">
+                <p className="text-sm text-text-secondary">
                   This is what visitors see at{" "}
-                  <Link href={`/p/${HANDLE}`} target="_blank" rel="noopener noreferrer" className="text-accent underline">/p/{HANDLE}<span className="sr-only"> (opens in a new tab)</span></Link>. Edit or remove sections here.
+                  <Link href={`/p/${HANDLE}`} target="_blank" rel="noopener noreferrer" className="text-accent-ink underline underline-offset-2">/p/{HANDLE}<span className="sr-only"> (opens in a new tab)</span></Link>. Edit or remove sections here.
                 </p>
                 {liveLoading && sections.length === 0 && !liveError ? (
                   <div className="space-y-2" aria-hidden="true">
@@ -645,20 +665,20 @@ export default function OutputStudioPage() {
                             <div className="flex flex-wrap items-center gap-2">
                               <M3Button onClick={saveEdit} disabled={busy || !editDirty}>{busy ? "Saving…" : "Save changes"}</M3Button>
                               <M3Button tone="secondary" onClick={cancelEdit}>Cancel</M3Button>
-                              {editDirty ? <span role="status" className="text-xs font-semibold text-warning">Unsaved changes</span> : null}
+                              {editDirty ? <span role="status" className="text-sm font-semibold text-warning">Unsaved changes</span> : null}
                             </div>
                           </div>
                         ) : (
                           <>
                             <div className="flex items-center justify-between gap-2">
-                              <span className="text-xs font-medium text-success">{s.type}</span>
-                              <span className="text-xs text-text-tertiary">{relTime(s.updatedAt ?? s.createdAt)}</span>
+                              <span className="text-sm font-medium text-success">{s.type}</span>
+                              <span className="text-sm text-text-secondary">{relTime(s.updatedAt ?? s.createdAt)}</span>
                             </div>
-                            <p className="text-sm font-semibold text-text-primary mt-1">{s.title}</p>
-                            <p className="text-sm text-text-secondary line-clamp-2">{sectionBody(s).slice(0, 180)}</p>
-                            <div className="flex gap-1 mt-1 -ml-2">
+                            <p className="text-base font-medium text-text-primary mt-1">{s.title}</p>
+                            <p className="text-base text-text-secondary line-clamp-2">{sectionBody(s).slice(0, 180)}</p>
+                            <div className="flex gap-1 mt-1 -ml-3">
                               <button type="button" onClick={() => startEdit(s)} aria-label={`Edit ${s.title}`} className={LINK_BTN}>Edit</button>
-                              <button type="button" onClick={() => unpublish(s)} disabled={busy} aria-label={`Remove ${s.title}`} className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-semibold text-danger transition-colors hover:bg-bg-tertiary disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">Remove</button>
+                              <button type="button" onClick={() => askUnpublish(s)} disabled={busy} aria-label={`Remove ${s.title}`} className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-danger transition-colors hover:bg-bg-tertiary disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">Remove</button>
                             </div>
                           </>
                         )}
@@ -709,13 +729,13 @@ export default function OutputStudioPage() {
                         type="button"
                         onClick={() => openDraft(d)}
                         aria-label={`Open ${platformLabel(d.platform)} draft from ${relTime(d.createdAt)}`}
-                        className="w-full min-h-11 text-left rounded-2xl border border-border-secondary bg-bg-primary p-3 transition-colors hover:border-border-primary hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                        className="w-full min-h-16 text-left rounded-2xl border border-border-secondary bg-bg-primary p-3 transition-colors hover:border-border-primary hover:bg-bg-secondary active:bg-bg-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                       >
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-medium text-accent">{platformLabel(d.platform)}</span>
-                          <span className="text-xs text-text-tertiary">{relTime(d.createdAt)}</span>
+                          <span className="text-sm font-medium text-accent-ink">{platformLabel(d.platform)}</span>
+                          <span className="text-sm text-text-secondary">{relTime(d.createdAt)}</span>
                         </div>
-                        <p className="text-sm text-text-secondary mt-1 line-clamp-2">{String(d.content ?? "").slice(0, 160)}</p>
+                        <p className="text-base text-text-secondary mt-1 line-clamp-2">{String(d.content ?? "").slice(0, 160)}</p>
                       </button>
                     </li>
                   ))}
@@ -724,6 +744,20 @@ export default function OutputStudioPage() {
             </M3Card>
           )}
         </M3Page>
+      <ConfirmDialog
+        open={confirmReq !== null}
+        title={confirmReq?.title ?? ""}
+        description={confirmReq?.description ?? ""}
+        confirmLabel={confirmReq?.confirmLabel ?? "Confirm"}
+        cancelLabel={confirmReq?.cancelLabel}
+        tone="danger"
+        onConfirm={() => {
+          const req = confirmReq;
+          setConfirmReq(null);
+          req?.run();
+        }}
+        onCancel={() => setConfirmReq(null)}
+      />
     </AppShell>
   );
 }

@@ -53,13 +53,13 @@ export function SignalTimeline({ signals, loading }: SignalTimelineProps) {
             <li key={signal.id} className="p-3 hover:bg-bg-tertiary transition-colors flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 <div className={`p-1.5 rounded-full bg-bg-tertiary ${
-                  signal.type === 'work_activity' || signal.type === 'learning' ? 'text-accent' : 'text-text-tertiary'
+                  signal.type === 'work_activity' || signal.type === 'learning' ? 'text-accent-ink' : 'text-text-tertiary'
                 }`}>
                   <Activity aria-hidden="true" className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-text-primary break-words">{signal.category}</p>
-                  <p className="text-2xs text-text-tertiary font-mono break-words">{signal.type}</p>
+                  <p className="text-xs text-text-tertiary font-mono break-words">{signal.type}</p>
                 </div>
               </div>
 
@@ -69,10 +69,10 @@ export function SignalTimeline({ signals, loading }: SignalTimelineProps) {
                     <TrendingUp aria-hidden="true" className="w-3 h-3 text-success" />
                     <span className="text-xs font-mono text-success">{relative}</span>
                   </div>
-                  <p className="text-2xs text-text-tertiary">Relative intensity</p>
+                  <p className="text-xs text-text-tertiary">Relative intensity</p>
                 </div>
 
-                <span className="px-2 py-0.5 rounded-full bg-bg-secondary border border-border-secondary text-2xs text-text-tertiary font-semibold">
+                <span className="px-2 py-0.5 rounded-full bg-bg-secondary border border-border-secondary text-xs text-text-tertiary font-semibold">
                   {conf}% confidence
                 </span>
               </div>

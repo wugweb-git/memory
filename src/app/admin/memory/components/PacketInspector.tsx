@@ -133,8 +133,8 @@ export default function PacketInspector({ packetId, onClose }: PacketInspectorPr
               <Activity className="w-6 h-6 text-accent" />
             </div>
             <div className="min-w-0">
-              <h2 id="packet-inspector-title" className="text-xl font-bold text-text-primary">Packet details</h2>
-              <p className="text-2xs text-text-tertiary font-mono mt-1 break-all">ID: {packetId}</p>
+              <h2 id="packet-inspector-title" className="text-base font-semibold text-text-primary">Packet details</h2>
+              <p className="text-xs text-text-tertiary font-mono mt-1 break-all">ID: {packetId}</p>
             </div>
           </div>
           <button
@@ -189,7 +189,7 @@ export default function PacketInspector({ packetId, onClose }: PacketInspectorPr
                   id="packet-tabpanel"
                   aria-labelledby={`packet-tab-${activeTab}`}
                   tabIndex={0}
-                  className="bg-bg-secondary rounded-2xl border border-border-secondary p-4 sm:p-6 font-mono text-2xs overflow-x-auto min-h-[240px] lg:min-h-[500px]"
+                  className="bg-bg-secondary rounded-2xl border border-border-secondary p-4 sm:p-6 font-mono text-xs overflow-x-auto min-h-[240px] lg:min-h-[500px]"
                 >
                   {loading ? (
                     <p role="status" className="text-text-tertiary">Loading packet…</p>
@@ -201,7 +201,7 @@ export default function PacketInspector({ packetId, onClose }: PacketInspectorPr
                     </pre>
                   )}
                 </div>
-                <p className="text-2xs text-text-tertiary">Read-only view of the stored packet.</p>
+                <p className="text-xs text-text-tertiary">Read-only view of the stored packet.</p>
               </div>
 
               <div className="col-span-12 min-w-0 lg:col-span-7 space-y-10">

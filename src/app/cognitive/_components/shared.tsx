@@ -5,6 +5,8 @@ import { AlertCircle, CheckCircle, Loader2, RefreshCw } from 'lucide-react';
 import { resolveUserId } from '@/config/identity';
 
 /* ─── api helper ─────────────────────────────────────────── */
+export const REQUEST_TIMEOUT_MS = 60_000;
+
 /** Plain-language message for statuses the user can act on; null to fall through to the server's message. */
 export function friendlyStatus(status: number, serverMessage?: string | null): string | null {
   if (status === 401) return 'Your session has ended. Sign in again, then retry.';
@@ -17,17 +19,22 @@ export function friendlyStatus(status: number, serverMessage?: string | null): s
 
 export async function postJson<T = any>(url: string, body: Record<string, unknown>): Promise<T> {
   let res: Response;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
   try {
     res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      signal: ctrl.signal,
     });
-  } catch {
+  } catch (e) {
+    clearTimeout(timer);
+    if ((e as Error)?.name === 'AbortError') throw new Error('This is taking too long. Try again in a moment.');
     throw new Error('Connection failure. Check your network and try again.');
   }
   let data: any = null;
-  try { data = await res.json(); } catch { /* non-json */ }
+  try { data = await res.json(); } catch { /* non-json */ } finally { clearTimeout(timer); }
   if (!res.ok || data?.error) {
     throw new Error(friendlyStatus(res.status, typeof data?.message === 'string' ? data.message : null) ?? data?.message ?? (typeof data?.error === 'string' ? data.error : null) ?? `The request failed (error ${res.status}). Try again.`);
   }

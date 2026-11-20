@@ -85,7 +85,7 @@ export const DecideTab: React.FC<{ mode: Mode }> = ({ mode }) => {
       {!loading && output ? (
         <div className="space-y-4">
           <div className="rounded-2xl border border-accent/30 bg-accent/5 p-5 space-y-4">
-            <div className="flex items-center gap-2 text-accent">
+            <div className="flex items-center gap-2 text-accent-ink">
               <Compass size={16} aria-hidden="true" />
               <Eyebrow>Your direction</Eyebrow>
             </div>

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { M3Card, M3Page, M3State } from '@/components/ui/m3';
+import { M3Page, M3State } from '@/components/ui/m3';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
 import {
   applyMark,
@@ -16,6 +16,7 @@ import {
   toggleSelectAll,
   type PublicNote,
 } from '@/lib/memory/public-curation';
+import { ActionBar, Card, Section } from '@/components/ui/primitives';
 
 const ENDPOINT = API_ENDPOINTS.memory.public.path;
 const PAGE_LIMIT = 100;
@@ -100,140 +101,141 @@ export default function PublicNotesPage() {
 
   const count = notes?.length ?? 0;
 
-  return (
-    <>
-      <div>
-        <M3Page title="Public notes" subtitle="Choose which memory notes the public Ask chat may quote. Owner only.">
-          <p className="text-sm">
-            <Link href="/admin" className="text-accent underline underline-offset-2">Back to admin</Link>
-          </p>
-
-          <M3Card title={notes ? summarise(notes) : 'Notes'}>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-              <label className="flex items-center gap-2 text-sm text-text-primary min-h-11">
-                <input
-                  ref={selectAllRef}
-                  type="checkbox"
-                  className="h-5 w-5 accent-accent"
-                  checked={all === 'all'}
-                  disabled={count === 0 || busy}
-                  onChange={() => notes && setSelected(toggleSelectAll(notes, selected))}
-                />
-                Select all on page
-              </label>
-              <label className="flex items-center gap-2 text-sm text-text-primary min-h-11">
-                <input
-                  type="checkbox"
-                  className="h-5 w-5 accent-accent"
-                  checked={onlyPublic}
-                  disabled={busy}
-                  onChange={(e) => setOnlyPublic(e.target.checked)}
-                />
-                Public only
-              </label>
-            </div>
-            {/* Bulk actions stay in reach on phones while you scroll the list */}
-            <div className="sticky bottom-20 z-20 space-y-2 rounded-2xl border border-border-primary bg-bg-elevated p-3 md:bottom-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="mr-auto text-sm font-medium text-text-primary" aria-live="polite">
-                  {selected.size === 0 ? 'Select notes to change who can see them' : `${selected.size} selected`}
-                </span>
-                <button
-                  type="button"
-                  className={`${buttonBase} border border-border-primary text-text-primary bg-bg-primary`}
-                  disabled={busy || selected.size === 0}
-                  onClick={() => { setConfirmingPublic(false); mark(false); }}
-                >
-                  Make private
-                </button>
-                <button
-                  type="button"
-                  className={`${buttonBase} bg-accent text-bg-elevated`}
-                  disabled={busy || selected.size === 0}
-                  aria-expanded={confirmingPublic}
-                  onClick={() => setConfirmingPublic(true)}
-                >
-                  Make public
-                </button>
-              </div>
-              {confirmingPublic && selected.size > 0 && (
-                <div role="group" aria-label="Confirm making notes public" className="flex flex-wrap items-center gap-2 rounded-xl border border-warning/40 bg-warning/5 p-3">
-                  <p className="mr-auto text-sm text-text-primary">
-                    Make {selected.size} {selected.size === 1 ? 'note' : 'notes'} public? The public Ask chat will be able to quote {selected.size === 1 ? 'it' : 'them'}.
-                  </p>
-                  <button type="button" className={`${buttonBase} border border-border-primary text-text-primary bg-bg-primary`} onClick={() => setConfirmingPublic(false)}>
-                    Keep private
-                  </button>
-                  <button type="button" autoFocus className={`${buttonBase} bg-accent text-bg-elevated`} disabled={busy} onClick={() => { setConfirmingPublic(false); mark(true); }}>
-                    Make public
-                  </button>
-                </div>
-              )}
-            </div>
-            <p
-              role={status?.tone === 'error' ? 'alert' : 'status'}
-              className={`text-sm ${status?.tone === 'error' ? 'text-danger' : 'text-success'} ${status ? '' : 'sr-only'}`}
-            >
-              {status?.text ?? ''}
-            </p>
-
-            {loadError ? (
-              <div className="space-y-2">
-                <M3State state="error" message={loadError} />
-                <button type="button" className={`${buttonBase} border border-border-primary text-text-primary`} onClick={load}>
-                  Try again
-                </button>
-              </div>
-            ) : notes === null ? (
-              <M3State state="loading" message="Loading notes…" />
-            ) : notes.length === 0 ? (
-              <M3State
-                state="empty"
-                message={onlyPublic ? 'No public notes yet. Turn off "Public only" to choose some.' : 'No memory notes yet. Ingest something from the buffer and it will appear here.'}
-              />
-            ) : (
-              <ul className="divide-y divide-border-secondary" aria-label="Memory notes">
-                {notes.map((n) => {
-                  const labelId = `note-${n.id}`;
-                  return (
-                    <li key={n.id} className="py-3">
-                      <div className="flex items-start gap-3">
-                        <input
-                          type="checkbox"
-                          className="mt-1 h-5 w-5 shrink-0 accent-accent"
-                          checked={selected.has(n.id)}
-                          disabled={busy}
-                          onChange={() => setSelected((s) => toggleId(s, n.id))}
-                          aria-labelledby={labelId}
-                        />
-                        <div className="min-w-0 flex-1">
-                          <p id={labelId} className="text-sm text-text-primary break-words">
-                            {n.preview || '(empty note)'}
-                          </p>
-                          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-text-tertiary">
-                            <span>{n.type}</span>
-                            <span aria-hidden="true">/</span>
-                            <span className="break-all">{n.source}</span>
-                            <span aria-hidden="true">/</span>
-                            <span>{formatNoteDate(n.ingestion_time)}</span>
-                            <span
-                              className={`rounded-md border px-2 py-0.5 text-2xs font-medium ${
-                                n.is_public ? 'border-success text-success' : 'border-border-primary text-text-secondary'
-                              }`}
-                            >
-                              {n.is_public ? 'Public' : 'Private'}
-                            </span>
-                          </p>
-                        </div>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </M3Card>
-        </M3Page>
+  const bulkBar = (
+    <ActionBar className="flex-col items-stretch justify-start">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="mr-auto text-sm font-medium text-text-primary" aria-live="polite">
+          {selected.size === 0 ? 'Select notes to change who can see them' : `${selected.size} selected`}
+        </span>
+        <button
+          type="button"
+          className={`${buttonBase} border border-border-primary text-text-primary bg-bg-primary`}
+          disabled={busy || selected.size === 0}
+          onClick={() => { setConfirmingPublic(false); mark(false); }}
+        >
+          Make private
+        </button>
+        <button
+          type="button"
+          className={`${buttonBase} bg-text-primary text-bg-primary`}
+          disabled={busy || selected.size === 0}
+          aria-expanded={confirmingPublic}
+          onClick={() => setConfirmingPublic(true)}
+        >
+          Make public
+        </button>
       </div>
-    </>
+      {confirmingPublic && selected.size > 0 && (
+        <div role="group" aria-label="Confirm making notes public" className="flex flex-wrap items-center gap-2 rounded-xl border border-warning/40 bg-warning/5 p-3">
+          <p className="mr-auto text-sm text-text-primary">
+            Make {selected.size} {selected.size === 1 ? 'note' : 'notes'} public? The public Ask chat will be able to quote {selected.size === 1 ? 'it' : 'them'}.
+          </p>
+          <button type="button" className={`${buttonBase} border border-border-primary text-text-primary bg-bg-primary`} onClick={() => setConfirmingPublic(false)}>
+            Keep private
+          </button>
+          <button type="button" autoFocus className={`${buttonBase} bg-text-primary text-bg-primary`} disabled={busy} onClick={() => { setConfirmingPublic(false); mark(true); }}>
+            Make public
+          </button>
+        </div>
+      )}
+    </ActionBar>
+  );
+
+  return (
+    <M3Page title="Public notes" subtitle="Choose which memory notes the public Ask chat may quote. Owner only.">
+      <Link href="/admin" className="hidden min-h-11 items-center text-sm font-medium text-accent-ink underline md:inline-flex underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">Back to admin</Link>
+
+      <Section title={notes ? summarise(notes) : 'Notes'}>
+<Card className="overflow-hidden p-0">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4">
+          <label className="flex min-h-11 items-center gap-2 text-base text-text-primary">
+            <input
+              ref={selectAllRef}
+              type="checkbox"
+              className="h-5 w-5 accent-accent"
+              checked={all === 'all'}
+              disabled={count === 0 || busy}
+              onChange={() => notes && setSelected(toggleSelectAll(notes, selected))}
+            />
+            Select all on page
+          </label>
+          <label className="flex min-h-11 items-center gap-2 text-base text-text-primary">
+            <input
+              type="checkbox"
+              className="h-5 w-5 accent-accent"
+              checked={onlyPublic}
+              disabled={busy}
+              onChange={(e) => setOnlyPublic(e.target.checked)}
+            />
+            Public only
+          </label>
+        </div>
+        <p
+          role={status?.tone === 'error' ? 'alert' : 'status'}
+          className={`px-4 text-sm ${status?.tone === 'error' ? 'text-danger' : 'text-success'} ${status ? 'pb-3' : 'sr-only'}`}
+        >
+          {status?.text ?? ''}
+        </p>
+
+        {loadError ? (
+          <div className="space-y-2 border-t border-border-secondary p-4">
+            <M3State state="error" message={loadError} />
+            <button type="button" className={`${buttonBase} border border-border-primary text-text-primary`} onClick={load}>
+              Try again
+            </button>
+          </div>
+        ) : notes === null ? (
+          <div className="border-t border-border-secondary p-4"><M3State state="loading" message="Loading notes…" /></div>
+        ) : notes.length === 0 ? (
+          <div className="border-t border-border-secondary p-4">
+            <M3State
+              state="empty"
+              message={onlyPublic ? 'No public notes yet. Turn off "Public only" to choose some.' : 'No memory notes yet. Ingest something from the buffer and it will appear here.'}
+            />
+          </div>
+        ) : (
+          <ul className="divide-y divide-border-secondary border-t border-border-secondary" aria-label="Memory notes">
+            {notes.map((n) => {
+              const labelId = `note-${n.id}`;
+              return (
+                <li key={n.id}>
+                  <label className="flex min-h-14 cursor-pointer items-start gap-3 px-4 py-3 hover:bg-bg-secondary has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-inset has-[:focus-visible]:ring-accent">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 h-5 w-5 shrink-0 accent-accent"
+                      checked={selected.has(n.id)}
+                      disabled={busy}
+                      onChange={() => setSelected((s) => toggleId(s, n.id))}
+                      aria-labelledby={labelId}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p id={labelId} className="text-base text-text-primary break-words">
+                        {n.preview || '(empty note)'}
+                      </p>
+                      <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-text-tertiary">
+                        <span>{n.type}</span>
+                        <span aria-hidden="true">/</span>
+                        <span className="break-all">{n.source}</span>
+                        <span aria-hidden="true">/</span>
+                        <span>{formatNoteDate(n.ingestion_time)}</span>
+                        <span
+                          className={`rounded-md border px-2 py-0.5 text-xs font-medium ${
+                            n.is_public ? 'border-success text-success' : 'border-border-primary text-text-secondary'
+                          }`}
+                        >
+                          {n.is_public ? 'Public' : 'Private'}
+                        </span>
+                      </p>
+                    </div>
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Card>
+</Section>
+      {bulkBar}
+    </M3Page>
   );
 }

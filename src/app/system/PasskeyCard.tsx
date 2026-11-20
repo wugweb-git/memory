@@ -1,8 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { M3Card, M3State } from '@/components/ui/m3';
-import { EmptyState, Skeleton } from '@/components/ui/primitives';
+import { M3State } from '@/components/ui/m3';
+import { Card, EmptyState, Section, Skeleton } from '@/components/ui/primitives';
+import { ConfirmDialog, useConfirm } from '@/components/ui/confirm-dialog';
 import { UI_API } from '@/lib/api/endpoints';
 import { platformPasskeySupported, registerThisDevice } from '@/lib/passkey-client';
 
@@ -58,8 +59,10 @@ export function PasskeyCard() {
     }
   }
 
+  const removeConfirm = useConfirm<Device>();
+
   async function remove(d: Device) {
-    if (!window.confirm(`Remove ${d.deviceName}? It will no longer be able to sign in with biometrics.`)) return;
+    removeConfirm.close();
     setRemoving(d.id);
     setError(null);
     setStatus(`Removing ${d.deviceName}`);
@@ -83,10 +86,8 @@ export function PasskeyCard() {
   }
 
   return (
-    <M3Card title="Passkeys">
-      <p className="text-sm text-text-secondary">
-        Add this device to sign in with Face ID, a fingerprint or Windows Hello instead of a password.
-      </p>
+    <Section title="Passkeys" description="Add this device to sign in with Face ID, a fingerprint or Windows Hello instead of a password.">
+<Card className="space-y-3">
 
       {devices === null ? (
         loadError ? (
@@ -108,16 +109,16 @@ export function PasskeyCard() {
       ) : (
         <ul className="divide-y divide-border-secondary">
           {devices.map((d) => (
-            <li key={d.id} className="flex items-center justify-between gap-3 py-2">
+            <li key={d.id} className="flex min-h-14 items-center justify-between gap-3 py-2">
               <div className="min-w-0">
-                <p className="text-sm font-medium text-text-primary truncate">{d.deviceName}</p>
-                <p className="text-2xs text-text-tertiary">
+                <p className="text-base font-medium text-text-primary truncate">{d.deviceName}</p>
+                <p className="text-sm text-text-tertiary">
                   Added {fmt(d.createdAt)}, last used {fmt(d.lastUsedAt)}
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => remove(d)}
+                onClick={() => removeConfirm.ask(d)}
                 disabled={removing === d.id}
                 aria-label={`Remove ${d.deviceName}`}
                 className="min-h-11 shrink-0 px-4 rounded-xl border border-border-primary text-sm font-semibold text-danger disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
@@ -143,7 +144,7 @@ export function PasskeyCard() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="For example, My phone"
-            className="w-full min-h-11 rounded-xl border border-border-primary bg-bg-elevated px-3 py-2 text-md text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="w-full min-h-12 rounded-xl border border-border-primary bg-bg-elevated px-4 py-2 text-md text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           />
           <button
             type="button"
@@ -158,6 +159,23 @@ export function PasskeyCard() {
 
       <p role="status" aria-live="polite" className="text-sm text-success empty:hidden">{status}</p>
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}
-    </M3Card>
+      <ConfirmDialog
+        open={removeConfirm.open}
+        title="Remove this device?"
+        description={
+          removeConfirm.pending
+            ? `${removeConfirm.pending.deviceName} will no longer be able to sign in with biometrics. You can add it again later.`
+            : ''
+        }
+        confirmLabel="Remove device"
+        cancelLabel="Keep device"
+        tone="danger"
+        onConfirm={() => {
+          if (removeConfirm.pending) void remove(removeConfirm.pending);
+        }}
+        onCancel={removeConfirm.close}
+      />
+    </Card>
+</Section>
   );
 }

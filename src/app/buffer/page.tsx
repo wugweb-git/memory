@@ -7,7 +7,7 @@ import { postBlobAction } from '@/lib/ui/blob';
 import { AppToastContainer } from '@/app/component/AppToastContainer';
 import { toast } from 'react-toastify';
 import { describePromoteOutcome } from './promote-outcome';
-import { Card, EmptyState, Skeleton } from '@/components/ui/primitives';
+import { Card, EmptyState, Skeleton, PageHeader } from '@/components/ui/primitives';
 import {
   Trash2,
   CheckCircle2,
@@ -84,7 +84,7 @@ function statusColor(status: string) {
 function stateColor(state: string) {
   switch (state) {
     case 'reviewed':
-    case 'promotable': return 'bg-accent/10 text-accent';
+    case 'promotable': return 'bg-accent/10 text-accent-ink';
     case 'promoted': return 'bg-success/10 text-success';
     case 'rejected': return 'bg-danger/10 text-danger';
     case 'expired': return 'bg-bg-secondary text-text-tertiary';
@@ -271,9 +271,9 @@ export default function BufferControlSurface() {
     </div>
   ) : loadError ? (
     <div role="alert" className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-danger/40 px-6 py-10 text-center">
-      <p className="text-sm font-semibold text-danger">{loadError}</p>
-      <p className="max-w-sm text-xs text-text-secondary">This is a connection problem, not an empty buffer. Your items are safe.</p>
-      <button type="button" onClick={retry} className={`min-h-11 rounded-xl border border-danger/40 px-5 text-sm font-semibold text-danger hover:bg-danger/5 ${focusRing}`}>
+      <p className="text-base font-semibold text-danger">{loadError}</p>
+      <p className="max-w-sm text-sm text-text-secondary">This is a connection problem, not an empty buffer. Your items are safe.</p>
+      <button type="button" onClick={retry} className={`min-h-12 rounded-xl border border-danger/40 px-5 text-sm font-semibold text-danger hover:bg-danger/5 ${focusRing}`}>
         Try again
       </button>
     </div>
@@ -282,7 +282,7 @@ export default function BufferControlSurface() {
       title="No loaded items match your search"
       hint="Search only looks at the items already loaded in this view. Clear the search or switch filters."
       action={
-        <button type="button" onClick={() => setSearch('')} className={`min-h-11 rounded-xl border border-border-primary px-5 text-sm font-semibold text-text-primary hover:bg-bg-secondary ${focusRing}`}>
+        <button type="button" onClick={() => setSearch('')} className={`min-h-12 rounded-xl border border-border-primary px-5 text-sm font-semibold text-text-primary hover:bg-bg-secondary ${focusRing}`}>
           Clear search
         </button>
       }
@@ -292,8 +292,8 @@ export default function BufferControlSurface() {
       title={activeTab === 'all' ? 'The buffer is empty' : `Nothing in "${TABS.find(t => t.id === activeTab)?.label}"`}
       hint={activeTab === 'all' ? 'Upload a file, record a voice note or paste a link. Link, voice and device captures land here for review; uploads, files and imports go straight through the ingestion gate.' : 'Try another filter, or add something new to the buffer.'}
       action={
-        <a href="#capture" className={`inline-flex min-h-11 items-center gap-2 rounded-xl bg-text-primary px-5 text-sm font-semibold text-bg-primary hover:bg-accent ${focusRing}`}>
-          <Plus size={14} aria-hidden="true" /> Add an item
+        <a href="#capture" className={`inline-flex min-h-12 items-center gap-2 rounded-xl bg-text-primary px-5 text-sm font-semibold text-bg-primary hover:bg-accent ${focusRing}`}>
+          <Plus size={16} aria-hidden="true" /> Add an item
         </a>
       }
     />
@@ -303,14 +303,14 @@ export default function BufferControlSurface() {
     <Card className="motion-safe:animate-in motion-safe:fade-in space-y-6 p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-base font-semibold text-text-primary">Item details</h2>
-          <p className="mt-0.5 break-all font-mono text-2xs text-text-tertiary">{selectedItem.id}</p>
+          <h2 className="text-lg font-semibold text-text-primary">Item details</h2>
+          <p className="mt-0.5 break-all font-mono text-xs text-text-secondary">{selectedItem.id}</p>
         </div>
         <button
           type="button"
           aria-label="Close details"
           onClick={() => setSelectedId(null)}
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text-tertiary transition-colors hover:bg-bg-secondary hover:text-text-primary ${focusRing}`}
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-bg-secondary hover:text-text-primary ${focusRing}`}
         >
           <X size={18} aria-hidden="true" />
         </button>
@@ -318,7 +318,7 @@ export default function BufferControlSurface() {
 
       {provenance && (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border-secondary bg-bg-secondary/40 p-3">
-          <span className="text-xs font-semibold text-text-secondary">Authenticity check</span>
+          <span className="text-sm font-semibold text-text-secondary">Authenticity check</span>
           <span className={`rounded-full border px-2.5 py-1 text-xs font-medium ${
             provenance.reason === 'trusted' ? 'border-success/30 bg-success/5 text-success' : 'border-warning/30 bg-warning/5 text-warning'
           }`}>
@@ -328,14 +328,14 @@ export default function BufferControlSurface() {
       )}
 
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-text-primary">Review</h3>
+        <h3 className="text-base font-semibold text-text-primary">Review</h3>
         {actionError && <p role="alert" className="text-sm text-danger">{actionError}</p>}
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <button
             type="button"
             disabled={!!busyAction}
             onClick={() => handleAction(selectedItem.id, 'review')}
-            className={`flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border-primary px-4 text-sm font-medium text-text-primary transition-colors hover:bg-bg-secondary disabled:opacity-50 ${focusRing}`}
+            className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border border-border-primary px-4 text-sm font-medium text-text-primary transition-colors hover:bg-bg-secondary disabled:opacity-50 ${focusRing}`}
           >
             <CheckCircle2 size={16} aria-hidden="true" /> {busyAction === 'review' ? 'Saving…' : 'Mark reviewed'}
           </button>
@@ -343,7 +343,7 @@ export default function BufferControlSurface() {
             type="button"
             disabled={!!busyAction}
             onClick={() => handleAction(selectedItem.id, 'promotable')}
-            className={`flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border-primary px-4 text-sm font-medium text-text-primary transition-colors hover:bg-bg-secondary disabled:opacity-50 ${focusRing}`}
+            className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border border-border-primary px-4 text-sm font-medium text-text-primary transition-colors hover:bg-bg-secondary disabled:opacity-50 ${focusRing}`}
           >
             <ChevronRight size={16} aria-hidden="true" /> {busyAction === 'promotable' ? 'Saving…' : 'Mark ready to promote'}
           </button>
@@ -351,7 +351,7 @@ export default function BufferControlSurface() {
             type="button"
             disabled={!!busyAction}
             onClick={() => handleAction(selectedItem.id, 'promote')}
-            className={`flex min-h-11 items-center justify-center gap-2 rounded-xl bg-text-primary px-4 text-sm font-semibold text-bg-primary transition-colors hover:bg-accent disabled:opacity-50 sm:col-span-2 ${focusRing}`}
+            className={`flex min-h-12 items-center justify-center gap-2 rounded-xl bg-text-primary px-4 text-sm font-semibold text-bg-primary transition-colors hover:bg-accent disabled:opacity-50 sm:col-span-2 ${focusRing}`}
           >
             <RefreshCw size={16} aria-hidden="true" className={busyAction === 'promote' ? 'motion-safe:animate-spin' : ''} /> {busyAction === 'promote' ? 'Promoting…' : 'Promote to memory'}
           </button>
@@ -359,18 +359,18 @@ export default function BufferControlSurface() {
       </div>
 
       <div className="space-y-3 border-t border-border-secondary pt-5">
-        <h3 className="text-sm font-semibold text-danger">Remove</h3>
+        <h3 className="text-base font-semibold text-danger">Remove</h3>
         {confirmingReject ? (
           <div role="group" aria-label="Confirm purge" className="space-y-3 rounded-xl border border-danger/30 bg-danger/5 p-4">
             <p className="text-sm font-medium text-text-primary">Purge this item?</p>
-            <p className="text-xs text-text-secondary">It is deleted from the buffer for good and can&apos;t be recovered.</p>
+            <p className="text-sm text-text-secondary">It is deleted from the buffer for good and can&apos;t be recovered.</p>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 autoFocus
                 disabled={!!busyAction}
                 onClick={() => setConfirmingReject(false)}
-                className={`min-h-11 rounded-xl border border-border-primary px-4 text-sm font-medium text-text-primary hover:bg-bg-secondary disabled:opacity-50 ${focusRing}`}
+                className={`min-h-12 rounded-xl border border-border-primary px-4 text-sm font-medium text-text-primary hover:bg-bg-secondary disabled:opacity-50 ${focusRing}`}
               >
                 Keep item
               </button>
@@ -378,7 +378,7 @@ export default function BufferControlSurface() {
                 type="button"
                 disabled={!!busyAction}
                 onClick={() => handleAction(selectedItem.id, 'reject')}
-                className={`flex min-h-11 items-center justify-center gap-2 rounded-xl bg-danger px-4 text-sm font-semibold text-bg-primary hover:opacity-90 disabled:opacity-50 ${focusRing}`}
+                className={`flex min-h-12 items-center justify-center gap-2 rounded-xl bg-danger px-4 text-sm font-semibold text-bg-primary hover:opacity-90 disabled:opacity-50 ${focusRing}`}
               >
                 <Trash2 size={16} aria-hidden="true" /> {busyAction === 'reject' ? 'Purging…' : 'Purge item'}
               </button>
@@ -397,7 +397,7 @@ export default function BufferControlSurface() {
       </div>
 
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-text-primary">Payload</h3>
+        <h3 className="text-base font-semibold text-text-primary">Payload</h3>
         <pre tabIndex={0} aria-label="Item payload" className={`max-h-64 overflow-auto rounded-xl bg-bg-primary p-4 font-mono text-xs leading-relaxed text-text-secondary ${focusRing}`}>
           {JSON.stringify(selectedItem.raw_payload ?? null, null, 2)}
         </pre>
@@ -410,64 +410,64 @@ export default function BufferControlSurface() {
       <AppToastContainer position="top-center" theme="light" />
       <div className={`mx-auto w-full max-w-7xl ${showAlertStrip ? 'pb-24' : ''}`}>
         {/* Header and capacity */}
-        <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-text-primary">Buffer</h1>
-            <p className="mt-1 text-sm text-text-tertiary">Review what is waiting before it becomes memory.</p>
-          </div>
-          <div className="flex w-full items-center gap-3 sm:w-auto">
-            <a
-              href="#capture"
-              className={`inline-flex min-h-11 items-center gap-2 rounded-full bg-text-primary px-5 text-sm font-semibold text-bg-primary transition-colors hover:bg-accent lg:hidden ${focusRing}`}
-            >
-              <Plus size={14} aria-hidden="true" /> Add item
-            </a>
-            <div className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-border-primary bg-bg-elevated px-4 py-2 sm:flex-none">
-              <HardDrive size={16} aria-hidden="true" className="shrink-0 text-text-tertiary" />
-              <div className="min-w-0 flex-1 sm:w-44 sm:flex-none">
-                <div className="flex items-baseline justify-between gap-2 text-xs text-text-secondary">
-                  <span className="truncate">{stats ? STATUS_LABEL[stats.status] : statsFailed ? 'Capacity unavailable' : 'Checking capacity…'}</span>
-                  <span className="tabular-nums">{stats ? `${stats.usage_percent}%` : ''}</span>
-                </div>
-                <div
-                  role="progressbar"
-                  aria-label="Buffer capacity used"
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={stats?.usage_percent ?? 0}
-                  className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-bg-secondary"
-                >
-                  <div
-                    className={`h-full motion-safe:transition-all motion-safe:duration-700 ${stats ? statusColor(stats.status) : 'bg-text-disabled'}`}
-                    style={{ width: `${stats?.usage_percent || 0}%` }}
-                  />
-                </div>
-              </div>
+        <PageHeader className="mb-6"
+          title="Buffer"
+          description="Review what is waiting before it becomes memory."
+          actions={
+            <>
+              <a
+                href="#capture"
+                className={`inline-flex min-h-11 items-center gap-2 rounded-full bg-text-primary px-5 text-sm font-semibold text-bg-primary transition-colors hover:bg-accent lg:hidden ${focusRing}`}
+              >
+                <Plus size={16} aria-hidden="true" /> Add item
+              </a>
+              <button
+                type="button"
+                aria-label="Refresh buffer"
+                onClick={retry}
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border-primary text-text-secondary transition-colors hover:bg-bg-secondary hover:text-text-primary ${focusRing}`}
+              >
+                <RefreshCw size={18} aria-hidden="true" className={loading ? 'motion-safe:animate-spin' : ''} />
+              </button>
+            </>
+          }
+        />
+        <div className="-mt-2 mb-6 flex items-center gap-3 rounded-2xl border border-border-primary bg-bg-elevated px-4 py-3 sm:max-w-sm">
+          <HardDrive size={18} aria-hidden="true" className="shrink-0 text-text-secondary" />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-baseline justify-between gap-2 text-sm text-text-secondary">
+              <span className="truncate">{stats ? STATUS_LABEL[stats.status] : statsFailed ? 'Capacity unavailable' : 'Checking capacity…'}</span>
+              <span className="tabular-nums">{stats ? `${stats.usage_percent}%` : ''}</span>
             </div>
-            <button
-              type="button"
-              aria-label="Refresh buffer"
-              onClick={retry}
-              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border-primary text-text-tertiary transition-colors hover:bg-bg-secondary hover:text-text-primary ${focusRing}`}
+            <div
+              role="progressbar"
+              aria-label="Buffer capacity used"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={stats?.usage_percent ?? 0}
+              className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-bg-secondary"
             >
-              <RefreshCw size={18} aria-hidden="true" className={loading ? 'motion-safe:animate-spin' : ''} />
-            </button>
+              <div
+                className={`h-full motion-safe:transition-all motion-safe:duration-700 ${stats ? statusColor(stats.status) : 'bg-text-disabled'}`}
+                style={{ width: `${stats?.usage_percent || 0}%` }}
+              />
+            </div>
           </div>
-        </header>
+        </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
           {/* Item feed comes first on phones; capture tools follow and are one tap away via Add item */}
           <section aria-label="Buffer items" className="space-y-4 lg:order-2 lg:col-span-9">
             <div className="space-y-3">
               <div className="relative">
-                <Search size={16} aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-tertiary" />
+                <Search size={18} aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary" />
                 <input
                   type="search"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   aria-label="Search loaded items by ID, source or type"
                   placeholder="Search by source, type or ID"
-                  className="min-h-11 w-full rounded-full border border-border-primary bg-bg-elevated pl-10 pr-4 text-base sm:text-sm text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  className="min-h-12 w-full rounded-full border border-border-primary bg-bg-elevated pl-11 pr-4 text-base text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 />
               </div>
               <div role="group" aria-label="Filter by review state" className="-mx-4 flex snap-x scroll-pl-4 gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -488,9 +488,9 @@ export default function BufferControlSurface() {
                   </button>
                 ))}
               </div>
-              <p role="status" aria-live="polite" className="text-xs text-text-secondary">
+              <p role="status" aria-live="polite" className="text-sm text-text-secondary">
                 {loading ? 'Loading items…' : (
-                  <>Showing <span className="font-medium text-text-secondary">{visibleItems.length}</span> {visibleItems.length === 1 ? 'item' : 'items'}{items.length >= 50 ? ' (the 50 most recent; refine with the filters above)' : ''}</>
+                  <>Showing <span className="font-medium text-text-primary">{visibleItems.length}</span> {visibleItems.length === 1 ? 'item' : 'items'}{items.length >= 50 ? ' (the 50 most recent; refine with the filters above)' : ''}</>
                 )}
               </p>
             </div>
@@ -511,18 +511,18 @@ export default function BufferControlSurface() {
                       aria-pressed={selectedId === item.id}
                       aria-label={`${item.source}, ${item.type}, ${stateLabel(item.state)}. ${selectedId === item.id ? 'Hide' : 'Show'} details`}
                       onClick={() => toggleSelected(item.id)}
-                      className={`block min-h-11 w-full rounded-2xl border p-4 text-left transition-colors ${focusRing} ${
-                        selectedId === item.id ? 'border-accent/50 bg-accent/10' : 'border-border-primary bg-bg-elevated hover:bg-bg-secondary'
+                      className={`block min-h-16 w-full rounded-2xl border p-4 text-left transition-colors ${focusRing} ${
+                        selectedId === item.id ? 'border-accent/50 bg-accent/10' : 'border-border-primary bg-bg-elevated hover:bg-bg-secondary active:bg-bg-tertiary'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-text-primary">{item.source}</p>
-                          <p className="truncate text-xs text-text-tertiary">{item.type}</p>
+                          <p className="truncate text-base font-medium text-text-primary">{item.source}</p>
+                          <p className="truncate text-sm text-text-secondary">{item.type}</p>
                         </div>
                         <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${stateColor(item.state)}`}>{stateLabel(item.state)}</span>
                       </div>
-                      <div className="mt-3 flex items-center justify-between gap-3 text-xs text-text-tertiary">
+                      <div className="mt-3 flex items-center justify-between gap-3 text-sm text-text-secondary">
                         <span className="tabular-nums">{formatSize(item.size)} - {formatDate(item.created_at)}</span>
                         <span className="truncate font-mono" title={item.id}>{item.id.substring(0, 10)}…</span>
                       </div>
@@ -602,10 +602,10 @@ export default function BufferControlSurface() {
           <aside id="capture" aria-label="Add to the buffer" className="scroll-mt-20 space-y-4 lg:order-1 lg:col-span-3">
             <Card className="space-y-4 p-5">
               <div>
-                <h2 className="text-base font-semibold text-text-primary">Add to the buffer</h2>
-                <p className="mt-0.5 text-xs text-text-secondary">Pick how you want to capture something.</p>
+                <h2 className="text-lg font-semibold text-text-primary">Add to the buffer</h2>
+                <p className="mt-0.5 text-sm text-text-secondary">Pick how you want to capture something.</p>
               </div>
-              <div role="group" aria-label="Capture method" className="grid grid-cols-4 gap-2 lg:grid-cols-2">
+              <div role="group" aria-label="Capture method" className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-2">
                 {([
                   ['upload', 'Upload'],
                   ['voice', 'Voice'],
@@ -620,7 +620,7 @@ export default function BufferControlSurface() {
                     type="button"
                     aria-pressed={captureMode === mode}
                     onClick={() => setCaptureMode(mode)}
-                    className={`min-h-11 rounded-xl px-2 text-xs font-semibold transition-colors ${focusRing} ${
+                    className={`min-h-11 rounded-xl px-2 text-sm font-medium transition-colors ${focusRing} ${
                       captureMode === mode ? 'bg-text-primary text-bg-primary' : 'border border-border-primary text-text-secondary hover:bg-bg-secondary'
                     }`}
                   >
@@ -636,8 +636,8 @@ export default function BufferControlSurface() {
               {captureMode === 'device' && <DeviceCapture />}
               {captureMode === 'csv' && <CsvImport onComplete={() => fetchItems()} />}
             </Card>
-            <p className="flex items-start gap-2 px-1 text-xs text-text-tertiary">
-              <Inbox size={14} aria-hidden="true" className="mt-0.5 shrink-0" />
+            <p className="flex items-start gap-2 px-1 text-sm text-text-secondary">
+              <Inbox size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
               Link, voice and device captures wait here until you review and promote them. Uploads, files and imports are ingested directly, and only items the gate flags are held here.
             </p>
           </aside>

@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ArrowLeft, Command, Menu, LogOut, LogIn, Settings, ShieldCheck, Eye } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import {
   APP_BRAND,
   NAV_GROUPS,
@@ -24,6 +25,8 @@ type AppShellProps = {
 };
 
 const ACTION_SLOT_ID = 'shell-action-slot';
+/** Root metadata default title (src/app/layout.tsx); routes that keep it get a per-route title. */
+const APP_DEFAULT_DOC_TITLE = 'Identity Prism | Neural OS';
 
 /** Puts one contextual action (a button, a short menu) in the topbar, right of the page title.
  *  Render it anywhere inside a page that is wrapped by AppShell. Keep it to one primary action. */
@@ -33,6 +36,48 @@ export function TopbarAction({ children }: { children: React.ReactNode }) {
     setSlot(document.getElementById(ACTION_SLOT_ID));
   }, []);
   return slot ? createPortal(children, slot) : null;
+}
+
+/** One bottom-navigation destination, Material 3 navigation bar: 24px icon in a 64x32 indicator
+ *  pill, 12px label, whole 80px-tall cell is the target. Active = tonal pill + bold label +
+ *  heavier icon stroke + aria-current (never colour alone). Pressed/hover show a state layer. */
+function DockItem({
+  href,
+  label,
+  icon: Icon,
+  active,
+  current,
+  srNote,
+}: {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  active: boolean;
+  /** aria-current when it differs from the visual active state (More). */
+  current?: boolean;
+  srNote?: string;
+}) {
+  return (
+    <li className="flex-1">
+      <Link
+        href={href}
+        aria-current={(current ?? active) ? 'page' : undefined}
+        className="group flex h-full w-full flex-col items-center justify-center gap-1 rounded-control text-text-primary"
+      >
+        <span
+          className={`flex h-8 w-16 items-center justify-center rounded-pill transition-colors duration-fast ease-standard group-hover:bg-text-primary/5 group-active:bg-text-primary/10 ${
+            active ? 'bg-accent/25 group-hover:bg-accent/25' : ''
+          }`}
+        >
+          <Icon size={24} aria-hidden="true" strokeWidth={active ? 2.5 : 2} />
+        </span>
+        <span className={`text-xs leading-none ${active ? 'font-bold' : 'font-medium text-text-secondary'}`}>
+          {label}
+          {srNote ? <span className="sr-only">{srNote}</span> : null}
+        </span>
+      </Link>
+    </li>
+  );
 }
 
 /** Single source of truth for app chrome: route-aware sidebar (desktop),
@@ -120,11 +165,61 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
   const dockItems = MOBILE_DOCK_ITEMS.filter((i) => featureOn(i.feature));
   // "More" reads as current on the More screen and when the page lives only there.
   const moreActive = pathname === '/more' || !dockItems.some((i) => isNavActive(pathname, i.href));
-  // Nested pages (e.g. /integrations/publishing) get a back control to their parent on phones.
-  const segments = pathname.split('/').filter(Boolean);
-  const parentHref = segments.length >= 2 ? `/${segments.slice(0, -1).join('/')}` : null;
-  const parentLabel = parentHref ? (findNavItem(parentHref)?.label ?? 'previous page') : null;
   const pageTitle = pathname === '/more' ? 'More' : findNavItem(pathname)?.label ?? APP_BRAND.name;
+
+  // Sub-pages (two or more path segments) get a back arrow on phones, like a native app.
+  const segments = pathname.split('/').filter(Boolean);
+  // Pages that live only under More (Cognitive, Persona, System...) go back to More.
+  const parentHref =
+    segments.length >= 2
+      ? `/${segments.slice(0, -1).join('/')}`
+      : segments.length === 1 && pathname !== '/more' && pathname !== '/console' && moreActive
+        ? '/more'
+        : null;
+  const parentLabel = parentHref ? (parentHref === '/more' ? 'More' : (findNavItem(parentHref)?.label ?? 'previous page')) : null;
+
+  // Document title: routes without their own layout metadata would all read "Identity Prism | Neural OS".
+  // On client navigation Next applies the default metadata title AFTER this effect, so also watch <title>.
+  useEffect(() => {
+    const apply = () => {
+      if (document.title.startsWith(APP_DEFAULT_DOC_TITLE)) document.title = `${pageTitle} | Identity Prism`;
+    };
+    apply();
+    const el = document.querySelector('title');
+    if (!el) return;
+    const mo = new MutationObserver(apply);
+    mo.observe(el, { childList: true, characterData: true, subtree: true });
+    return () => mo.disconnect();
+  }, [pathname, pageTitle]);
+
+  // Top bar title: while the page's own h1 (PageHeader, data-page-title) is on screen the bar title
+  // is hidden on phones so the same words do not appear twice; it fades in once the h1 scrolls away.
+  const [titleShown, setTitleShown] = useState(true);
+  useEffect(() => {
+    const main = mainRef.current;
+    if (!main || typeof IntersectionObserver === 'undefined') return;
+    let current: Element | null = null;
+    // rootMargin offsets the 56px bar so "visible" means visible below it.
+    const io = new IntersectionObserver(([entry]) => setTitleShown(!entry.isIntersecting), {
+      rootMargin: '-56px 0px 0px 0px',
+    });
+    const attach = () => {
+      const h1 = main.querySelector('h1[data-page-title]');
+      if (h1 === current) return;
+      if (current) io.unobserve(current);
+      current = h1;
+      if (h1) io.observe(h1);
+      else setTitleShown(true);
+    };
+    attach();
+    // Pages render their header after data loads; re-check when the DOM under <main> changes.
+    const mo = new MutationObserver(attach);
+    mo.observe(main, { childList: true, subtree: true });
+    return () => {
+      io.disconnect();
+      mo.disconnect();
+    };
+  }, [pathname]);
 
   // Plain render helpers (not components) so state changes never remount the sidebar and drop focus.
   const NavList = ({ onNavigate, label, hints }: { onNavigate?: () => void; label: string; hints?: boolean }) => (
@@ -265,21 +360,28 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
             <Link
               href={parentHref}
               aria-label={`Back to ${parentLabel}`}
-              className="md:hidden -ml-2 flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-pill text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              className="state-layer md:hidden -ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-pill text-text-primary"
             >
-              <ArrowLeft size={22} aria-hidden="true" />
+              <ArrowLeft size={24} aria-hidden="true" />
             </Link>
-          ) : null}
-          <Link
-            href="/console"
-            aria-label={`${APP_BRAND.name} home`}
-            className={`${parentHref ? 'hidden' : 'md:hidden'} -ml-2 flex min-h-11 min-w-11 shrink-0 items-center justify-center`}
+          ) : (
+            <Link
+              href="/console"
+              aria-label={`${APP_BRAND.name} home`}
+              className="md:hidden -ml-2 flex h-11 w-11 shrink-0 items-center justify-center"
+            >
+              <span className="w-8 h-8 rounded-control bg-text-primary flex items-center justify-center">
+                <Command size={16} aria-hidden="true" className="text-bg-primary" />
+              </span>
+            </Link>
+          )}
+          <p
+            className={`truncate text-xl font-semibold leading-tight tracking-tight text-text-primary transition-opacity duration-fast ease-standard md:opacity-100 ${
+              titleShown ? 'opacity-100' : 'opacity-0'
+            }`}
           >
-            <span className="w-7 h-7 rounded-control bg-text-primary flex items-center justify-center">
-              <Command size={14} aria-hidden="true" className="text-bg-primary" />
-            </span>
-          </Link>
-          <p className="truncate text-base font-semibold tracking-tight text-text-primary">{pageTitle}</p>
+            {pageTitle}
+          </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <div id={ACTION_SLOT_ID} className="flex items-center gap-2" />
@@ -287,13 +389,20 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
             <Link
               href={`/p/${IDENTITY_CONFIG.HANDLE}`}
               aria-label="View your public profile"
-              className="flex min-h-11 min-w-11 items-center justify-center rounded-pill text-text-secondary transition-colors hover:bg-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              className="state-layer flex h-11 w-11 items-center justify-center rounded-pill text-text-secondary"
             >
-              <Eye size={20} aria-hidden="true" />
+              <Eye size={24} aria-hidden="true" />
             </Link>
           )}
           {view.state === 'signed-in' && (
-            <div ref={accountRef} className="relative">
+            <div
+              ref={accountRef}
+              className="relative"
+              onBlur={(e) => {
+                // Tabbing out of the open menu closes it (it is not a modal, so focus may leave).
+                if (accountOpen && !e.currentTarget.contains(e.relatedTarget as Node | null)) setAccountOpen(false);
+              }}
+            >
               <button
                 ref={accountBtnRef}
                 type="button"
@@ -301,7 +410,7 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
                 aria-expanded={accountOpen}
                 aria-controls="account-menu"
                 onClick={() => setAccountOpen((o) => !o)}
-                className="flex min-h-11 min-w-11 items-center justify-center rounded-pill focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                className="state-layer flex h-11 w-11 items-center justify-center rounded-pill text-text-primary"
               >
                 <span className="w-8 h-8 rounded-pill bg-text-primary text-bg-primary text-xs font-bold flex items-center justify-center">
                   {view.initial}
@@ -352,7 +461,7 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
           {view.state === 'signed-out' && (
             <Link
               href={loginHref}
-              className="flex items-center min-h-11 px-4 rounded-pill bg-text-primary text-bg-primary text-sm font-semibold hover:bg-text-secondary transition-colors duration-fast ease-standard"
+              className="state-layer flex items-center min-h-11 px-5 rounded-pill bg-text-primary text-bg-primary text-sm font-medium"
             >
               Sign in
             </Link>
@@ -380,53 +489,20 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
           Current page = filled pill + bold label + aria-current, never colour alone. */}
       <nav
         aria-label="Quick navigation"
-        className="md:hidden fixed bottom-0 left-0 right-0 z-30 glass-panel border-t border-border-secondary pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t border-border-primary bg-bg-elevated pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]"
       >
         <ul className="flex h-[var(--dock-h)] items-stretch px-2">
-          {dockItems.map(({ href, label, icon: Icon }) => {
-            const active = isNavActive(pathname, href);
-            return (
-              <li key={href} className="flex-1">
-                <Link
-                  href={href}
-                  aria-current={active ? 'page' : undefined}
-                  className={`flex h-full flex-col items-center justify-center gap-1 rounded-control transition-colors duration-fast ease-standard ${
-                    active ? 'text-text-primary' : 'text-text-secondary'
-                  }`}
-                >
-                  <span
-                    className={`flex h-8 w-16 items-center justify-center rounded-pill transition-colors duration-fast ease-standard ${
-                      active ? 'bg-accent-high text-bg-primary' : ''
-                    }`}
-                  >
-                    <Icon size={24} aria-hidden="true" strokeWidth={active ? 2.5 : 2} />
-                  </span>
-                  <span className={`text-2xs leading-none ${active ? 'font-bold' : 'font-medium'}`}>{label}</span>
-                </Link>
-              </li>
-            );
-          })}
-          <li className="flex-1">
-            <Link
-              href="/more"
-              aria-current={pathname === '/more' ? 'page' : undefined}
-              className={`flex h-full w-full flex-col items-center justify-center gap-1 rounded-control transition-colors duration-fast ease-standard ${
-                moreActive ? 'text-text-primary' : 'text-text-secondary'
-              }`}
-            >
-              <span
-                className={`flex h-8 w-16 items-center justify-center rounded-pill transition-colors duration-fast ease-standard ${
-                  moreActive ? 'bg-accent-high text-bg-primary' : ''
-                }`}
-              >
-                <Menu size={24} aria-hidden="true" strokeWidth={moreActive ? 2.5 : 2} />
-              </span>
-              <span className={`text-2xs leading-none ${moreActive ? 'font-bold' : 'font-medium'}`}>
-                More
-                {moreActive && pathname !== '/more' ? <span className="sr-only"> (current page is in this section)</span> : null}
-              </span>
-            </Link>
-          </li>
+          {dockItems.map(({ href, label, icon }) => (
+            <DockItem key={href} href={href} label={label} icon={icon} active={isNavActive(pathname, href)} />
+          ))}
+          <DockItem
+            href="/more"
+            label="More"
+            icon={Menu}
+            active={moreActive}
+            current={pathname === '/more'}
+            srNote={moreActive && pathname !== '/more' ? ' (current page is in this section)' : undefined}
+          />
         </ul>
       </nav>
     </div>

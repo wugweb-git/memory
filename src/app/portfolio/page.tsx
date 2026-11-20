@@ -38,14 +38,14 @@ const emptyForm = { title: "", summary: "", excerpt: "", client: "", outcome: ""
 const inputCls =
   "w-full min-h-[44px] rounded-xl border bg-bg-elevated px-3 py-2 text-base sm:text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent";
 const linkBtnCls =
-  "inline-flex items-center min-h-[44px] px-2 text-sm font-medium rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-accent";
+  "inline-flex items-center min-h-[44px] px-2 text-sm font-medium rounded-lg hover:bg-bg-secondary active:bg-bg-tertiary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent";
 
 function Field({ id, label, optional, error, children }: { id: string; label: string; optional?: boolean; error?: string; children: React.ReactNode }) {
   return (
     <div>
       <label htmlFor={id} className="block text-sm font-medium text-text-primary mb-1">
         {label}
-        {optional ? <span className="ml-1 text-2xs font-normal text-text-tertiary">Optional</span> : null}
+        {optional ? <span className="ml-1 text-xs font-normal text-text-tertiary">Optional</span> : null}
       </label>
       {children}
       {error ? <p id={`${id}-err`} role="alert" className="mt-1 text-xs text-danger">{error}</p> : null}
@@ -66,6 +66,10 @@ export default function PortfolioPage() {
   const [urlErr, setUrlErr] = useState("");
 
   const id = (k: string) => `${uid}-${k}`;
+  // Focus the first field when the add form opens.
+  useEffect(() => {
+    if (showForm) document.getElementById(`${uid}-title`)?.focus();
+  }, [showForm, uid]);
 
   async function load() {
     setLoading(true);
@@ -117,29 +121,28 @@ export default function PortfolioPage() {
     <AppShell>
       <AppToastContainer position="bottom-right" theme="light" />
       <M3Page title="Portfolio and content" subtitle="Manage the projects, case studies and posts visitors see, synced to your showcase">
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Content type">
+        <div className="flex gap-2" role="group" aria-label="Content type">
           {TABS.map((t) => (
             <button
               key={t.type}
               type="button"
               aria-pressed={tab === t.type}
               onClick={() => { setTab(t.type); setShowForm(false); setTitleErr(""); setUrlErr(""); }}
-              className={`min-h-11 px-4 rounded-xl text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+              className={`min-h-11 flex-1 px-2 rounded-xl text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                 tab === t.type ? "bg-text-primary text-bg-primary" : "border border-border-primary bg-bg-primary text-text-secondary hover:bg-bg-secondary"
               }`}
             >
               {t.label}
-              {data && data[t.type]?.length ? ` (${data[t.type].length})` : ""}
             </button>
           ))}
         </div>
 
         <M3Card
-          title={tabLabel}
+          title={docs.length ? `${tabLabel} (${docs.length})` : tabLabel}
           action={
             <div className="flex items-center gap-1">
-              <Link href={`/p/${IDENTITY_CONFIG.HANDLE}`} target="_blank" rel="noopener noreferrer" className={`${linkBtnCls} text-accent`}>View live<span className="sr-only"> (opens in a new tab)</span></Link>
-              <button type="button" aria-expanded={showForm} onClick={() => setShowForm((s) => !s)} className={`${linkBtnCls} text-accent`}>
+              <Link href={`/p/${IDENTITY_CONFIG.HANDLE}`} target="_blank" rel="noopener noreferrer" className={`${linkBtnCls} text-accent-ink underline underline-offset-4`}>View live<span className="sr-only"> (opens in a new tab)</span></Link>
+              <button type="button" aria-expanded={showForm} onClick={() => setShowForm((s) => !s)} className={`${linkBtnCls} text-accent-ink underline underline-offset-4`}>
                 {showForm ? "Close form" : `Add to ${tabLabel.toLowerCase()}`}
               </button>
             </div>
@@ -231,7 +234,7 @@ export default function PortfolioPage() {
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-text-primary break-words">
                             {d.title}
-                            {d.featured ? <span className="ml-2 text-xs font-medium text-accent">Featured</span> : null}
+                            {d.featured ? <span className="ml-2 text-xs font-semibold text-text-secondary">Featured</span> : null}
                           </p>
                           {(d.summary || d.excerpt || d.client) && (
                             <p className="text-sm text-text-secondary line-clamp-2">{d.summary || d.excerpt || d.client}</p>
@@ -252,7 +255,7 @@ export default function PortfolioPage() {
 
         <p className="text-xs text-text-tertiary">
           Everything here publishes to your Sanity showcase and renders on{" "}
-          <Link href={`/p/${IDENTITY_CONFIG.HANDLE}`} target="_blank" rel="noopener noreferrer" className="text-accent underline">/p/{IDENTITY_CONFIG.HANDLE}<span className="sr-only"> (opens in a new tab)</span></Link>.
+          <Link href={`/p/${IDENTITY_CONFIG.HANDLE}`} target="_blank" rel="noopener noreferrer" className="text-accent-ink underline underline-offset-4">/p/{IDENTITY_CONFIG.HANDLE}<span className="sr-only"> (opens in a new tab)</span></Link>.
         </p>
       </M3Page>
     </AppShell>

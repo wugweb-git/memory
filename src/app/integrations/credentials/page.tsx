@@ -5,8 +5,8 @@ import { toast } from 'react-toastify';
 import { AppToastContainer } from '@/app/component/AppToastContainer';
 import 'react-toastify/dist/ReactToastify.css';
 import { AppShell } from '@/app/component/AppShell';
-import { M3Button, M3Card, M3Page, M3State } from '@/components/ui/m3';
-import { StatusPill } from '@/components/ui/primitives';
+import { M3Button, M3Page, M3State } from '@/components/ui/m3';
+import { Card, Section, StatusPill } from '@/components/ui/primitives';
 import { apiRequest } from '@/lib/ui/api-client';
 
 type Field = { key: string; label: string; secret: boolean; required: boolean; help: string; source: 'app' | 'env' | null; hint: string | null };
@@ -33,7 +33,7 @@ export default function IntegrationCredentialsPage() {
 
   async function save(f: Field) {
     const value = (drafts[f.key] ?? '').trim();
-    if (!value) { setFieldError((p) => ({ ...p, [f.key]: 'Enter a value first.' })); return; }
+    if (!value) { setFieldError((p) => ({ ...p, [f.key]: 'Enter a value first.' })); document.getElementById(`cred-${f.key}`)?.focus(); return; }
     setBusy(f.key);
     setFieldError((p) => ({ ...p, [f.key]: '' }));
     try {
@@ -76,13 +76,9 @@ export default function IntegrationCredentialsPage() {
           <M3State state="error" message="Tokens can't be saved yet: set MEMORY_ENCRYPTION_KEY (64 hex characters) in Vercel, then reload. IDs can still be saved." />
         ) : null}
         {data?.accounts.map((a) => (
-          <M3Card
-            key={a.platform}
-            title={a.label}
-            description={a.note}
-            action={a.ready ? <StatusPill tone="success">Ready</StatusPill> : <StatusPill tone="warning">Needs setup</StatusPill>}
-          >
-            <div className="space-y-4">
+          <Section key={a.platform} title={a.label} description={a.note} action={a.ready ? <StatusPill tone="success">Ready</StatusPill> : <StatusPill tone="warning">Needs setup</StatusPill>}>
+<Card className="space-y-3">
+            <div className="space-y-5">
               {a.fields.map((f) => {
                 const id = `cred-${f.key}`;
                 const err = fieldError[f.key];
@@ -110,10 +106,10 @@ export default function IntegrationCredentialsPage() {
                       placeholder={f.source ? 'Enter a new value to replace it' : 'Paste here'}
                       aria-describedby={`${id}-help${err ? ` ${id}-err` : ''}`}
                       aria-invalid={err ? true : undefined}
-                      className="min-h-11 w-full rounded-xl border border-border-primary bg-bg-elevated px-3 text-base text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                      className="min-h-12 w-full rounded-xl border border-border-primary bg-bg-elevated px-4 text-base text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                     />
-                    <p id={`${id}-help`} className="text-xs text-text-tertiary">{f.help}</p>
-                    {err ? <p id={`${id}-err`} role="alert" className="text-xs text-danger">{err}</p> : null}
+                    <p id={`${id}-help`} className="text-sm text-text-tertiary">{f.help}</p>
+                    {err ? <p id={`${id}-err`} role="alert" className="text-sm text-danger">{err}</p> : null}
                     <div className="flex flex-wrap gap-2">
                       <M3Button type="submit" aria-label={`Save ${f.label}`} loading={busy === f.key} disabled={busy !== null}>Save</M3Button>
                       {f.source === 'app' ? (
@@ -124,7 +120,8 @@ export default function IntegrationCredentialsPage() {
                 );
               })}
             </div>
-          </M3Card>
+          </Card>
+</Section>
         ))}
       </M3Page>
       <AppToastContainer />

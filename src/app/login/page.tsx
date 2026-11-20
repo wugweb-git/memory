@@ -8,6 +8,7 @@ import { UI_API } from '@/lib/api/endpoints';
 import { haptic } from '@/lib/pwa/browser';
 import { APP_BRAND } from '@/config/ui-content';
 import { hasDevicePasskey, platformPasskeySupported, signInWithPasskey } from '@/lib/passkey-client';
+import { timeoutSignal } from '@/lib/ui/fetch-timeout';
 
 type SessionUser = { id: string; email: string; role: string };
 
@@ -117,6 +118,7 @@ function LoginForm() {
     // always looks available and a miss says exactly what to fix.
     const nextErrors: { email?: string; password?: string } = {};
     if (!email.trim()) nextErrors.email = 'Enter your email address.';
+    else if (!/^\S+@\S+$/.test(email.trim())) nextErrors.email = 'Enter a valid email address, like name@example.com.';
     if (!password) nextErrors.password = 'Enter your password.';
     setFieldErrors(nextErrors);
     if (nextErrors.email || nextErrors.password) {
@@ -128,14 +130,17 @@ function LoginForm() {
     setBusy(true);
     setError(null);
     setStatus('Signing in');
+    const t = timeoutSignal(25_000);
     try {
       const res = await fetch(UI_API.authLogin, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, remember }),
+        signal: t.signal,
       });
       const data = await res.json().catch(() => ({}));
+      t.clear();
       if (!res.ok) throw new Error(data?.error || `Sign-in failed (${res.status}). Check your email and password, then try again.`);
       haptic('success');
       setStatus('Signed in');
@@ -143,8 +148,15 @@ function LoginForm() {
       // (and PWA shell) loads with it.
       window.location.assign(safeNext);
     } catch (err: unknown) {
+      t.clear();
       setStatus('');
-      setError(err instanceof Error ? err.message : 'Sign-in failed. Check your connection and try again.');
+      setError(
+        t.timedOut()
+          ? 'Sign-in is taking too long, and it may have worked. Check by reopening the app, or try again.'
+          : err instanceof Error
+            ? err.message
+            : 'Sign-in failed. Check your connection and try again.',
+      );
       setBusy(false);
       passwordRef.current?.focus();
     }
@@ -198,7 +210,7 @@ function LoginForm() {
               <div className="flex flex-col gap-2">
                 <Link
                   href={safeNext}
-                  className={`inline-flex min-h-12 items-center justify-center rounded-xl bg-text-primary text-sm font-semibold text-bg-primary transition-colors hover:bg-accent ${FOCUS_RING}`}
+                  className={`inline-flex min-h-12 items-center justify-center rounded-xl bg-text-primary text-sm font-semibold text-bg-primary transition-colors hover:bg-text-secondary ${FOCUS_RING}`}
                 >
                   Continue
                 </Link>
@@ -305,7 +317,7 @@ function LoginForm() {
                 <button
                   type="submit"
                   aria-disabled={busy || bioBusy}
-                  className={`inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-text-primary text-sm font-semibold text-bg-primary transition-colors hover:bg-accent aria-disabled:cursor-progress aria-disabled:hover:bg-text-primary ${FOCUS_RING}`}
+                  className={`inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-text-primary text-sm font-semibold text-bg-primary transition-colors hover:bg-text-secondary aria-disabled:cursor-progress aria-disabled:hover:bg-text-primary ${FOCUS_RING}`}
                 >
                   {busy ? (
                     <>

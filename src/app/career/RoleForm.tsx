@@ -142,7 +142,14 @@ export function RoleForm({
       onSubmit={(e) => {
         e.preventDefault();
         setTouched(true);
-        if (Object.keys(validateRole(values)).length === 0) onSubmit();
+        const errs = validateRole(values);
+        const firstBad = (['title', 'originalLogic', 'perspective2026'] as const).find((k) => errs[k]);
+        if (!firstBad) {
+          onSubmit();
+          return;
+        }
+        const target = { title: ids.title, originalLogic: ids.logic, perspective2026: ids.persp }[firstBad];
+        document.getElementById(target)?.focus();
       }}
       className="rounded-2xl border border-border-secondary bg-bg-secondary mb-4"
     >

@@ -25,7 +25,7 @@ const STATUS_LABEL: Record<Application['status'], string> = {
   Offer:        'Offer',
 };
 const STATUS_COLOR: Record<Application['status'], string> = {
-  Applied:      'text-accent',
+  Applied:      'text-accent-ink',
   Interviewing: 'text-success',
   Rejected:     'text-danger',
   Offer:        'text-success',
@@ -88,7 +88,7 @@ export const JobPipeline = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-2">
         <div>
-          <h2 className="text-2xl font-semibold text-text-primary tracking-tight flex items-center gap-3">
+          <h2 className="text-lg font-semibold text-text-primary tracking-tight flex items-center gap-3">
             <Briefcase aria-hidden="true" size={22} className="text-accent" /> Applications
           </h2>
           <p className="text-2xs font-bold uppercase tracking-widest text-text-tertiary mt-1">
@@ -117,13 +117,13 @@ export const JobPipeline = () => {
         <div className="flex flex-col items-center gap-4 py-16 text-text-tertiary">
           <AlertCircle aria-hidden="true" size={32} className="text-danger/40" />
           <p className="text-sm font-medium">Failed to load applications</p>
-          <button onClick={load} className="min-h-11 px-2 text-accent text-xs font-bold hover:underline">Try again →</button>
+          <button onClick={load} className="min-h-11 px-2 text-accent-ink text-sm font-bold underline">Try again →</button>
         </div>
       )}
 
       {!loading && !error && apps.length === 0 && (
         <p className="text-sm text-text-tertiary  px-2 py-8">
-          No job applications yet. Applications appear here when buffer items of type <code className="text-accent">job_application</code> exist. Nothing in the app creates them automatically yet, so they must be added to the buffer by hand or by an external tool.
+          No job applications in the buffer yet. Applications appear here when buffer items of type <code className="text-accent-ink">job_application</code> exist. Nothing in the app creates them automatically yet, so they must be added to the buffer by hand or by an external tool.
         </p>
       )}
 
