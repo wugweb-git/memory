@@ -3,8 +3,6 @@ import { getProfile } from '@/lib/profile/store';
 import { isValidUsername, toPublicProfile } from '@/lib/profile/validate';
 import { buildProfileMetadata } from './metadata';
 
-export const metadata: Metadata = { title: 'Public profile' };
-
 /** Server-side metadata so link previews and crawlers see the profile, not an empty shell. */
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
   try {
