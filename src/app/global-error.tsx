@@ -1,29 +1,68 @@
 'use client';
 
-export default function GlobalError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
+import { useEffect, useRef } from 'react';
+
+/**
+ * Root-layout failure: globals.css is not loaded here, so styles are inline with
+ * token variables where present and system colours as readable fallbacks.
+ */
+export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  const heading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    heading.current?.focus();
+  }, []);
+
+  const control = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    minHeight: 44,
+    padding: '0 20px',
+    font: 'inherit',
+    fontWeight: 700,
+    fontSize: 14,
+    color: 'var(--text-primary, CanvasText)',
+    background: 'var(--bg-primary, Canvas)',
+    border: '1px solid var(--border-primary, GrayText)',
+    cursor: 'pointer',
+    textDecoration: 'none',
+  } as const;
+
   return (
     <html lang="en">
-      <body className="bg-bg-primary text-text-primary">
-        <main className="mx-auto flex min-h-screen max-w-md flex-col items-start justify-center gap-4 px-4 py-12">
-          <h1 className="text-xl font-semibold">Something went wrong</h1>
-          <p className="text-base text-text-secondary">The app could not load. Try again, or head back to the console.</p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => reset()}
-              className="min-h-11 rounded-full border border-border-primary bg-bg-elevated px-5 text-sm font-medium text-text-primary hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-            >
+      <body
+        style={{
+          margin: 0,
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 24,
+          textAlign: 'center',
+          fontFamily: 'system-ui, sans-serif',
+          background: 'var(--bg-primary, Canvas)',
+          color: 'var(--text-primary, CanvasText)',
+          colorScheme: 'light dark',
+        }}
+      >
+        <div role="alert" style={{ maxWidth: 384 }}>
+          <h1 ref={heading} tabIndex={-1} style={{ fontSize: 24, fontWeight: 600, margin: '0 0 12px', outline: 'none' }}>
+            Something went wrong
+          </h1>
+          <p style={{ fontSize: 14, margin: '0 0 12px', color: 'var(--text-secondary, GrayText)' }}>
+            The app could not load. Your data is safe. Try again, or go to the console.
+          </p>
+          {error?.digest ? (
+            <p style={{ fontSize: 12, margin: '0 0 12px', color: 'var(--text-tertiary, GrayText)' }}>Reference: {error.digest}</p>
+          ) : null}
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', paddingTop: 8 }}>
+            <button type="button" onClick={() => reset()} style={control}>
               Try again
             </button>
-            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-            <a
-              href="/console"
-              className="inline-flex min-h-11 items-center rounded-full px-5 text-sm font-medium underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-            >
+            <a href="/console" style={control}>
               Go to console
             </a>
           </div>
-        </main>
+        </div>
       </body>
     </html>
   );
