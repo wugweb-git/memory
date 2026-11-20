@@ -6,7 +6,7 @@ import { ChevronDown } from "lucide-react";
 import { AppToastContainer } from "@/app/component/AppToastContainer";
 import "react-toastify/dist/ReactToastify.css";
 import { M3Button, M3Page, M3State } from "@/components/ui/m3";
-import { Card, ListGroup, Section, Skeleton } from '@/components/ui/primitives';
+import { Card, ListGroup, ListRow, Section, Skeleton } from '@/components/ui/primitives';
 import { UI_API } from "@/lib/ui/contracts";
 import { apiRequest } from "@/lib/ui/api-client";
 import { AppShell } from "@/app/component/AppShell";
@@ -152,28 +152,33 @@ export default function SystemPage() {
           </Card>
 </Section>
 
-          <M3Card title="Scheduled jobs">
+        <Section title="Scheduled jobs" description="Status and last run times of recurring background jobs.">
+          <Card>
             {Array.isArray(health.system?.jobs_last_run) ? (
-              <ul className="divide-y divide-border-secondary">
+              <ListGroup className="rounded-none border-0 bg-transparent" aria-label="Scheduled jobs list">
                 {(health.system.jobs_last_run as Array<{ job: string; label: string; last_run_at: string | null; status: "ok" | "failed" | "never" }>).map((j) => {
                   const Icon = j.status === "ok" ? CheckCircle2 : j.status === "failed" ? AlertCircle : CircleDashed;
                   const tone = j.status === "ok" ? "text-success" : j.status === "failed" ? "text-danger" : "text-text-tertiary";
                   const when = j.last_run_at ? new Date(j.last_run_at).toLocaleString() : null;
                   return (
-                    <li key={j.job} className="flex min-h-12 items-center justify-between gap-3 py-2">
-                      <p className="text-sm font-medium text-text-primary">{j.label}</p>
-                      <p className={`flex shrink-0 items-center gap-1.5 text-xs ${tone}`}>
-                        <Icon className="h-4 w-4" aria-hidden="true" />
-                        <span>{j.status === "never" ? "Never run" : `Last run ${when}${j.status === "failed" ? " (failed)" : ""}`}</span>
-                      </p>
-                    </li>
+                    <ListRow
+                      key={j.job}
+                      title={j.label}
+                      trailing={
+                        <p className={`flex shrink-0 items-center gap-1.5 text-xs ${tone}`}>
+                          <Icon className="h-4 w-4" aria-hidden="true" />
+                          <span>{j.status === "never" ? "Never run" : `Last run ${when}${j.status === "failed" ? " (failed)" : ""}`}</span>
+                        </p>
+                      }
+                    />
                   );
                 })}
-              </ul>
+              </ListGroup>
             ) : (
-              <p className="text-sm text-text-tertiary">{loading ? "Loading last run times." : "Last run times are not available right now."}</p>
+              <p className="p-4 text-sm text-text-tertiary">{loading ? "Loading last run times." : "Last run times are not available right now."}</p>
             )}
-          </M3Card>
+          </Card>
+        </Section>
 
           <PasskeyCard />
 
