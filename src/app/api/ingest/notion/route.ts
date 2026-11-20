@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   if (!limit.allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
 
   try {
-    const body = await req.json().catch(() => ({}));
+    const body = ((await req.json().catch(() => ({}))) ?? {});
     const result = await ingestNotion({
       query: typeof body.query === 'string' ? body.query : undefined,
       autoPromote: Boolean(body.autoPromote),

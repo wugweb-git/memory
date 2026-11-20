@@ -1,5 +1,6 @@
 import { postgres } from "@/lib/db/postgres";
 import { decideRetry } from "@/lib/queue/retry";
+import { staleProcessingWhere } from "@/lib/queue/stale";
 
 /**
  * Retry worker. Two phases:
@@ -20,7 +21,7 @@ export async function runRetryWorker() {
   // Phase 1: sweep stuck publishing items into the retry queue.
   const stuck = await postgres.publishingQueue.findMany({
     where: {
-      OR: [{ status: "failed" }, { status: "processing", createdAt: { lt: staleBefore } }],
+      OR: [{ status: "failed" }, staleProcessingWhere(staleBefore)],
     },
     take: 50,
   });

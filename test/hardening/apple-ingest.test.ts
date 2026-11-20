@@ -66,6 +66,17 @@ test('apple health: items are one per week with source tag data and units', () =
   assert.equal(parseAppleHealthExport('export.xml', Buffer.from(XML)).length, 2);
 });
 
+test('apple health: the in-progress week is not imported, so it cannot be locked in partial', () => {
+  // XML has weeks starting 2024-03-04 (ends 03-10) and 2024-03-11 (ends 03-17).
+  const during = parseAppleHealthExport('export.xml', Buffer.from(XML), new Date('2024-03-14T12:00:00Z'));
+  assert.equal(during.length, 1);
+  assert.equal(during[0].payload.week_start, '2024-03-04');
+  // On the week's last day it is still in progress.
+  assert.equal(parseAppleHealthExport('export.xml', Buffer.from(XML), new Date('2024-03-17T09:00:00Z')).length, 1);
+  assert.equal(parseAppleHealthExport('export.xml', Buffer.from(XML), new Date('2024-03-18T00:00:00Z')).length, 2);
+  for (const i of during) assert.ok(Date.parse(String(i.payload.published_at)) <= Date.parse('2024-03-14T12:00:00Z'));
+});
+
 test('apple health: size cap gives a clear error and nothing is ingested', async () => {
   const huge = Buffer.alloc(APPLE_HEALTH_MAX_BYTES + 1);
   assert.throws(() => parseAppleHealthExport('export.xml', huge), /over 50 MB/);
@@ -139,6 +150,46 @@ test('caldav: principal, calendar home, calendar list, then REPORT with a time r
   assert.equal(out[0].calendar, 'Home');
   assert.deepEqual(log.map((l) => l.method), ['PROPFIND', 'PROPFIND', 'PROPFIND', 'REPORT']); // Reminders list skipped
   assert.equal(log[3].url, 'https://p01-caldav.icloud.com/123/calendars/home/');
+});
+
+test('caldav: REPORT asks for expansion over the same window so recurring events arrive as instances', async () => {
+  const master = ['BEGIN:VCALENDAR', 'BEGIN:VEVENT', 'UID:weekly', 'SUMMARY:Standup', 'DTSTART:20230102T090000Z', 'DTEND:20230102T091500Z', 'RRULE:FREQ=WEEKLY', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+  const inst = (d: string) => ['BEGIN:VEVENT', 'UID:weekly', 'RECURRENCE-ID:' + d + 'T090000Z', 'SUMMARY:Standup', 'DTSTART:' + d + 'T090000Z', 'DTEND:' + d + 'T091500Z', 'END:VEVENT'].join('\r\n');
+  const expanded = ['BEGIN:VCALENDAR', inst('20240311'), inst('20240318'), 'END:VCALENDAR'].join('\r\n');
+  let reportBody = '';
+  const inner = fakeFetch([]);
+  const f = (async (url: any, init: any) => {
+    if (init.method !== 'REPORT') return (inner as any)(url, init);
+    reportBody = String(init.body);
+    const ics = /<c:expand /.test(reportBody) ? expanded : master;
+    return new Response(wrap(`<d:response><d:href>/123/calendars/home/w.ics</d:href><d:propstat><d:prop><c:calendar-data>${ics}</c:calendar-data></d:prop></d:propstat></d:response>`), { status: 207 });
+  }) as unknown as typeof fetch;
+  const out = await fetchIcloudEvents({ appleId: 'me@example.com', appPassword: 'abcd-efgh-ijkl-mnop', fetchFn: f, now: new Date('2024-03-10T00:00:00Z') });
+  const range = /<c:time-range (start="[^"]+" end="[^"]+")\/>/.exec(reportBody)?.[1];
+  assert.ok(range);
+  assert.ok(reportBody.includes(`<c:calendar-data><c:expand ${range}/></c:calendar-data>`), 'expand uses the same window as time-range');
+  assert.equal(out.length, 2);
+  const items = out.map((x) => mapIcloudEvent(x.calendar, x.event)!);
+  assert.deepEqual(items.map((i) => i.payload.start), ['2024-03-11T09:00:00Z', '2024-03-18T09:00:00Z']);
+  assert.equal(new Set(items.map((i) => i.sourceId)).size, 2); // each occurrence dedups separately
+  // A server that ignores expand and sends the master still parses (tolerant).
+  assert.equal(parseIcs(master).length, 1);
+});
+
+test('icloud connector: configured() goes through the credential reader, not just injected env', () => {
+  const keys = ['ICLOUD_APPLE_ID', 'ICLOUD_APP_PASSWORD'];
+  const saved = keys.map((k) => process.env[k]);
+  try {
+    for (const k of keys) delete process.env[k];
+    const c = makeIcloudConnector();
+    assert.equal(c.configured(), false);
+    process.env.ICLOUD_APPLE_ID = 'me@example.com';
+    assert.equal(c.configured(), false); // both are needed
+    process.env.ICLOUD_APP_PASSWORD = 'abcd-efgh-ijkl-mnop';
+    assert.equal(c.configured(), true); // getCredentialSync: saved value first, env second
+  } finally {
+    keys.forEach((k, i) => { if (saved[i] === undefined) delete process.env[k]; else process.env[k] = saved[i]; });
+  }
 });
 
 test('icloud connector: NOT_CONFIGURED until credentials, then ingests under icloud_calendar', async () => {

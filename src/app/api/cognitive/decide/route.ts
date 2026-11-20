@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireOwner } from '@/lib/security/auth';
 import { checkRateLimit } from '@/lib/security/rate-limit';
 import { processDecision } from "@/lib/cognitive";
+import { dailyLimitResponse } from '@/lib/cognitive/limit-response';
 import { readJsonObject, badRequest } from '@/lib/validation/http';
 import { resolveUserId, parseMode, parseExternalInput } from '@/lib/cognitive/validation';
 
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 /**
  * POST /api/cognitive/decide
@@ -42,6 +44,8 @@ export async function POST(req: NextRequest) {
 
   } catch (err: any) {
     console.error("[API/Cognitive/Decide] Error:", err);
+    const limited = dailyLimitResponse(err);
+    if (limited) return limited;
     return NextResponse.json({ error: "Decision Engine failure", status: "error" }, { status: /LLM_FAILURE/.test(String(err?.message)) ? 502 : 500 });
   }
 }

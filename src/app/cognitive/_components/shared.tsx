@@ -6,10 +6,12 @@ import { resolveUserId } from '@/config/identity';
 
 /* ─── api helper ─────────────────────────────────────────── */
 /** Plain-language message for statuses the user can act on; null to fall through to the server's message. */
-export function friendlyStatus(status: number): string | null {
+export function friendlyStatus(status: number, serverMessage?: string | null): string | null {
   if (status === 401) return 'Your session has ended. Sign in again, then retry.';
-  if (status === 429) return 'Too many requests right now. Wait a moment, then try again.';
-  if (status >= 500) return 'The service had a problem. Try again in a moment.';
+  // A 429 can carry its own reason (the daily limit and its reset time); show it when present.
+  if (status === 429) return serverMessage || 'Too many requests right now. Wait a moment, then try again.';
+  // Do not override a specific server message on 5xx.
+  if (status >= 500) return serverMessage ? null : 'The service had a problem. Try again in a moment.';
   return null;
 }
 
@@ -27,7 +29,7 @@ export async function postJson<T = any>(url: string, body: Record<string, unknow
   let data: any = null;
   try { data = await res.json(); } catch { /* non-json */ }
   if (!res.ok || data?.error) {
-    throw new Error(friendlyStatus(res.status) ?? data?.message ?? (typeof data?.error === 'string' ? data.error : null) ?? `The request failed (error ${res.status}). Try again.`);
+    throw new Error(friendlyStatus(res.status, typeof data?.message === 'string' ? data.message : null) ?? data?.message ?? (typeof data?.error === 'string' ? data.error : null) ?? `The request failed (error ${res.status}). Try again.`);
   }
   return data as T;
 }

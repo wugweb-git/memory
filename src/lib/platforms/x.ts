@@ -12,9 +12,10 @@ export function splitIntoThread(text: string, max = X_MAX_CHARS): string[] {
     const slice = rest.slice(0, max);
     let cut = Math.max(slice.lastIndexOf("\n\n"), slice.lastIndexOf(". "), slice.lastIndexOf("\n"));
     if (cut < max * 0.4) cut = slice.lastIndexOf(" ");
-    if (cut <= 0) cut = max;
-    posts.push(rest.slice(0, cut + 1).trim());
-    rest = rest.slice(cut + 1).trim();
+    // No break point: hard-split at exactly max characters (cut + 1 would be max + 1).
+    const end = cut <= 0 ? max : cut + 1;
+    posts.push(rest.slice(0, end).trim());
+    rest = rest.slice(end).trim();
   }
   if (rest) posts.push(rest);
   return posts;

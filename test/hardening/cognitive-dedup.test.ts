@@ -25,6 +25,21 @@ test('different recommendations with a shared word are kept', () => {
   assert.equal(isNearDuplicate('Call the client', 'Email the client a summary'), false);
 });
 
+test('a short earlier recommendation does not swallow longer, distinct ones', () => {
+  assert.equal(isNearDuplicate('Publish case study', 'Publish the case study on LinkedIn with new screenshots and a client quote'), false);
+  const out = dedup(
+    { recommendations: ['Publish the case study on LinkedIn with new screenshots and a client quote', 'Publish case study on the website homepage and update navigation links'] },
+    [{ recommendations: ['Publish case study'] }],
+  );
+  assert.equal(out.recommendations.length, 2);
+  // Overlap is symmetric.
+  assert.equal(isNearDuplicate('Review held packets', 'Review the held packets again and file each one'), isNearDuplicate('Review the held packets again and file each one', 'Review held packets'));
+});
+
+test('true near-duplicates are still dropped (one extra word)', () => {
+  assert.equal(isNearDuplicate('Publish the Wugweb case study this week', 'Publish Wugweb case studies this week soon'), true);
+});
+
 test('very short sentences only match when identical', () => {
   assert.equal(isNearDuplicate('Rest', 'Rest well'), false);
   assert.equal(isNearDuplicate('Rest', 'rest'), true);

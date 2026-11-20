@@ -3,11 +3,13 @@ import { requireOwner } from '@/lib/security/auth';
 import { checkRateLimit } from '@/lib/security/rate-limit';
 import { buildContext } from '@/lib/cognitive/contextBuilder';
 import { runLLM } from '@/lib/cognitive/llm';
+import { dailyLimitResponse } from '@/lib/cognitive/limit-response';
 import { readJsonObject, badRequest } from '@/lib/validation/http';
 import { resolveUserId, parseMode, parseInputText } from '@/lib/cognitive/validation';
 import { logDecisionNeon } from '@/lib/cognitive/logging/neon';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 /**
  * POST /api/cognitive/evaluate
@@ -120,6 +122,8 @@ OUTPUT JSON ONLY (no markdown fences):
 
   } catch (err: any) {
     console.error('[API/Cognitive/Evaluate]', err);
+    const limited = dailyLimitResponse(err);
+    if (limited) return limited;
     return NextResponse.json(
       { error: 'Evaluation engine failure' },
       { status: /LLM_FAILURE/.test(String(err?.message)) ? 502 : 500 }

@@ -15,6 +15,10 @@ export class ApiClientError extends Error {
   }
 }
 
+/** Typed error carrying the HTTP status (401 means the session ended). */
+export const ApiError = ApiClientError;
+export type ApiError = ApiClientError;
+
 async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -42,7 +46,7 @@ export async function apiRequest<T = unknown>(url: string, options: ApiOptions =
       );
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new ApiClientError((json as any)?.error || `Request failed (${res.status})`, res.status, json);
+        throw new ApiClientError((json as any)?.error || (json as any)?.message || `Request failed (${res.status})`, res.status, json);
       }
       return json as T;
     } catch (e) {

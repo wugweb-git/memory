@@ -18,6 +18,17 @@ test('splitIntoThread keeps every post within 280 chars and loses no words', () 
   assert.equal(posts.join(' ').replace(/\s+/g, ' '), text);
 });
 
+test('splitIntoThread slices exactly 280 when there is no break point, and handles a long URL', () => {
+  const unbroken = 'a'.repeat(600);
+  const posts = splitIntoThread(unbroken);
+  assert.deepEqual(posts.map((p) => p.length), [280, 280, 40]);
+  assert.equal(posts.join(''), unbroken);
+  const url = `https://example.com/${'x'.repeat(400)}`;
+  const withUrl = splitIntoThread(`Read this: ${url} and then tell me what you think.`);
+  assert.ok(withUrl.every((p) => p.length <= 280 && p.length > 0));
+  assert.equal(withUrl.join('').replace(/\s+/g, ''), `Readthis:${url}andthentellmewhatyouthink.`);
+});
+
 test('x, facebook and instagram report not_configured without credentials and send nothing', async () => {
   let called = false;
   globalThis.fetch = (async () => { called = true; return new Response('{}'); }) as typeof fetch;

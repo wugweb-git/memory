@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { postgres } from "@/lib/db/postgres";
 import { getRequestUserId } from "@/lib/identity/request";
+import { requireOwner } from '@/lib/security/auth';
 import { clampLimit } from '@/lib/validation/http';
 
 export const dynamic = 'force-dynamic';
@@ -10,6 +11,8 @@ export const dynamic = 'force-dynamic';
  * Fetches the persistent decision log for the user.
  */
 export async function GET(req: NextRequest) {
+  const actor = requireOwner(req);
+  if (actor instanceof NextResponse) return actor;
   try {
     const { searchParams } = new URL(req.url);
     const userId = getRequestUserId(req);

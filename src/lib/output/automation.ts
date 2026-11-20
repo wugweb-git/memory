@@ -5,9 +5,10 @@ import { createGeneratedOutput } from '@/lib/cms/queries';
 import { routeDistribution } from '@/lib/distribution/router';
 import { publishNow } from '@/lib/publishing/publisher';
 import type { PlatformPublishResult } from '@/lib/publishing/platforms';
-import { buildDeliveryRecord } from '@/lib/publishing/delivery';
+import { buildDeliveryRecord, extractDelivery, isRetryableDelivery } from '@/lib/publishing/delivery';
 
-export type PublishMode = 'published' | 'skipped' | 'duplicate';
+/** `resent` = the profile was already published; only a failed/unconfigured external send was re-run. */
+export type PublishMode = 'published' | 'skipped' | 'duplicate' | 'resent';
 
 export type PublishResult = {
   mode: PublishMode;
@@ -52,9 +53,12 @@ export async function publishOutput(
   // it again (prevents duplicate profile sections from queue retries).
   const already = await (postgres as any).publishedOutput.findFirst({
     where: { outputId },
-    select: { id: true },
+    select: { id: true, publishedContent: true },
   });
-  if (already) {
+  // A previous external send that failed (or had no credential) may be re-run,
+  // but never the profile publish and never a delivered/manual/internal outcome.
+  const resend = Boolean(already) && isRetryableDelivery(extractDelivery(already.publishedContent));
+  if (already && !resend) {
     return {
       mode: 'duplicate',
       outputId,
@@ -67,18 +71,22 @@ export async function publishOutput(
 
   // Direct publish to the public profile (the functional publish target today).
   let profilePublished = false;
-  try {
-    await publishContentToProfile({
-      username: profileUsername,
-      userId: output.userId,
-      outputId,
-    });
-    profilePublished = true;
-  } catch (err) {
-    console.error('[Publish] Profile publish failed:', err);
+  if (resend) {
+    profilePublished = true; // already on the profile; do not publish it again
+  } else {
+    try {
+      await publishContentToProfile({
+        username: profileUsername,
+        userId: output.userId,
+        outputId,
+      });
+      profilePublished = true;
+    } catch (err) {
+      console.error('[Publish] Profile publish failed:', err);
+    }
   }
 
-  const mode: PublishMode = profilePublished ? 'published' : 'skipped';
+  const mode: PublishMode = resend ? 'resent' : profilePublished ? 'published' : 'skipped';
 
   // Distribution: apply platform-specific formatting, then send externally.
   // This runs AFTER the profile publish: publishContentToProfile writes the
@@ -137,9 +145,12 @@ export async function publishOutput(
   }
 
 
+  // 'pushed' only when nothing is outstanding. If the external send failed or
+  // had no credential the output stays 'ready' (on the profile, not delivered).
+  const externalFailed = platformResult?.status === 'error' || platformResult?.status === 'not_configured';
   await postgres.outputLog.update({
     where: { id: outputId },
-    data: { status: mode === 'published' ? 'pushed' : 'ready' },
+    data: { status: profilePublished && !externalFailed ? 'pushed' : 'ready' },
   });
 
   // Mirror the artifact into Sanity as a generatedOutput doc (best-effort;

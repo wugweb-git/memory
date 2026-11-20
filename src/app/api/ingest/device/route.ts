@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   if (!limit.allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
 
   try {
-    const body = await req.json().catch(() => ({}));
+    const body = ((await req.json().catch(() => ({}))) ?? {});
     if (!VALID_KINDS.includes(body?.kind)) {
       return NextResponse.json({ error: `kind must be one of ${VALID_KINDS.join(', ')}` }, { status: 400 });
     }

@@ -252,6 +252,7 @@ export default function OutputStudioPage() {
         method: "POST",
         body: { userId, decisionId, sourceContent: content || "Generate output", platform },
         timeoutMs: 30000,
+        retries: 0,
       });
       const next = json?.content ?? content;
       setContent(next);
@@ -267,7 +268,7 @@ export default function OutputStudioPage() {
     } finally { setLoading(false); }
   }
 
-  /** Persist textarea edits so publish/schedule act on what the user sees. */
+  /** Persist textarea edits so publish and queue act on what the user sees. */
   async function persistEdits() {
     if (!outputId || content === savedContent) return;
     if (!content.trim()) throw new Error("Draft is empty");
@@ -288,12 +289,12 @@ export default function OutputStudioPage() {
     } finally { setBusy(false); }
   }
 
-  async function schedule() {
+  async function addToQueue() {
     if (!outputId) { toast.error("Generate or open a draft first"); return; }
     try {
       setBusy(true);
       await persistEdits();
-      await apiRequest(UI_API.outputSchedule, { method: "POST", body: { outputId, platform, userId } });
+      await apiRequest(UI_API.outputSchedule, { method: "POST", body: { outputId, platform, userId }, retries: 0 });
       toast.success("Added to the publishing queue");
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Could not add to the queue. Try again.");
@@ -305,8 +306,12 @@ export default function OutputStudioPage() {
     try {
       setBusy(true);
       await persistEdits();
-      const res = await apiRequest<{ sanitySynced?: boolean; payload?: unknown }>(UI_API.outputPublish, {
-        method: "POST", body: { outputId, userId },
+      const res = await apiRequest<{
+        sanitySynced?: boolean;
+        payload?: unknown;
+        delivery?: { status?: string; ok?: boolean; error?: string | null };
+      }>(UI_API.outputPublish, {
+        method: "POST", body: { outputId, userId }, retries: 0,
       });
       if (isManualPlatform(platform)) {
         // Nothing was sent to the platform. Show the text for the owner to post by hand.
@@ -316,7 +321,13 @@ export default function OutputStudioPage() {
         loadDrafts();
         return;
       }
-      toast.success(res?.sanitySynced ? "Published to your profile and CMS" : "Published to your profile");
+      const sendFailed = res?.delivery && res.delivery.ok === false;
+      if (sendFailed) {
+        const why = res?.delivery?.status === "not_configured" ? "its account is not set up yet" : "the platform did not accept it";
+        toast.warning(`Published to your profile, but not sent to ${platformLabel(platform)}: ${why}. See History.`);
+      } else {
+        toast.success(res?.sanitySynced ? "Published to your profile and CMS" : "Published to your profile");
+      }
       setOutputId(null); setContent(""); setSavedContent(""); setVersions([]); setLastSaved(null);
       loadDrafts();
       await loadLive();
@@ -550,7 +561,7 @@ export default function OutputStudioPage() {
                         <M3Button tone="secondary" onClick={saveDraft} disabled={busy || !outputId || !dirty}>
                           Save draft
                         </M3Button>
-                        <M3Button tone="secondary" onClick={schedule} disabled={busy || !outputId}>
+                        <M3Button tone="secondary" onClick={addToQueue} disabled={busy || !outputId}>
                           Add to queue
                         </M3Button>
                       </div>

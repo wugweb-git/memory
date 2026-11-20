@@ -16,12 +16,6 @@ type Lead = {
   url?: string;
 };
 
-const SEED: Lead[] = [
-  { id: 'seed-1', role: 'Principal Systems Architect', company: 'Solana Labs', score: 94, status: 'Applied', via: 'Indeed Agent', date: '2h ago' },
-  { id: 'seed-2', role: 'Staff UX Product Designer', company: 'Revolut', score: 88, status: 'Interviewing', via: 'LinkedIn Agent', date: '1d ago' },
-  { id: 'seed-3', role: 'AI Engineering Lead', company: 'Anthropic', score: 91, status: 'Outreach', via: 'Direct Parser', date: '3h ago' },
-];
-
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   Applied: { label: 'Applied', color: 'bg-accent/10 border-accent/20 text-accent', icon: Zap },
   Interviewing: { label: 'Live', color: 'bg-success/10 border-success/20 text-success', icon: UserCheck },
@@ -41,30 +35,35 @@ function formatRecency(dateStr?: string): string {
 export const JobSearchAgent = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setFailed(false);
     try {
       const res = await fetch('/api/blob?type=job_lead&limit=20');
       if (!res.ok) throw new Error('fetch failed');
       const data = await res.json();
       const rows = parseBlobItems<Record<string, unknown>>(data);
       const mapped: Lead[] = rows.map((b) => {
-        const meta = (b.metadata ?? {}) as Record<string, unknown>;
+        const trace = (b.trace_json && typeof b.trace_json === 'object' ? b.trace_json : {}) as Record<string, unknown>;
+        const payload = (b.raw_payload && typeof b.raw_payload === 'object' ? b.raw_payload : {}) as Record<string, unknown>;
+        const meta = { ...trace, ...payload } as Record<string, unknown>;
         return {
           id: String(b.id),
           role: String(meta.role || meta.title || 'Role match'),
           company: String(meta.company || 'Unknown'),
-          score: Number(meta.score ?? meta.match_score ?? 85),
+          score: Number(meta.score ?? meta.match_score ?? 0),
           status: String(meta.status || 'Outreach'),
           via: String(meta.via || b.source || 'Agent'),
           date: formatRecency(String(b.created_at || '')),
           url: meta.url ? String(meta.url) : undefined,
         };
       });
-      setLeads(mapped.length > 0 ? mapped : SEED);
+      setLeads(mapped);
     } catch {
-      setLeads(SEED);
+      setLeads([]);
+      setFailed(true);
     } finally {
       setLoading(false);
     }
@@ -95,18 +94,22 @@ export const JobSearchAgent = () => {
           >
             <RefreshCcw aria-hidden="true" size={15} className={loading ? 'motion-safe:animate-spin' : ''} />
           </button>
-          <div className="px-5 py-2.5 rounded-full bg-secondary border border-border-secondary text-2xs font-semibold text-text-tertiary flex items-center gap-3 shadow-sm">
-            <Fingerprint aria-hidden="true" size={14} className="text-accent" /> Agent: Nominal
-          </div>
-          <div className="px-5 py-2.5 rounded-full bg-success/5 border border-success/20 text-2xs font-semibold text-success flex items-center gap-3 shadow-sm">
-            <Zap aria-hidden="true" size={14} className="motion-safe:animate-pulse" /> {leads.length} Matches
-          </div>
+          <p className="text-2xs font-semibold text-text-tertiary">{loading ? 'Loading' : `${leads.length} ${leads.length === 1 ? 'lead' : 'leads'}`}</p>
         </div>
       </div>
 
       {loading ? (
         <div className="flex justify-center py-16">
           <Loader2 aria-hidden="true" className="motion-safe:animate-spin text-accent" size={28} />
+        </div>
+      ) : failed ? (
+        <p role="alert" className="px-2 py-8 text-sm text-text-tertiary">Could not load job leads. Use refresh to try again.</p>
+      ) : leads.length === 0 ? (
+        <div className="px-2 py-8 space-y-1">
+          <p className="text-sm font-medium text-text-primary">No job leads yet</p>
+          <p className="text-sm text-text-tertiary">
+            Leads appear here when buffer items of type <code className="text-accent">job_lead</code> exist. Nothing in the app creates them automatically yet, so they must be added to the buffer by hand or by an external tool.
+          </p>
         </div>
       ) : (
         <ul role="list" className="space-y-6">
@@ -125,14 +128,14 @@ export const JobSearchAgent = () => {
                   <div className="flex items-center justify-between flex-wrap md:flex-nowrap gap-4 md:gap-8 relative z-10">
                     <div className="flex min-w-0 items-center gap-4 md:gap-8">
                       <div className="relative w-16 h-16 flex items-center justify-center shrink-0">
-                        <span className="text-2xs font-semibold text-accent">{lead.score}%</span>
+                        <span className="text-2xs font-semibold text-accent">{lead.score > 0 ? `${lead.score}%` : '—'}</span>
                       </div>
                       <div className="space-y-1">
                         <h3 className="text-xl font-semibold text-text-primary tracking-tight ">
                           {lead.role}
                         </h3>
                         <p className="text-2xs text-text-tertiary font-bold ">
-                          {lead.company} · Sync: {lead.via}
+                          {lead.company} · via {lead.via}
                         </p>
                       </div>
                     </div>
@@ -147,7 +150,7 @@ export const JobSearchAgent = () => {
                           rel="noopener noreferrer"
                           className="inline-flex min-h-11 items-center text-2xs font-semibold text-accent hover:underline"
                         >
-                          View_Nexus<span className="sr-only"> (opens in a new tab)</span>
+                          View posting<span className="sr-only"> (opens in a new tab)</span>
                         </a>
                       ) : (
                         <a
@@ -156,17 +159,10 @@ export const JobSearchAgent = () => {
                           rel="noopener noreferrer"
                           className="inline-flex min-h-11 items-center text-2xs font-semibold text-accent hover:underline"
                         >
-                          Find_Roles<span className="sr-only"> (opens in a new tab)</span>
+                          Find roles<span className="sr-only"> (opens in a new tab)</span>
                         </a>
                       )}
                       <time className="text-2xs font-mono text-text-tertiary">{lead.date}</time>
-                      <button
-                        type="button"
-                        className="w-11 h-11 rounded-2xl bg-bg-elevated border border-border-secondary flex items-center justify-center hover:bg-text-primary hover:text-bg-primary transition-all"
-                        aria-label="Open lead"
-                      >
-                        <ArrowRight aria-hidden="true" size={20} />
-                      </button>
                     </div>
                   </div>
                 </article>

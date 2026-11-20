@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/security/auth';
+import { readJsonObject, badRequest } from '@/lib/validation/http';
 import { retrieve } from '@/lib/memory/rag';
 
 export const dynamic = 'force-dynamic';
@@ -8,7 +9,9 @@ export async function POST(req: NextRequest) {
   const adminGate = requireAdmin(req);
   if (adminGate instanceof NextResponse) return adminGate;
   try {
-    const { query, filters, test_run_id } = await req.json().catch(() => ({}));
+    const body = await readJsonObject(req);
+    if (!body) return badRequest('JSON object body required');
+    const { query, filters, test_run_id } = body as { query?: string; filters?: Record<string, unknown>; test_run_id?: string };
 
     if (!query) {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 });

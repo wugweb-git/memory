@@ -120,7 +120,7 @@ export default function AdminConsole() {
   const runJobs = () => {
     if (!window.confirm('Run the jobs now? This publishes queued output and deletes old rows.')) return;
     return runOp('jobs', 'Jobs run', async () => {
-      const res = await fetch(API_ENDPOINTS.jobs.run.path, { credentials: 'include' });
+      const res = await fetch(API_ENDPOINTS.jobs.run.path, { method: 'POST', credentials: 'include' });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(j.error ?? `jobs failed (${res.status})`);
       const q = j.queue ?? {};

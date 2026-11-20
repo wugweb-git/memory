@@ -1,5 +1,6 @@
 import { postgres as prisma } from '@/lib/db/postgres';
 import { integrationsFromSources } from '@/lib/integrations/from-sources';
+import { TRACKED_JOBS, summarizeJobRuns } from '@/lib/health/jobs-last-run';
 
 export async function buildSystemHealth() {
   const [
@@ -13,6 +14,7 @@ export async function buildSystemHealth() {
     entityIsolation,
     systemSettings,
     sources,
+    jobRuns,
   ] = await Promise.all([
     prisma.memoryPacket.count(),
     prisma.memoryPacket.count({ where: { processing_status: 'failed' } }),
@@ -35,6 +37,15 @@ export async function buildSystemHealth() {
     }),
     prisma.systemSettings.findFirst(),
     prisma.source.findMany(),
+    // Latest run per scheduled job (one query per job: cheap, uses the eventType+createdAt index).
+    // A failed lookup must not break the health payload.
+    Promise.all(
+      TRACKED_JOBS.map((j) =>
+        prisma.executionAuditLog
+          .findFirst({ where: { eventType: j.eventType }, orderBy: { createdAt: 'desc' }, select: { eventType: true, status: true, createdAt: true } })
+          .catch(() => null),
+      ),
+    ),
   ]);
 
   let status: 'LOCKED' | 'DEGRADED' | 'BROKEN' = 'LOCKED';
@@ -71,6 +82,7 @@ export async function buildSystemHealth() {
       logic_stability_pct: logicStabilityPct,
     },
     integrations: integrationsFromSources(sources),
+    jobs_last_run: summarizeJobRuns(jobRuns.filter((r): r is NonNullable<typeof r> => r !== null)),
     governance: {
       semantic_enabled: settingsValue.semantic_enabled ?? true,
       rag_enabled: settingsValue.rag_enabled ?? true,

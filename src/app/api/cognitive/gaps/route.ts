@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireOwner } from '@/lib/security/auth';
 import { checkRateLimit } from '@/lib/security/rate-limit';
+import { dailyLimitResponse } from '@/lib/cognitive/limit-response';
 import { readJsonObject, badRequest } from '@/lib/validation/http';
 import { resolveUserId } from '@/lib/cognitive/validation';
 import { buildContext } from '@/lib/cognitive/contextBuilder';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 const EXPECTED_DOMAINS    = ['technical', 'leadership', 'product', 'communication', 'financial', 'creative'];
 const EXPECTED_ENT_TYPES  = ['person', 'company', 'concept', 'tool'];
@@ -88,6 +90,8 @@ export async function POST(req: NextRequest) {
 
   } catch (err: any) {
     console.error('[API/Cognitive/Gaps]', err);
+    const limited = dailyLimitResponse(err);
+    if (limited) return limited;
     return NextResponse.json({ error: 'Gap analysis failure' }, { status: 500 });
   }
 }

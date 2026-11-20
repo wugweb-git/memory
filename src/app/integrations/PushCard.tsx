@@ -21,6 +21,8 @@ export function PushCard() {
   const [subscribed, setSubscribed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<string | null>(null);
 
   const loadConfig = useCallback(() => {
     setError(null);
@@ -58,6 +60,19 @@ export function PushCard() {
     }
   }
 
+  async function sendTest() {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const r = await apiRequest<{ message?: string }>('/api/push/test', { method: 'POST', body: {}, retries: 0 });
+      setTestResult(r.message ?? 'Test notification sent.');
+    } catch (e: unknown) {
+      setTestResult(e instanceof Error ? e.message : 'Could not send a test notification. Try again.');
+    } finally {
+      setTesting(false);
+    }
+  }
+
   const notConfigured = config !== null && !config.configured;
   const blocked = support === 'unsupported' || (support === 'denied' && !subscribed);
 
@@ -78,8 +93,14 @@ export function PushCard() {
           >
             {subscribed ? 'Turn off' : 'Turn on'}
           </M3Button>
+          {subscribed ? (
+            <M3Button type="button" tone="secondary" onClick={sendTest} disabled={testing || busy}>
+              {testing ? 'Sending...' : 'Send a test notification'}
+            </M3Button>
+          ) : null}
         </>
       )}
+      <p aria-live="polite" className="text-xs text-text-secondary">{testResult}</p>
       {error ? <p role="alert" className="text-xs text-danger">{error}</p> : null}
       {error && config === null ? <M3Button tone="secondary" onClick={loadConfig}>Try again</M3Button> : null}
     </M3Card>

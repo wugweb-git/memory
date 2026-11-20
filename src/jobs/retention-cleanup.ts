@@ -1,4 +1,5 @@
 import { postgres } from "@/lib/db/postgres";
+import { cleanupExpiredBlobItems, purgeBlobItems } from "@/lib/blobLayer";
 
 /**
  * Retention cleanup — deletes rows past their useful life so log/counter
@@ -21,6 +22,17 @@ export async function runRetentionCleanup() {
     postgres.publishingQueue.deleteMany({ where: { status: "dead", createdAt: { lt: new Date(now - 30 * DAY) } } }),
   ]);
 
+  // Blob buffer: flag past-TTL items as expired, then purge done/expired rows so
+  // the buffer (and its capacity gauge) does not grow forever. Best-effort.
+  let blobsExpired = 0;
+  let blobsPurged = 0;
+  try {
+    blobsExpired = await cleanupExpiredBlobItems();
+    blobsPurged = await purgeBlobItems();
+  } catch (err) {
+    console.error("[Retention] blob cleanup failed:", err);
+  }
+
   return {
     ok: true,
     job: "retention-cleanup",
@@ -28,5 +40,7 @@ export async function runRetentionCleanup() {
     oldSystemLogs: oldSystemLogs.count,
     oldAuditLogs: oldAuditLogs.count,
     deadQueueItems: deadQueueItems.count,
+    blobsExpired,
+    blobsPurged,
   };
 }

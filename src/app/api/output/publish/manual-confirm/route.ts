@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     if (!limit.allowed) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
     if (!hasPermission(actor.role, "publish")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    const body = await req.json().catch(() => ({}));
+    const body = ((await req.json().catch(() => ({}))) ?? {});
     const result = await confirmManualPost({ outputId: body?.outputId, url: body?.url });
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
     return NextResponse.json({

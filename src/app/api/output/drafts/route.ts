@@ -20,6 +20,8 @@ export async function GET(req: NextRequest) {
 
 /** Saves edits to a draft's content/platform (only while it is still a draft). */
 export async function PATCH(req: NextRequest) {
+  const actor = requireOwner(req);
+  if (actor instanceof NextResponse) return actor;
   const userId = getRequestUserId(req);
   let body: { id?: string; content?: string; platform?: string };
   try {

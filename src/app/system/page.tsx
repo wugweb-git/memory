@@ -11,6 +11,7 @@ import { apiRequest } from "@/lib/ui/api-client";
 import { AppShell } from "@/app/component/AppShell";
 import { PasskeyCard } from "./PasskeyCard";
 import { CostCard } from "./CostCard";
+import { CheckCircle2, AlertCircle, CircleDashed } from "lucide-react";
 
 const HEALTH_LABELS: Record<string, string> = {
   system: "System health",
@@ -149,6 +150,29 @@ export default function SystemPage() {
             <p className="text-2xs text-text-tertiary mt-2">
               Switches are saved and apply across the whole app. Only the owner can change them.
             </p>
+          </M3Card>
+
+          <M3Card title="Scheduled jobs">
+            {Array.isArray(health.system?.jobs_last_run) ? (
+              <ul className="divide-y divide-border-secondary">
+                {(health.system.jobs_last_run as Array<{ job: string; label: string; last_run_at: string | null; status: "ok" | "failed" | "never" }>).map((j) => {
+                  const Icon = j.status === "ok" ? CheckCircle2 : j.status === "failed" ? AlertCircle : CircleDashed;
+                  const tone = j.status === "ok" ? "text-success" : j.status === "failed" ? "text-danger" : "text-text-tertiary";
+                  const when = j.last_run_at ? new Date(j.last_run_at).toLocaleString() : null;
+                  return (
+                    <li key={j.job} className="flex min-h-12 items-center justify-between gap-3 py-2">
+                      <p className="text-sm font-medium text-text-primary">{j.label}</p>
+                      <p className={`flex shrink-0 items-center gap-1.5 text-xs ${tone}`}>
+                        <Icon className="h-4 w-4" aria-hidden="true" />
+                        <span>{j.status === "never" ? "Never run" : `Last run ${when}${j.status === "failed" ? " (failed)" : ""}`}</span>
+                      </p>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="text-sm text-text-tertiary">{loading ? "Loading last run times." : "Last run times are not available right now."}</p>
+            )}
           </M3Card>
 
           <PasskeyCard />

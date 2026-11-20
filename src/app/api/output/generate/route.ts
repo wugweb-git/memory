@@ -4,6 +4,7 @@ import { requireOwner } from "@/lib/security/auth";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   const actor = requireOwner(req);

@@ -5,7 +5,7 @@
  * Match rule (no model calls, so it costs nothing and cannot fail):
  *  1. exact match after lowercase + trim, as before;
  *  2. near-duplicate: the two sentences share almost all of their meaningful
- *     words (stop words dropped, plurals folded), judged by word overlap.
+ *     words (stop words dropped, plurals folded), judged by symmetric (Jaccard) word overlap.
  * Note: returns a new object — does not mutate the input.
  */
 
@@ -33,14 +33,17 @@ export function significantWords(text: string): Set<string> {
   return new Set(words);
 }
 
-/** 0..1 word overlap between two sentences (shared words over the shorter sentence's words). */
+/**
+ * 0..1 word overlap between two sentences: Jaccard (shared words over all distinct words).
+ * Symmetric, so a short recommendation cannot swallow a longer one that merely contains its words.
+ */
 export function overlap(a: string, b: string): number {
   const wa = significantWords(a);
   const wb = significantWords(b);
   if (wa.size === 0 || wb.size === 0) return 0;
   let shared = 0;
   for (const w of wa) if (wb.has(w)) shared++;
-  return shared / Math.min(wa.size, wb.size);
+  return shared / (wa.size + wb.size - shared);
 }
 
 /** Same recommendation: identical text, or a near-duplicate of at least two meaningful words. */

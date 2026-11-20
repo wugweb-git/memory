@@ -38,6 +38,9 @@ export function getVapidConfig(env: Record<string, string | undefined> = process
   return { publicKey, privateKey, subject };
 }
 
+/** A longer link falls back to the home page so one record always fits in a push message. */
+export const MAX_PUSH_URL_LENGTH = 500;
+
 export const NOT_CONFIGURED_MESSAGE = 'Push notifications are not configured. Set VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT.';
 
 function vapidJwt(cfg: VapidConfig, audience: string, nowSec: number): string {
@@ -102,7 +105,7 @@ export async function sendPush(
     const body = JSON.stringify({
       title: payload.title.slice(0, 120),
       body: (payload.body ?? '').slice(0, 300),
-      url: payload.url && /^\/(?![\/\\])/.test(payload.url) ? payload.url : '/',
+      url: payload.url && payload.url.length <= MAX_PUSH_URL_LENGTH && /^\/(?![\/\\])/.test(payload.url) ? payload.url : '/',
     });
     const encrypted = encryptPayload(sub, Buffer.from(body));
     const audience = new URL(sub.endpoint).origin;

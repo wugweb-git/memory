@@ -56,3 +56,12 @@ test('spotify plays map to a listening item and skip incomplete rows', () => {
   assert.match(String((item?.payload as any).text), /Song by Band/);
   assert.equal(mapPlay({ track: { id: 'x' } }), null);
 });
+
+test('export and tasks connectors match a source rule (they previously matched none)', () => {
+  const types = (source: string) => extractSignals(packet({ source, content: 'plain text', metadata: {} })).map((s) => s.type);
+  assert.ok(types('linkedin_export').includes('creation'));
+  assert.ok(types('x_export').includes('creation'));
+  assert.ok(types('youtube').includes('creation'));
+  assert.ok(!types('youtube').includes('consumption'));
+  assert.ok(types('google_tasks').includes('work_activity'));
+});

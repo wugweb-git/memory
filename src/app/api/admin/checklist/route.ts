@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/security/auth';
+import { readJsonObject, badRequest } from '@/lib/validation/http';
 import { getAdminChecklist, saveAdminChecklist, type AdminChecklistItem } from '@/lib/admin/checklist';
 
 export const dynamic = 'force-dynamic';
@@ -20,7 +21,9 @@ export async function PATCH(req: NextRequest) {
   const adminGate = requireAdmin(req);
   if (adminGate instanceof NextResponse) return adminGate;
   try {
-    const body = (await req.json().catch(() => ({}))) as { items?: AdminChecklistItem[] };
+    const parsed = await readJsonObject(req);
+    if (!parsed) return badRequest('JSON object body required');
+    const body = parsed as { items?: AdminChecklistItem[] };
     if (!Array.isArray(body.items)) {
       return NextResponse.json({ error: 'items array required' }, { status: 400 });
     }

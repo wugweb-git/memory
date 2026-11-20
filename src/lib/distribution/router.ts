@@ -30,6 +30,10 @@ export function routeDistribution(params: { platform: string; content: string; t
     case "portfolio":
     case "cms":
       return buildPortfolioPayload({ content, title, tags });
+    case "blog":
+    case "memo":
+      // Internal-only: published to the owner's profile, never sent externally.
+      return { ...buildPortfolioPayload({ content, title, tags }), platform };
     case "email-digest":
       return { platform, payload: { subject: title || "Digest", body: content, tags } };
     case "export-api":

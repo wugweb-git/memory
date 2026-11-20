@@ -8,6 +8,7 @@ name: Memory pipeline trigger
 on:
   schedule:
     - cron: "*/5 * * * *"
+    - cron: "17 3 * * *"
   workflow_dispatch:
 
 permissions: {}
@@ -18,6 +19,7 @@ concurrency:
 
 jobs:
   process:
+    if: github.event.schedule != '17 3 * * *'
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
@@ -32,6 +34,7 @@ jobs:
             "$TARGET_URL/api/jobs/process"
 
   publishing:
+    if: github.event.schedule != '17 3 * * *'
     # Drains scheduled and queued publishes. Vercel Hobby crons are daily only,
     # so without this a scheduled post would wait up to a day.
     runs-on: ubuntu-latest
@@ -46,3 +49,21 @@ jobs:
           curl --fail-with-body -sS -X POST --max-time 65 \
             -H "Authorization: Bearer $JOB_SECRET" \
             "$TARGET_URL/api/jobs/publishing"
+
+  daily-jobs:
+    # Connector sync, retries and persona jobs (/api/jobs/run). Vercel's own cron
+    # only authenticates with CRON_SECRET; calling it here with JOB_SECRET means
+    # these jobs still run daily when CRON_SECRET is not set.
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '17 3 * * *'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Call /api/jobs/run
+        env:
+          JOB_SECRET: ${{ secrets.JOB_SECRET }}
+          TARGET_URL: ${{ vars.PIPELINE_URL || 'https://www.vedanshusrivastava.com' }}
+        run: |
+          if [ -z "$JOB_SECRET" ]; then echo "JOB_SECRET repo secret is not set"; exit 1; fi
+          curl --fail-with-body -sS -X POST --max-time 70 \
+            -H "Authorization: Bearer $JOB_SECRET" \
+            "$TARGET_URL/api/jobs/run"

@@ -157,6 +157,7 @@ export const API_ENDPOINTS = {
   },
   push: {
     subscribe: { path: '/api/push/subscribe', methods: ['GET', 'POST', 'DELETE'] as const },
+    test: { path: '/api/push/test', methods: ['POST'] as const },
   },
   settings: {
     autoPromote: { path: '/api/settings/auto-promote', methods: ['GET', 'PUT'] as const },

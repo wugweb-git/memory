@@ -101,6 +101,18 @@ describe('push sender', () => {
     assert.deepEqual(JSON.parse(plain.subarray(0, -1).toString()), { title: 'Hello', body: 'World', url: '/ask' });
   });
 
+  it('falls back to / for a link too long to fit, and one record always fits', async () => {
+    const { sub, ua, auth } = makeSub();
+    const vapid = createECDH('prime256v1');
+    vapid.generateKeys();
+    const env = { VAPID_PUBLIC_KEY: b64urlEncode(vapid.getPublicKey()), VAPID_PRIVATE_KEY: b64urlEncode(vapid.getPrivateKey()), VAPID_SUBJECT: 'mailto:a@b.co' };
+    let size = 0;
+    const r = await sendPush(sub, { title: 'T'.repeat(500), body: '\u{1F600}'.repeat(500), url: '/' + 'a'.repeat(5000) }, { env, fetchImpl: async (_u, init) => { size = init.body.length; return { status: 201 }; } });
+    assert.equal(r.ok, true);
+    assert.ok(size < 4096, `encrypted record is ${size} bytes`);
+    void ua; void auth;
+  });
+
   it('maps 410 to GONE', async () => {
     const { sub } = makeSub();
     const vapid = createECDH('prime256v1');

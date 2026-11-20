@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import {
-  Briefcase, Mail, Chrome, ArrowRight, Loader2, RefreshCcw, AlertCircle, Plus
+  Briefcase, ArrowRight, Loader2, RefreshCcw, AlertCircle, Plus
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { IDENTITY_CONFIG } from '@/config/identity';
@@ -53,14 +53,16 @@ export const JobPipeline = () => {
       const rows = parseBlobItems(data);
 
       const apiApps: Application[] = rows.map((b: Record<string, unknown>) => {
-        const meta = (b.metadata && typeof b.metadata === 'object' ? b.metadata : {}) as Record<string, unknown>;
+        const payload = b.raw_payload && typeof b.raw_payload === 'object' ? (b.raw_payload as Record<string, unknown>) : {};
+        const trace = b.trace_json && typeof b.trace_json === 'object' ? (b.trace_json as Record<string, unknown>) : {};
+        const meta = { ...trace, ...payload } as Record<string, unknown>;
         const raw = typeof b.raw_payload === 'string' ? b.raw_payload : '';
         return {
           id: String(b.id ?? ''),
           role: String(meta.role ?? (raw.slice(0, 50) || 'Untitled Role')),
           company: String(meta.company ?? 'Unknown'),
           status: (String(meta.status ?? 'Applied') as Application['status']),
-          source: String(b.source_origin ?? 'Manual'),
+          source: String(b.source ?? 'Manual'),
           via: String(meta.via ?? 'Manual'),
           date: b.created_at ? new Date(String(b.created_at)).toLocaleDateString() : '—',
           url: meta.url ? String(meta.url) : undefined,
@@ -99,12 +101,6 @@ export const JobPipeline = () => {
             aria-label="Refresh pipeline">
             <RefreshCcw aria-hidden="true" size={15} className={loading ? 'motion-safe:animate-spin' : ''} />
           </button>
-          <div className="px-4 py-2 rounded-full bg-bg-secondary border border-border-secondary text-2xs font-semibold text-text-tertiary flex items-center gap-3 shadow-sm">
-            <Chrome aria-hidden="true" size={14} className="text-warning" /> Browser sync
-          </div>
-          <div className="px-4 py-2 rounded-full bg-bg-secondary border border-border-secondary text-2xs font-semibold text-text-tertiary flex items-center gap-3 shadow-sm">
-            <Mail aria-hidden="true" size={14} className="text-accent" /> Email anchor
-          </div>
         </div>
       </div>
 
@@ -127,7 +123,7 @@ export const JobPipeline = () => {
 
       {!loading && !error && apps.length === 0 && (
         <p className="text-sm text-text-tertiary  px-2 py-8">
-          No job applications in the buffer yet. Add items with type <code className="text-accent">job_application</code> via Buffer or Universal Sync.
+          No job applications yet. Applications appear here when buffer items of type <code className="text-accent">job_application</code> exist. Nothing in the app creates them automatically yet, so they must be added to the buffer by hand or by an external tool.
         </p>
       )}
 
@@ -178,11 +174,7 @@ export const JobPipeline = () => {
                       aria-label={`View ${app.role} at ${app.company} (opens in a new tab)`}>
                       <ArrowRight aria-hidden="true" size={18} />
                     </a>
-                  ) : (
-                    <div aria-hidden="true" className="w-11 h-11 rounded-xl bg-secondary border border-border-secondary text-text-tertiary flex items-center justify-center cursor-not-allowed">
-                      <ArrowRight aria-hidden="true" size={18} />
-                    </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </motion.div>

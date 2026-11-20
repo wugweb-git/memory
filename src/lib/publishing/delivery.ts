@@ -138,3 +138,37 @@ export function applyManualConfirmation(
   };
   return { ok: true, content: { ...prev, delivery }, delivery };
 }
+
+/**
+ * True when a stored delivery shows the external send never reached the
+ * platform (failed, or no credential at the time). Only then may the external
+ * step be re-run; a delivered, manual or internal outcome must never be re-sent.
+ */
+export function isRetryableDelivery(delivery: Pick<DeliveryRecord, 'status' | 'delivered'> | null | undefined): boolean {
+  if (!delivery) return false;
+  return delivery.delivered !== true && (delivery.status === 'error' || delivery.status === 'not_configured');
+}
+
+export type QueueOutcome =
+  | { kind: 'published'; lastError: string | null }
+  /** Send failed: the queue should back off and retry (counts toward the dead-letter limit). */
+  | { kind: 'retry'; error: string }
+  /** No credential configured: retrying cannot help until the owner sets it up. */
+  | { kind: 'needs_setup'; lastError: string };
+
+/**
+ * Maps a publish outcome to an honest queue state. `published` only when the
+ * post was delivered, handed to the owner (manual) or is internal-only.
+ */
+export function queueOutcomeFor(
+  mode: 'published' | 'duplicate' | 'resent',
+  platformResult: Pick<DeliveryInput, 'platform' | 'status' | 'error'> | null | undefined,
+): QueueOutcome {
+  if (platformResult?.status === 'error') {
+    return { kind: 'retry', error: `delivery_failed: ${shortReason(platformResult.error)}` };
+  }
+  if (platformResult?.status === 'not_configured') {
+    return { kind: 'needs_setup', lastError: `not_configured: ${platformResult.platform}` };
+  }
+  return { kind: 'published', lastError: mode === 'duplicate' ? 'duplicate: already published' : null };
+}

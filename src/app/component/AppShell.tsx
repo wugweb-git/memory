@@ -108,7 +108,12 @@ export function AppShell({ children, bottomDock = false }: AppShellProps) {
     }
     window.location.assign('/login');
   };
-  const loginHref = `/login?next=${encodeURIComponent(pathname)}`;
+  // Keep the query string too. Read from window in an effect so the shell stays statically renderable.
+  const [search, setSearch] = useState('');
+  useEffect(() => {
+    setSearch(window.location.search);
+  }, [pathname]);
+  const loginHref = `/login?next=${encodeURIComponent(pathname + search)}`;
   const navGroups = NAV_GROUPS
     .map((g) => ({ ...g, items: g.items.filter((i) => featureOn(i.feature)) }))
     .filter((g) => g.items.length > 0);

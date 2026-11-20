@@ -7,14 +7,19 @@ import { Card, EmptyState, Skeleton, StatusPill } from "@/components/ui/primitiv
 import { UI_API } from "@/lib/ui/contracts";
 import { apiRequest, ApiClientError } from "@/lib/ui/api-client";
 import { AppShell } from "@/app/component/AppShell";
+import { IDENTITY_CONFIG } from "@/config/identity";
+import { ManualPostCard } from "@/app/content/ManualPostCard";
+import { pendingManualItems } from "./manual-pending";
 import { deliveryTone, describeDelivery } from "@/lib/publishing/delivery";
 
 type OutputRow = {
   id?: string;
+  outputId?: string | null;
   platform?: string | null;
   externalUrl?: string | null;
   externalId?: string | null;
   createdAt?: string | null;
+  publishedContent?: { title?: unknown; excerpt?: unknown; content?: unknown; profileUsername?: unknown } | null;
   delivery?: { platform: string; status: string; delivered: boolean; error?: string | null; postUrl?: string | null } | null;
 };
 
@@ -44,6 +49,7 @@ export default function HistoryPage() {
   const [rows, setRows] = useState<OutputRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const load = useCallback(() => {
     let active = true;
@@ -57,6 +63,8 @@ export default function HistoryPage() {
   }, []);
 
   useEffect(() => load(), [load]);
+
+  const pending = pendingManualItems(rows);
 
   return (
     <AppShell>
@@ -108,12 +116,37 @@ export default function HistoryPage() {
           />
         ) : null}
 
+        {notice ? <p role="status" aria-live="polite" className="text-sm text-success">{notice}</p> : null}
+
+        {!loading && !error && pending.length > 0 ? (
+          <section aria-labelledby="waiting-heading" className="space-y-3">
+            <h2 id="waiting-heading" className="text-base font-semibold text-text-primary">Waiting for you to post</h2>
+            <ul className="space-y-3">
+              {pending.map((p) => (
+                <li key={p.key}>
+                  <ManualPostCard
+                    prep={{ outputId: p.outputId, platform: p.platform, text: p.text }}
+                    idSuffix={`-${p.key}`}
+                    itemTitle={p.title || undefined}
+                    onDone={(message) => { setNotice(message); load(); }}
+                  />
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
         {!loading && !error && rows.length > 0 ? (
           <ul className="space-y-2">
             {rows.map((r, i) => {
               const link = r.externalUrl || r.delivery?.postUrl || "";
               const safe = link && isSafeUrl(link);
               const deliveryLabel = r.delivery ? describeDelivery(r.delivery as Parameters<typeof describeDelivery>[0]) : null;
+              const pc = r.publishedContent && typeof r.publishedContent === "object" ? r.publishedContent : null;
+              const title = typeof pc?.title === "string" ? pc.title : "";
+              const excerpt = typeof pc?.excerpt === "string" ? pc.excerpt : "";
+              const profileHandle = typeof pc?.profileUsername === "string" && pc.profileUsername ? pc.profileUsername : IDENTITY_CONFIG.HANDLE;
+              const onProfile = !safe && !!pc && (r.platform === "profile" || typeof pc.profileUsername === "string");
               return (
                 <li key={r.id || i}>
                   <Card className="space-y-1.5 p-4">
@@ -125,6 +158,8 @@ export default function HistoryPage() {
                         </time>
                       ) : null}
                     </div>
+                    {title ? <p className="break-words text-sm text-text-primary">{title}</p> : null}
+                    {excerpt && excerpt !== title ? <p className="line-clamp-2 break-words text-xs text-text-tertiary">{excerpt}</p> : null}
                     {deliveryLabel && r.delivery ? (
                       <div><StatusPill tone={deliveryTone(r.delivery.status)}>{deliveryLabel}</StatusPill></div>
                     ) : null}
@@ -139,6 +174,13 @@ export default function HistoryPage() {
                         <ExternalLink size={14} className="shrink-0" aria-hidden="true" />
                         <span className="sr-only">(opens in a new tab)</span>
                       </a>
+                    ) : onProfile ? (
+                      <Link
+                        href={`/p/${encodeURIComponent(profileHandle)}`}
+                        className="inline-flex min-h-11 items-center gap-1.5 text-sm text-accent underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                      >
+                        View on your public profile
+                      </Link>
                     ) : (
                       <p className="break-all text-sm text-text-tertiary">{link || r.externalId || "Saved locally, not published to a platform"}</p>
                     )}

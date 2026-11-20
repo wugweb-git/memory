@@ -1,4 +1,5 @@
 import { postgres } from "@/lib/db/postgres";
+import { staleProcessingWhere } from "@/lib/queue/stale";
 
 const STALE_PROCESSING_MS = 10 * 60_000;
 
@@ -10,10 +11,7 @@ export async function runScheduledPublisher() {
   // Reclaim stale `processing` items — publishOutput is idempotent, so
   // re-running a half-published item cannot double-publish.
   const reclaimed = await postgres.publishingQueue.updateMany({
-    where: {
-      status: "processing",
-      createdAt: { lte: new Date(Date.now() - STALE_PROCESSING_MS) },
-    },
+    where: staleProcessingWhere(new Date(Date.now() - STALE_PROCESSING_MS)),
     data: { status: "pending" },
   });
 

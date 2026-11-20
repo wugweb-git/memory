@@ -3,10 +3,10 @@ import { enqueuePublishing } from "@/lib/queue/publishing";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { getRequestUser, requireOwner } from "@/lib/security/auth";
 import { hasPermission } from "@/lib/security/roles";
+import { isSchedulablePlatform } from "@/lib/publishing/allowlist";
 
 export const dynamic = "force-dynamic";
 
-const PLATFORMS = new Set(["linkedin", "medium", "portfolio", "cms", "email-digest", "export-api"]);
 
 export async function POST(req: NextRequest) {
   const gate = requireOwner(req);
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   if (!body || typeof body.outputId !== "string" || !body.outputId) {
     return NextResponse.json({ error: "outputId required" }, { status: 400 });
   }
-  if (typeof body.platform !== "string" || !PLATFORMS.has(body.platform)) {
+  if (typeof body.platform !== "string" || !isSchedulablePlatform(body.platform)) {
     return NextResponse.json({ error: "Unsupported platform" }, { status: 400 });
   }
   let scheduledAt: Date | null = null;

@@ -1,14 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { IDENTITY_CONFIG, resolveUserId } from "@/config/identity";
-export interface DashboardProfile {
-  displayName: string;
-  handle: string;
-  email: string;
-  timezone: string;
-}
-
 export interface DashboardStats {
   memoryPackets: string;
   syncStatus: string;
@@ -17,19 +9,12 @@ export interface DashboardStats {
 }
 
 export interface DashboardData {
-  profile: DashboardProfile;
   stats: DashboardStats;
   loading: boolean;
   error: string | null;
 }
 
 const DEFAULTS: DashboardData = {
-  profile: {
-    displayName: IDENTITY_CONFIG.DISPLAY_NAME,
-    handle: `@${IDENTITY_CONFIG.HANDLE}`,
-    email: IDENTITY_CONFIG.EMAIL,
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  },
   stats: {
     memoryPackets: "—",
     syncStatus: "Unknown",
@@ -49,10 +34,10 @@ export function useDashboardData(): DashboardData {
     async function fetchData() {
       try {
         // Fetch from existing admin health endpoints
-        const [memRes, sysRes, personaRes] = await Promise.allSettled([
+        const [memRes, sysRes, blobRes] = await Promise.allSettled([
           fetch("/api/memory/stats"),
           fetch("/api/health/system"),
-          fetch("/api/persona/profile"),
+          fetch("/api/blob/stats"),
         ]);
 
         if (cancelled) return;
@@ -77,25 +62,17 @@ export function useDashboardData(): DashboardData {
               : sysJson.core_integrity === "PASSED"
                 ? "100%"
                 : DEFAULTS.stats.uplink;
-          bufferQueue = String(sysJson.metrics?.stale_locks ?? "—");
         }
 
-        let profile = DEFAULTS.profile;
-        if (personaRes.status === "fulfilled" && personaRes.value.ok) {
-          const profJson = await personaRes.value.json();
-          if (profJson.counts?.activeProfiles != null) {
-            bufferQueue = String(profJson.counts.activeProfiles);
+        // Signed-out (401) or failed responses leave the placeholder; the console shows "Signed out" separately.
+        if (blobRes.status === "fulfilled" && blobRes.value.ok) {
+          const blobJson = await blobRes.value.json().catch(() => null);
+          if (blobJson && typeof blobJson.item_count === "number") {
+            bufferQueue = blobJson.item_count.toLocaleString();
           }
-          profile = {
-            displayName: profJson.displayName || profJson.name || DEFAULTS.profile.displayName,
-            handle: profJson.handle ? `@${String(profJson.handle).replace(/^@/, "")}` : DEFAULTS.profile.handle,
-            email: profJson.email || DEFAULTS.profile.email,
-            timezone: profJson.timezone || DEFAULTS.profile.timezone,
-          };
         }
 
         setData({
-          profile,
           stats: { memoryPackets, syncStatus, bufferQueue, uplink },
           loading: false,
           error: null,

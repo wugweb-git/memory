@@ -4,6 +4,7 @@ import { checkRateLimit } from '@/lib/security/rate-limit';
 import { ingestExternalArticle } from '@/lib/ingestion/article';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 /**
  * POST /api/ingest/article
@@ -16,7 +17,7 @@ export async function POST(req: NextRequest) {
   const limit = await checkRateLimit(`ingest:article:${actor.userId}`, 30, 60_000);
   if (!limit.allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
   try {
-    const body = await req.json().catch(() => ({}));
+    const body = ((await req.json().catch(() => ({}))) ?? {});
     if (!body?.url) {
       return NextResponse.json({ error: 'url required' }, { status: 400 });
     }

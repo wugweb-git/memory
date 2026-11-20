@@ -258,6 +258,8 @@ export const OUTPUT_PLATFORMS = [
   { value: 'blog', label: 'Blog post' },
   { value: 'medium', label: 'Medium' },
   { value: 'portfolio', label: 'Portfolio' },
+  { value: 'x', label: 'X' },
+  { value: 'facebook', label: 'Facebook' },
   { value: 'substack', label: 'Substack (post it yourself)' },
   { value: 'behance', label: 'Behance (post it yourself)' },
   { value: 'dribbble', label: 'Dribbble (post it yourself)' },

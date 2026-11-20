@@ -4,7 +4,8 @@
  *
  * Credentials: ICLOUD_APPLE_ID and ICLOUD_APP_PASSWORD, read through
  * getCredential (a value saved in the app wins over the env var). configured()
- * is a synchronous check, so it only sees the env vars; sync() sees both.
+ * is synchronous and reads the primed credential cache (getCredentialSync), so
+ * credentials saved in the app count too; tests inject deps.env instead.
  * Credentials are never logged and never placed in an error message.
  *
  * Flow: PROPFIND current-user-principal, then calendar-home-set, then the
@@ -13,7 +14,7 @@
  */
 
 import type { Connector, SyncResult } from '@/lib/ingestion/connectors/types';
-import { getCredential } from '@/lib/publishing/credentials';
+import { getCredential, getCredentialSync } from '@/lib/publishing/credentials';
 import { ingestItems, recordError, type PendingItem } from './sync-items';
 
 export const ICLOUD_BASE = 'https://caldav.icloud.com/';
@@ -182,7 +183,10 @@ export async function fetchIcloudEvents(opts: { appleId: string; appPassword: st
 
   const start = new Date(now.getTime() - PAST_DAYS * 86_400_000);
   const end = new Date(now.getTime() + FUTURE_DAYS * 86_400_000);
-  const query = `<?xml version="1.0"?><c:calendar-query ${NS}><d:prop><c:calendar-data/></d:prop><c:filter><c:comp-filter name="VCALENDAR"><c:comp-filter name="VEVENT"><c:time-range start="${icsStamp(start)}" end="${icsStamp(end)}"/></c:comp-filter></c:comp-filter></c:filter></c:calendar-query>`;
+  // Ask the server to expand recurring events into instances for the same window, so a weekly
+  // meeting shows up as the occurrences inside it rather than one master with an old start date.
+  const range = `start="${icsStamp(start)}" end="${icsStamp(end)}"`;
+  const query = `<?xml version="1.0"?><c:calendar-query ${NS}><d:prop><c:calendar-data><c:expand ${range}/></c:calendar-data></d:prop><c:filter><c:comp-filter name="VCALENDAR"><c:comp-filter name="VEVENT"><c:time-range ${range}/></c:comp-filter></c:comp-filter></c:filter></c:calendar-query>`;
 
   const out: { calendar: string; event: IcsEvent }[] = [];
   for (const cal of calendars) {
@@ -215,7 +219,6 @@ export function mapIcloudEvent(calendar: string, e: IcsEvent): PendingItem | nul
 }
 
 export function makeIcloudConnector(deps: Deps = {}): Connector {
-  const env = () => deps.env ?? process.env;
   const cred = (k: string) => (deps.getCred ?? getCredential)(k);
   return {
     id: 'icloud-calendar',
@@ -225,7 +228,11 @@ export function makeIcloudConnector(deps: Deps = {}): Connector {
     requires: 'env',
     cadenceMins: 360,
     setupHint: 'Create an app-specific password at account.apple.com (Sign-In and Security), then set ICLOUD_APPLE_ID and ICLOUD_APP_PASSWORD.',
-    configured: () => Boolean(env().ICLOUD_APPLE_ID && env().ICLOUD_APP_PASSWORD),
+    configured: () => {
+      // Injected env (tests) wins; otherwise saved value first, env var second (same as Spotify).
+      const get = (k: string) => (deps.env ? deps.env[k] : getCredentialSync(k));
+      return Boolean(get('ICLOUD_APPLE_ID') && get('ICLOUD_APP_PASSWORD'));
+    },
     async sync(opts): Promise<SyncResult> {
       const [appleId, appPassword] = await Promise.all([cred('ICLOUD_APPLE_ID'), cred('ICLOUD_APP_PASSWORD')]);
       if (!appleId || !appPassword) return { ingested: 0, skipped: 0, error: 'NOT_CONFIGURED: set ICLOUD_APPLE_ID and ICLOUD_APP_PASSWORD (an app-specific password)' };

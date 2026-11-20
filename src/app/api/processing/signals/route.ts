@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { postgres as prisma } from '@/lib/db/postgres';
 import { ProcessingEngine } from '@/lib/processing/engine';
+import { readJsonObject, badRequest } from '@/lib/validation/http';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 export async function GET(req: NextRequest) {
   try {
@@ -24,7 +26,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { packetId } = await req.json().catch(() => ({}));
+    const body = await readJsonObject(req);
+    if (!body) return badRequest('JSON object body required');
+    const { packetId } = body as { packetId?: string };
     if (!packetId) return NextResponse.json({ error: 'packetId required' }, { status: 400 });
 
     const result = await ProcessingEngine.processPacket(packetId);

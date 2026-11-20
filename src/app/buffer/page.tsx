@@ -4,6 +4,9 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { AppShell } from '@/app/component/AppShell';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
 import { postBlobAction } from '@/lib/ui/blob';
+import { AppToastContainer } from '@/app/component/AppToastContainer';
+import { toast } from 'react-toastify';
+import { describePromoteOutcome } from './promote-outcome';
 import { Card, EmptyState, Skeleton } from '@/components/ui/primitives';
 import {
   Trash2,
@@ -128,12 +131,14 @@ export default function BufferControlSurface() {
   const [confirmingReject, setConfirmingReject] = useState(false);
   const reqId = useRef(0);
   const [statsFailed, setStatsFailed] = useState(false);
+  const [sessionEnded, setSessionEnded] = useState(false);
   const [captureMode, setCaptureMode] = useState<'upload' | 'voice' | 'knowledge' | 'link' | 'pulse' | 'device' | 'csv'>('upload');
 
   // Stats & Ingestion Monitoring
   const fetchStats = useCallback(async () => {
     try {
       const res = await fetch(API_ENDPOINTS.blob.stats.path);
+      if (res.status === 401) { setSessionEnded(true); return; }
       if (!res.ok) { setStatsFailed(true); return; }
       const data = await res.json();
       if (data && typeof data.usage_percent === 'number') { setStats(data); setStatsFailed(false); }
@@ -150,6 +155,11 @@ export default function BufferControlSurface() {
       const stateFilter = activeTab === 'all' ? '' : `&state=${activeTab}`;
       const res = await fetch(`${API_ENDPOINTS.blob.list.path}?limit=50${stateFilter}`);
       if (myReq !== reqId.current) return; // a newer request superseded this one
+      if (res.status === 401) {
+        setSessionEnded(true);
+        setItems([]);
+        return;
+      }
       if (!res.ok) {
         // A dead intake store must not look like an empty queue.
         setLoadError('The intake store did not respond, so items cannot be loaded. Retry in a moment.');
@@ -159,6 +169,7 @@ export default function BufferControlSurface() {
       const data = await res.json();
       if (myReq !== reqId.current) return;
       setLoadError(null);
+      setSessionEnded(false);
       setItems(Array.isArray(data.items) ? data.items : []);
     } catch (err) {
       if (myReq !== reqId.current) return;
@@ -178,6 +189,19 @@ export default function BufferControlSurface() {
     return () => clearInterval(interval);
   }, [fetchStats, fetchItems]);
 
+  // Capture widgets announce success through toasts and have no completion callback,
+  // so refresh the list shortly after a success toast appears.
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    toast.onChange((payload) => {
+      if (payload.status === 'added' && payload.type === 'success') {
+        clearTimeout(timer);
+        timer = setTimeout(() => { fetchItems(); fetchStats(); }, 700);
+      }
+    });
+    return () => { clearTimeout(timer); toast.onChange(() => {}); };
+  }, [fetchItems, fetchStats]);
+
   // Switching items always resets the destructive confirmation and stale errors.
   useEffect(() => {
     setConfirmingReject(false);
@@ -191,9 +215,21 @@ export default function BufferControlSurface() {
     setActionNotice(null);
     try {
       const res = await postBlobAction(action, id);
-      if (res.ok) {
+      if (res.status === 401) {
+        setSessionEnded(true);
+        setActionError('Your session has ended. Sign in again.');
+      } else if (res.ok && action === 'promote') {
+        const body = await res.json().catch(() => ({}));
+        const outcome = describePromoteOutcome(body);
+        if (outcome.closed) setSelectedId(null);
+        if (outcome.tone === 'warning' && !outcome.closed) setActionError(outcome.message);
+        else setActionNotice(outcome.message);
+        setConfirmingReject(false);
+        fetchItems();
+        fetchStats();
+      } else if (res.ok) {
         setActionNotice(ACTION_DONE[action] ?? 'Item updated.');
-        if (action === 'reject' || action === 'promote') setSelectedId(null);
+        if (action === 'reject') setSelectedId(null);
         setConfirmingReject(false);
         fetchItems();
         fetchStats();
@@ -226,7 +262,14 @@ export default function BufferControlSurface() {
 
   const retry = () => { fetchItems(); fetchStats(); };
 
-  const emptyState = loadError ? (
+  const emptyState = sessionEnded ? (
+    <div role="alert" className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-danger/40 px-6 py-10 text-center">
+      <p className="text-sm font-semibold text-danger">Your session has ended. Sign in again.</p>
+      <a href={`/login?next=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname : '/buffer')}`} className={`inline-flex min-h-11 items-center rounded-xl border border-danger/40 px-5 text-sm font-semibold text-danger hover:bg-danger/5 ${focusRing}`}>
+        Sign in
+      </a>
+    </div>
+  ) : loadError ? (
     <div role="alert" className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-danger/40 px-6 py-10 text-center">
       <p className="text-sm font-semibold text-danger">{loadError}</p>
       <p className="max-w-sm text-xs text-text-secondary">This is a connection problem, not an empty buffer. Your items are safe.</p>
@@ -247,7 +290,7 @@ export default function BufferControlSurface() {
   ) : (
     <EmptyState
       title={activeTab === 'all' ? 'The buffer is empty' : `Nothing in "${TABS.find(t => t.id === activeTab)?.label}"`}
-      hint={activeTab === 'all' ? 'Upload a file, record a voice note or paste a link. New items land here for review before they become memory.' : 'Try another filter, or add something new to the buffer.'}
+      hint={activeTab === 'all' ? 'Upload a file, record a voice note or paste a link. Link, voice and device captures land here for review; uploads, files and imports go straight through the ingestion gate.' : 'Try another filter, or add something new to the buffer.'}
       action={
         <a href="#capture" className={`inline-flex min-h-11 items-center gap-2 rounded-xl bg-text-primary px-5 text-sm font-semibold text-bg-primary hover:bg-accent ${focusRing}`}>
           <Plus size={14} aria-hidden="true" /> Add an item
@@ -364,6 +407,7 @@ export default function BufferControlSurface() {
 
   return (
     <AppShell>
+      <AppToastContainer position="top-center" theme="light" />
       <div className={`mx-auto w-full max-w-7xl ${showAlertStrip ? 'pb-24' : ''}`}>
         {/* Header and capacity */}
         <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
@@ -594,7 +638,7 @@ export default function BufferControlSurface() {
             </Card>
             <p className="flex items-start gap-2 px-1 text-xs text-text-tertiary">
               <Inbox size={14} aria-hidden="true" className="mt-0.5 shrink-0" />
-              Captured items wait here until you review and promote them.
+              Link, voice and device captures wait here until you review and promote them. Uploads, files and imports are ingested directly, and only items the gate flags are held here.
             </p>
           </aside>
         </div>

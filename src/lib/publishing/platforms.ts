@@ -4,7 +4,7 @@ import { isManualPlatform } from "@/lib/platforms/manual";
 /**
  * Per-platform credential env vars. A platform listed here publishes to an
  * EXTERNAL service and needs its token configured before anything is sent.
- * Platforms NOT listed (portfolio, cms) are the internal public-profile path
+ * Platforms NOT listed (portfolio, cms, blog, memo) are the internal public-profile path
  * and never require an external credential.
  */
 const PLATFORM_CREDENTIAL_ENV: Record<string, string> = {
@@ -17,7 +17,7 @@ const PLATFORM_CREDENTIAL_ENV: Record<string, string> = {
 };
 
 /** Platforms served by the internal profile/CMS path — no external send here. */
-const INTERNAL_PLATFORMS = new Set(["portfolio", "cms"]);
+const INTERNAL_PLATFORMS = new Set(["portfolio", "cms", "blog", "memo"]);
 
 export type PlatformPublishStatus =
   | "published" // real external send succeeded (token-gated branch only)

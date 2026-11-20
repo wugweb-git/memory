@@ -14,7 +14,21 @@ const LINK_BTN =
 export type ManualPrep = { outputId: string; platform: ManualPlatform; text: string };
 
 /** Post-it-yourself card: formatted text, copy, open the site, then confirm it was posted. */
-export function ManualPostCard({ prep, onDone }: { prep: ManualPrep; onDone: (message: string) => void }) {
+export function ManualPostCard({
+  prep,
+  onDone,
+  idSuffix = "",
+  itemTitle,
+}: {
+  prep: ManualPrep;
+  onDone: (message: string) => void;
+  /** Keeps element ids unique when several cards are on one page (history). */
+  idSuffix?: string;
+  /** Optional title of the item, shown above the text when several cards are listed. */
+  itemTitle?: string;
+}) {
+  const textId = `manual-post-text${idSuffix}`;
+  const urlId = `manual-post-url${idSuffix}`;
   const meta = MANUAL_PLATFORMS[prep.platform];
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
@@ -63,9 +77,10 @@ export function ManualPostCard({ prep, onDone }: { prep: ManualPrep; onDone: (me
       description={`${meta.label} cannot be posted to from here. Copy the text, post it yourself, then mark it as posted.`}
       action={<StatusPill tone="warning">Waiting for you to post</StatusPill>}
     >
-      <label htmlFor="manual-post-text" className="sr-only">{`Formatted text for ${meta.label}`}</label>
+      {itemTitle ? <p className="break-words text-sm font-semibold text-text-primary">{itemTitle}</p> : null}
+      <label htmlFor={textId} className="sr-only">{`Formatted text for ${meta.label}`}</label>
       <textarea
-        id="manual-post-text"
+        id={textId}
         ref={textRef}
         readOnly
         value={prep.text}
@@ -90,20 +105,20 @@ export function ManualPostCard({ prep, onDone }: { prep: ManualPrep; onDone: (me
         {asking ? (
           <>
             <Field
-              id="manual-post-url"
+              id={urlId}
               label="Link to your post (optional)"
               hint="Paste the https link so history can point to it."
               error={urlError ?? undefined}
             >
               <Input
-                id="manual-post-url"
+                id={urlId}
                 type="url"
                 inputMode="url"
                 autoComplete="off"
                 placeholder="https://"
                 value={url}
                 invalid={Boolean(urlError)}
-                aria-describedby={urlError ? "manual-post-url-error" : "manual-post-url-hint"}
+                aria-describedby={urlError ? `${urlId}-error` : `${urlId}-hint`}
                 onChange={(e) => { setUrl(e.target.value); if (urlError) setUrlError(null); }}
               />
             </Field>

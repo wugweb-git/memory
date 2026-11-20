@@ -20,6 +20,7 @@ export interface TriggerDeps {
   run: (userId: string) => Promise<any>;
 }
 
+/** Inclusive: signal intensity is capped at 0.9, so a strict > could never fire. */
 export const SPIKE_THRESHOLD = 0.9;
 const HOUR = 3_600_000;
 const DAY = 86_400_000;
@@ -33,7 +34,7 @@ function dailyCap(env: NodeJS.ProcessEnv): number {
 }
 
 export function hasSpike(signals: SpikeSignal[] | undefined | null): boolean {
-  return Boolean(signals?.some((s) => (s?.intensity_absolute ?? 0) > SPIKE_THRESHOLD));
+  return Boolean(signals?.some((s) => (s?.intensity_absolute ?? 0) >= SPIKE_THRESHOLD));
 }
 
 async function defaultDeps(): Promise<TriggerDeps> {

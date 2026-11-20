@@ -37,7 +37,8 @@ const KEYWORD_RULES: KeywordRule[] = [
     type: 'creation',
     category: 'authoring',
     pattern: /\b(published|wrote|drafted|drafting|designed|built|shipped|launched|released|composed|recorded|created|prototype)\b/gi,
-    sources: ['notion', 'blog', 'medium', 'substack', 'linkedin', 'x', 'twitter'],
+    // youtube: the connector ingests the owner's own uploads (creation, not consumption).
+    sources: ['notion', 'blog', 'medium', 'substack', 'linkedin', 'linkedin_export', 'x', 'x_export', 'twitter', 'youtube'],
   },
   {
     type: 'health',
@@ -55,7 +56,7 @@ const KEYWORD_RULES: KeywordRule[] = [
     type: 'consumption',
     category: 'media',
     pattern: /\b(watched|watching|listened|listening|podcast|episode|playlist|album|movie|netflix|spotify|youtube|read(?:ing)? (?:a |the )?(?:book|article)|bookmark(?:ed)?)\b/gi,
-    sources: ['rss', 'spotify', 'youtube', 'pocket', 'readwise'],
+    sources: ['rss', 'spotify', 'pocket', 'readwise'],
   },
 ];
 
@@ -79,7 +80,8 @@ export function extractSignals(packet: MemoryPacket): Signal[] {
 
   // Rule: Work Activity
   const isCalendar = source === 'google_calendar' || source === 'google_calendar_events' || source === 'icloud_calendar';
-  if (source === 'github' || isCalendar || (isEmail && /work|project|meeting|sprint|task/i.test((packet.metadata as any).subject || ''))) {
+  const isTasks = source === 'google_tasks';
+  if (source === 'github' || isCalendar || isTasks || (isEmail && /work|project|meeting|sprint|task/i.test((packet.metadata as any).subject || ''))) {
     detected.push({
       packet_id: packetId,
       type: 'work_activity',

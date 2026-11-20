@@ -35,25 +35,19 @@ export default function PacketInspector({ packetId, onClose }: PacketInspectorPr
     setError(null);
     try {
       const id = encodeURIComponent(packetId);
-      const [packetRes, signalsRes, semanticRes] = await Promise.all([
-        fetch(`/api/memory/get?id=${id}`, { credentials: 'include' }),
-        fetch(`/api/processing/signals?packetId=${id}`, { credentials: 'include' }),
-        fetch(`/api/processing/semantic?packetId=${id}`, { credentials: 'include' }),
-      ]);
+      const packetRes = await fetch(`/api/memory/get?id=${id}`, { credentials: 'include' });
 
       if (!packetRes.ok) {
         const body = await packetRes.json().catch(() => ({}));
         throw new Error(body?.error || `HTTP ${packetRes.status}`);
       }
+      // /api/memory/get returns the packet together with its signals and semantic object.
       const packetData = await packetRes.json();
-      // Signals and semantic data are optional enrichments: a failure there must not hide the packet.
-      const signalsData = signalsRes.ok ? await signalsRes.json().catch(() => ({})) : {};
-      const semanticData = semanticRes.ok ? await semanticRes.json().catch(() => ({})) : {};
 
       setData({
         packet: packetData.packet,
-        signals: signalsData.signals,
-        semantic: semanticData.semantic,
+        signals: packetData.signals,
+        semantic: packetData.semantic,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');

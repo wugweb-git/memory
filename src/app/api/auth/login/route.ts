@@ -5,6 +5,8 @@ import { INTERNAL_VAULT } from '@/config/vault';
 import { IDENTITY_CONFIG } from '@/config/identity';
 import { signToken } from '@/lib/security/jwt';
 import { rememberedSessionCookie } from '@/lib/security/auth';
+import { checkRateLimit } from '@/lib/security/rate-limit';
+import { safeEqual, clientIp, AUTH_RATE_LIMIT, AUTH_RATE_WINDOW_MS } from '@/lib/security/safe-compare';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,14 +23,23 @@ export async function POST(req: NextRequest) {
 
     const normalized = String(email).trim().toLowerCase();
 
+    // Brute-force guard: per client IP and per email, 10 attempts per 10 minutes.
+    const [ipLimit, emailLimit] = await Promise.all([
+      checkRateLimit(`login:ip:${clientIp(req)}`, AUTH_RATE_LIMIT, AUTH_RATE_WINDOW_MS),
+      checkRateLimit(`login:email:${normalized.slice(0, 200)}`, AUTH_RATE_LIMIT, AUTH_RATE_WINDOW_MS),
+    ]);
+    if (!ipLimit.allowed || !emailLimit.allowed) {
+      const res = NextResponse.json({ error: 'Too many sign-in attempts, try again in a few minutes' }, { status: 429 });
+      res.headers.set('Retry-After', String(Math.ceil(AUTH_RATE_WINDOW_MS / 1000)));
+      return res;
+    }
+
     // Owner login via env credentials (single-owner product). Works without a
     // user database; disabled unless ADMIN_PASSWORD is set in the environment.
-    if (
-      INTERNAL_VAULT.ADMIN_PASSWORD &&
-      INTERNAL_VAULT.ADMIN_EMAIL &&
-      normalized === INTERNAL_VAULT.ADMIN_EMAIL.toLowerCase() &&
-      String(password).trim() === INTERNAL_VAULT.ADMIN_PASSWORD
-    ) {
+    // Constant-time comparison (equal-length digests); both sides always evaluated.
+    const emailMatches = safeEqual(normalized, (INTERNAL_VAULT.ADMIN_EMAIL || '').toLowerCase());
+    const passwordMatches = safeEqual(String(password).trim(), INTERNAL_VAULT.ADMIN_PASSWORD || '');
+    if (INTERNAL_VAULT.ADMIN_PASSWORD && INTERNAL_VAULT.ADMIN_EMAIL && emailMatches && passwordMatches) {
       const token = signToken(
         { sub: IDENTITY_CONFIG.DEFAULT_USER_ID, email: normalized, role: 'admin' },
         INTERNAL_VAULT.AUTH_SECRET,

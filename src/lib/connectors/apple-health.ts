@@ -202,7 +202,7 @@ export function weekToItem(w: WeekSummary): PendingItem {
 }
 
 /** Accepts export.zip (finds export.xml, not the ECG or route files) or a bare export.xml. */
-export function parseAppleHealthExport(filename: string, data: Buffer): PendingItem[] {
+export function parseAppleHealthExport(filename: string, data: Buffer, now: Date = new Date()): PendingItem[] {
   if (data.length > APPLE_HEALTH_MAX_BYTES) throw new Error(tooBig());
   let xml: Buffer | undefined;
   if (isZip(data)) {
@@ -212,18 +212,21 @@ export function parseAppleHealthExport(filename: string, data: Buffer): PendingI
   } else {
     xml = data;
   }
-  const weeks = summariseAppleHealthXml(xml).slice(-APPLE_HEALTH_MAX_WEEKS);
+  // The in-progress week is partial and sourceId dedup would lock the partial numbers in, so only
+  // import weeks that ended before today; it is picked up whole by the next export.
+  const today = now.toISOString().slice(0, 10);
+  const weeks = summariseAppleHealthXml(xml).filter((w) => w.weekEnd < today).slice(-APPLE_HEALTH_MAX_WEEKS);
   return weeks.map(weekToItem);
 }
 
 export async function importAppleHealth(
   filename: string,
   data: Buffer,
-  opts: { autoPromote?: boolean; deps?: Parameters<typeof ingestItems>[0]['deps'] } = {},
+  opts: { autoPromote?: boolean; deps?: Parameters<typeof ingestItems>[0]['deps']; now?: Date } = {},
 ): Promise<SyncResult> {
   const id = 'apple-health';
   try {
-    const items = parseAppleHealthExport(filename, data);
+    const items = parseAppleHealthExport(filename, data, opts.now);
     if (items.length === 0) return recordError(id, 'No steps, workouts, sleep or resting heart rate found. Check this is the Apple Health export (export.zip or export.xml).');
     return await ingestItems({ connectorId: id, source: 'apple_health', items, inputMode: 'upload', max: APPLE_HEALTH_MAX_WEEKS, autoPromote: opts.autoPromote, deps: opts.deps });
   } catch (err: any) {

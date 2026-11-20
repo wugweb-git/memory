@@ -29,9 +29,18 @@ export async function POST(req: NextRequest) {
     const messages: Record<string, string> = {
       published: 'Artifact published to profile' + (result.sanitySynced ? ' and synced to CMS' : ''),
       duplicate: 'Already published — skipped (idempotent)',
+      resent: 'Profile already published — retried the external send',
       skipped: 'Publish skipped — profile publish failed',
     };
+    const pr = result.platformResult;
+    const deliveryFailed = pr?.status === 'error' || pr?.status === 'not_configured';
 
+    // Response contract (UI reads these):
+    //  status: 'success' | 'error'  — 'error' only when the profile publish failed (HTTP 502)
+    //  platformResult: { status, delivered, externalId, error } | null
+    //  delivery: { status: 'published'|'internal'|'manual'|'not_configured'|'error'|'none', delivered, ok, error }
+    //    ok=false means the profile publish worked but the external send did not (error / not_configured);
+    //    a later POST for the same outputId re-runs only the external send.
     return NextResponse.json({
       status: result.mode === 'skipped' ? 'error' : 'success',
       mode: result.mode,
@@ -44,6 +53,12 @@ export async function POST(req: NextRequest) {
       platformResult: result.platformResult
         ? { status: result.platformResult.status, delivered: result.platformResult.delivered, externalId: result.platformResult.externalId, error: result.platformResult.error }
         : null,
+      delivery: {
+        status: pr?.status ?? 'none',
+        delivered: pr?.delivered === true,
+        ok: !deliveryFailed,
+        error: pr?.error ?? null,
+      },
     }, { status: result.mode === 'skipped' ? 502 : 200 });
 
   } catch (err: any) {

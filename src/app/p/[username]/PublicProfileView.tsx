@@ -131,6 +131,14 @@ export function PublicProfileView({ username }: { username: string }) {
                 <Mail size={15} aria-hidden="true" /> Get in touch
               </a>
             )}
+            {isOwner && (
+              <Link
+                href="/ask"
+                className="inline-flex min-h-11 items-center gap-2 px-4 rounded-xl border border-border-secondary text-sm font-medium text-text-secondary hover:border-border-primary hover:text-text-primary transition-colors"
+              >
+                <MessageSquare size={15} aria-hidden="true" /> Ask
+              </Link>
+            )}
             {socials.map((link) => {
               const key = (link.platform ?? '').toLowerCase();
               const Icon = SOCIAL_ICONS[key] ?? ExternalLink;

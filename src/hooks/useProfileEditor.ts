@@ -5,6 +5,12 @@ import { IDENTITY_CONFIG } from "@/config/identity";
 import type { ProfileSection, ProfileRecord } from "@/lib/profile/types";
 import { useProfileData } from "./useProfileData";
 
+async function serverError(res: Response, fallback: string): Promise<Error> {
+  const body = await res.json().catch(() => null);
+  const msg = body && typeof body.error === "string" && body.error ? body.error : fallback;
+  return new Error(msg);
+}
+
 export function useProfileEditor(username = IDENTITY_CONFIG.HANDLE) {
   const { profile, sections, byType, loading, error, refetch } = useProfileData(username);
   const [saving, setSaving] = useState(false);
@@ -26,7 +32,7 @@ export function useProfileEditor(username = IDENTITY_CONFIG.HANDLE) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(patch),
         });
-        if (!res.ok) throw new Error("Failed to save profile");
+        if (!res.ok) throw await serverError(res, "Failed to save profile");
         const json = await res.json();
         await refetch();
         return json;
@@ -51,7 +57,7 @@ export function useProfileEditor(username = IDENTITY_CONFIG.HANDLE) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(section),
         });
-        if (!res.ok) throw new Error("Failed to add section");
+        if (!res.ok) throw await serverError(res, "Failed to add section");
         const json = await res.json();
         await refetch();
         return json;
@@ -69,14 +75,22 @@ export function useProfileEditor(username = IDENTITY_CONFIG.HANDLE) {
   const removeSection = useCallback(
     async (sectionId: string) => {
       setSaving(true);
-      const res = await fetch(`${base}/sections?sectionId=${encodeURIComponent(sectionId)}`, {
-        method: "DELETE",
-      });
-      setSaving(false);
-      if (!res.ok) throw new Error("Failed to remove section");
-      const json = await res.json();
-      await refetch();
-      return json;
+      setSaveError(null);
+      try {
+        const res = await fetch(`${base}/sections?sectionId=${encodeURIComponent(sectionId)}`, {
+          method: "DELETE",
+        });
+        if (!res.ok) throw await serverError(res, "Failed to remove section");
+        const json = await res.json();
+        await refetch();
+        return json;
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : "Remove failed";
+        setSaveError(msg);
+        throw e;
+      } finally {
+        setSaving(false);
+      }
     },
     [base, refetch],
   );
@@ -98,7 +112,7 @@ export function useProfileEditor(username = IDENTITY_CONFIG.HANDLE) {
           body: JSON.stringify({ ...body, userId: IDENTITY_CONFIG.DEFAULT_USER_ID }),
         });
         const json = await res.json();
-        if (!res.ok) throw new Error(json.error || "Publish failed");
+        if (!res.ok) throw new Error(json?.error || "Publish failed");
         return json;
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Publish failed";

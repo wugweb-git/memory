@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { AppShell } from '@/app/component/AppShell';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
 import { Card, EmptyState, Skeleton } from '@/components/ui/primitives';
-import { Database, HardDrive, RefreshCcw, Server, ShieldAlert } from 'lucide-react';
+import { AlertTriangle, Archive, CheckCircle2, Database, Globe, HardDrive, Lock, RefreshCcw, Search, Server, ShieldAlert, XCircle } from 'lucide-react';
+import { PACKET_STATUSES, packetStatusView } from './packet-status';
 import ManualUpload from '@/app/buffer/components/ManualUpload';
 
 type MonitorState = {
@@ -38,6 +39,21 @@ type MonitorState = {
   };
 };
 
+const TONE_CLASS = { success: 'bg-success/10 text-success', warning: 'bg-warning/10 text-warning', danger: 'bg-danger/10 text-danger', neutral: 'bg-bg-secondary text-text-secondary' } as const;
+const STATUS_ICON = { check: CheckCircle2, alert: AlertTriangle, x: XCircle, archive: Archive } as const;
+
+function StatusBadge({ status }: { status: unknown }) {
+  const v = packetStatusView(status);
+  const Icon = STATUS_ICON[v.icon];
+  return (
+    <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-2xs font-bold ${TONE_CLASS[v.tone]}`}>
+      <Icon size={12} aria-hidden="true" /> {v.label}
+    </span>
+  );
+}
+
+type RetrievalHit = { packet_id: string; chunk: string; score: number; source: string; timestamp: string };
+
 function bytesToMb(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
@@ -48,6 +64,13 @@ export default function MemoryControlSurface() {
   const [selectedPacket, setSelectedPacket] = useState<any | null>(null);
   const [statusFilter, setStatusFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
+  const [appliedStatus, setAppliedStatus] = useState('');
+  const [appliedSource, setAppliedSource] = useState('');
+  const [sessionEnded, setSessionEnded] = useState(false);
+  const [query, setQuery] = useState('');
+  const [searching, setSearching] = useState(false);
+  const [hits, setHits] = useState<RetrievalHit[] | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionNote, setActionNote] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
@@ -56,21 +79,33 @@ export default function MemoryControlSurface() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  // Debounce filter typing so each keystroke does not refetch.
+  useEffect(() => {
+    const t = setTimeout(() => { setAppliedStatus(statusFilter); setAppliedSource(sourceFilter); }, 300);
+    return () => clearTimeout(t);
+  }, [statusFilter, sourceFilter]);
+
   const fetchMonitor = useCallback(async () => {
     const seq = ++requestSeq.current;
     setLoading(true);
     try {
       const [monitorRes, packetRes] = await Promise.all([
         fetch(API_ENDPOINTS.memory.monitor.path),
-        fetch(`${API_ENDPOINTS.memory.packets.path}?limit=100&status=${encodeURIComponent(statusFilter)}&source=${encodeURIComponent(sourceFilter)}`)
+        fetch(`${API_ENDPOINTS.memory.packets.path}?limit=100&status=${encodeURIComponent(appliedStatus)}&source=${encodeURIComponent(appliedSource.trim())}`)
       ]);
       if (seq !== requestSeq.current) return;
+      if (monitorRes.status === 401 || packetRes.status === 401) {
+        setSessionEnded(true);
+        setLoadError(null);
+        return;
+      }
       if (!monitorRes.ok || !packetRes.ok) {
         // An unreachable memory store must not masquerade as an empty vault.
         setLoadError('The memory store did not respond. This is a connection problem, not an empty vault. Check your connection and retry.');
         return;
       }
       setLoadError(null);
+      setSessionEnded(false);
       const monitorJson = await monitorRes.json();
       const packetJson = await packetRes.json();
       if (seq !== requestSeq.current) return;
@@ -86,7 +121,7 @@ export default function MemoryControlSurface() {
     } finally {
       if (seq === requestSeq.current) setLoading(false);
     }
-  }, [sourceFilter, statusFilter]);
+  }, [appliedSource, appliedStatus]);
 
   useEffect(() => {
     fetchMonitor();
@@ -110,6 +145,7 @@ export default function MemoryControlSurface() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
+      if (res.status === 401) { setSessionEnded(true); setActionError('Your session has ended. Sign in again.'); return; }
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         setActionError(j?.error || `${label} failed (${res.status})`);
@@ -121,6 +157,55 @@ export default function MemoryControlSurface() {
       setActionError(`${label} failed. Check your connection and try again; nothing was changed.`);
     } finally {
       setBusyAction(null);
+    }
+  };
+
+  const setPublic = async (packetId: string, isPublic: boolean) => {
+    const label = isPublic ? 'Make public' : 'Make private';
+    setBusyAction(label);
+    setActionError(null);
+    setActionNote(null);
+    try {
+      const res = await fetch('/api/memory/public', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: [packetId], isPublic }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (res.status === 401) { setSessionEnded(true); setActionError('Your session has ended. Sign in again.'); return; }
+      if (!res.ok) { setActionError(j?.error || `${label} failed (${res.status})`); return; }
+      if (isPublic && j.updated === 0) { setActionError('This packet is restricted and cannot be made public.'); return; }
+      setPackets((rows) => rows.map((r) => (r.id === packetId ? { ...r, is_public: isPublic } : r)));
+      setSelectedPacket((cur: any) => (cur?.id === packetId ? { ...cur, is_public: isPublic } : cur));
+      setActionNote(isPublic ? 'Packet is now public. The public chat may quote it.' : 'Packet is now private.');
+    } catch {
+      setActionError(`${label} failed. Check your connection and try again; nothing was changed.`);
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const runSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = query.trim();
+    if (q.length < 3 || searching) return;
+    setSearching(true);
+    setSearchError(null);
+    try {
+      const res = await fetch('/api/memory/retrieve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: q }),
+      });
+      if (res.status === 401) { setSessionEnded(true); setHits(null); return; }
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok || j.error) throw new Error(j.error || `HTTP ${res.status}`);
+      setHits(Array.isArray(j.results) ? j.results : []);
+    } catch (err) {
+      setHits(null);
+      setSearchError(`Search failed: ${err instanceof Error ? err.message : 'unknown error'}. Try again.`);
+    } finally {
+      setSearching(false);
     }
   };
 
@@ -137,9 +222,7 @@ export default function MemoryControlSurface() {
     <Card className="space-y-5 p-5">
       <div className="flex items-start justify-between gap-3">
         <h2 className="text-base font-semibold text-text-primary">Packet details</h2>
-        <span className={`rounded-full px-2.5 py-1 text-2xs font-bold ${selectedPacket.status === 'accepted' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
-          {selectedPacket.status}
-        </span>
+        <StatusBadge status={selectedPacket.status} />
       </div>
       <dl className="grid grid-cols-2 gap-4 text-sm">
         <div>
@@ -159,6 +242,22 @@ export default function MemoryControlSurface() {
       </div>
 
       {actionError ? <p role="alert" className="text-xs text-danger">{actionError}</p> : null}
+
+      <div className="space-y-2">
+        <p className="flex items-center gap-2 text-sm font-medium text-text-primary">
+          {selectedPacket.is_public
+            ? <><Globe size={14} aria-hidden="true" className="text-success" /> Public: the public chat may quote it</>
+            : <><Lock size={14} aria-hidden="true" className="text-text-tertiary" /> Private: only you can see it</>}
+        </p>
+        <button
+          type="button"
+          disabled={busyAction !== null}
+          onClick={() => setPublic(selectedPacket.id, !selectedPacket.is_public)}
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border-primary px-4 text-sm font-medium text-text-primary transition-colors hover:bg-bg-secondary disabled:opacity-50"
+        >
+          {busyAction === 'Make public' || busyAction === 'Make private' ? 'Saving…' : selectedPacket.is_public ? 'Make private' : 'Make public'}
+        </button>
+      </div>
 
       <div className="space-y-2">
         <button
@@ -246,6 +345,56 @@ export default function MemoryControlSurface() {
 
       <p role="status" className={actionNote ? 'mb-4 text-sm font-medium text-success' : 'sr-only'}>{actionNote ?? ''}</p>
 
+      {sessionEnded && (
+        <div role="alert" className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-danger/30 bg-danger/10 p-4 text-danger">
+          <p className="text-sm font-medium">Your session has ended. Sign in again.</p>
+          <a href={`/login?next=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname : '/memory')}`} className="inline-flex min-h-11 items-center rounded-xl border border-danger/40 px-5 text-xs font-bold text-danger hover:bg-danger/5">Sign in</a>
+        </div>
+      )}
+
+      <Card className="mb-6 space-y-4 p-4 sm:p-5">
+        <form onSubmit={runSearch} role="search" className="flex flex-col gap-3 sm:flex-row">
+          <label htmlFor="memory-search" className="sr-only">Search your memory</label>
+          <div className="relative min-w-0 flex-1">
+            <Search size={16} aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-tertiary" />
+            <input
+              id="memory-search"
+              type="search"
+              autoComplete="off"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search your notes by meaning (3 characters or more)"
+              className="min-h-11 w-full rounded-xl border border-border-primary bg-bg-primary pl-10 pr-4 text-base text-text-primary sm:text-sm placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={searching || query.trim().length < 3}
+            className="min-h-11 rounded-xl bg-text-primary px-5 text-sm font-bold text-bg-primary transition-colors hover:bg-accent disabled:opacity-50"
+          >
+            {searching ? 'Searching…' : 'Search'}
+          </button>
+        </form>
+        <div role="status" aria-live="polite">
+          {searchError ? <p role="alert" className="text-sm text-danger">{searchError}</p> : null}
+          {hits && hits.length === 0 ? <p className="text-sm text-text-secondary">No notes matched that search. Try different words.</p> : null}
+        </div>
+        {hits && hits.length > 0 && (
+          <ul className="space-y-3">
+            {hits.map((h, i) => (
+              <li key={`${h.packet_id}-${i}`} className="rounded-xl border border-border-secondary bg-bg-primary p-4">
+                <p className="whitespace-pre-wrap break-words text-sm text-text-primary">{h.chunk}</p>
+                <p className="mt-2 flex flex-wrap gap-x-3 text-xs text-text-tertiary">
+                  <span className="font-medium text-text-secondary">{h.source}</span>
+                  {h.timestamp ? <span>{new Date(h.timestamp).toLocaleDateString()}</span> : null}
+                  {typeof h.score === 'number' ? <span>Match {Math.round(h.score * 100)}%</span> : null}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+
       {loadError && packets.length > 0 && (
         <div role="alert" className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-danger/30 bg-danger/10 p-4 text-danger">
           <p className="text-sm font-medium">{loadError} The list below may be out of date.</p>
@@ -293,18 +442,20 @@ export default function MemoryControlSurface() {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
               <label className="block">
                 <span className="mb-1 block text-xs font-medium text-text-secondary">Status</span>
-                <input
-                  className="min-h-11 w-full min-w-0 rounded-xl border border-border-primary bg-bg-primary px-3 text-base text-text-primary sm:text-sm placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                  placeholder="For example accepted or hold"
+                <select
+                  className="min-h-11 w-full min-w-0 rounded-xl border border-border-primary bg-bg-primary px-3 text-base text-text-primary sm:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                />
+                >
+                  <option value="">All statuses</option>
+                  {PACKET_STATUSES.map((s) => <option key={s} value={s}>{packetStatusView(s).label}</option>)}
+                </select>
               </label>
               <label className="block">
                 <span className="mb-1 block text-xs font-medium text-text-secondary">Source</span>
                 <input
                   className="min-h-11 w-full min-w-0 rounded-xl border border-border-primary bg-bg-primary px-3 text-base text-text-primary sm:text-sm placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                  placeholder="For example upload"
+                  placeholder="For example manual, github or rss"
                   value={sourceFilter}
                   onChange={(e) => setSourceFilter(e.target.value)}
                 />
@@ -332,9 +483,7 @@ export default function MemoryControlSurface() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <span className="min-w-0 break-words text-sm font-semibold text-text-primary">{packet.type}</span>
-                    <span className={`shrink-0 rounded-full px-2.5 py-1 text-2xs font-bold ${packet.status === 'accepted' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
-                      {packet.status}
-                    </span>
+                    <StatusBadge status={packet.status} />
                   </div>
                   <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-tertiary">
                     <span className="font-medium text-text-secondary">{packet.source}</span>
@@ -365,7 +514,7 @@ export default function MemoryControlSurface() {
               ) : filtersActive ? (
                 <EmptyState
                   title="No packets match these filters"
-                  hint="Check the spelling of the status or source, or clear the filters to see everything."
+                  hint="Check the spelling of the source, or clear the filters to see everything."
                   action={
                     <button type="button" onClick={() => { setStatusFilter(''); setSourceFilter(''); }} className="min-h-11 rounded-xl border border-border-primary px-5 text-xs font-bold text-text-primary hover:bg-bg-secondary">
                       Clear filters
@@ -375,7 +524,7 @@ export default function MemoryControlSurface() {
               ) : (
                 <EmptyState
                   title="No packets yet"
-                  hint="Upload a file on this page, or capture something in the buffer. Accepted items show up here as memory packets."
+                  hint="Upload a file on this page, or capture something in the buffer. Active items show up here as memory packets."
                   action={
                     <Link href="/buffer" className="inline-flex min-h-11 items-center rounded-xl bg-text-primary px-5 text-xs font-bold text-bg-primary hover:bg-accent">
                       Open the buffer

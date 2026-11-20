@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   const limit = await checkRateLimit(`ingest:rss:${actor.userId}`, 30, 60_000);
   if (!limit.allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
   try {
-    const body = await req.json().catch(() => ({}));
+    const body = ((await req.json().catch(() => ({}))) ?? {});
     if (!body?.feedUrl) {
       return NextResponse.json({ error: 'feedUrl required' }, { status: 400 });
     }

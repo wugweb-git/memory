@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   const limit = await checkRateLimit(`persona:rollback:${actor.userId}`, 20, 60_000);
   if (!limit.allowed) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
 
-  const body = await req.json().catch(() => ({}));
+  const body = ((await req.json().catch(() => ({}))) ?? {});
   if (!VALID_FIELDS.includes(body?.field)) {
     return NextResponse.json({ error: `field must be one of ${VALID_FIELDS.join(", ")}` }, { status: 400 });
   }

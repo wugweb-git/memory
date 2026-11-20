@@ -3,7 +3,6 @@ import React, { useState, useRef, useCallback } from 'react';
 import { Mic, MicOff, CheckCircle2, X, Waves, Brain, Loader2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
-import { resolveUserId } from '@/config/identity';
 import { captureToBuffer } from '@/lib/pwa/capture-client';
 
 type Stage = 'idle' | 'recording' | 'processing' | 'review' | 'anchoring' | 'error';
@@ -34,45 +33,20 @@ export const VoiceIngestion = () => {
   const [transcript, setTranscript] = useState('');
   const recognitionRef              = useRef<any>(null);
 
-  /* ── Parse transcript via LLM (blob ingest API) ──────────────── */
+  /* ── Prepare the transcript for review (no model call; capture goes straight to the buffer) ── */
   const parseTranscript = useCallback(async (text: string) => {
     setStage('processing');
-    try {
-      const res = await fetch('/api/cognitive/evaluate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: resolveUserId().userId,
-          input_text: text,
-          mode: 'operator',
-        }),
-      });
-
-      if (!res.ok) throw new Error('LLM parse failed');
-
-      const now = new Date().toISOString();
-      const words = text.split(' ');
-
-      setParsed({
-        what:            text.split('.')[0]?.trim() || text.slice(0, 60),
-        when:            now,
-        why:             words.length > 8 ? words.slice(0, 8).join(' ') + '…' : text,
-        how:             'Voice capture via Speech API',
-        raw_transcript:  text,
-      });
-      setStage('review');
-      toast.info('Signal captured — review before anchoring.');
-    } catch {
-      const now = new Date().toISOString();
-      setParsed({
-        what:           text.slice(0, 80),
-        when:           now,
-        why:            'Manually narrated signal',
-        how:            'Voice capture (local parse)',
-        raw_transcript: text,
-      });
-      setStage('review');
-    }
+    const now = new Date().toISOString();
+    const words = text.split(' ');
+    setParsed({
+      what:            text.split('.')[0]?.trim() || text.slice(0, 60),
+      when:            now,
+      why:             words.length > 8 ? words.slice(0, 8).join(' ') + '…' : text,
+      how:             'Voice capture via Speech API',
+      raw_transcript:  text,
+    });
+    setStage('review');
+    toast.info('Note captured. Review it before sending it to the buffer.');
   }, []);
 
   /* ── Start recording via Web Speech API ─────────────────────── */

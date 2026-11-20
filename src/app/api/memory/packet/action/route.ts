@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/security/auth';
+import { readJsonObject, badRequest } from '@/lib/validation/http';
 import { postgres as prisma } from '@/lib/db/postgres';
 
 export const dynamic = 'force-dynamic';
@@ -8,7 +9,9 @@ export async function POST(req: NextRequest) {
   const adminGate = requireAdmin(req);
   if (adminGate instanceof NextResponse) return adminGate;
   try {
-    const { action, packet_id } = await req.json().catch(() => ({}));
+    const body = await readJsonObject(req);
+    if (!body) return badRequest('JSON object body required');
+    const { action, packet_id } = body as { action?: string; packet_id?: string };
 
     if (!packet_id) {
       return NextResponse.json({ error: 'packet_id is required' }, { status: 400 });

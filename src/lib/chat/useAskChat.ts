@@ -6,6 +6,13 @@ import { DefaultChatTransport } from 'ai';
 import type { PrismChatHelpers } from '@/hooks/usePrismChat';
 import { ASK_SOURCES_HEADER, parseSourcesHeader, type AskSource } from '@/lib/chat/sources';
 
+/** Plain-language message for a failed /api/chat response. */
+export function askErrorMessage(status: number): string {
+  if (status === 429) return 'You are asking too fast. Wait a moment and try again.';
+  if (status === 401 || status === 403) return 'Chat is not available right now.';
+  return 'The answer did not come through. Try again.';
+}
+
 export type AskChatHelpers = PrismChatHelpers & {
   /** Sources per finished assistant message id. Empty when the answer was not grounded. */
   sourcesById: Record<string, AskSource[]>;
@@ -28,6 +35,10 @@ export function useAskChat(apiPath: string): AskChatHelpers {
           latest.current = [];
           const res = await fetch(input, init);
           latest.current = parseSourcesHeader(res.headers.get(ASK_SOURCES_HEADER));
+          if (!res.ok) {
+            // The transport reads the body as the error message, so hand it a plain one.
+            return new Response(askErrorMessage(res.status), { status: res.status });
+          }
           return res;
         },
       }),

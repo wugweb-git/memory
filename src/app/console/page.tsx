@@ -246,7 +246,7 @@ export default function ConsolePage() {
               <>
                 <StatCard label="Memory packets" value={String(stats.memoryPackets)} sub="Total indexed" icon={<Database size={18} className="text-accent" />} />
                 <StatCard label="Sync status" value={String(stats.syncStatus)} sub={syncSub} color={syncColor} icon={<ShieldCheck size={18} className={syncColor} />} />
-                <StatCard label="Buffer queue" value={String(stats.bufferQueue)} sub="Pending review" icon={<Archive size={18} className="text-warning" />} />
+                <StatCard label="Buffer queue" value={String(stats.bufferQueue)} sub="Items in the buffer" icon={<Archive size={18} className="text-warning" />} />
                 <StatCard label="Uplink" value={String(stats.uplink)} sub="Reasoning layer reliability" icon={<Zap size={18} className="text-accent" />} />
               </>
             )}

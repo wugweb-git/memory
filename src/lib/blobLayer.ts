@@ -7,6 +7,13 @@ import { stripNullBytes } from './memory/sanitize';
 const SOFT_LIMIT_PCT = 70;
 const WARN_LIMIT_PCT = 85;
 const HARD_LIMIT_PCT = 95;
+/** Unreviewed buffer items expire after this long (then are flagged `expired`, then purged). */
+export const BLOB_TTL_DAYS = 90;
+/** Promoted/rejected items have served their purpose: purge after this many days. */
+export const BLOB_DONE_RETENTION_DAYS = 30;
+/** Expired items are kept briefly (a grace window) before being purged. */
+export const BLOB_EXPIRED_GRACE_DAYS = 7;
+const DAY_MS = 24 * 60 * 60 * 1000;
 const GLOBAL_CAPACITY_BYTES = Number(process.env.GLOBAL_BLOB_CAPACITY_BYTES || 100 * 1024 * 1024);
 
 function computeHash(content: any) {
@@ -38,6 +45,7 @@ export async function Push_To_Blob(packet: any) {
       size: contentSize,
       hash: hash,
       state: 'raw',
+      expires_at: new Date(Date.now() + BLOB_TTL_DAYS * DAY_MS),
       trace_json: trace_json || { origin: source, ingestion_path: 'api/blob/push' }
     }
   });
@@ -53,8 +61,10 @@ export async function Push_To_Blob(packet: any) {
   return item;
 }
 
-export async function getBlobStats() {
-  const aggregate = await prisma.blobItem.aggregate({
+export async function getBlobStats(db: Pick<typeof prisma, 'blobItem'> = prisma) {
+  // Expired rows are on their way out and no longer count against capacity.
+  const aggregate = await db.blobItem.aggregate({
+    where: { state: { not: 'expired' } },
     _sum: { size: true },
     _count: { id: true }
   });
@@ -82,11 +92,30 @@ export async function cleanupExpiredBlobItems() {
   const result = await prisma.blobItem.updateMany({
     where: {
       expires_at: { lte: now },
-      state: { not: 'promoted' }
+      // Already-expired rows are skipped so their updated_at (the purge clock) is not refreshed.
+      state: { notIn: ['promoted', 'expired'] }
     },
     data: { state: 'expired' }
   });
 
+  return result.count;
+}
+
+/**
+ * Deletes buffer rows that are done: promoted/rejected older than 30 days and
+ * `expired` older than the grace window. Events cascade. Returns what was purged.
+ */
+export async function purgeBlobItems(db: Pick<typeof prisma, 'blobItem'> = prisma, now: Date = new Date()) {
+  const doneBefore = new Date(now.getTime() - BLOB_DONE_RETENTION_DAYS * DAY_MS);
+  const expiredBefore = new Date(now.getTime() - BLOB_EXPIRED_GRACE_DAYS * DAY_MS);
+  const result = await db.blobItem.deleteMany({
+    where: {
+      OR: [
+        { state: { in: ['promoted', 'rejected'] }, updated_at: { lt: doneBefore } },
+        { state: 'expired', updated_at: { lt: expiredBefore } },
+      ],
+    },
+  });
   return result.count;
 }
 

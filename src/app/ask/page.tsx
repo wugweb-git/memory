@@ -6,6 +6,7 @@ import {
   ArrowDown,
   ArrowLeft,
   Check,
+  LayoutDashboard,
   Copy,
   Layers,
   MoreVertical,
@@ -17,8 +18,9 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { UIMessage } from 'ai';
-import { useAskChat } from '@/lib/chat/useAskChat';
+import { useAskChat, askErrorMessage } from '@/lib/chat/useAskChat';
 import type { AskSource } from '@/lib/chat/sources';
+import { toSessionView } from '@/lib/auth/session-view';
 import { UI_API } from '@/lib/api/endpoints';
 import { IDENTITY_CONFIG, avatarFallbackUrl } from '@/config/identity';
 import { haptic, prefersReducedMotion } from '@/lib/pwa/browser';
@@ -50,6 +52,7 @@ const LINE_HEIGHT_PX = 24; // matches leading-6 on the textarea
 const TEXTAREA_PADDING_PX = 20; // py-2.5 top and bottom
 const MAX_LINES = 5;
 const FALLBACK_ERROR = 'The answer did not come through. Check your connection, then tap Retry.';
+const KNOWN_ERRORS = new Set([429, 401, 500].map(askErrorMessage));
 
 const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent';
 
@@ -177,7 +180,18 @@ export default function AskPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showJump, setShowJump] = useState(false);
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
-  const { messages, sendMessage, status, setMessages, stop, regenerate, clearError, sourcesById, clearSources } = useAskChat(UI_API.chat);
+  const { messages, sendMessage, status, setMessages, stop, regenerate, clearError, sourcesById, clearSources, error } = useAskChat(UI_API.chat);
+
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    fetch(UI_API.authMe, { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((u) => {
+        const v = toSessionView(true, u);
+        setIsAdmin(v.state === 'signed-in' && v.role === 'admin');
+      })
+      .catch(() => {});
+  }, []);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -373,6 +387,16 @@ export default function AskPage() {
               role="menu"
               className="absolute right-0 top-full z-10 mt-1 min-w-40 rounded-xl border border-border-primary bg-bg-elevated py-1 shadow-elev-2"
             >
+              {isAdmin && (
+                <Link
+                  href="/console"
+                  role="menuitem"
+                  className="flex min-h-11 w-full items-center gap-2 px-4 text-left text-sm text-text-primary hover:bg-bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset"
+                >
+                  <LayoutDashboard size={16} aria-hidden="true" />
+                  Back to app
+                </Link>
+              )}
               <button
                 ref={menuItemRef}
                 type="button"
@@ -485,7 +509,7 @@ export default function AskPage() {
                           notice === 'error' ? 'border-danger text-text-primary' : 'border-border-primary text-text-secondary'
                         }`}
                       >
-                        {notice === 'error' ? FALLBACK_ERROR : ASK_STOPPED_NOTE}
+                        {notice === 'error' ? (error && KNOWN_ERRORS.has(error.message) ? error.message : FALLBACK_ERROR) : ASK_STOPPED_NOTE}
                       </div>
                       <button
                         type="button"
