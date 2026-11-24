@@ -60,3 +60,11 @@ Shipped to production in main bda0120/cdbe97d. Open: full 375px route sweep on t
 
 ## Update (2026-11-19, main b4ff0a3, promoted)
 New page `/integrations/publishing` (owner-only credentials for X, LinkedIn, Facebook, Instagram, Medium). Needs a signed-in 375px check; labels use `<label for>`, errors use `role="alert"`, status uses icon plus text. Gmail and Spotify connectors added on `/integrations`.
+
+## Update (2026-11-25, main 3930697, live)
+Mobile/a11y/hardening release is live (build memory-1ly8oz6z7). Gate: tsc clean, lint clean, 577/577 tests, `validate-live.mjs --no-chat` 11 pass / 0 fail.
+- **Shell:** Material 3 sizing (80px bottom bar, 64x32 active indicator, 24px icons, 44px targets, 12/13/14px type floor); back control on nested routes; `touch-action: manipulation` on interactive elements; unified page titles.
+- **Resilience:** global `error`, `global-error`, `not-found`, `loading`; `robots.txt` and `sitemap.xml`; per-route titles.
+- **Security:** push endpoint allow-list and same-origin push URLs, security headers via `next.config.mjs`, iCloud host pin, timing-safe job secrets, login open-redirect fix (control characters), malformed-JSON bodies return 400 not 500.
+- **Flows:** honest delivery status and resend, History "Waiting for you to post" list, buffer promote outcomes, publishing allow-list, daily retention job in the pipeline.
+- **Open:** Instagram publishing (needs image URL), Apple Health 50MB cap vs Vercel body limit, Buffer file-import UI, push triggers (test button only), module toggles cosmetic, session-expiry global redirect. Owner-side: MEMORY_ENCRYPTION_KEY, job secret, VAPID keys, platform tokens, Google reconnect for Gmail.
