@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Target, Check, X, ListChecks, FileText } from 'lucide-react';
-import { postJson, currentUserId, Intent, Card, PrimaryButton, ErrorBox, SkeletonCard, ScoreRing, Meter, toneForScore } from './shared';
+import { errorFlags, postJson, currentUserId, Intent, Card, PrimaryButton, ErrorBox, SkeletonCard, ScoreRing, Meter, toneForScore } from './shared';
 
 type Mode = 'architect' | 'founder' | 'operator';
 const MIN = 10;
@@ -18,6 +18,7 @@ export const EvaluateTab: React.FC<{ mode: Mode }> = ({ mode }) => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errFlags, setErrFlags] = useState({ limit: false, retryable: true });
 
   const len = input.trim().length;
 
@@ -25,11 +26,13 @@ export const EvaluateTab: React.FC<{ mode: Mode }> = ({ mode }) => {
     if (len < MIN) return;
     setLoading(true);
     setError(null);
+    setErrFlags({ limit: false, retryable: true });
     try {
       setResult(await postJson('/api/cognitive/evaluate', { user_id: currentUserId(), input_text: input, mode }));
     } catch (e: any) {
       setResult(null);
       setError(e.message);
+      setErrFlags(errorFlags(e));
     } finally {
       setLoading(false);
     }
@@ -65,7 +68,7 @@ export const EvaluateTab: React.FC<{ mode: Mode }> = ({ mode }) => {
         Evaluate fit
       </PrimaryButton>
 
-      {error ? <ErrorBox message={error} onRetry={len >= MIN ? run : undefined} /> : null}
+      {error ? <ErrorBox message={error} limit={errFlags.limit} onRetry={len >= MIN && errFlags.retryable ? run : undefined} /> : null}
       {loading ? <SkeletonCard label="Comparing against your memory" /> : null}
 
       {!loading && !result && !error ? (

@@ -236,21 +236,20 @@ export const PUBLIC_PROFILE_TESTIMONIALS = [
   },
 ] as const;
 
+/**
+ * Real first-run steps for the owner. Ids start at 101 so rows saved under the
+ * old placeholder checklist (ids 1 to 14) are ignored instead of resurfacing.
+ * A step shows a check only once the owner marks it done.
+ */
 export const ADMIN_ONBOARDING_CHECKLIST = [
-  { id: 1, text: 'Add calendar & meeting link', completed: true },
-  { id: 2, text: 'Let followers support your work', completed: false },
-  { id: 3, text: 'Add position on LinkedIn', completed: false },
-  { id: 4, text: 'Enable dynamic pricing nodes', completed: false },
-  { id: 5, text: 'Initialize Neural Avatar', completed: false },
-  { id: 6, text: 'Calibrate Semantic Bio', completed: false },
-  { id: 7, text: 'Bridge Twitter Sync', completed: false },
-  { id: 8, text: 'Deploy Service Lattice', completed: false },
-  { id: 9, text: 'Audit Memory Quarantine', completed: false },
-  { id: 10, text: 'Test Neural Chat reflex', completed: false },
-  { id: 11, text: 'Harden L4 Logic Gates', completed: false },
-  { id: 12, text: 'Sync GitHub Repository', completed: false },
-  { id: 13, text: 'Broadcast YouTube Feed', completed: false },
-  { id: 14, text: 'Achieve Matrix Alignment', completed: false },
+  { id: 101, text: 'Connect a source (GitHub, YouTube or a feed) on Integrations', completed: false },
+  { id: 102, text: 'Capture a first note in the Buffer', completed: false },
+  { id: 103, text: 'Promote a reviewed buffer item to memory', completed: false },
+  { id: 104, text: 'Check that memory search works (embedded packets above zero)', completed: false },
+  { id: 105, text: 'Choose which notes Ask may quote under Public notes', completed: false },
+  { id: 106, text: 'Add your public profile details and publish it', completed: false },
+  { id: 107, text: 'Add a passkey for sign-in on System', completed: false },
+  { id: 108, text: 'Add publishing tokens for the channels you use', completed: false },
 ] as const;
 
 export const OUTPUT_PLATFORMS = [

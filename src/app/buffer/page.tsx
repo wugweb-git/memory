@@ -112,6 +112,8 @@ const ACTION_VERB: Record<string, string> = {
   reject: 'purge',
 };
 
+const PAGE_SIZE = 50;
+
 const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent';
 
 function formatDate(value: string) {
@@ -121,6 +123,8 @@ function formatDate(value: string) {
 export default function BufferControlSurface() {
   const [items, setItems] = useState<BlobItem[]>([]);
   const [stats, setStats] = useState<BlobStats | null>(null);
+  const [total, setTotal] = useState<number | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('all');
@@ -154,7 +158,7 @@ export default function BufferControlSurface() {
     setLoading(true);
     try {
       const stateFilter = activeTab === 'all' ? '' : `&state=${activeTab}`;
-      const res = await fetch(`${API_ENDPOINTS.blob.list.path}?limit=50${stateFilter}`);
+      const res = await fetch(`${API_ENDPOINTS.blob.list.path}?limit=${PAGE_SIZE}${stateFilter}`);
       if (myReq !== reqId.current) return; // a newer request superseded this one
       if (res.status === 401) {
         setSessionEnded(true);
@@ -172,6 +176,7 @@ export default function BufferControlSurface() {
       setLoadError(null);
       setSessionEnded(false);
       setItems(Array.isArray(data.items) ? data.items : []);
+      setTotal(typeof data.total === 'number' ? data.total : null);
     } catch (err) {
       if (myReq !== reqId.current) return;
       console.error('Failed to fetch blob items', err);
@@ -181,6 +186,34 @@ export default function BufferControlSurface() {
       if (myReq === reqId.current) setLoading(false);
     }
   }, [activeTab]);
+
+  // Append the next page (the API takes limit and offset and returns the total for the filter).
+  const loadMore = useCallback(async () => {
+    if (loadingMore) return;
+    const myReq = reqId.current;
+    setLoadingMore(true);
+    try {
+      const stateFilter = activeTab === 'all' ? '' : `&state=${activeTab}`;
+      const res = await fetch(`${API_ENDPOINTS.blob.list.path}?limit=${PAGE_SIZE}&offset=${items.length}${stateFilter}`);
+      if (myReq !== reqId.current) return;
+      if (!res.ok) {
+        setActionError('Could not load more items. Try again.');
+        return;
+      }
+      const data = await res.json();
+      if (myReq !== reqId.current) return;
+      const more: BlobItem[] = Array.isArray(data.items) ? data.items : [];
+      setItems((prev) => {
+        const seen = new Set(prev.map((i) => i.id));
+        return [...prev, ...more.filter((i) => !seen.has(i.id))];
+      });
+      if (typeof data.total === 'number') setTotal(data.total);
+    } catch {
+      setActionError('Could not load more items. Check your connection and try again.');
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [activeTab, items.length, loadingMore]);
 
   useEffect(() => {
     setSelectedId(null);
@@ -229,7 +262,13 @@ export default function BufferControlSurface() {
         fetchItems();
         fetchStats();
       } else if (res.ok) {
-        setActionNotice(ACTION_DONE[action] ?? 'Item updated.');
+        const body = action === 'reject' ? await res.json().catch(() => ({})) : {};
+        // The server says whether the item was deleted for good (purged: true) or only rejected.
+        setActionNotice(
+          action === 'reject' && body?.purged === false
+            ? 'Item rejected. It is kept for 30 days, then purged.'
+            : ACTION_DONE[action] ?? 'Item updated.',
+        );
         if (action === 'reject') setSelectedId(null);
         setConfirmingReject(false);
         fetchItems();
@@ -491,7 +530,7 @@ export default function BufferControlSurface() {
               </div>
               <p role="status" aria-live="polite" className="text-sm text-text-secondary">
                 {loading ? 'Loading items…' : (
-                  <>Showing <span className="font-medium text-text-primary">{visibleItems.length}</span> {visibleItems.length === 1 ? 'item' : 'items'}{items.length >= 50 ? ' (the 50 most recent; refine with the filters above)' : ''}</>
+                  <>Showing <span className="font-medium text-text-primary">{visibleItems.length}</span>{search.trim() ? ` of ${items.length} loaded` : total !== null && total > items.length ? ` of ${total}` : ''} {visibleItems.length === 1 ? 'item' : 'items'}</>
                 )}
               </p>
             </div>
@@ -597,6 +636,21 @@ export default function BufferControlSurface() {
               </div>
               {selectedItem && <div className="mt-4">{itemDetails}</div>}
             </div>
+
+            {!loading && !loadError && total !== null && total > items.length ? (
+              <div className="flex flex-col items-center gap-2 pt-1">
+                <p className="text-sm text-text-secondary">Showing {items.length} of {total}</p>
+                <button
+                  type="button"
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                  aria-busy={loadingMore || undefined}
+                  className={`min-h-12 rounded-xl border border-border-primary px-6 text-sm font-semibold text-text-primary hover:bg-bg-secondary disabled:opacity-50 ${focusRing}`}
+                >
+                  {loadingMore ? 'Loading…' : 'Load more'}
+                </button>
+              </div>
+            ) : null}
           </section>
 
           {/* Capture tools */}

@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Target, Zap, UserCheck, Send, ArrowRight, Fingerprint, Loader2, RefreshCcw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { IDENTITY_CONFIG } from '@/config/identity';
+import { EmptyState } from '@/components/ui/primitives';
 import { parseBlobItems } from '@/lib/ui/blob';
 
 type Lead = {
@@ -80,8 +81,8 @@ export const JobSearchAgent = () => {
           <h2 className="text-lg font-semibold text-text-primary tracking-tight flex items-center gap-3">
             <Target aria-hidden="true" size={22} className="text-accent" /> Opportunities
           </h2>
-          <p className="text-2xs font-bold uppercase tracking-widest text-text-tertiary mt-1">
-            Leads &amp; outreach
+          <p className="text-sm text-text-tertiary mt-1">
+            Leads and outreach
           </p>
         </div>
         <div className="flex flex-wrap gap-4 items-center">
@@ -105,12 +106,10 @@ export const JobSearchAgent = () => {
       ) : failed ? (
         <p role="alert" className="px-2 py-8 text-sm text-text-tertiary">Could not load job leads. Use refresh to try again.</p>
       ) : leads.length === 0 ? (
-        <div className="px-2 py-8 space-y-1">
-          <p className="text-sm font-medium text-text-primary">No job leads yet</p>
-          <p className="text-sm text-text-tertiary">
-            Leads appear here when buffer items of type <code className="text-accent">job_lead</code> exist. Nothing in the app creates them automatically yet, so they must be added to the buffer by hand or by an external tool.
-          </p>
-        </div>
+        <EmptyState
+          title="No job leads yet"
+          hint="Leads you add to the buffer as job leads show up here. Nothing finds them automatically yet."
+        />
       ) : (
         <ul role="list" className="space-y-6">
           {leads.map((lead, idx) => {

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { readAiErrorBody } from '@/lib/ai/client-error';
 import { Search, Database, Clock, Zap, AlertCircle, FileText } from 'lucide-react';
 
 interface RetrievalResult {
@@ -21,7 +22,7 @@ export default function RagTester({ testRunId = 'PROD' }: RagTesterProps) {
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<RetrievalResult[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ message: string; limit: boolean } | null>(null);
   const [searched, setSearched] = useState(false);
   const reduceMotion = useReducedMotion();
 
@@ -40,11 +41,18 @@ export default function RagTester({ testRunId = 'PROD' }: RagTesterProps) {
       });
 
       const data = await response.json().catch(() => ({}));
-      if (!response.ok || data.error) throw new Error(data.error || `HTTP ${response.status}`);
+      if (!response.ok || data.error) {
+        // Show the server's safe message as returned; it never carries provider text.
+        const info = readAiErrorBody(data, response.status === 401 ? 'Your session has ended. Sign in again, then retry.' : 'The search could not be completed. Try again.');
+        setError({ message: info.message, limit: info.limit });
+        setResults([]);
+        return;
+      }
       setResults(data.results || []);
       setSearched(true);
-    } catch (err: any) {
-      setError(`Retrieval failed: ${err.message || 'unknown error'}. Check that you are signed in as admin, then try again.`);
+    } catch {
+      // The request never reached the server.
+      setError({ message: 'The search did not reach the server. Try again when you are back online.', limit: false });
       setResults([]);
     } finally {
       setIsSearching(false);
@@ -90,14 +98,14 @@ export default function RagTester({ testRunId = 'PROD' }: RagTesterProps) {
         <AnimatePresence mode="popLayout">
           {error && (
             <motion.div
-              role="alert"
+              role={error.limit ? 'status' : 'alert'}
               initial={reduceMotion ? false : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="p-4 bg-bg-secondary border border-border-primary rounded-lg flex items-center gap-3 text-danger"
+              className={`p-4 bg-bg-secondary border border-border-primary rounded-lg flex items-center gap-3 ${error.limit ? 'text-text-secondary' : 'text-danger'}`}
             >
               <AlertCircle aria-hidden="true" className="w-5 h-5 shrink-0" />
-              <span className="text-sm">{error}</span>
+              <span className="text-sm">{error.message}</span>
             </motion.div>
           )}
 

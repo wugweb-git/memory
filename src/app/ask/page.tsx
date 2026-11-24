@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { UIMessage } from 'ai';
-import { useAskChat, askErrorMessage } from '@/lib/chat/useAskChat';
+import { useAskChat, parseAskError } from '@/lib/chat/useAskChat';
 import type { AskSource } from '@/lib/chat/sources';
 import { toSessionView } from '@/lib/auth/session-view';
 import { UI_API } from '@/lib/api/endpoints';
@@ -51,8 +51,6 @@ const FIRST_NAME = IDENTITY_CONFIG.DISPLAY_NAME.split(' ')[0];
 const LINE_HEIGHT_PX = 24; // matches leading-6 on the textarea
 const TEXTAREA_PADDING_PX = 20; // py-2.5 top and bottom
 const MAX_LINES = 5;
-const FALLBACK_ERROR = 'The answer did not come through. Check your connection, then tap Retry.';
-const KNOWN_ERRORS = new Set([429, 401, 500].map(askErrorMessage));
 
 const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent';
 
@@ -205,6 +203,7 @@ export default function AskPage() {
 
   const isLoading = status === 'submitted' || status === 'streaming';
   const hasError = status === 'error';
+  const askError = hasError ? parseAskError(error?.message) : null;
   const notice = answerNotice({ hasError, userStopped, isLoading });
   const lastMessage = messages[messages.length - 1];
   const showTyping =
@@ -516,16 +515,17 @@ export default function AskPage() {
                   </li>
                 )}
                 {notice !== 'none' && (
-                  <li role={notice === 'error' ? 'alert' : 'status'} className="flex items-start gap-2.5">
+                  <li role={notice === 'error' && !askError?.limit ? 'alert' : 'status'} className="flex items-start gap-2.5">
                     <Avatar size={28} />
                     <div className="flex min-w-0 flex-1 flex-col items-start gap-2">
                       <div
                         className={`max-w-prose rounded-2xl rounded-bl-md border bg-bg-elevated px-4 py-2.5 text-base leading-normal ${
-                          notice === 'error' ? 'border-danger text-text-primary' : 'border-border-primary text-text-secondary'
+                          notice === 'error' && !askError?.limit ? 'border-danger text-text-primary' : 'border-border-primary text-text-secondary'
                         }`}
                       >
-                        {notice === 'error' ? (error && KNOWN_ERRORS.has(error.message) ? error.message : FALLBACK_ERROR) : ASK_STOPPED_NOTE}
+                        {notice === 'error' ? askError?.message : ASK_STOPPED_NOTE}
                       </div>
+                      {notice === 'error' && askError && !askError.retryable ? null : (
                       <button
                         type="button"
                         onClick={retry}
@@ -533,6 +533,7 @@ export default function AskPage() {
                       >
                         Retry
                       </button>
+                      )}
                     </div>
                   </li>
                 )}
