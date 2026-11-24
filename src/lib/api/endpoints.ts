@@ -93,6 +93,9 @@ export const API_ENDPOINTS = {
     signals: { path: '/api/memory/signals', methods: ['GET'] as const },
     stats: { path: '/api/memory/stats', methods: ['GET'] as const },
   },
+  stats: {
+    memory: { path: '/api/stats/memory', methods: ['GET'] as const },
+  },
   output: {
     generate: { path: '/api/output/generate', methods: ['POST'] as const },
     drafts: { path: '/api/output/drafts', methods: ['GET'] as const },

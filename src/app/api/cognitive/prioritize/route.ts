@@ -4,6 +4,7 @@ import { checkRateLimit } from '@/lib/security/rate-limit';
 import { buildContext } from '@/lib/cognitive/contextBuilder';
 import { runLLM } from '@/lib/cognitive/llm';
 import { dailyLimitResponse } from '@/lib/cognitive/limit-response';
+import { aiErrorResponse } from '@/lib/ai/error-messages';
 import { readJsonObject, badRequest } from '@/lib/validation/http';
 import { resolveUserId, parseMode, parseItems } from '@/lib/cognitive/validation';
 import { logDecisionNeon } from '@/lib/cognitive/logging/neon';
@@ -123,6 +124,8 @@ OUTPUT JSON ONLY (no markdown fences):
     console.error('[API/Cognitive/Prioritize]', err);
     const limited = dailyLimitResponse(err);
     if (limited) return limited;
+    const aiFailure = aiErrorResponse(err);
+    if (aiFailure) return aiFailure;
     return NextResponse.json({ error: 'Prioritization failure' }, { status: /LLM_FAILURE/.test(String(err?.message)) ? 502 : 500 });
   }
 }

@@ -170,6 +170,86 @@ export async function Reject_Blob_Item(id: string, reason?: string) {
   return item;
 }
 
+export interface PurgeResult {
+  id: string;
+  state: 'purged';
+  purged: true;
+  purged_at: string;
+  removed: { blob_items: number; memory_packets: number; embeddings: number; provenance_records: number };
+}
+
+type PurgeDb = Pick<typeof prisma, '$transaction'>;
+
+/** Only Vercel Blob URLs are deletable from here; anything else in file_ref is not ours to remove. */
+function isVercelBlobUrl(ref: string | null | undefined): ref is string {
+  if (!ref) return false;
+  try {
+    const u = new URL(ref);
+    return u.protocol === 'https:' && u.hostname.endsWith('.blob.vercel-storage.com');
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Hard-deletes a buffer item ("Reject and purge"): the row and its raw payload, the event trail
+ * (cascade), anything promoted from it (memory packets, their embeddings and provenance records,
+ * signals and activity), and the stored file when `file_ref` is a Vercel Blob URL. All DB deletes
+ * run in one transaction. Only a minimal audit record (id + time, no content) is kept.
+ * Plain rejection (`Reject_Blob_Item`) is unchanged and keeps the item.
+ */
+export async function Purge_Blob_Item(
+  id: string,
+  opts: { db?: PurgeDb; now?: Date; deleteFile?: (url: string) => Promise<void> } = {},
+): Promise<PurgeResult> {
+  const db = opts.db ?? prisma;
+  const purgedAt = (opts.now ?? new Date()).toISOString();
+
+  const { removed, fileRef } = await db.$transaction(async (tx) => {
+    const blob = await tx.blobItem.findUnique({ where: { id }, select: { id: true, file_ref: true } });
+    if (!blob) throw new Error(`Blob item not found: ${id}`);
+
+    const packets = await tx.memoryPacket.findMany({
+      where: { metadata: { path: ['promoted_from_blob_id'], equals: id } },
+      select: { id: true },
+    });
+    const packetIds = packets.map((p) => p.id);
+    let embeddings = 0;
+    let provenance = 0;
+    if (packetIds.length > 0) {
+      embeddings = (await tx.embedding.deleteMany({ where: { packet_id: { in: packetIds } } })).count;
+      provenance = (
+        await tx.provenanceRecord.deleteMany({ where: { subjectType: 'memory_packet', subjectId: { in: packetIds } } })
+      ).count;
+      await tx.signal.deleteMany({ where: { packet_id: { in: packetIds } } });
+      await tx.activityStream.deleteMany({ where: { packet_id: { in: packetIds } } });
+      await tx.memoryPacket.deleteMany({ where: { id: { in: packetIds } } });
+    }
+    // blob_events cascade with the row.
+    await tx.blobItem.delete({ where: { id } });
+    // Audit trail without content: id and time only.
+    await tx.executionAuditLog.create({
+      data: { eventType: 'blob:purge', status: 'ok', payload: { blob_id: id, purged_at: purgedAt } },
+    });
+    return {
+      removed: { blob_items: 1, memory_packets: packetIds.length, embeddings, provenance_records: provenance },
+      fileRef: blob.file_ref,
+    };
+  });
+
+  // Outside the transaction: a storage hiccup must not undo a committed purge.
+  if (isVercelBlobUrl(fileRef)) {
+    try {
+      const del = opts.deleteFile ?? (async (url: string) => (await import('@vercel/blob')).del(url));
+      await del(fileRef);
+    } catch (err) {
+      console.error('[Blob/Purge] stored file could not be deleted:', (err as Error)?.name);
+    }
+  }
+
+  return { id, state: 'purged', purged: true, purged_at: purgedAt, removed };
+}
+
 /**
  * Promote a blob item into L1 memory. Goes through MemoryService.ingest so promoted items get the
  * same governance as every other source: gate, normalization, dedup, noise filter and the

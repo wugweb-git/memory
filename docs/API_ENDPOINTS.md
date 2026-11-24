@@ -55,7 +55,7 @@ Base path: `/api`. All routes use App Router unless noted.
 | DELETE | `/blob/[id]` | Delete item |
 | GET | `/blob/stats` | Storage stats |
 | POST | `/blob/promote` | Promote to memory |
-| POST | `/blob/reject` | Reject item |
+| POST | `/blob/reject` | Reject item (admin). `{ id, reason? }` keeps it as `rejected` (auto-purged after 30 days). `{ id, purge: true }` hard-deletes the item, raw payload, events, memory packets promoted from it, their embeddings/provenance/signals, and the stored file; only an audit entry (`blob:purge`, id and time) is kept. Purge response: `{ id, state: "purged", purged: true, purged_at, removed }` |
 | POST | `/blob/review` | Mark reviewed |
 | POST | `/blob/promotable` | Mark promotable |
 | POST | `/blob/bulk` | Bulk actions |
@@ -79,7 +79,7 @@ Base path: `/api`. All routes use App Router unless noted.
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| POST | `/cognitive/decide` | L3 decision engine |
+| POST | `/cognitive/decide` | L3 decision engine. AI provider failures return `{ error, message, code, retryable }`: 429 `AI_QUOTA_EXHAUSTED` ("The daily free AI limit is reached. Try again after it resets."), 429 `AI_RATE_LIMITED`, 503 `AI_UNAVAILABLE`, 502 `AI_FAILED`. Same for `/cognitive/{evaluate,gaps,prioritize}` and `/memory/retrieve` |
 | POST | `/cognitive/evaluate` | Opportunity evaluation |
 | POST | `/cognitive/feedback` | Decision feedback |
 | POST | `/cognitive/gaps` | Profile gap analysis |
@@ -104,13 +104,14 @@ Base path: `/api`. All routes use App Router unless noted.
 | GET | `/memory/audit` | Memory audit |
 | GET | `/memory/get` | Packet + signals + semantic (`?id=`) |
 | GET | `/memory/list` | List packets |
-| GET | `/memory/monitor` | Monitor dashboard payload |
+| GET | `/memory/monitor` | Monitor dashboard payload (`stats.needs_attention` is the single "needs attention" count; `hold_count` = embed backlog) |
 | POST | `/memory/packet/action` | Delete/archive packet |
 | GET | `/memory/packets` | Vault UI packets |
 | POST | `/memory/replay` | Re-ingest packet |
 | POST | `/memory/retrieve` | RAG retrieval |
 | GET | `/memory/signals` | Activity feed for UI |
-| GET | `/memory/stats` | Packet/embedding stats |
+| GET | `/memory/stats` | Packet/embedding stats (`total_packets`, `embedding_stats`, plus shared `memory_stats`) |
+| GET | `/stats/memory` | Canonical memory packet counts (admin): total, embedded, pending, processing, failed, not_embeddable, backlog, not_searchable, needs_attention, excluded. Definitions in `src/lib/stats/memory-stats.ts`; `/memory/stats`, `/memory/monitor`, `/health/system` and recommendations use the same source |
 
 ## Output
 

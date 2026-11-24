@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/security/auth';
 import { postgres as prisma } from '@/lib/db/postgres';
+import { loadMemoryStats } from '@/lib/stats/memory-stats';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,12 +12,13 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const test_run_id = searchParams.get('test_run_id') || 'PROD';
 
-    const [packets, retries, sources, activity, documents] = await Promise.all([
+    const [packets, retries, sources, activity, documents, shared] = await Promise.all([
       prisma.memoryPacket.findMany({ where: { status: { not: 'rejected' }, test_run_id } }),
       prisma.packetRetryQueue.findMany({ where: { test_run_id } }),
       prisma.source.findMany({}),
       prisma.activityStream.findMany({ where: { test_run_id }, orderBy: { timestamp: 'desc' }, take: 50 }),
-      prisma.document.findMany({ where: { test_run_id }, take: 100 })
+      prisma.document.findMany({ where: { test_run_id }, take: 100 }),
+      loadMemoryStats(test_run_id),
     ]);
 
     const holdPackets = packets.filter((p: any) => p.processing_status === 'pending');
@@ -39,12 +41,18 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       stats: {
-        packet_count: packets.length,
-        hold_count: holdPackets.length,
-        failed_count: failedPackets.length,
+        // Counts come from the shared definitions (src/lib/stats/memory-stats.ts).
+        // hold_count = waiting for the embedder; failed_count = needs attention.
+        // Use needs_attention for the single "needs attention" number (do not add hold + failed).
+        packet_count: shared.total,
+        hold_count: shared.backlog,
+        failed_count: shared.needs_attention,
+        needs_attention: shared.needs_attention,
+        embedded_count: shared.embedded,
+        not_searchable_count: shared.not_searchable,
         retry_queue_count: retries.length,
         source_count: sources.length,
-        item_count: packets.length,
+        item_count: shared.total,
         growth_rate_per_day: recentPacketCount,
         ingestion_logs: ingestionLogs,
       },
@@ -60,6 +68,7 @@ export async function GET(req: NextRequest) {
       sources,
       activity,
       documents,
+      memory_stats: shared,
       review_queue: {
         pending: holdPackets,
         failed: failedPackets,
