@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   Linkedin, Twitter, Github, Globe, ExternalLink, ArrowUpRight, Loader2, Mail, MessageSquare,
 } from 'lucide-react';
-import { IDENTITY_CONFIG, avatarFallbackUrl } from '@/config/identity';
+import { IDENTITY_CONFIG, avatarFallbackUrl, getPublicContactEmail } from '@/config/identity';
 import { useProfileData } from '@/hooks/useProfileData';
 import type { ProfileSection } from '@/lib/profile/types';
 import { ShareButton } from '@/app/component/ShareButton';
@@ -60,6 +60,7 @@ export function PublicProfileView({ username }: { username: string }) {
   const { profile, byType, loading, error, refetch } = useProfileData(username);
 
   const isOwner = username === IDENTITY_CONFIG.HANDLE;
+  const contactEmail = getPublicContactEmail();
   const displayName = profile?.displayName ?? (isOwner ? IDENTITY_CONFIG.DISPLAY_NAME : username);
   const role = isOwner ? IDENTITY_CONFIG.ROLE : null;
   const bio = profile?.bio ?? null;
@@ -135,9 +136,9 @@ export function PublicProfileView({ username }: { username: string }) {
         {(socials.length > 0 || isOwner) && (
           <div className="flex flex-wrap items-center gap-2">
             <ShareButton title={`${displayName} on Identity Prism`} text={role ?? undefined} />
-            {isOwner && (
+            {isOwner && contactEmail && (
               <a
-                href={`mailto:${IDENTITY_CONFIG.EMAIL}`}
+                href={`mailto:${contactEmail}`}
                 className="inline-flex min-h-11 items-center gap-2 px-4 rounded-xl bg-text-primary text-bg-primary text-sm font-bold hover:bg-text-secondary transition-colors"
               >
                 <Mail size={15} aria-hidden="true" /> Get in touch

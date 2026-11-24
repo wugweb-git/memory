@@ -14,6 +14,7 @@ import { OUTPUT_PLATFORMS } from "@/config/ui-content";
 import { IDENTITY_CONFIG } from "@/config/identity";
 import { profilePath } from "@/lib/api/endpoints";
 import Link from "next/link";
+import { ItemActions } from "@/components/native/ItemActions";
 import { ManualPostCard, type ManualPrep } from "./ManualPostCard";
 import { isManualPlatform, manualPostText } from "@/lib/platforms/manual";
 
@@ -585,6 +586,7 @@ export default function OutputStudioPage() {
                           Add to queue
                         </M3Button>
                       </div>
+                      {outputId && content.trim() ? <ItemActions title={`${platformLabel(platform)} draft`} text={content.slice(0, 1500)} /> : null}
                     </div>
                   </M3Card>
 
@@ -680,6 +682,7 @@ export default function OutputStudioPage() {
                               <button type="button" onClick={() => startEdit(s)} aria-label={`Edit ${s.title}`} className={LINK_BTN}>Edit</button>
                               <button type="button" onClick={() => askUnpublish(s)} disabled={busy} aria-label={`Remove ${s.title}`} className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-danger transition-colors hover:bg-bg-tertiary disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">Remove</button>
                             </div>
+                            <ItemActions compact title={s.title} text={sectionBody(s).slice(0, 1500)} url={`${typeof window !== "undefined" ? window.location.origin : ""}/p/${HANDLE}`} />
                           </>
                         )}
                       </li>

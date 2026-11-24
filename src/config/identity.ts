@@ -17,6 +17,7 @@ export const IDENTITY_CONFIG = {
   /** Display metadata used by UI surfaces */
   DISPLAY_NAME: 'Vedanshu Srivastava',
   HANDLE: 'system_user',
+  /** Internal system identity (auth, passkeys). Never shown publicly. */
   EMAIL: 'system@identity-prism.local',
   ROLE: 'Systems Architect',
   AVATAR_SEED: 'system-user',
@@ -33,6 +34,15 @@ export const IDENTITY_CONFIG = {
   DRIBBBLE_URL: 'https://dribbble.com',
   LINKEDIN_JOBS_URL: 'https://linkedin.com/jobs',
 } as const;
+
+/**
+ * Public contact address, from NEXT_PUBLIC_CONTACT_EMAIL only. No placeholder fallback:
+ * returns null when unset so UI hides the contact button.
+ */
+export function getPublicContactEmail(): string | null {
+  const v = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim();
+  return v ? v : null;
+}
 
 /** Canonical external links for UI surfaces */
 export function getExternalLinks() {

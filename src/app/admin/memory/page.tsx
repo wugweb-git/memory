@@ -8,7 +8,8 @@ import MemoryExplorer from './components/MemoryExplorer';
 import IngestionMonitor from './components/IngestionMonitor';
 import EmbeddingMonitor from './components/EmbeddingMonitor';
 import ActivityLog from './components/ActivityLog';
-import { PageHeader } from '@/components/ui/primitives';
+import { PageHeader, Section, Card } from '@/components/ui/primitives';
+import { AiImport } from '@/app/component/AiImport';
 
 function AdminMemoryContent() {
   const searchParams = useSearchParams();
@@ -59,6 +60,11 @@ function AdminMemoryContent() {
 
         {/* Right: RAG tools & explorer */}
         <div className="col-span-12 lg:col-span-8 flex flex-col gap-4 md:gap-8 min-w-0">
+          <Section title="Import AI history" description="Bring conversations and saved facts from other AI tools into memory. Dry run first, nothing is written until you confirm.">
+            <Card className="p-4 sm:p-5">
+              <AiImport />
+            </Card>
+          </Section>
           <RagTester testRunId={testRunId} />
           <MemoryExplorer testRunId={testRunId} />
         </div>

@@ -22,6 +22,7 @@ import {
   Plus,
 } from 'lucide-react';
 import ManualUpload from './components/ManualUpload';
+import { BufferDeviceTools } from './components/DeviceTools';
 import { VoiceIngestion } from '@/app/component/VoiceIngestion';
 import { KnowledgeSource } from '@/app/component/KnowledgeSource';
 import { PulseWidget } from '@/app/component/PulseWidget';
@@ -635,6 +636,9 @@ export default function BufferControlSurface() {
               {captureMode === 'pulse' && <PulseWidget />}
               {captureMode === 'device' && <DeviceCapture />}
               {captureMode === 'csv' && <CsvImport onComplete={() => fetchItems()} />}
+            </Card>
+            <Card className="p-5">
+              <BufferDeviceTools />
             </Card>
             <p className="flex items-start gap-2 px-1 text-sm text-text-secondary">
               <Inbox size={16} aria-hidden="true" className="mt-0.5 shrink-0" />

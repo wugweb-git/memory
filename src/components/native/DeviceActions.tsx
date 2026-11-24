@@ -134,7 +134,7 @@ export function AddToCalendarButton({ title = '', description, location, url }: 
             </label>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button size="lg" onClick={() => add('auto')}>Add to calendar</Button>
+            <Button size="lg" variant="tonal" onClick={() => add('auto')}>Add to calendar</Button>
             <Button size="lg" variant="outline" onClick={() => add('share')}>Share file</Button>
             <Button size="lg" variant="outline" onClick={() => add('google')}>Google Calendar</Button>
           </div>

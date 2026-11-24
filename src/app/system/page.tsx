@@ -12,6 +12,8 @@ import { apiRequest } from "@/lib/ui/api-client";
 import { AppShell } from "@/app/component/AppShell";
 import { PasskeyCard } from "./PasskeyCard";
 import { CostCard } from "./CostCard";
+import { StorageStatus } from "@/components/native/StorageStatus";
+import { CapabilitiesPanel } from "@/components/native/CapabilitiesPanel";
 import { CheckCircle2, AlertCircle, CircleDashed } from "lucide-react";
 
 const HEALTH_LABELS: Record<string, string> = {
@@ -183,6 +185,13 @@ export default function SystemPage() {
           <PasskeyCard />
 
           <CostCard />
+
+          <Section title="This device" description="Storage, offline captures and which device features this browser supports.">
+            <div className="space-y-3">
+              <StorageStatus />
+              <CapabilitiesPanel />
+            </div>
+          </Section>
 
           {loading ? <div className="space-y-2" role="status" aria-label="Loading health checks"><Skeleton className="h-24 w-full motion-reduce:animate-none" /></div> : null}
           {error ? (

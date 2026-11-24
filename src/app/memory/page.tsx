@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link';
 import { AppShell } from '@/app/component/AppShell';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
+import { ItemActions } from '@/components/native/ItemActions';
 import { Card, EmptyState, Skeleton, PageHeader } from '@/components/ui/primitives';
 import { AlertTriangle, Archive, CheckCircle2, Database, Globe, HardDrive, Lock, RefreshCcw, Search, Server, ShieldAlert, XCircle } from 'lucide-react';
 import { PACKET_STATUSES, packetStatusView } from './packet-status';
@@ -50,6 +51,19 @@ function StatusBadge({ status }: { status: unknown }) {
       <Icon size={12} aria-hidden="true" /> {v.label}
     </span>
   );
+}
+
+/** Plain text of a packet payload for share and AI handoff (capped). */
+function packetText(content: unknown): string {
+  if (content == null) return '';
+  let t = '';
+  if (typeof content === 'string') t = content;
+  else if (typeof content === 'object') {
+    const o = content as Record<string, unknown>;
+    const pick = ['text', 'content', 'body', 'summary', 'title', 'note'].map((k) => o[k]).find((v) => typeof v === 'string' && v.trim());
+    t = typeof pick === 'string' ? pick : JSON.stringify(content);
+  } else t = String(content);
+  return t.length > 1500 ? `${t.slice(0, 1500)}…` : t;
 }
 
 type RetrievalHit = { packet_id: string; chunk: string; score: number; source: string; timestamp: string };
@@ -240,6 +254,8 @@ export default function MemoryControlSurface() {
           {JSON.stringify(selectedPacket.content ?? null, null, 2)}
         </pre>
       </div>
+
+      <ItemActions title={`${selectedPacket.source} ${selectedPacket.type}`.trim()} text={packetText(selectedPacket.content)} />
 
       {actionError ? <p role="alert" className="text-sm text-danger">{actionError}</p> : null}
 
