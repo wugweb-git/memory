@@ -132,12 +132,12 @@ export const VoiceIngestion = () => {
       if (out.kind === 'rejected') throw new Error('Blob write failed');
 
       if (out.kind === 'queued') toast.info('Saved offline, will sync when you are back online.');
-      else toast.success('Signal anchored to buffer queue for review.');
+      else toast.success('Note saved to the buffer. Review it there.');
       setParsed(null);
       setTranscript('');
       setStage('idle');
     } catch (e: any) {
-      setError(e.message || 'Failed to anchor signal');
+      setError(e.message || 'Could not save the note to the buffer');
       setStage('error');
     }
   }, [parsed]);
@@ -165,10 +165,10 @@ export const VoiceIngestion = () => {
       <div className="flex items-center justify-between mb-8 relative z-10">
         <div>
           <h2 className="text-2xs font-semibold tracking-widest text-text-primary uppercase flex items-center gap-3">
-            <Waves aria-hidden="true" size={16} className="text-accent" /> Cognitive ingress
+            <Waves aria-hidden="true" size={16} className="text-accent" /> Voice capture
           </h2>
           <p className="text-2xs text-text-tertiary font-bold mt-1">
-            {SUPPORTED ? 'Voice + Text Signal Capture' : 'Text Signal Capture'}
+            {SUPPORTED ? 'Speak or type a note' : 'Type a note'}
           </p>
         </div>
 
@@ -212,10 +212,10 @@ export const VoiceIngestion = () => {
               </div>
               <div className="space-y-1">
                 <p className="text-xs font-bold text-text-tertiary tracking-widest ">
-                  {SUPPORTED ? 'Tap mic or type below' : 'Type your signal below'}
+                  {SUPPORTED ? 'Tap mic or type below' : 'Type your note below'}
                 </p>
                 <p className="text-2xs text-text-tertiary max-w-[220px] leading-relaxed">
-                  Broadcast a cognitive signal to anchor it into the buffer queue.
+                  Capture a note and save it to the buffer for review.
                 </p>
               </div>
               {/* Text fallback */}
@@ -271,10 +271,10 @@ export const VoiceIngestion = () => {
               <div className="flex gap-3">
                 <button onClick={anchorMemory}
                   className="flex-1 min-h-11 py-3.5 rounded-2xl bg-accent text-bg-primary text-2xs font-semibold flex items-center justify-center gap-2 hover:bg-accent-high transition-all shadow-lg active:scale-95">
-                  <CheckCircle2 aria-hidden="true" size={15} /> Anchor to Buffer
+                  <CheckCircle2 aria-hidden="true" size={15} /> Save to buffer
                 </button>
                 <button onClick={reset}
-                  className="px-5 py-3.5 rounded-2xl bg-secondary border border-border-primary text-text-tertiary hover:text-danger hover:border-danger/40 transition-all min-h-11 min-w-11" aria-label="Discard signal">
+                  className="px-5 py-3.5 rounded-2xl bg-secondary border border-border-primary text-text-tertiary hover:text-danger hover:border-danger/40 transition-all min-h-11 min-w-11" aria-label="Discard note">
                   <X aria-hidden="true" size={17} />
                 </button>
               </div>
@@ -319,7 +319,7 @@ const TextInput: React.FC<{ onSubmit: (text: string) => void }> = ({ onSubmit })
         id="signal-text"
         value={val}
         onChange={e => setVal(e.target.value)}
-        placeholder="Type a cognitive signal to capture…"
+        placeholder="Type a note to capture…"
         rows={2}
         className="w-full bg-secondary/50 border border-border-primary rounded-2xl px-4 py-3 text-base sm:text-xs text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent/50 transition-colors resize-none"
       />
@@ -328,7 +328,7 @@ const TextInput: React.FC<{ onSubmit: (text: string) => void }> = ({ onSubmit })
         onClick={() => { onSubmit(val); setVal(''); }}
         className="w-full py-2.5 rounded-xl min-h-11 bg-text-primary text-bg-primary text-2xs font-semibold disabled:opacity-50 hover:bg-text-secondary transition-colors"
       >
-        Capture Signal
+        Capture note
       </button>
     </div>
   );

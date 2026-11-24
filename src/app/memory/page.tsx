@@ -15,6 +15,9 @@ type MonitorState = {
     packet_count: number;
     hold_count: number;
     failed_count: number;
+    needs_attention?: number;
+    embedded_count?: number;
+    not_searchable_count?: number;
     retry_queue_count: number;
     source_count: number;
     item_count: number;
@@ -230,7 +233,12 @@ export default function MemoryControlSurface() {
     callPacketApi('/api/memory/replay', { packet_id: packetId }, 'Replay');
 
   const filtersActive = statusFilter.trim() !== '' || sourceFilter.trim() !== '';
-  const quarantined = monitor ? monitor.stats.hold_count + monitor.stats.failed_count : null;
+  // One shared number (src/lib/stats/memory-stats.ts). Older responses only had failed_count, which is the same value.
+  const quarantined = monitor ? (monitor.stats.needs_attention ?? monitor.stats.failed_count) : null;
+  const searchableNote =
+    monitor && typeof monitor.stats.embedded_count === 'number'
+      ? `${monitor.stats.embedded_count} searchable, ${monitor.stats.not_searchable_count ?? 0} not yet`
+      : 'Stored memory units';
 
   const packetDetails = selectedPacket ? (
     <Card className="space-y-5 p-5">
@@ -329,8 +337,8 @@ export default function MemoryControlSurface() {
 
   const stats = [
     { label: 'Storage used', value: monitor ? `${monitor.storage.usage_percent}%` : null, sub: monitor ? `${bytesToMb(monitor.storage.used_bytes)} of ${bytesToMb(monitor.storage.total_bytes)}` : '', icon: HardDrive, color: 'text-accent' },
-    { label: 'Memory packets', value: monitor ? String(monitor.stats.packet_count) : null, sub: 'Stored memory units', icon: Database, color: 'text-accent' },
-    { label: 'Needs attention', value: quarantined === null ? null : String(quarantined), sub: 'Held or failed packets', icon: ShieldAlert, color: 'text-warning' },
+    { label: 'Memory packets', value: monitor ? String(monitor.stats.packet_count) : null, sub: searchableNote, icon: Database, color: 'text-accent' },
+    { label: 'Needs attention', value: quarantined === null ? null : String(quarantined), sub: 'Failed or partly processed', icon: ShieldAlert, color: 'text-warning' },
     { label: 'Sources', value: monitor ? String(monitor.stats.source_count) : null, sub: `${monitor?.stats.growth_rate_per_day ?? 0} new per day`, icon: Server, color: 'text-success' },
   ];
 

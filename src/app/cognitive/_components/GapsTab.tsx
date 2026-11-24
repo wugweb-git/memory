@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Check, Minus, RefreshCw } from 'lucide-react';
-import { postJson, currentUserId, Intent, Card, ErrorBox, SkeletonCard, Meter } from './shared';
+import { errorFlags, postJson, currentUserId, Intent, Card, ErrorBox, SkeletonCard, Meter } from './shared';
 
 // Mirrors the expected profile the gaps API scores against.
 const DOMAINS = ['technical', 'leadership', 'product', 'communication', 'financial', 'creative'];
@@ -12,15 +12,18 @@ export const GapsTab: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errFlags, setErrFlags] = useState({ limit: false, retryable: true });
 
   async function run() {
     setLoading(true);
     setError(null);
+    setErrFlags({ limit: false, retryable: true });
     try {
       setResult(await postJson('/api/cognitive/gaps', { user_id: currentUserId() }));
     } catch (e: any) {
       setResult(null);
       setError(e.message);
+      setErrFlags(errorFlags(e));
     } finally {
       setLoading(false);
     }
@@ -51,7 +54,7 @@ export const GapsTab: React.FC = () => {
         </button>
       </div>
 
-      {error ? <ErrorBox message={error} onRetry={run} /> : null}
+      {error ? <ErrorBox message={error} limit={errFlags.limit} onRetry={errFlags.retryable ? run : undefined} /> : null}
       {loading && !result ? <SkeletonCard label="Checking coverage" /> : null}
 
       {result ? (

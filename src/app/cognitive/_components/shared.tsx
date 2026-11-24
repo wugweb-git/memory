@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { AlertCircle, CheckCircle, Loader2, RefreshCw } from 'lucide-react';
 import { resolveUserId } from '@/config/identity';
+import { readAiErrorBody } from '@/lib/ai/client-error';
 
 /* ─── api helper ─────────────────────────────────────────── */
 export const REQUEST_TIMEOUT_MS = 60_000;
@@ -15,6 +16,25 @@ export function friendlyStatus(status: number, serverMessage?: string | null): s
   // Do not override a specific server message on 5xx.
   if (status >= 500) return serverMessage ? null : 'The service had a problem. Try again in a moment.';
   return null;
+}
+
+/** Error from postJson. `limit` marks a quota or daily limit: a calm notice, no Retry. */
+export class ApiError extends Error {
+  code?: string;
+  retryable: boolean;
+  limit: boolean;
+  constructor(message: string, opts: { code?: string; retryable?: boolean; limit?: boolean } = {}) {
+    super(message);
+    this.name = 'ApiError';
+    this.code = opts.code;
+    this.limit = Boolean(opts.limit);
+    this.retryable = opts.retryable !== false && !this.limit;
+  }
+}
+
+/** Retry/notice flags for any caught error (plain Errors stay retryable). */
+export function errorFlags(e: unknown): { limit: boolean; retryable: boolean } {
+  return e instanceof ApiError ? { limit: e.limit, retryable: e.retryable } : { limit: false, retryable: true };
 }
 
 export async function postJson<T = any>(url: string, body: Record<string, unknown>): Promise<T> {
@@ -36,7 +56,10 @@ export async function postJson<T = any>(url: string, body: Record<string, unknow
   let data: any = null;
   try { data = await res.json(); } catch { /* non-json */ } finally { clearTimeout(timer); }
   if (!res.ok || data?.error) {
-    throw new Error(friendlyStatus(res.status, typeof data?.message === 'string' ? data.message : null) ?? data?.message ?? (typeof data?.error === 'string' ? data.error : null) ?? `The request failed (error ${res.status}). Try again.`);
+    // Show the server's safe message as returned; only fall back to a status sentence when it sent none.
+    const info = readAiErrorBody(data, '');
+    const text = info.message || friendlyStatus(res.status, null) || `The request failed (error ${res.status}). Try again.`;
+    throw new ApiError(res.status === 401 ? friendlyStatus(401)! : text, { code: info.code, retryable: info.retryable, limit: info.limit });
   }
   return data as T;
 }
@@ -96,11 +119,14 @@ export const PrimaryButton: React.FC<{
   </button>
 );
 
-export const ErrorBox: React.FC<{ message: string; onRetry?: () => void }> = ({ message, onRetry }) => (
-  <div role="alert" className="rounded-2xl border border-danger/30 bg-danger/5 p-4 flex items-start gap-3">
-    <AlertCircle size={16} className="text-danger shrink-0 mt-0.5" aria-hidden="true" />
+export const ErrorBox: React.FC<{ message: string; onRetry?: () => void; limit?: boolean }> = ({ message, onRetry, limit }) => (
+  <div
+    role={limit ? 'status' : 'alert'}
+    className={`rounded-2xl border p-4 flex items-start gap-3 ${limit ? 'border-border-secondary bg-bg-secondary' : 'border-danger/30 bg-danger/5'}`}
+  >
+    <AlertCircle size={16} className={`shrink-0 mt-0.5 ${limit ? 'text-text-tertiary' : 'text-danger'}`} aria-hidden="true" />
     <div className="flex-1 space-y-2">
-      <p className="text-sm text-danger">{message}</p>
+      <p className={`text-sm ${limit ? 'text-text-secondary' : 'text-danger'}`}>{message}</p>
       {onRetry ? (
         <button type="button" onClick={onRetry} className="inline-flex items-center text-sm font-semibold text-danger underline underline-offset-2 min-h-11 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
           Try again

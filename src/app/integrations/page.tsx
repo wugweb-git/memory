@@ -98,6 +98,11 @@ const HEALTH_COPY: Record<Health, { label: string; dot: string }> = {
   manual: { label: 'Manual', dot: 'bg-text-disabled' },
 };
 
+/** Sources whose keys are saved on the credentials page (no env editing needed). */
+function usesCredentialsPage(c: ConnectorStatus): boolean {
+  return /^(notion|google|gmail|spotify|icloud)/.test(c.id);
+}
+
 /** One calm line explaining the status and what happens next. */
 function detailLine(c: ConnectorStatus): { text: string; danger?: boolean } {
   const h = healthOf(c);
@@ -112,6 +117,9 @@ function detailLine(c: ConnectorStatus): { text: string; danger?: boolean } {
     return { text: `Synced ${relTime(c.lastSyncAt)}. ${counts}Runs every ${cadence}.` };
   }
   if (h === 'waiting') return { text: `Nothing synced yet. Runs every ${cadence}, or sync now.` };
+  if (h === 'unset' && usesCredentialsPage(c)) {
+    return { text: 'Add your keys on the credentials page, then this source starts syncing.' };
+  }
   return { text: c.setupHint };
 }
 
@@ -305,6 +313,12 @@ export default function IntegrationsPage() {
         more: null,
       };
     }
+    if (h === 'unset' && usesCredentialsPage(c)) {
+      return {
+        main: <Link href="/integrations/credentials" aria-label={`Add keys for ${c.label}`} className={ACTION_PRIMARY}>Add keys</Link>,
+        more: null,
+      };
+    }
     if (h === 'unset') return none;
     if (h === 'needs-connect' && c.authStartPath) {
       return { main: <a href={c.authStartPath} aria-label={`Connect ${c.label}`} className={ACTION_PRIMARY}>Connect</a>, more: null };
@@ -380,7 +394,9 @@ export default function IntegrationsPage() {
                 <p className="text-base font-semibold text-text-primary">
                   {attention > 0
                     ? `${attention} ${attention === 1 ? 'source needs' : 'sources need'} your attention`
-                    : working > 0 ? 'Everything you connected is working' : 'No sources are connected yet'}
+                    : working > 0
+                      ? `${working} of ${trackable.length} ${trackable.length === 1 ? 'source is' : 'sources are'} working`
+                      : 'No sources are connected yet'}
                 </p>
                 <p className="mt-1 text-sm text-text-tertiary">
                   {working} working, {attention} need attention, {notSetUp} not set up

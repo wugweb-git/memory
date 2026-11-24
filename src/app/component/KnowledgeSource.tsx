@@ -11,7 +11,7 @@ export const KnowledgeSource = () => {
 
   const onProcessFile = (err: any, file: any) => {
     if (!err) {
-      toast.success('Anchored to your memory vault.', {
+      toast.success('File added. It is checked before it becomes memory.', {
         icon: <CheckCircle2 aria-hidden="true" className="text-success" />
       });
       setSources(prev => [{
@@ -34,7 +34,7 @@ export const KnowledgeSource = () => {
           <FilePond
             server={{ process: '/api/upload' }}
             name="filepond"
-            labelIdle='Drop PDF / Text or <span class="filepond--label-action">Browse</span>'
+            labelIdle='Drop a PDF or text file, or <span class="filepond--label-action">Browse</span>'
             onprocessfile={onProcessFile}
             className="custom-pond"
           />
@@ -59,7 +59,7 @@ export const KnowledgeSource = () => {
                   </div>
                   <div className="flex items-center gap-2">
                      <div aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-success" />
-                     <span className="text-2xs font-semibold text-text-tertiary">Anchored</span>
+                     <span className="text-2xs font-semibold text-text-tertiary">Added</span>
                   </div>
                 </motion.div>
               ))}

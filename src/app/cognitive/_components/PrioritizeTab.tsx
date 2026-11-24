@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { ListOrdered } from 'lucide-react';
-import { postJson, currentUserId, Intent, Card, PrimaryButton, ErrorBox, SkeletonCard, Meter } from './shared';
+import { errorFlags, postJson, currentUserId, Intent, Card, PrimaryButton, ErrorBox, SkeletonCard, Meter } from './shared';
 
 type Mode = 'architect' | 'founder' | 'operator';
 const MAX_ITEMS = 10;
@@ -12,6 +12,7 @@ export const PrioritizeTab: React.FC<{ mode: Mode }> = ({ mode }) => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errFlags, setErrFlags] = useState({ limit: false, retryable: true });
 
   const items = text.split('\n').map(s => s.trim()).filter(Boolean);
   const tooMany = items.length > MAX_ITEMS;
@@ -20,11 +21,13 @@ export const PrioritizeTab: React.FC<{ mode: Mode }> = ({ mode }) => {
     if (!items.length || tooMany) return;
     setLoading(true);
     setError(null);
+    setErrFlags({ limit: false, retryable: true });
     try {
       setResult(await postJson('/api/cognitive/prioritize', { user_id: currentUserId(), items, mode }));
     } catch (e: any) {
       setResult(null);
       setError(e.message);
+      setErrFlags(errorFlags(e));
     } finally {
       setLoading(false);
     }
@@ -60,7 +63,7 @@ export const PrioritizeTab: React.FC<{ mode: Mode }> = ({ mode }) => {
         Rank these
       </PrimaryButton>
 
-      {error ? <ErrorBox message={error} onRetry={items.length && !tooMany ? run : undefined} /> : null}
+      {error ? <ErrorBox message={error} limit={errFlags.limit} onRetry={items.length && !tooMany && errFlags.retryable ? run : undefined} /> : null}
       {loading ? <SkeletonCard label="Weighing each item" /> : null}
 
       {!loading && !result && !error ? (

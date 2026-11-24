@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Zap, TrendingDown, Compass } from 'lucide-react';
-import { postJson, currentUserId, Intent, Card, PrimaryButton, ErrorBox, SkeletonCard, Meter, FeedbackBar, Eyebrow } from './shared';
+import { errorFlags, postJson, currentUserId, Intent, Card, PrimaryButton, ErrorBox, SkeletonCard, Meter, FeedbackBar, Eyebrow } from './shared';
 
 type Mode = 'architect' | 'founder' | 'operator';
 
@@ -23,10 +23,12 @@ export const DecideTab: React.FC<{ mode: Mode }> = ({ mode }) => {
   const [loading, setLoading] = useState(false);
   const [output, setOutput] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errFlags, setErrFlags] = useState({ limit: false, retryable: true });
 
   async function run() {
     setLoading(true);
     setError(null);
+    setErrFlags({ limit: false, retryable: true });
     try {
       const data = await postJson('/api/cognitive/decide', {
         user_id: currentUserId(),
@@ -42,6 +44,7 @@ export const DecideTab: React.FC<{ mode: Mode }> = ({ mode }) => {
     } catch (e: any) {
       setOutput(null);
       setError(e.message);
+      setErrFlags(errorFlags(e));
     } finally {
       setLoading(false);
     }
@@ -75,7 +78,7 @@ export const DecideTab: React.FC<{ mode: Mode }> = ({ mode }) => {
         Get direction
       </PrimaryButton>
 
-      {error ? <ErrorBox message={error} onRetry={run} /> : null}
+      {error ? <ErrorBox message={error} limit={errFlags.limit} onRetry={errFlags.retryable ? run : undefined} /> : null}
       {loading ? <SkeletonCard label="Working out your next move" /> : null}
 
       {!loading && !output && !error ? (

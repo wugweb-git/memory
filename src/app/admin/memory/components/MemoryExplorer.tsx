@@ -23,6 +23,19 @@ interface MemoryExplorerProps {
 
 const PAGE_SIZE = 10;
 
+/** Packet types the app actually stores. Exact match on the server, so each value is a real `type`. */
+const PACKET_TYPES: ReadonlyArray<{ value: string; label: string }> = [
+  { value: 'blog', label: 'Blog' },
+  { value: 'github', label: 'GitHub' },
+  { value: 'external', label: 'External' },
+  { value: 'voice_note', label: 'Voice note' },
+  { value: 'note', label: 'Note' },
+  { value: 'document', label: 'Document' },
+  { value: 'email', label: 'Email' },
+  { value: 'activity', label: 'Activity' },
+];
+const typeLabel = (t: string) => PACKET_TYPES.find((p) => p.value === t)?.label ?? t.replace(/_/g, ' ');
+
 function formatDate(ts: string) {
   const d = new Date(ts);
   return Number.isNaN(d.getTime()) ? 'Unknown' : d.toLocaleDateString();
@@ -62,7 +75,7 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
     } catch (err) {
       setPackets([]);
       setTotal(0);
-      setLoadError(err instanceof Error ? `Could not load packets: ${err.message}. Retry, or check that you are signed in as admin.` : 'Could not load packets. Retry, or check that you are signed in as admin.');
+      setLoadError(err instanceof Error ? `Could not load packets: ${err.message}. Try again.` : 'Could not load packets. Try again.');
     } finally {
       setLoading(false);
     }
@@ -74,7 +87,10 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
 
   const canPrev = hasPrevPage(offset);
   const canNext = hasNextPage(offset, packets.length, total);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
   const rangeLabel = pageRangeLabel(offset, packets.length, total);
+  const pageLabel = total > 0 ? `Page ${currentPage} of ${totalPages}` : '';
 
   const goPrev = () => {
     if (!canPrev || loading) return;
@@ -88,7 +104,7 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
   const openPacket = (id: string) => setSelectedPacketId(id);
 
   const headCell = 'px-6 py-3 font-medium';
-  const emptyTitle = filterType ? `No ${filterType} packets` : 'No packets yet';
+  const emptyTitle = filterType ? `No ${typeLabel(filterType).toLowerCase()} packets` : 'No packets yet';
   const emptyHint = filterType ? 'Try another packet type.' : 'Ingest something from the buffer and it appears here.';
 
   return (
@@ -110,10 +126,9 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
             className="min-h-11 w-full rounded-xl border border-border-primary bg-bg-primary px-3 text-base text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:w-44 sm:text-sm"
           >
             <option value="">All types</option>
-            <option value="email">Email</option>
-            <option value="activity">Activity</option>
-            <option value="document">Document</option>
-            <option value="note">Note</option>
+            {PACKET_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
           </select>
         </div>
       </div>
@@ -225,7 +240,7 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-secondary bg-bg-primary px-4 py-3 sm:px-6">
         <p className="text-sm text-text-tertiary">
-          {loading ? 'Loading packets…' : rangeLabel}
+          {loading ? 'Loading packets…' : <>{rangeLabel}{pageLabel ? <span className="ml-2 font-medium text-text-secondary">{pageLabel}</span> : null}</>}
         </p>
         <div className="flex w-full items-center gap-2 sm:w-auto">
           <button
@@ -249,7 +264,7 @@ export default function MemoryExplorer({ testRunId = 'PROD' }: MemoryExplorerPro
         </div>
       </div>
       <p role="status" aria-live="polite" className="sr-only">
-        {loading ? '' : rangeLabel}
+        {loading ? '' : `${rangeLabel}. ${pageLabel}`}
       </p>
 
       {selectedPacketId && (

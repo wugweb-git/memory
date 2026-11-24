@@ -200,7 +200,7 @@ export const JobPipeline = () => {
             {loading ? '…' : activeCount}
           </div>
           <div>
-            <span className="text-2xs font-semibold text-text-tertiary tracking-widest uppercase block mb-1">Active ingress</span>
+            <span className="text-2xs font-semibold text-text-tertiary tracking-widest uppercase block mb-1">Applications</span>
             <p className="text-xs font-bold text-text-secondary tracking-tight leading-snug ">
               Applications Captured<br />this weekly cycle
             </p>
@@ -212,9 +212,9 @@ export const JobPipeline = () => {
             {loading ? '…' : interviewCount}
           </div>
           <div>
-            <span className="text-2xs font-semibold text-success tracking-widest uppercase block mb-1">Live synapse</span>
+            <span className="text-2xs font-semibold text-success tracking-widest uppercase block mb-1">Interviews</span>
             <p className="text-xs font-bold text-text-secondary tracking-tight leading-snug ">
-              Interviews Scheduled<br />via Neural Parser
+              Interviews scheduled<br />from captured leads
             </p>
           </div>
         </div>

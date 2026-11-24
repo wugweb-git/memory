@@ -45,7 +45,8 @@ export default function AdminConsole() {
           const res = await fetch(path, { credentials: 'include' });
           const j = await res.json().catch(() => ({}));
           const status = String(j.status ?? (res.ok ? 'ok' : `HTTP ${res.status}`));
-          return { name, status, ok: res.ok && !/broken|fail|error/i.test(status) };
+          // DEGRADED and maintenance are not healthy: the summary follows the worst row.
+          return { name, status, ok: res.ok && !/broken|fail|error|degraded|maintenance|unreachable/i.test(status) };
         } catch {
           return { name, status: 'unreachable', ok: false };
         }

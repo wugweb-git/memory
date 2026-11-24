@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
     if (limited) return limited;
     const aiFailure = aiErrorResponse(err);
     if (aiFailure) return aiFailure;
-    return NextResponse.json({ error: "Decision Engine failure", status: "error" }, { status: /LLM_FAILURE/.test(String(err?.message)) ? 502 : 500 });
+    const safe = "The decision could not be completed. Try again.";
+    return NextResponse.json({ error: safe, message: safe, status: "error" }, { status: /LLM_FAILURE/.test(String(err?.message)) ? 502 : 500 });
   }
 }

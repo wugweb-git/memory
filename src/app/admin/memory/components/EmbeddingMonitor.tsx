@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { PieChart, RefreshCw, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
+import { PieChart, RefreshCw, AlertCircle, CheckCircle2, Clock, MinusCircle } from 'lucide-react';
 import { usePolling } from './usePolling';
 
 interface Stats {
@@ -9,6 +9,11 @@ interface Stats {
   processing: number;
   embedded: number;
   failed: number;
+  /** Waiting for the embedder (shared definition). */
+  backlog?: number;
+  /** Intentionally skipped: too short, restricted or a permanent failure. */
+  not_embeddable?: number;
+  total?: number;
 }
 
 interface EmbeddingMonitorProps {
@@ -27,7 +32,14 @@ export default function EmbeddingMonitor({ testRunId = 'PROD' }: EmbeddingMonito
       const response = await fetch(`/api/memory/stats?test_run_id=${encodeURIComponent(testRunId)}`, { credentials: 'include' });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data?.error || `HTTP ${response.status}`);
-      setStats(data.embedding_stats || { pending: 0, processing: 0, embedded: 0, failed: 0 });
+      const shared = data.memory_stats || {};
+      const base = data.embedding_stats || { pending: 0, processing: 0, embedded: 0, failed: 0 };
+      setStats({
+        ...base,
+        backlog: typeof shared.backlog === 'number' ? shared.backlog : undefined,
+        not_embeddable: typeof shared.not_embeddable === 'number' ? shared.not_embeddable : undefined,
+        total: typeof shared.total === 'number' ? shared.total : undefined,
+      });
       setError(null);
       setLoaded(true);
     } catch (err) {
@@ -39,7 +51,8 @@ export default function EmbeddingMonitor({ testRunId = 'PROD' }: EmbeddingMonito
 
   usePolling(fetchStats, 30000);
 
-  const total = stats.pending + stats.processing + stats.embedded + stats.failed;
+  const total = stats.total ?? stats.pending + stats.processing + stats.embedded + stats.failed;
+  const backlog = stats.backlog ?? stats.pending + stats.processing;
   const percent = Math.round((stats.embedded / (total || 1)) * 100);
 
   return (
@@ -70,10 +83,10 @@ export default function EmbeddingMonitor({ testRunId = 'PROD' }: EmbeddingMonito
         <div className="grid grid-cols-2 gap-4">
           <StatusCard
             label="Backlog"
-            count={stats.pending + stats.processing}
+            count={backlog}
             icon={<Clock aria-hidden="true" className="w-4 h-4 text-warning" />}
             tone="warning"
-            subtext="Waiting for the pipeline"
+            subtext="Waiting to be indexed"
           />
           <StatusCard
             label="Embedded"
@@ -87,6 +100,15 @@ export default function EmbeddingMonitor({ testRunId = 'PROD' }: EmbeddingMonito
             icon={<AlertCircle aria-hidden="true" className="w-4 h-4 text-danger" />}
             tone="danger"
           />
+          {typeof stats.not_embeddable === 'number' && (
+            <StatusCard
+              label="Not embeddable"
+              count={stats.not_embeddable}
+              icon={<MinusCircle aria-hidden="true" className="w-4 h-4 text-text-tertiary" />}
+              tone="muted"
+              subtext="Skipped on purpose"
+            />
+          )}
         </div>
       )}
 
@@ -115,13 +137,14 @@ export default function EmbeddingMonitor({ testRunId = 'PROD' }: EmbeddingMonito
   );
 }
 
-const TONE: Record<'warning' | 'success' | 'danger', string> = {
+const TONE: Record<'warning' | 'success' | 'danger' | 'muted', string> = {
   warning: 'text-warning',
   success: 'text-success',
   danger: 'text-danger',
+  muted: 'text-text-tertiary',
 };
 
-function StatusCard({ label, count, icon, tone, subtext }: { label: string; count: number; icon: React.ReactNode; tone: 'warning' | 'success' | 'danger'; subtext?: string }) {
+function StatusCard({ label, count, icon, tone, subtext }: { label: string; count: number; icon: React.ReactNode; tone: 'warning' | 'success' | 'danger' | 'muted'; subtext?: string }) {
   return (
     <div className={`p-4 rounded-lg border bg-bg-secondary border-border-primary ${TONE[tone]} flex flex-col gap-2`}>
       <div className="flex items-center justify-between">{icon}</div>

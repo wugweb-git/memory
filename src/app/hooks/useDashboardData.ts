@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 export interface DashboardStats {
   memoryPackets: string;
+  /** Packets that cannot be found by search yet (shared memory_stats.not_searchable), or null when unknown. */
+  notSearchable: string | null;
   syncStatus: string;
   bufferQueue: string;
   uplink: string;
@@ -17,6 +19,7 @@ export interface DashboardData {
 const DEFAULTS: DashboardData = {
   stats: {
     memoryPackets: "—",
+    notSearchable: null,
     syncStatus: "Unknown",
     bufferQueue: "—",
     uplink: "—",
@@ -43,13 +46,18 @@ export function useDashboardData(): DashboardData {
         if (cancelled) return;
 
         let memoryPackets = DEFAULTS.stats.memoryPackets;
+        let notSearchable: string | null = DEFAULTS.stats.notSearchable;
         let syncStatus = DEFAULTS.stats.syncStatus;
         let bufferQueue = DEFAULTS.stats.bufferQueue;
         let uplink = DEFAULTS.stats.uplink;
 
         if (memRes.status === "fulfilled" && memRes.value.ok) {
           const memJson = await memRes.value.json();
-          memoryPackets = memJson.total_packets?.toLocaleString() || DEFAULTS.stats.memoryPackets;
+          // memory_stats is the shared source (same numbers as /memory and admin); total_packets is the older field.
+          const shared = memJson.memory_stats;
+          const total = typeof shared?.total === "number" ? shared.total : memJson.total_packets;
+          if (typeof total === "number") memoryPackets = total.toLocaleString();
+          if (typeof shared?.not_searchable === "number") notSearchable = shared.not_searchable.toLocaleString();
         }
 
         if (sysRes.status === "fulfilled" && sysRes.value.ok) {
@@ -73,7 +81,7 @@ export function useDashboardData(): DashboardData {
         }
 
         setData({
-          stats: { memoryPackets, syncStatus, bufferQueue, uplink },
+          stats: { memoryPackets, notSearchable, syncStatus, bufferQueue, uplink },
           loading: false,
           error: null,
         });

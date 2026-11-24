@@ -5,6 +5,7 @@ import { convertToModelMessages, createUIMessageStream, createUIMessageStreamRes
 import { isOpenRouterEnabled, streamJob, type ChatMessage } from '@/lib/ai/openrouter';
 import { createOpenAI } from '@ai-sdk/openai';
 import { NextResponse } from 'next/server';
+import { aiErrorResponse } from '@/lib/ai/error-messages';
 import { BudgetExceededError, checkBudget } from '@/lib/cost/guard';
 import { recordJobUsage } from '@/lib/cost/tracking';
 import { retrieve } from '@/lib/memory/rag';
@@ -214,14 +215,11 @@ export async function POST(req: Request) {
 
     return result.toUIMessageStreamResponse({ headers: sourceHeaders });
   } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : 'Unknown error';
     console.error('CRITICAL_RAG_FAILURE:', e);
-    return NextResponse.json(
-      {
-        message: 'RAG_FAILURE: Neural chain desynchronized.',
-        error: message,
-      },
-      { status: 500 },
-    );
+    // Never forward the raw error text: it can carry provider URLs and model names.
+    const aiFailure = aiErrorResponse(e);
+    if (aiFailure) return aiFailure;
+    const safe = 'The answer could not be completed. Try again.';
+    return NextResponse.json({ error: safe, message: safe, status: 'error' }, { status: 500 });
   }
 }

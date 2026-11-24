@@ -67,7 +67,7 @@ const ROW_LINK =
 const QUICK = [
   { href: '/ask',       label: 'Ask your memory', icon: Brain,    desc: 'Answers grounded in your memory' },
   { href: '/memory',    label: 'Memory vault',           icon: Database,  desc: 'Indexed knowledge packets' },
-  { href: '/buffer',    label: 'Buffer queue',           icon: Archive,   desc: 'Pending intake for review' },
+  { href: '/buffer',    label: 'Buffer',                 icon: Archive,   desc: 'Pending intake for review' },
   { href: '/cognitive', label: 'Decision engine',        icon: Cpu,       desc: 'Decide, evaluate and rank' },
   { href: '/persona',   label: 'Persona',                icon: Sparkles,  desc: 'Behavioral & style intelligence' },
   { href: '/content',   label: 'Content',                icon: FileText,  desc: 'Generated & published output' },
@@ -239,9 +239,9 @@ export default function ConsolePage() {
               [1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-28" />)
             ) : (
               <>
-                <StatCard label="Memory packets" value={String(stats.memoryPackets)} sub="Total indexed" icon={<Database size={18} className="text-accent" />} />
+                <StatCard label="Memory packets" value={String(stats.memoryPackets)} sub={stats.notSearchable !== null ? `${stats.notSearchable} not searchable yet` : 'Stored memory units'} icon={<Database size={18} className="text-accent" />} />
                 <StatCard label="Sync status" value={sentenceCase(String(stats.syncStatus))} sub={syncSub} color={syncColor} icon={<ShieldCheck size={18} className={syncColor} />} />
-                <StatCard label="Buffer queue" value={String(stats.bufferQueue)} sub="Items in the buffer" icon={<Archive size={18} className="text-warning" />} />
+                <StatCard label="In buffer" value={String(stats.bufferQueue)} sub="Waiting for review, not memory packets" icon={<Archive size={18} className="text-warning" />} />
                 <StatCard label="Uplink" value={sentenceCase(String(stats.uplink))} sub="Reasoning reliability" icon={<Zap size={18} className="text-accent-ink" />} />
               </>
             )}

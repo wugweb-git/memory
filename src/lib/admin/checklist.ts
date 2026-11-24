@@ -25,11 +25,11 @@ export async function getAdminChecklist(
   const stored = profile?.theme?.[THEME_KEY];
   if (!Array.isArray(stored) || stored.length === 0) return defaultChecklist();
 
-  return stored.map((row: any, i) => ({
-    id: Number(row?.id ?? i + 1),
-    text: String(row?.text ?? defaultChecklist()[i]?.text ?? ''),
-    completed: Boolean(row?.completed),
-  }));
+  // Keep only the saved check state; the step text always comes from the current defaults.
+  const done = new Set<number>(
+    stored.filter((row: any) => row?.completed).map((row: any) => Number(row?.id)),
+  );
+  return defaultChecklist().map((item) => ({ ...item, completed: done.has(item.id) }));
 }
 
 export async function saveAdminChecklist(
