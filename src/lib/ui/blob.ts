@@ -12,7 +12,8 @@ export async function postBlobAction(action: string, id: string) {
   const res = await fetch(route, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id }),
+    // The buffer's reject control is "Reject and purge": it must really delete the item.
+    body: JSON.stringify(action === 'reject' ? { id, purge: true } : { id }),
   });
   return res;
 }

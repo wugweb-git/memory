@@ -47,6 +47,17 @@ export interface JobResult {
   attempts: Attempt[];
 }
 
+/**
+ * Reason label for a non-2xx response. A 429 whose body names the free-models daily cap is
+ * `quota_exhausted` (resets at a fixed time); any other 429 is `rate_limited`. The body is only
+ * inspected, never stored or surfaced.
+ */
+async function failureReason(res: Response): Promise<string> {
+  if (res.status !== 429) return `http_${res.status}`;
+  const text = typeof res.text === 'function' ? await res.text().catch(() => '') : '';
+  return /free-models-per-day|no credits|insufficient credits/i.test(text) ? 'quota_exhausted' : 'rate_limited';
+}
+
 export class JobFailedError extends Error {
   attempts: Attempt[];
   constructor(job: string, attempts: Attempt[]) {
@@ -136,7 +147,7 @@ export async function runJob(job: JobName, messages: ChatMessage[], opts: RunJob
         body: JSON.stringify(body),
       });
       if (!res.ok) {
-        record({ ok: false, status: res.status, reason: res.status === 429 ? 'rate_limited' : `http_${res.status}` });
+        record({ ok: false, status: res.status, reason: await failureReason(res) });
         continue; // 429/5xx/other: next model, never retry the same one
       }
       const data = await res.json().catch(() => null);
@@ -240,7 +251,7 @@ export async function* streamJob(
           body: JSON.stringify(body),
         });
         if (!res.ok) {
-          record({ ok: false, status: res.status, reason: res.status === 429 ? 'rate_limited' : `http_${res.status}` });
+          record({ ok: false, status: res.status, reason: await failureReason(res) });
           continue;
         }
         if (!res.body) {

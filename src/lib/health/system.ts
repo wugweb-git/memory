@@ -1,23 +1,21 @@
 import { postgres as prisma } from '@/lib/db/postgres';
 import { integrationsFromSources } from '@/lib/integrations/from-sources';
+import { loadMemoryStats } from '@/lib/stats/memory-stats';
 import { TRACKED_JOBS, summarizeJobRuns } from '@/lib/health/jobs-last-run';
 
 export async function buildSystemHealth() {
   const [
-    totalPackets,
-    failedJobs,
+    memoryStats,
     terminalFailures,
     activeLocks,
     staleLocks,
     semanticFallbacks,
-    processingStats,
     entityIsolation,
     systemSettings,
     sources,
     jobRuns,
   ] = await Promise.all([
-    prisma.memoryPacket.count(),
-    prisma.memoryPacket.count({ where: { processing_status: 'failed' } }),
+    loadMemoryStats(),
     prisma.memoryPacket.count({ where: { attempt_count: { gte: 3 } } }),
     prisma.memoryPacket.count({ where: { processing_lock: true } }),
     prisma.memoryPacket.count({
@@ -27,10 +25,6 @@ export async function buildSystemHealth() {
       },
     }),
     prisma.semanticObject.count({ where: { fallback: true } }),
-    prisma.memoryPacket.groupBy({
-      by: ['processing_status'],
-      _count: true,
-    }),
     prisma.entity.groupBy({
       by: ['processing_state'],
       _count: true,
@@ -48,9 +42,12 @@ export async function buildSystemHealth() {
     ),
   ]);
 
+  const totalPackets = memoryStats.total;
+  const failedJobs = memoryStats.processing_failed;
+  const processingStats = memoryStats.processing_distribution;
   let status: 'LOCKED' | 'DEGRADED' | 'BROKEN' = 'LOCKED';
   const failRate = totalPackets > 0 ? failedJobs / totalPackets : 0;
-  const embeddedCount = await prisma.memoryPacket.count({ where: { embedding_status: 'embedded' } });
+  const embeddedCount = memoryStats.embedded;
   const syncDensityPct = totalPackets > 0 ? Math.round((embeddedCount / totalPackets) * 100) : 0;
   const logicStabilityPct = Math.round((1 - failRate) * 100);
   const lockPressure = activeLocks > 5 ? 'high' : 'normal';
@@ -75,6 +72,7 @@ export async function buildSystemHealth() {
       stale_locks: staleLocks,
       semantic_fallbacks: semanticFallbacks,
       processing_distribution: processingStats,
+      memory_stats: memoryStats,
       entity_isolation_state: entityIsolation,
       lock_pressure: lockPressure,
       fail_rate: Number(failRate.toFixed(4)),

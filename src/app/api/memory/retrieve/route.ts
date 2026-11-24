@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/security/auth';
 import { readJsonObject, badRequest } from '@/lib/validation/http';
 import { retrieve } from '@/lib/memory/rag';
+import { aiErrorResponse } from '@/lib/ai/error-messages';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +24,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ results });
   } catch (error: any) {
     console.error('Retrieval API Error:', error);
-    return NextResponse.json({ error: error.message || 'An error occurred during retrieval' }, { status: 500 });
+    const aiFailure = aiErrorResponse(error);
+    if (aiFailure) return aiFailure;
+    // Never forward raw error text: it can carry provider URLs, keys or SQL.
+    return NextResponse.json({ error: 'Retrieval failed. Try again.' }, { status: 500 });
   }
 }

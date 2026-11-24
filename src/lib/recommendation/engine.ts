@@ -1,4 +1,5 @@
 import { postgres } from '@/lib/db/postgres';
+import { loadMemoryStats } from '@/lib/stats/memory-stats';
 import { scoreRecommendation } from './scoring';
 import { rankRecommendations } from './ranking';
 import { suppressNoise } from './suppression';
@@ -41,6 +42,7 @@ const DAY = 24 * 60 * 60 * 1000;
 export async function generateRecommendations(userId: string): Promise<Recommendation[]> {
   const now = Date.now();
 
+  const memoryStats = loadMemoryStats();
   const [
     rawBlobs,
     drafts,
@@ -57,8 +59,8 @@ export async function generateRecommendations(userId: string): Promise<Recommend
     postgres.publishingQueue.count({ where: { status: 'dead' } }).catch(() => 0),
     postgres.publishingQueue.count({ where: { status: { in: ['queued', 'scheduled'] } } }).catch(() => 0),
     postgres.decisionLog.findFirst({ orderBy: { createdAt: 'desc' }, select: { createdAt: true } }).catch(() => null),
-    postgres.memoryPacket.count({ where: { embedding_status: 'pending' } }).catch(() => 0),
-    postgres.memoryPacket.count({ where: { processing_status: 'failed' } }).catch(() => 0),
+    memoryStats.then((m) => m.backlog).catch(() => 0),
+    memoryStats.then((m) => m.needs_attention).catch(() => 0),
     postgres.profile.findFirst({ select: { avatarUrl: true, sections: true } }).catch(() => null),
     postgres.executionAuditLog.count({ where: { createdAt: { gte: new Date(now - DAY) } } }).catch(() => 0),
   ]);
